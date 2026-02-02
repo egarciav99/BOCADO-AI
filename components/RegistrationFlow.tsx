@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { FormData } from '../types';
 import ProgressBar from './ProgressBar';
@@ -8,6 +7,7 @@ import { db, auth } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { sanitizeProfileData } from '../utils/profileSanitizer';
+import { env } from '../environment/env';
 
 const TOTAL_STEPS = 2;
 
@@ -95,7 +95,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   
     try {
       // PASO 1: Petición estándar a la Cloud Function con CORS habilitado
-      const response = await fetch("https://registerusersecurely-iuou7tzsqq-uc.a.run.app", {
+      const response = await fetch(env.api.registerUserUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

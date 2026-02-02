@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { FormData } from '../types';
 import { EATING_HABITS, MEALS, CRAVINGS } from '../constants';
@@ -8,6 +7,7 @@ import { collection, doc, setDoc, addDoc } from 'firebase/firestore';
 import Step4 from './form-steps/Step4';
 import { PencilIcon } from './icons/PencilIcon';
 import { sanitizeProfileData } from '../utils/profileSanitizer';
+import { env } from '../environment/env';
 
 interface RecommendationScreenProps {
   userName: string;
@@ -103,10 +103,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         createdAt: new Date().toISOString() 
       };
 
-      const webhookUrls = [
-        'https://egarciav.app.n8n.cloud/webhook-test/cc7fe0c8-47da-4a3a-ad03-39b02ca28780',
-        'https://egarciav.app.n8n.cloud/webhook/cc7fe0c8-47da-4a3a-ad03-39b02ca28780'
-      ];
+      const webhookUrls = env.api.webhookUrls;
 
       const webhookPromises = webhookUrls.map(url => 
         fetch(url, {
@@ -115,8 +112,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
           headers: { 'Content-Type': 'text/plain' },
           body: JSON.stringify(webhookPayload),
         })
-        .then(() => console.log(`Señal enviada a ${url.includes('-test') ? 'test' : 'prod'} (modo no-cors).`))
-        .catch(err => console.error(`Error enviando señal a ${url.includes('-test') ? 'test' : 'prod'}:`, err))
+        .then(() => console.log(`Señal enviada a webhook (modo no-cors).`))
+        .catch(err => console.error(`Error enviando señal a webhook:`, err))
       );
 
       Promise.all(webhookPromises);
