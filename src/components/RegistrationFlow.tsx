@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { FormData } from '../../types';
+import { FormData } from '../types'; 
 import ProgressBar from './ProgressBar';
 import Step1 from './form-steps/Step1';
 import Step3 from './form-steps/Step3';
-import { env } from '../environment/env';
-import { db, auth } from '../firebaseConfig';
+import { db, auth } from '../firebaseConfig'; 
 import { doc, getDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { sanitizeProfileData } from '../utils/profileSanitizer';
+import { sanitizeProfileData } from '../utils/profileSanitizer'; 
+import { env } from '../environment/env';
 
 const TOTAL_STEPS = 2;
 
@@ -94,7 +94,6 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
     setSubmissionError('');
   
     try {
-      // PASO 1: Petición estándar a la Cloud Function con CORS habilitado
       const response = await fetch(env.api.registerUserUrl, {
         method: "POST",
         headers: {
@@ -109,23 +108,21 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
         throw new Error(data.error || "Error desconocido del servidor");
       }
   
-      // PASO 2: Inicio de sesión inmediato y sin reintentos
       const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password!);
       const user = userCredential.user;
   
-      // PASO 3: Obtener perfil, combinar con `displayName` y guardar
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
   
       if (userDoc.exists()) {
         const firestoreData = userDoc.data();
-        const displayName = user.displayName || '';
-        const nameParts = displayName.split(' ');
-        const firstName = nameParts[0] || '';
-        const lastName = nameParts.slice(1).join(' ') || '';
-  
-        const combinedData = { ...firestoreData, firstName, lastName, email: user.email };
-        const fullProfileData = sanitizeProfileData(combinedData); // Usar la utilidad centralizada
+        
+        // CORRECCIÓN AQUÍ: Usamos sanitizeProfile que es el nombre correcto importado
+        const fullProfileData = sanitizeProfileData({
+          ...firestoreData,
+          email: user.email,
+          uid: user.uid
+        });
         
         localStorage.setItem('bocado-profile-data', JSON.stringify(fullProfileData));
         localStorage.removeItem('bocado-form');
@@ -139,11 +136,11 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       if (error.message.includes("email-already-in-use") || error.message.includes("already exists")) {
         setSubmissionError("Este correo electrónico ya está registrado.");
         setCurrentStep(1);
-      } else if (error.name === 'TypeError') { // Network error, likely CORS
-        setSubmissionError("Error de conexión. Asegúrate de que tu función de Cloud Run tiene CORS habilitado.");
+      } else if (error.name === 'TypeError') {
+        setSubmissionError("Error de conexión. Revisa el backend.");
       }
       else {
-        setSubmissionError("No se pudo crear la cuenta. Por favor, revisa tus datos.");
+        setSubmissionError("No se pudo crear la cuenta.");
       }
     } finally {
       setIsLoading(false);
@@ -167,9 +164,9 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
     }
   };
 
-  const updateFormData = (field: keyof FormData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+ const updateFormData = (field: keyof FormData, value: any) => {
+  setFormData((prev: FormData) => ({ ...prev, [field]: value }));
+};
 
   const renderStep = () => {
     switch (currentStep) {
@@ -192,21 +189,21 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       <div className="mt-8 flex justify-between items-center">
         <button
           onClick={prevStep}
-          className={`px-6 py-2 rounded-full font-semibold transition-opacity ${currentStep === 1 ? 'opacity-0 cursor-default' : 'opacity-100 bg-gray-200 text-bocado-dark-gray hover:bg-gray-300'}`}
+          className={`px-6 py-2 rounded-full font-semibold transition-opacity ${currentStep === 1 ? 'opacity-0 cursor-default' : 'opacity-100 bg-gray-200 text-gray-600 hover:bg-gray-300'}`}
           disabled={currentStep === 1 || isLoading}
         >
           Anterior
         </button>
         <button
           onClick={nextStep}
-          className="bg-bocado-green text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-bocado-green-light transition-colors duration-300 disabled:bg-gray-400"
+          className="bg-green-500 text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-green-600 transition-colors duration-300 disabled:bg-gray-400"
           disabled={isLoading}
         >
           {isLoading ? 'Finalizando...' : (currentStep === TOTAL_STEPS ? 'Finalizar' : 'Siguiente')}
         </button>
       </div>
       <div className="mt-6 text-center">
-        <button onClick={onGoHome} className="text-sm text-bocado-green font-semibold hover:underline" disabled={isLoading}>
+        <button onClick={onGoHome} className="text-sm text-green-600 font-semibold hover:underline" disabled={isLoading}>
             Volver al inicio
         </button>
       </div>

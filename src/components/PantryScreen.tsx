@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { db, serverTimestamp } from '../../firebaseConfig';
+import { db, serverTimestamp } from '../firebaseConfig';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { KitchenItem, Zone, Freshness } from '../../types';
 import { RestaurantIcon } from './icons/RestaurantIcon';

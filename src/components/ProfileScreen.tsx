@@ -6,7 +6,7 @@ import { LockIcon } from './icons/LockIcon';
 import Step1 from './form-steps/Step1';
 import Step3 from './form-steps/Step3';
 import Step4 from './form-steps/Step4';
-import { db, auth } from '../../firebaseConfig';
+import { db, auth } from '../firebaseConfig';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, updateEmail, sendEmailVerification, updateProfile } from 'firebase/auth';
 import { sanitizeProfileData } from '../../utils/profileSanitizer';

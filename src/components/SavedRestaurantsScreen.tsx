@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { db, auth } from '../../firebaseConfig';
+import { db, auth } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { LocationIcon } from './icons/LocationIcon';
 import MealCard from './MealCard';
