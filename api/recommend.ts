@@ -101,34 +101,85 @@ export default async function handler(req: any, res: any) {
       return type === 'En casa' ? d.receta?.recetas?.map((r: any) => r.titulo) : d.recomendaciones?.recomendaciones?.map((r: any) => r.nombre_restaurante);
     }).flat().filter(Boolean);
 
-    // --- BLOQUE 5: Gemini IA ---
+   // --- BLOQUE 5: Gemini IA (Prompt Inteligente) ---
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = type === 'En casa' ? `
-Actúa como "Bocado", experto en nutrición clínica.
-PERFIL: Meta: ${user.nutritionalGoal}. Salud: ${diseases.join(", ")}, ${allergies.join(", ")}.
-DISLIKES: ${dislikedFoods.join(", ")}.
-CONTEXTO: ${mealType}, ${cookingTime} min.
-INGREDIENTES SEGUROS (Airtable): ${safeIngredients.slice(0, 40).join(", ")}.
-DESPENSA (PRIORIDAD): ${priorityList.join(", ")}.
-MEMORIA (PROHIBIDO): ${forbidden.join(", ")}.
+Actúa como "Bocado", experto en nutrición clínica y ahorro doméstico.
 
-Genera 3 RECETAS en JSON:
+### PERFIL DEL USUARIO
+* **Meta Nutricional**: ${user.nutritionalGoal}
+* **Condiciones Médicas**: ${diseases.join(", ") || "Ninguna"}
+* **Alergias**: ${allergies.join(", ") || "Ninguna"}
+* **Dislikes (PROHIBIDOS)**: ${dislikedFoods.join(", ")}
+
+### CONTEXTO DE LA SOLICITUD
+* **Ocasión**: ${mealType}
+* **Tiempo disponible**: ${cookingTime} minutos
+
+### REGLAS DE SEGURIDAD ALIMENTARIA (Airtable)
+Solo puedes usar ingredientes de esta lista segura: [${safeIngredients.slice(0, 50).join(", ")}].
+SI el usuario tiene Diabetes, prioriza IG < 55. SI tiene Hipertensión, Sodio < 140mg.
+
+### SCORING DE DESPENSA (Prioridad Alta)
+El usuario TIENE estos ingredientes en casa: [${priorityList.join(", ")}].
+DEBES incluirlos como base principal de las recetas para maximizar el ahorro.
+
+### MEMORIA (No repetir platos recientes)
+PROHIBIDO sugerir estos nombres de platos: [${forbidden.join(", ")}].
+
+### TAREA
+Genera 3 recetas creativas y saludables. Responde ÚNICAMENTE con un objeto JSON siguiendo esta estructura:
 {
-  "saludo_personalizado": "Mensaje motivador",
-  "recetas": [{
-    "id": 1, "titulo": "Nombre", "tiempo_estimado": "${cookingTime} min", "dificultad": "Media",
-    "coincidencia_despensa": "Ingrediente usado", "ingredientes": [], "pasos_preparacion": [], 
-    "macros_por_porcion": { "kcal": 0, "proteinas_g": 0, "carbohidratos_g": 0, "grasas_g": 0 }
-  }]
-}` : `
-Actúa como "Bocado", guía gastronómico en ${user.city}.
-ANTOJO: ${cravings}. UBICACIÓN: ${user.city}, ${user.country}.
-Genera 5 RECOMENDACIONES en JSON con links de Maps.`;
+  "saludo_personalizado": "Un mensaje corto, motivador y clínico sobre por qué elegiste estas recetas.",
+  "recetas": [
+    {
+      "id": 1,
+      "titulo": "Nombre creativo del plato",
+      "tiempo_estimado": "${cookingTime} min",
+      "dificultad": "Baja/Media",
+      "coincidencia_despensa": "Ingredientes que usaste de la despensa",
+      "ingredientes": ["cantidad exacta y nombre"],
+      "pasos_preparacion": ["paso 1", "paso 2"],
+      "macros_por_porcion": { "kcal": 0, "proteinas_g": 0, "carbohidratos_g": 0, "grasas_g": 0 }
+    }
+  ]
+}` 
+: `
+Actúa como "Bocado", el guía gastronómico experto de ${user.city}.
 
+### CONTEXTO
+* **Antojo del Usuario**: ${cravings}
+* **Ubicación Actual**: ${user.city}, ${user.country}
+* **Restricciones Médicas**: ${diseases.join(", ")}
+
+### MEMORIA
+No sugerir estos lugares: [${forbidden.join(", ")}].
+
+### TAREA
+Sugiere 5 restaurantes reales en ${user.city} que se alineen con su meta de ${user.nutritionalGoal}.
+Si no encuentras 5 reales, sugiere el TIPO de comida ideal para su salud en esa zona.
+Responde ÚNICAMENTE en este JSON:
+{
+  "saludo_personalizado": "Mensaje cálido con recomendación sobre su antojo.",
+  "recomendaciones": [
+    {
+      "id": 1,
+      "nombre_restaurante": "Nombre real",
+      "tipo_comida": "Categoría",
+      "link_maps": "https://www.google.com/maps/search/?api=1&query={NombreRestaurante}+${user.city}",
+      "por_que_es_bueno": "Explicación breve",
+      "plato_sugerido": "Plato específico del menú que sea saludable",
+      "hack_saludable": "Tip para pedir (ej: pide la salsa aparte)"
+    }
+  ]
+}`;
+
+    // Ejecución de la IA
     const result = await model.generateContent(prompt);
-    const parsedData = JSON.parse(result.response.text().replace(/```json|```/gi, "").trim());
+    const responseText = result.response.text();
+    const parsedData = JSON.parse(responseText.replace(/```json|```/gi, "").trim());
 
     // --- BLOQUE 6: Guardado ---
     const finalObject = {
