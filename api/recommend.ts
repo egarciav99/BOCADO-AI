@@ -1,13 +1,22 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Manejo de CORS para desarrollo local
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse
+) {
+  // 1. Configurar CORS para que tu frontend en Vercel pueda hablar con la API
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version'
+  );
 
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    res.status(200).end();
+    return;
   }
 
   if (req.method !== 'POST') {
@@ -15,19 +24,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const { userId, type, context } = req.body;
-    
-    // Log para ver que los datos llegan bien a Vercel
-    console.log(`Solicitud de ${type} para usuario: ${userId}`);
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) throw new Error("GEMINI_API_KEY no configurada en Vercel");
 
-    // Aquí es donde en el siguiente paso meteremos a Gemini
-    return res.status(200).json({ 
-      success: true, 
-      message: "Conexión exitosa con el backend de Bocado",
-      received: { userId, type } 
-    });
-  } catch (error) {
-    console.error("Error en API:", error);
-    return res.status(500).json({ error: "Error interno del servidor" });
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+    const userProfile = req.body;
+
+    const prompt = `
+      Actúa como un experto nutriólogo y chef profesional.
+      Genera una recomendación nutricional personalizada para un usuario con este perfil:
+      ${JSON.stringify(userProfile)}
+
+      REGLAS ESTRICTAS:
+      1. No uses ingredientes que estén en la lista de alergias o "dislikedFoods".
+      2. Adapta la dificultad a su "cookingAffinity".
+      3. Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura:
+      {
+        "recommendation": "Breve análisis de sus metas",
+        "recipes": [
+          {
+            "title": "Nombre",
+            "description": "Por qué es buena para él",
+            "ingredients": ["item 1", "item 2"],
+            "instructions": ["paso 1", "paso 2"],
+            "calories": 400,
+            "prepTime": "20 min"
+          }
+        ]
+      }
+    `;
+
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+    
+    // Limpiar posibles backticks de Markdown que Gemini a veces añade
+    const jsonString = text.replace(/```json|```/gi, '').trim();
+    const data = JSON.parse(jsonString);
+
+    return res.status(200).json(data);
+
+  } catch (error: any) {
+    console.error("Error en API Recommend:", error);
+    return res.status(500).json({ error: "No se pudo generar la recomendación", details: error.message });
   }
 }

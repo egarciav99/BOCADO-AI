@@ -3,7 +3,7 @@ import { db, auth } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
 import { LocationIcon } from './icons/LocationIcon';
 import MealCard from './MealCard';
-import { Meal } from '../../types';
+import { Meal } from '../types';
 
 const SavedRestaurantsScreen: React.FC = () => {
   const [savedRestaurants, setSavedRestaurants] = useState<Meal[]>([]);

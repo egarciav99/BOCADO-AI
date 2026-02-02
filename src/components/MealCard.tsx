@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Meal } from '../../types';
+import { Meal } from '../types';
 import { MEALS } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { SavingsIcon } from './icons/SavingsIcon';
