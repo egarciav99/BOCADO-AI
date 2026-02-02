@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import BottomTabBar, { Tab } from './BottomTabBar';
-import { RecommendationScreen } from './RecommendationScreen';
+import RecommendationScreen from './RecommendationScreen';
 import PantryScreen from './PantryScreen';
 import ProfileScreen from './ProfileScreen';
 import SavedRecipesScreen from './SavedRecipesScreen';
