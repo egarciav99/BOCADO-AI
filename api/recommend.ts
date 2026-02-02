@@ -102,19 +102,36 @@ export default async function handler(req: any, res: any) {
 
     // --- BLOQUE 5: Definición del Prompt ---
     const prompt = type === 'En casa' ? `
-Actúa como "Bocado", experto en nutrición clínica.
-REGLAS: Solo ingredientes seguros: [${safeIngredients.slice(0, 50).join(", ")}].
-PRIORIDAD: Usa ingredientes de la despensa: [${priorityList.join(", ")}].
-MEMORIA: No repitas: [${forbidden.join(", ")}].
-META: ${user.nutritionalGoal}. SALUD: ${diseases.join(", ")}.
+    Actúa como "Bocado", experto en nutrición clínica.
+    REGLAS: Solo ingredientes seguros: [${safeIngredients.slice(0, 50).join(", ")}].
+    PRIORIDAD: Usa ingredientes de la despensa: [${priorityList.join(", ")}].
+    MEMORIA: No repitas: [${forbidden.join(", ")}].
+    META: ${user.nutritionalGoal}. SALUD: ${diseases.join(", ")}.
 
-Genera 3 recetas saludables en JSON:
-{
-  "saludo_personalizado": "Mensaje corto",
-  "recetas": [{ "id": 1, "titulo": "...", "tiempo_estimado": "${cookingTime} min", "ingredientes": [], "pasos_preparacion": [], "macros_por_porcion": {} }]
-}` : `
-Actúa como "Bocado", guía gastronómico en ${user.city}. Antojo: ${cravings}.
-Genera 5 recomendaciones en JSON.`;
+    Genera 3 recetas saludables en JSON:
+    {
+      "saludo_personalizado": "Mensaje corto",
+      "recetas": [{ "id": 1, "titulo": "...", "tiempo_estimado": "${cookingTime} min", "ingredientes": [], "pasos_preparacion": [], "macros_por_porcion": {} }]
+    }` : `
+    Actúa como "Bocado", guía gastronómico experto en ${user.city}. 
+    ANTOJO: ${cravings}. META: ${user.nutritionalGoal}. SALUD: ${diseases.join(", ")}.
+    MEMORIA: No sugerir: [${forbidden.join(", ")}].
+
+    TAREA: Sugiere 5 restaurantes reales. Responde ÚNICAMENTE en JSON con esta estructura exacta:
+    {
+      "saludo_personalizado": "Hola ${user.firstName || 'comensal'}, aquí tienes opciones en ${user.city} para tu antojo de ${cravings} que cuidan tu meta de ${user.nutritionalGoal}.",
+      "recomendaciones": [
+    {
+      "id": 1,
+      "nombre_restaurante": "Nombre Real",
+      "tipo_comida": "Categoría",
+      "link_maps": "https://www.google.com/maps/search/?api=1&query={nombre_restaurante}+${user.city}",
+      "por_que_es_bueno": "Explicación breve",
+      "plato_sugerido": "Opción saludable del menú",
+      "hack_saludable": "Tip (ej: pide sin sal o aderezo aparte)"
+    }
+  ]
+}`;
 
     // --- BLOQUE 6: Ejecución de Gemini 2.0 ---
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -123,7 +140,18 @@ Genera 5 recomendaciones en JSON.`;
     console.log("📡 Conectando con Gemini 2.0 Flash...");
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-    const parsedData = JSON.parse(responseText.replace(/```json|```/gi, "").trim());
+
+    // 🛡️ FILTRO EXTRACTOR: Buscamos el primer '{' y el último '}' 
+    // Esto ignora cualquier texto como "¡Arigato!" que la IA ponga afuera.
+    const startJson = responseText.indexOf('{');
+    const endJson = responseText.lastIndexOf('}');
+
+    if (startJson === -1 || endJson === -1) {
+        throw new Error("La IA no devolvió un formato JSON válido.");
+    }
+
+    const cleanedJson = responseText.substring(startJson, endJson + 1);
+    const parsedData = JSON.parse(cleanedJson);
 
     // --- BLOQUE 7: Guardado ---
     const finalObject = {
