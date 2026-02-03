@@ -25,30 +25,34 @@ const MainApp: React.FC<MainAppProps> = ({ onPlanGenerated, showTutorial = false
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserUid(user.uid);
-        
-        if (user.displayName) {
-          setUserName(user.displayName.split(' ')[0]);
-        } else {
-          const savedData = localStorage.getItem('bocado-profile-data');
-          if (savedData) {
-              const parsed = JSON.parse(savedData);
-              if (parsed.firstName) setUserName(parsed.firstName);
-          }
-        }
-        setIsLoading(false);
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    if (user) {
+      setUserUid(user.uid);
+      
+      // Lógica mejorada para obtener el nombre inmediatamente
+      let foundName = '';
+      if (user.displayName) {
+        foundName = user.displayName.split(' ')[0];
       } else {
-        // If user logs out, clear UID and local storage, then call the callback to redirect
-        setUserUid(null); 
-        localStorage.removeItem('bocado-profile-data');
-        onLogoutComplete();
+        const savedData = localStorage.getItem('bocado-profile-data');
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          foundName = parsed.firstName || '';
+        }
       }
-    });
+      
+      setUserName(foundName);
+      
+      setIsLoading(false); 
+    } else {
+      setUserUid(null); 
+      localStorage.removeItem('bocado-profile-data');
+      onLogoutComplete();
+    }
+  });
 
-    return () => unsubscribe();
-  }, [onLogoutComplete]);
+  return () => unsubscribe();
+}, [onLogoutComplete]);
 
   const handleTutorialClose = () => {
     setIsTutorialOpen(false);
