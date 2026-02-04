@@ -4,6 +4,7 @@ import { MEALS } from '../constants';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { SavingsIcon } from './icons/SavingsIcon';
 import { HeartIcon } from './icons/HeartIcon';
+import FeedbackModal from './FeedbackModal'; 
 
 interface MealCardProps {
   meal: Meal;
@@ -14,6 +15,7 @@ interface MealCardProps {
 
 const MealCard: React.FC<MealCardProps> = ({ meal, isSaved, isSaving, onToggleSave }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const [showFeedback, setShowFeedback] = useState(false); 
     
     const { recipe } = meal;
     const isRestaurant = recipe.difficulty === 'Restaurante';
@@ -166,8 +168,27 @@ const MealCard: React.FC<MealCardProps> = ({ meal, isSaved, isSaving, onToggleSa
                              </div>
                         </div>
                     )}
+
+                    {/* NUEVO: Botón de Acción Final */}
+                    <div className="mt-4 pt-4 border-t border-gray-50 flex gap-2">
+                        <button
+                            onClick={() => setShowFeedback(true)}
+                            className="flex-1 flex items-center justify-center gap-2 bg-bocado-dark-green text-white py-2.5 rounded-xl font-bold text-sm shadow-sm active:scale-95 transition-all"
+                        >
+                            <span>{isRestaurant ? '📍 ¡Fui al lugar!' : '🍳 ¡La cociné!'}</span>
+                        </button>
+                    </div>
                 </div>
             )}
+
+            {/* NUEVO: Modal de Feedback */}
+            <FeedbackModal 
+                isOpen={showFeedback}
+                onClose={() => setShowFeedback(false)}
+                itemTitle={recipe.title}
+                type={isRestaurant ? 'away' : 'home'}
+                originalData={recipe}
+            />
         </div>
     );
 };

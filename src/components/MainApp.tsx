@@ -28,7 +28,7 @@ const MainApp: React.FC<MainAppProps> = ({ onPlanGenerated, showTutorial = false
       if (user) {
         setUserUid(user.uid);
         
-        // Intentar obtener el nombre desde Firebase o LocalStorage inmediatamente
+        // Lógica para obtener el nombre inmediatamente y evitar bloqueos en el hijo
         let foundName = '';
         if (user.displayName) {
           foundName = user.displayName.split(' ')[0];
@@ -46,7 +46,7 @@ const MainApp: React.FC<MainAppProps> = ({ onPlanGenerated, showTutorial = false
         
         setUserName(foundName);
         
-        // Pequeño delay para asegurar que RecommendationScreen encuentre el localStorage al montarse
+        // Pequeño delay de seguridad para que el hijo encuentre el localStorage
         setTimeout(() => {
           setIsLoading(false);
         }, 150);
@@ -97,7 +97,7 @@ const MainApp: React.FC<MainAppProps> = ({ onPlanGenerated, showTutorial = false
       <div className="max-w-2xl mx-auto pt-4">
         {activeTab === 'recommendation' && (
           <RecommendationScreen 
-            key={userUid} // Forzamos el reinicio del componente al detectar el UID
+            key={userUid} // Forzamos el reinicio si el UID cambia
             userName={userName}
             onPlanGenerated={onPlanGenerated}
           />

@@ -4,6 +4,7 @@ import BocadoLogo from './BocadoLogo';
 import { auth, db, serverTimestamp } from '../firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
 import { sanitizeProfileData } from '../utils/profileSanitizer';
+import { CurrencyService } from '../data/budgets';
 
 interface RecommendationScreenProps {
   userName: string;
@@ -30,34 +31,28 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   const [recommendationType, setRecommendationType] = useState<'En casa' | 'Fuera' | null>(null); 
   const [selectedMeal, setSelectedMeal] = useState('');
   const [selectedCravings, setSelectedCravings] = useState<string[]>([]);
+  const [selectedBudget, setSelectedBudget] = useState('');
   const [cookingTime, setCookingTime] = useState(30);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activityData, setActivityData] = useState<any>({});
 
   useEffect(() => {
-    // Función para cargar datos con reintento
     const loadProfileData = () => {
       const data = getProfileDataFromStorage();
-      if (data) {
-        setFormData(data);
-        setActivityData({
-          activityLevel: data.activityLevel || '',
-          otherActivityLevel: data.otherActivityLevel || '',
-          activityFrequency: data.activityFrequency || '',
-          dislikedFoods: data.dislikedFoods || [],
-        });
-      }
+      if (data) setFormData(data);
     };
-
     loadProfileData();
-    
-    // Seguridad: Reintentar a los 300ms por si hay lag en el almacenamiento
     const timer = setTimeout(loadProfileData, 300);
     return () => clearTimeout(timer);
   }, []);
 
+  // --- LÓGICA DE MONEDA BASADA EN TU SERVICIO ---
+  const countryCode = formData?.country || 'MX'; // Asegúrate de que en el registro guardas el ISO (MX, ES, etc)
+  const currencyConfig = CurrencyService.fromCountryCode(countryCode);
+  const budgetOptions = CurrencyService.getBudgetOptions(countryCode);
+
   const handleTypeChange = (type: 'En casa' | 'Fuera') => {
       setRecommendationType(type);
+      setSelectedBudget('');
       if (type === 'En casa') setSelectedCravings([]);
       else {
           setSelectedMeal('');
@@ -67,15 +62,12 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
 
   const handleGenerateRecommendation = async () => {
     const isHomeSelectionComplete = recommendationType === 'En casa' && selectedMeal;
-    const isAwaySelectionComplete = recommendationType === 'Fuera' && selectedCravings.length > 0;
+    const isAwaySelectionComplete = recommendationType === 'Fuera' && selectedCravings.length > 0 && selectedBudget;
     
     if (!formData || (!isHomeSelectionComplete && !isAwaySelectionComplete)) return;
     
     const user = auth.currentUser;
-    if (!user) {
-        alert('Sesión expirada. Por favor, inicia sesión de nuevo.');
-        return;
-    }
+    if (!user) return;
 
     setIsGenerating(true);
 
@@ -89,6 +81,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       mealType: recommendationType === 'En casa' ? stripEmoji(selectedMeal) : "Fuera de casa",
       cookingTime: recommendationType === 'En casa' ? cookingTime : 0,
       cravings: cravingsList,
+      budget: selectedBudget, // Enviamos 'low', 'medium' o 'high'
+      currency: currencyConfig.code, // Enviamos 'EUR', 'MXN', etc.
       dislikedFoods: formData.dislikedFoods || [],
       createdAt: serverTimestamp(),
       procesado: false,
@@ -96,19 +90,16 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
 
     try {
       const newDoc = await addDoc(collection(db, 'user_interactions'), interactionData);
-
       const response = await fetch('/api/recommend', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...interactionData, _id: newDoc.id })
       });
-
       if (!response.ok) throw new Error("Error en la IA");
-
       onPlanGenerated(newDoc.id);
     } catch (error) {
       console.error("Error:", error);
-      alert('Tuvimos un problema con la IA. Inténtalo de nuevo.');
+      alert('Tuvimos un problema con la IA.');
     } finally {
       setIsGenerating(false);
     }
@@ -120,8 +111,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
     );
   };
 
-  const renderCookingTime = () => cookingTime >= 65 ? '60+ min' : `${cookingTime} min`;
-  const isSelectionMade = (recommendationType === 'En casa' && selectedMeal) || (recommendationType === 'Fuera' && selectedCravings.length > 0);
+  const isSelectionMade = (recommendationType === 'En casa' && selectedMeal) || 
+                          (recommendationType === 'Fuera' && selectedCravings.length > 0 && selectedBudget);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm p-4 animate-fade-in flex flex-col min-h-[calc(100vh-80px)] sm:min-h-0 relative">
@@ -159,8 +150,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
             </div>
 
             <div className="flex-1 flex flex-col justify-end">
-                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${recommendationType ? 'max-h-[500px] opacity-100' : 'max-h-0 opacity-0'}`}>
-                    <div className="overflow-y-auto no-scrollbar pt-4">
+                <div className={`transition-all duration-500 ease-in-out overflow-hidden ${recommendationType ? 'max-h-[600px] opacity-100' : 'max-h-0 opacity-0'}`}>
+                    <div className="overflow-y-auto no-scrollbar pt-4 pb-4">
                         {recommendationType === 'En casa' ? (
                             <div className="space-y-4 animate-fade-in">
                                  <p className="text-center text-sm text-bocado-gray font-medium uppercase tracking-widest">¿Qué vas a preparar?</p>
@@ -179,45 +170,47 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                                 {selectedMeal && (
                                    <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 mt-2 animate-slide-up">
                                         <div className="flex justify-between items-end mb-2">
-                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Tiempo de Cocina</label>
-                                            <span className="text-lg font-bold text-bocado-green">{renderCookingTime()}</span>
+                                            <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Tiempo</label>
+                                            <span className="text-lg font-bold text-bocado-green">{cookingTime >= 65 ? '60+' : cookingTime} min</span>
                                         </div>
-                                        <input 
-                                            type="range" 
-                                            min="10" 
-                                            max="65" 
-                                            step="5" 
-                                            value={cookingTime} 
-                                            onChange={(e) => setCookingTime(Number(e.target.value))} 
-                                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-bocado-green" 
-                                        />
+                                        <input type="range" min="10" max="65" step="5" value={cookingTime} onChange={(e) => setCookingTime(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-bocado-green" />
                                    </div>
                                 )}
                             </div>
                         ) : (
-                            <div className="space-y-4 animate-fade-in">
-                                <p className="text-center text-sm text-bocado-gray font-medium uppercase tracking-widest">¿Qué se te antoja?</p>
-                                <div className="grid grid-cols-2 gap-2.5">
-                                    {CRAVINGS.map(craving => (
-                                        <button 
-                                            key={craving} 
-                                            type="button" 
-                                            onClick={() => toggleCraving(craving)} 
-                                            className={`py-2.5 px-2 rounded-xl border text-[11px] font-bold transition-all ${selectedCravings.includes(craving) ? 'bg-bocado-green text-white border-bocado-green shadow-md' : 'bg-white text-gray-600 border-gray-50'}`}
-                                        >
-                                            {craving}
-                                        </button>
-                                    ))}
+                            <div className="space-y-6 animate-fade-in">
+                                <div>
+                                    <p className="text-center text-sm text-bocado-gray font-medium uppercase tracking-widest mb-3">¿Qué se te antoja?</p>
+                                    <div className="grid grid-cols-2 gap-2.5">
+                                        {CRAVINGS.map(craving => (
+                                            <button key={craving} type="button" onClick={() => toggleCraving(craving)} className={`py-2.5 px-2 rounded-xl border text-[11px] font-bold transition-all ${selectedCravings.includes(craving) ? 'bg-bocado-green text-white border-bocado-green shadow-md' : 'bg-white text-gray-600 border-gray-50'}`}>
+                                                {craving}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div className="pt-2">
+                                    <p className="text-center text-sm text-bocado-gray font-medium uppercase tracking-widest mb-3">Presupuesto ({currencyConfig.name})</p>
+                                    <div className="grid grid-cols-1 gap-2.5">
+                                        {budgetOptions.map(option => (
+                                            <button 
+                                                key={option.value} 
+                                                type="button" 
+                                                onClick={() => setSelectedBudget(option.value)} 
+                                                className={`py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all flex justify-between items-center ${selectedBudget === option.value ? 'bg-bocado-green text-white border-bocado-green shadow-md' : 'bg-white text-gray-600 border-gray-50'}`}
+                                            >
+                                                <span>{option.label}</span>
+                                                {selectedBudget === option.value && <span className="text-lg">✅</span>}
+                                            </button>
+                                        ))}
+                                    </div>
                                 </div>
                             </div>
                         )}
 
                         <div className={`mt-8 pt-6 border-t border-gray-50 transition-opacity duration-500 ${isSelectionMade ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                            <button 
-                                onClick={handleGenerateRecommendation} 
-                                disabled={isGenerating} 
-                                className="w-full bg-bocado-green text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-green-100 hover:bg-bocado-dark-green transition-all active:scale-95 disabled:bg-gray-200 flex items-center justify-center gap-2"
-                            >
+                            <button onClick={handleGenerateRecommendation} disabled={isGenerating} className="w-full bg-bocado-green text-white font-bold py-4 rounded-2xl text-lg shadow-xl shadow-green-100 disabled:bg-gray-200 flex items-center justify-center gap-2">
                                 {isGenerating ? "Cocinando..." : "¡A comer! 🍽️"}
                             </button>
                         </div>
@@ -225,16 +218,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                 </div>
             </div>
           </>
-        )}
-
-        {isGenerating && (
-            <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-50 rounded-2xl backdrop-blur-sm animate-fade-in">
-                <div className="relative w-16 h-16">
-                    <div className="absolute inset-0 border-4 border-bocado-green/20 rounded-full"></div>
-                    <div className="absolute inset-0 border-4 border-t-bocado-green rounded-full animate-spin"></div>
-                </div>
-                <p className="text-lg font-bold text-bocado-dark-green mt-4 animate-pulse">Creando tu plan clínico...</p>
-            </div>
         )}
     </div>
   );

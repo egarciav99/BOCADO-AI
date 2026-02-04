@@ -1,8 +1,9 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 
-// 1. INICIALIZACIÓN GLOBAL
+// 1. INICIALIZACIÓN GLOBAL DE FIREBASE ADMIN
+// Evitamos re-inicializar en cada invocación de la Lambda
 if (!getApps().length) {
   try {
     const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
@@ -21,7 +22,7 @@ if (!getApps().length) {
 
 const db = getFirestore();
 
-// 2. FUNCIONES DE AYUDA
+// 2. FUNCIONES DE AYUDA PARA NORMALIZACIÓN Y BÚSQUEDA
 const normalizeText = (text: string) => 
   text ? text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
 
@@ -39,8 +40,9 @@ const createRegexPattern = (text: string) => {
   return root.replace(/a/g, '[aá]').replace(/e/g, '[eé]').replace(/i/g, '[ií]').replace(/o/g, '[oó]').replace(/u/g, '[uú]');
 };
 
-// 3. HANDLER PRINCIPAL
+// 3. HANDLER PRINCIPAL (API VERCEL)
 export default async function handler(req: any, res: any) {
+  // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
@@ -49,16 +51,16 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
 
   try {
-    const { userId, type, mealType, cookingTime, cravings, _id } = req.body;
+    const { userId, type, mealType, cookingTime, cravings, budget, currency, _id } = req.body;
     const interactionId = _id || `int_${Date.now()}`;
     const now = new Date().toISOString();
 
-    // --- BLOQUE 1: Obtener Perfil del Usuario ---
+    // --- BLOQUE 1: Perfil del Usuario ---
     const userSnap = await db.collection('users').doc(userId).get();
-    if (!userSnap.exists) throw new Error("Usuario no encontrado en la base de datos");
+    if (!userSnap.exists) throw new Error("Usuario no encontrado");
     const user = userSnap.data() || {};
 
-    // --- BLOQUE 2: Filtrado Airtable ---
+    // --- BLOQUE 2: Filtrado de Seguridad (Airtable) ---
     let conditions = [];
     const allergies = user.allergies || [];
     const diseases = user.diseases || [];
@@ -68,7 +70,6 @@ export default async function handler(req: any, res: any) {
     if (allergies.includes("Celíaco")) conditions.push("{Celíaco} = TRUE()");
     if (diseases.includes("Diabetes")) conditions.push("AND({Índice_glucémico} < 55, {Azúcares_totales_g} < 10)");
     if (diseases.includes("Hipertensión")) conditions.push("{Sodio_mg} < 140");
-    if (diseases.includes("Colesterol")) conditions.push("AND({Colesterol_mg} < 20, {Grasas_saturadas_g} < 1.5)");
 
     dislikedFoods.forEach(food => {
       const pattern = createRegexPattern(food);
@@ -76,7 +77,6 @@ export default async function handler(req: any, res: any) {
     });
 
     const airtableFormula = conditions.length > 0 ? `AND(${conditions.join(", ")})` : "TRUE()";
-    
     const airtableRes = await fetch(
       `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_NAME}?filterByFormula=${encodeURIComponent(airtableFormula)}`,
       { headers: { Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}` } }
@@ -84,80 +84,86 @@ export default async function handler(req: any, res: any) {
     const airtableData = await airtableRes.json();
     const safeIngredients = airtableData.records?.map((r: any) => r.fields.México || r.fields.Ingrediente) || [];
 
-    // --- BLOQUE 3: Scoring de Despensa ---
+    // --- BLOQUE 3: Contexto de Despensa ---
     const pantrySnap = await db.collection('user_pantry').where('userId', '==', userId).get();
-    const pantryNames = pantrySnap.docs.map(doc => doc.data().name || doc.data().items).flat();
+    const pantryNames = pantrySnap.docs.map(doc => {
+        const data = doc.data();
+        return data.name || data.items || [];
+    }).flat();
     
     const priorityList = safeIngredients.filter((ing: string) => 
       pantryNames.some(p => normalizeText(ing).includes(normalizeText(p)))
     );
 
-    // --- BLOQUE 4: Memoria ---
-    const historyCol = type === 'En casa' ? 'historial_recetas' : 'historial_recomendaciones';
-    const historySnap = await db.collection(historyCol).where('user_id', '==', userId).orderBy('fecha_creacion', 'desc').limit(5).get();
-    const forbidden = historySnap.docs.map((doc: any) => {
-      const d = doc.data();
-      return type === 'En casa' ? d.receta?.recetas?.map((r: any) => r.titulo) : d.recomendaciones?.recomendaciones?.map((r: any) => r.nombre_restaurante);
-    }).flat().filter(Boolean);
+    // --- BLOQUE 4: Preferencias y Feedback (Aprendizaje) ---
+    const feedbackSnap = await db.collection('user_history')
+      .where('userId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .limit(5)
+      .get();
 
-    // --- BLOQUE 5: Definición del Prompt ---
+    const experiences = feedbackSnap.docs.map(doc => {
+      const d = doc.data();
+      return `- ${d.itemId}: Calificación ${d.rating}/5 estrellas.`;
+    }).join('\n');
+
+    const preferenceContext = experiences.length > 0 
+      ? `\nHISTORIAL DE GUSTOS: Al usuario le gustaron estos platos: \n${experiences}`
+      : "";
+
+    // --- BLOQUE 5: Definición del Prompt Inteligente ---
     const prompt = type === 'En casa' ? `
-    Actúa como "Bocado", experto en nutrición clínica.
+    Actúa como "Bocado", nutricionista clínico.
     REGLAS: Solo ingredientes seguros: [${safeIngredients.slice(0, 50).join(", ")}].
     PRIORIDAD: Usa ingredientes de la despensa: [${priorityList.join(", ")}].
-    MEMORIA: No repitas: [${forbidden.join(", ")}].
-    META: ${user.nutritionalGoal}. SALUD: ${diseases.join(", ")}.
+    TIEMPO: Máximo ${cookingTime} minutos.
+    META: ${user.nutritionalGoal}. SALUD: ${diseases.join(", ")}.${preferenceContext}
 
-    Genera 3 recetas saludables en JSON:
+    TAREA: Genera 3 recetas saludables. Responde ÚNICAMENTE en JSON:
     {
-      "saludo_personalizado": "Mensaje corto",
-      "recetas": [{ "id": 1, "titulo": "...", "tiempo_estimado": "${cookingTime} min", "ingredientes": [], "pasos_preparacion": [], "macros_por_porcion": {} }]
+      "saludo_personalizado": "...",
+      "recetas": [{ "id": 1, "titulo": "...", "tiempo_estimado": "...", "ingredientes": [], "pasos_preparacion": [], "macros_por_porcion": {} }]
     }` : `
     Actúa como "Bocado", guía gastronómico experto en ${user.city}. 
-    ANTOJO: ${cravings}. META: ${user.nutritionalGoal}. SALUD: ${diseases.join(", ")}.
-    MEMORIA: No sugerir: [${forbidden.join(", ")}].
+    ANTOJO: ${cravings}.
+    PRESUPUESTO: El usuario tiene un presupuesto ${budget} (Moneda: ${currency}).
+    META: ${user.nutritionalGoal}. SALUD: ${diseases.join(", ")}.${preferenceContext}
 
-    TAREA: Sugiere 5 restaurantes reales. Responde ÚNICAMENTE en JSON con esta estructura exacta:
+    TAREA: Sugiere 5 restaurantes REALES en ${user.city} que se ajusten al presupuesto ${budget}.
+    Responde ÚNICAMENTE en JSON con esta estructura exacta:
     {
-      "saludo_personalizado": "Hola ${user.firstName || 'comensal'}, aquí tienes opciones en ${user.city} para tu antojo de ${cravings} que cuidan tu meta de ${user.nutritionalGoal}.",
+      "saludo_personalizado": "...",
       "recomendaciones": [
-    {
-      "id": 1,
-      "nombre_restaurante": "Nombre Real",
-      "tipo_comida": "Categoría",
-      "link_maps": "https://www.google.com/maps/search/?api=1&query={nombre_restaurante}+${user.city}",
-      "por_que_es_bueno": "Explicación breve",
-      "plato_sugerido": "Opción saludable del menú",
-      "hack_saludable": "Tip (ej: pide sin sal o aderezo aparte)"
-    }
-  ]
-}`;
+        {
+          "id": 1,
+          "nombre_restaurante": "...",
+          "tipo_comida": "...",
+          "link_maps": "https://www.google.com/maps/search/?api=1&query={nombre_restaurante}+${user.city}",
+          "por_que_es_bueno": "...",
+          "plato_sugerido": "...",
+          "hack_saludable": "..."
+        }
+      ]
+    }`;
 
-    // --- BLOQUE 6: Ejecución de Gemini 2.0 ---
+    // --- BLOQUE 6: Ejecución de Gemini 2.0 Flash ---
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "models/gemini-2.0-flash-001" });
 
-    console.log("📡 Conectando con Gemini 2.0 Flash...");
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
-
-    // 🛡️ FILTRO EXTRACTOR: Buscamos el primer '{' y el último '}' 
-    // Esto ignora cualquier texto como "¡Arigato!" que la IA ponga afuera.
     const startJson = responseText.indexOf('{');
     const endJson = responseText.lastIndexOf('}');
+    const parsedData = JSON.parse(responseText.substring(startJson, endJson + 1));
 
-    if (startJson === -1 || endJson === -1) {
-        throw new Error("La IA no devolvió un formato JSON válido.");
-    }
-
-    const cleanedJson = responseText.substring(startJson, endJson + 1);
-    const parsedData = JSON.parse(cleanedJson);
-
-    // --- BLOQUE 7: Guardado ---
+    // --- BLOQUE 7: Guardado de Interacción y Metadatos ---
+    const historyCol = type === 'En casa' ? 'historial_recetas' : 'historial_recomendaciones';
     const finalObject = {
       user_id: userId,
       user_interactions: interactionId,
       fecha_creacion: now,
+      budget: budget || 'N/A',
+      currency: currency || 'N/A',
       [type === 'En casa' ? 'receta' : 'recomendaciones']: parsedData
     };
 

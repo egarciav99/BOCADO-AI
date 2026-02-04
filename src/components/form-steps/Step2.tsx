@@ -21,7 +21,7 @@ const MultiSelectButton: React.FC<{
 );
 
 
-const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
+const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
     const toggleSelection = (field: 'diseases' | 'allergies', value: string) => {
         const currentValues = data[field] as string[];
         const newValues = currentValues.includes(value)
@@ -109,4 +109,4 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
   );
 };
 
-export default Step3;
+export default Step2;

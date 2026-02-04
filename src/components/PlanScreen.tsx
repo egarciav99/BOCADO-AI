@@ -11,7 +11,7 @@ interface PlanScreenProps {
 }
 
 const loadingMessages = [
-  "Contactando a nuestros chefs de IA...",
+  "Contactando a nuestros chefs...",
   "Buscando los mejores lugares cercanos...",
   "Consultando tu perfil nutricional...",
   "Analizando menús saludables...",
@@ -381,7 +381,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
         </div>
         <div className="mt-6 pt-6 border-t border-gray-200 text-center">
              <button onClick={onStartNewPlan} className="bg-bocado-green text-white font-bold py-3 px-10 rounded-full text-lg shadow-lg hover:bg-bocado-green-light">
-                Crear Nuevo Plan
+                Volver al inicio
             </button>
         </div>
     </div>

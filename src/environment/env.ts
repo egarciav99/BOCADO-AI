@@ -1,8 +1,6 @@
 const getEnvVar = (key: string): string => {
-  // En Vite, se usa import.meta.env para acceder a las variables
   const value = import.meta.env[key];
   if (typeof value === 'undefined') {
-    // Esto detiene la app si falta una variable, causando la pantalla en blanco
     console.warn(`Missing environment variable: ${key}`);
     return ""; 
   }
@@ -19,10 +17,9 @@ const firebaseConfig = {
 };
 
 const apiConfig = {
-  // URL de tu nueva API en Vercel
   recommendationUrl: '/api/recommend',
-  // Puedes mantener estas si aún usas servicios externos
   registerUserUrl: getEnvVar('VITE_REGISTER_USER_URL'),
+  geonamesUsername: getEnvVar('VITE_GEONAMES_USERNAME'),
 };
 
 export const env = Object.freeze({

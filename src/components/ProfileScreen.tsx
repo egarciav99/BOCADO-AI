@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { FormData } from '../types'; // Corregido: sube un nivel a /src
+import { FormData } from '../types';
 import { UserIcon } from './icons/UserIcon';
 import { LockIcon } from './icons/LockIcon';
 import Step1 from './form-steps/Step1';
-import Step3 from './form-steps/Step3';
+import Step3 from './form-steps/Step2';
 import Step4 from './form-steps/Step4';
-import { db, auth } from '../firebaseConfig'; // Corregido: sube un nivel a /src
+import { db, auth } from '../firebaseConfig';
 import { doc, setDoc, getDoc, writeBatch } from 'firebase/firestore';
 import { 
   updatePassword, 
@@ -15,7 +15,7 @@ import {
   sendEmailVerification, 
   updateProfile 
 } from 'firebase/auth';
-import { sanitizeProfileData } from '../utils/profileSanitizer'; // Corregido: sube un nivel y entra a utils
+import { sanitizeProfileData } from '../utils/profileSanitizer';
 
 const stripEmoji = (str: string) => {
     if (!str) return str;

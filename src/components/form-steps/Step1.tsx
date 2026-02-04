@@ -1,13 +1,19 @@
-
 import React, { useState } from 'react';
 import { FormData } from '../../types';
 import { FormStepProps } from './FormStepProps';
 import { COUNTRIES, GENDERS, EMAIL_DOMAINS, COOKING_AFFINITY } from '../../constants';
-import { CITIES_BY_COUNTRY } from '../../data/cities';
 import { MaleIcon } from '../icons/MaleIcon';
 import { FemaleIcon } from '../icons/FemaleIcon';
 import { OtherGenderIcon } from '../icons/OtherGenderIcon';
 import { LockIcon } from '../icons/LockIcon';
+
+// Extendemos la interfaz para aceptar las props de búsqueda de ciudad
+interface ExtendedStep1Props extends FormStepProps {
+  cityOptions?: any[];
+  isSearchingCity?: boolean;
+  onSearchCity?: (query: string) => void;
+  onClearCityOptions?: () => void;
+}
 
 const GenderButton: React.FC<{
   label: string;
@@ -29,47 +35,57 @@ const GenderButton: React.FC<{
   </button>
 );
 
-
-const Step1: React.FC<FormStepProps> = ({ data, updateData, errors, hidePasswordFields, disableEmail }) => {
+const Step1: React.FC<ExtendedStep1Props> = ({ 
+  data, updateData, errors, hidePasswordFields, disableEmail,
+  cityOptions = [], isSearchingCity = false, onSearchCity, onClearCityOptions
+}) => {
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
+  const [localCityQuery, setLocalCityQuery] = useState(data.city || '');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     updateData(name as keyof FormData, value);
     if (name === 'country') {
-      // Reset city when country changes
       updateData('city', '');
+      setLocalCityQuery('');
     }
+  };
+
+  const handleCitySearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setLocalCityQuery(value);
+    // Solo buscamos en la API si hay al menos 3 caracteres
+    if (onSearchCity) onSearchCity(value);
+  };
+
+  const handleSelectCity = (city: any) => {
+    const cityName = `${city.name}, ${city.adminName1}`;
+    updateData('city', cityName);
+    setLocalCityQuery(cityName);
+    if (onClearCityOptions) onClearCityOptions();
   };
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    // Remove any character that is not a letter, space, hyphen, apostrophe, or accented character.
     const validValue = value.replace(/[^a-zA-ZÀ-ÿ\u00f1\u00d1\s'-]/g, '');
     updateData(name as keyof FormData, validValue);
   };
   
   const handleAgeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Prevents decimal points, scientific notation, and signs
-    if (['.', 'e', 'E', '+', '-'].includes(e.key)) {
-        e.preventDefault();
-    }
+    if (['.', 'e', 'E', '+', '-'].includes(e.key)) e.preventDefault();
   };
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     updateData('email', value);
-
     const atIndex = value.indexOf('@');
     if (atIndex > -1) {
       const textBeforeAt = value.substring(0, atIndex);
       const textAfterAt = value.substring(atIndex + 1);
-
       const filtered = EMAIL_DOMAINS
         .filter(domain => domain.startsWith(textAfterAt))
         .map(domain => `${textBeforeAt}@${domain}`);
-
       setEmailSuggestions(filtered);
       setShowEmailSuggestions(filtered.length > 0);
     } else {
@@ -128,44 +144,59 @@ const Step1: React.FC<FormStepProps> = ({ data, updateData, errors, hidePassword
             {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
         </div>
         <div>
-            <label className="block text-sm font-medium text-gray-700">País</label>
-            <select name="country" value={data.country} onChange={handleChange} className={`mt-1 block w-full px-3 py-2 bg-white border ${errors.country ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-bocado-green focus:border-bocado-green`}>
-                 <option value="">Selecciona...</option>
-                {COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
+            <label className="block text-sm font-medium text-gray-700">País (Código ISO: MX, ES, US...)</label>
+            <input 
+              type="text" 
+              name="country" 
+              value={data.country} 
+              onChange={handleChange} 
+              placeholder="Ej: MX"
+              maxLength={2}
+              className={`mt-1 block w-full px-3 py-2 bg-white border uppercase ${errors.country ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-bocado-green focus:border-bocado-green`} 
+            />
+            <p className="text-[10px] text-gray-400 mt-1 italic">Usa el código de 2 letras para mayor precisión.</p>
             {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
         </div>
         
-        <div className="md:col-span-2">
+        <div className="md:col-span-2 relative">
             <label className="block text-sm font-medium text-gray-700">Ciudad</label>
-            {data.country && data.country !== 'Otro' ? (
-              <select
-                name="city"
-                value={data.city}
-                onChange={handleChange}
-                disabled={!data.country}
-                className={`mt-1 block w-full px-3 py-2 bg-white border ${errors.city ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-bocado-green focus:border-bocado-green disabled:bg-gray-50`}
-              >
-                <option value="">Selecciona tu ciudad...</option>
-                {(CITIES_BY_COUNTRY[data.country] || []).map(city => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </select>
-            ) : (
+            <div className="relative">
               <input 
                 type="text" 
-                name="city" 
-                value={data.city} 
-                onChange={handleChange} 
+                value={localCityQuery}
+                onChange={handleCitySearchChange}
                 disabled={!data.country}
-                placeholder={data.country === 'Otro' ? 'Escribe tu ciudad...' : 'Selecciona un país primero'}
+                placeholder={data.country ? "Escribe para buscar tu ciudad..." : "Selecciona un país primero"}
                 className={`mt-1 block w-full px-3 py-2 bg-white border ${errors.city ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-bocado-green focus:border-bocado-green disabled:bg-gray-50`} 
               />
+              {isSearchingCity && (
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                   <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Lista de sugerencias de ciudades */}
+            {cityOptions.length > 0 && (
+              <div className="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-xl max-h-48 overflow-y-auto">
+                {cityOptions.map((city: any) => (
+                  <button
+                    key={city.geonameId}
+                    type="button"
+                    onClick={() => handleSelectCity(city)}
+                    className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-b border-gray-50 last:border-0 flex justify-between"
+                  >
+                    <span className="font-medium">{city.name}</span>
+                    <span className="text-gray-400 text-xs">{city.adminName1}</span>
+                  </button>
+                ))}
+              </div>
             )}
             {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
         </div>
       </div>
       
+      {/* Email y Password se mantienen igual */}
       <div className="relative">
         <label className="block text-sm font-medium text-gray-700">Email</label>
         <div className="relative">
@@ -201,7 +232,6 @@ const Step1: React.FC<FormStepProps> = ({ data, updateData, errors, hidePassword
           </div>
         )}
         {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
-        {disableEmail && <p className="text-xs text-gray-400 mt-1">El correo no se puede cambiar aquí. Ve a seguridad de la cuenta.</p>}
       </div>
 
       {!hidePasswordFields && (
@@ -209,9 +239,6 @@ const Step1: React.FC<FormStepProps> = ({ data, updateData, errors, hidePassword
           <div>
             <label className="block text-sm font-medium text-gray-700">Contraseña</label>
             <input type="password" name="password" value={data.password || ''} onChange={handleChange} className={`mt-1 block w-full px-3 py-2 bg-white border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-bocado-green focus:border-bocado-green`} />
-            <p className="text-xs text-gray-500 mt-1">
-              Mínimo 8 caracteres, una mayúscula, un número y un caracter especial (!@#$%^&*).
-            </p>
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
           </div>
           <div>
@@ -233,7 +260,6 @@ const Step1: React.FC<FormStepProps> = ({ data, updateData, errors, hidePassword
         </div>
         {errors.cookingAffinity && <p className="text-red-500 text-xs mt-1">{errors.cookingAffinity}</p>}
       </div>
-
     </div>
   );
 };
