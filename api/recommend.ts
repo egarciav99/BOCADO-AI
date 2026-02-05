@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'; // Importamos FieldValue aquí correctamente
 
 if (!getApps().length) {
   try {
@@ -30,13 +30,12 @@ export default async function handler(req: any, res: any) {
   try {
     const { userId, type, mealType, cookingTime, cravings, budget, currency, _id } = req.body;
     const interactionId = _id || `int_${Date.now()}`;
-    const now = new Date().toISOString();
 
     // 1. Perfil del Usuario
     const userSnap = await db.collection('users').doc(userId).get();
     const user = userSnap.exists ? userSnap.data() : {};
 
-    // 2. Airtable (con Try-Catch para que no mate la app)
+    // 2. Airtable (Safe mode)
     let safeIngredients = [];
     try {
       const airtableRes = await fetch(
@@ -49,7 +48,7 @@ export default async function handler(req: any, res: any) {
       console.error("⚠️ Airtable Falló:", e);
     }
 
-    // 3. Despensa (Safe mode)
+    // 3. Despensa
     let priorityList = [];
     try {
       const pantrySnap = await db.collection('user_pantry').where('userId', '==', userId).get();
@@ -59,7 +58,7 @@ export default async function handler(req: any, res: any) {
       );
     } catch (e) {}
 
-    // 4. Feedback (Safe mode - Si está vacío no pasa nada)
+    // 4. Feedback (Para evitar el bug de 1970, nos aseguramos de que el query sea sólido)
     let preferenceContext = "";
     try {
       const feedbackSnap = await db.collection('user_history')
@@ -67,11 +66,13 @@ export default async function handler(req: any, res: any) {
         .orderBy('createdAt', 'desc').limit(5).get();
       if (!feedbackSnap.empty) {
         const experiences = feedbackSnap.docs.map(doc => `- ${doc.data().itemId}: ${doc.data().rating}/5`).join('\n');
-        preferenceContext = `\nGUSTOS RECIENTES:\n${experiences}`;
+        preferenceContext = `\nGUSTOS RECIENTES DEL USUARIO:\n${experiences}`;
       }
-    } catch (e) {}
+    } catch (e) {
+        console.log("Info: No hay historial previo para este usuario.");
+    }
 
-    // 5. Prompt
+    // 5. Prompt con contexto de ciudad (GeoNames integration)
     const prompt = type === 'En casa' ? `
     Actúa como "Bocado", nutricionista. Genera 3 recetas de ${mealType}.
     META: ${user?.nutritionalGoal || 'Saludable'}. TIEMPO: ${cookingTime}min.
@@ -79,38 +80,42 @@ export default async function handler(req: any, res: any) {
     USA ESTO DE DESPENSA: ${priorityList.join(", ")}.${preferenceContext}
     Responde solo JSON: {"saludo_personalizado": "..", "recetas": []}` 
     : `
-    Actúa como "Bocado", guía en ${user?.city || 'su ciudad'}. Sugiere 5 restaurantes para: ${cravings}.
-    PRESUPUESTO: ${budget} en ${currency}.
+    Actúa como "Bocado", guía experto en la ciudad de ${user?.city || 'su ubicación'}. Sugiere 5 restaurantes reales para: ${cravings}.
+    PRESUPUESTO: ${budget} en moneda ${currency}.
     Responde solo JSON: {"saludo_personalizado": "..", "recomendaciones": []}`;
 
-    // 6. Gemini
+    // 6. Gemini 2.0 Flash
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const model = genAI.getGenerativeModel({ model: "models/gemini-2.0-flash-001" });
     const result = await model.generateContent(prompt);
     const responseText = result.response.text();
     
-    // Limpieza de JSON por si Gemini manda Markdown
-    const cleanedJson = responseText.substring(responseText.indexOf('{'), responseText.lastIndexOf('}') + 1);
-    const parsedData = JSON.parse(cleanedJson);
+    const startIdx = responseText.indexOf('{');
+    const endIdx = responseText.lastIndexOf('}');
+    const parsedData = JSON.parse(responseText.substring(startIdx, endIdx + 1));
 
-    // 7. Guardado (Importante: HistoryCol debe existir)
+    // 7. Guardado con FieldValue.serverTimestamp() corregido
     try {
       const historyCol = type === 'En casa' ? 'historial_recetas' : 'historial_recomendaciones';
-      await db.collection(historyCol).add({
+      
+      const docToSave = {
         user_id: userId,
-        fecha_creacion: now,
+        fecha_creacion: FieldValue.serverTimestamp(), // <--- ESTO ARREGLA EL BUG DE 1970
         ...parsedData
-      });
-      // Marcar interacción como procesada
+      };
+
+      await db.collection(historyCol).add(docToSave);
+      
+      // Marcar interacción procesada
       await db.collection('user_interactions').doc(interactionId).set({ procesado: true }, { merge: true });
     } catch (e) {
-      console.error("❌ Error al guardar historial:", e);
+      console.error("❌ Error Guardando:", e);
     }
 
     return res.status(200).json(parsedData);
 
   } catch (error: any) {
-    console.error("❌ CRITICAL ERROR:", error);
+    console.error("❌ ERROR:", error.message);
     return res.status(500).json({ error: error.message });
   }
 }
