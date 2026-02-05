@@ -5,6 +5,8 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { env } from '../environment/env';
 import { FormData } from '../types';
 import Step1 from './form-steps/Step1';
+import Step2 from './form-steps/Step2';
+import Step4 from './form-steps/Step4';
 
 const RegistrationFlow: React.FC<{ onComplete: () => void }> = ({ onComplete }) => {
   const [step, setStep] = useState(1);
