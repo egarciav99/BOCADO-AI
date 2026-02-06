@@ -11,59 +11,43 @@ import { ScaleIcon } from '../icons/ScaleIcon';
 import { RulerIcon } from '../icons/RulerIcon';
 
 const COUNTRIES_LIST = [
+  // Países más populares
   { name: 'México', code: 'MX' },
   { name: 'Estados Unidos', code: 'US' },
-  { name: 'Canadá', code: 'CA' },
-  { name: 'Argentina', code: 'AR' },
-  { name: 'Brasil', code: 'BR' },
-  { name: 'Chile', code: 'CL' },
-  { name: 'Colombia', code: 'CO' },
-  { name: 'Perú', code: 'PE' },
-  { name: 'Ecuador', code: 'EC' },
-  { name: 'Venezuela', code: 'VE' },
-  { name: 'Uruguay', code: 'UY' },
-  { name: 'Paraguay', code: 'PY' },
-  { name: 'Bolivia', code: 'BO' },
-  { name: 'Panamá', code: 'PA' },
-  { name: 'Costa Rica', code: 'CR' },
-  { name: 'Guatemala', code: 'GT' },
-  { name: 'Honduras', code: 'HN' },
-  { name: 'El Salvador', code: 'SV' },
-  { name: 'República Dominicana', code: 'DO' },
-  { name: 'Cuba', code: 'CU' },
   { name: 'España', code: 'ES' },
   { name: 'Francia', code: 'FR' },
-  { name: 'Alemania', code: 'DE' },
+  { name: 'Argentina', code: 'AR' },
+  { name: 'Colombia', code: 'CO' },
   { name: 'Italia', code: 'IT' },
-  { name: 'Portugal', code: 'PT' },
+  { name: 'Chile', code: 'CL' },
+  { name: 'Perú', code: 'PE' },
+  { name: 'Brasil', code: 'BR' },
   { name: 'Reino Unido', code: 'GB' },
-  { name: 'Irlanda', code: 'IE' },
-  { name: 'Países Bajos', code: 'NL' },
-  { name: 'Bélgica', code: 'BE' },
-  { name: 'Suiza', code: 'CH' },
-  { name: 'Austria', code: 'AT' },
-  { name: 'Suecia', code: 'SE' },
-  { name: 'Noruega', code: 'NO' },
-  { name: 'Dinamarca', code: 'DK' },
-  { name: 'Polonia', code: 'PL' },
-  { name: 'Marruecos', code: 'MA' },
-  { name: 'Egipto', code: 'EG' },
-  { name: 'Sudáfrica', code: 'ZA' },
-  { name: 'Nigeria', code: 'NG' },
-  { name: 'Kenia', code: 'KE' },
-  { name: 'Ghana', code: 'GH' },
-  { name: 'China', code: 'CN' },
-  { name: 'Japón', code: 'JP' },
-  { name: 'Corea del Sur', code: 'KR' },
-  { name: 'India', code: 'IN' },
-  { name: 'Indonesia', code: 'ID' },
-  { name: 'Tailandia', code: 'TH' },
-  { name: 'Vietnam', code: 'VN' },
-  { name: 'Filipinas', code: 'PH' },
-  { name: 'Israel', code: 'IL' },
-  { name: 'Emiratos Árabes Unidos', code: 'AE' },
+  { name: 'Alemania', code: 'DE' },
   { name: 'Australia', code: 'AU' },
-  { name: 'Nueva Zelanda', code: 'NZ' },
+  { name: 'Austria', code: 'AT' },
+  { name: 'Bélgica', code: 'BE' },
+  { name: 'Bolivia', code: 'BO' },
+  { name: 'Canadá', code: 'CA' },
+  { name: 'Costa Rica', code: 'CR' },
+  { name: 'Cuba', code: 'CU' },
+  { name: 'Dinamarca', code: 'DK' },
+  { name: 'Ecuador', code: 'EC' },
+  { name: 'El Salvador', code: 'SV' },
+  { name: 'Guatemala', code: 'GT' },
+  { name: 'Honduras', code: 'HN' },
+  { name: 'Irlanda', code: 'IE' },
+  { name: 'Japón', code: 'JP' },
+  { name: 'Nicaragua', code: 'NI' },
+  { name: 'Noruega', code: 'NO' },
+  { name: 'Países Bajos', code: 'NL' },
+  { name: 'Panamá', code: 'PA' },
+  { name: 'Paraguay', code: 'PY' },
+  { name: 'Portugal', code: 'PT' },
+  { name: 'Suecia', code: 'SE' },
+  { name: 'Suiza', code: 'CH' },
+  { name: 'Uruguay', code: 'UY' },
+  { name: 'Venezuela', code: 'VE' },
 ];
 
 
@@ -156,13 +140,15 @@ const Step1: React.FC<ExtendedStep1Props> = ({
     }
   };
 
-  // Handler para estatura - SOLO NÚMEROS ENTEROS (corregido)
+  // Handler para estatura - SOLO NÚMEROS ENTEROS (simplificado)
   const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Solo dígitos, máximo 3 caracteres (evita e, E, +, -, etc.)
+    console.log('Height input:', value); // Debug
+    
+    // Solo dígitos, máximo 3 caracteres
     if (value === '' || /^\d{0,3}$/.test(value)) {
       const num = parseInt(value);
-      if (value === '' || (num >= 30 && num <= 300)) {
+      if (value === '' || (num >= 0 && num <= 300)) {
         updateData('height', value);
       }
     }
@@ -238,7 +224,6 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           <input 
             type="text"
             inputMode="numeric"
-            pattern="[0-9]*"
             value={data.age} 
             onChange={handleAgeChange} 
             placeholder="25" 
@@ -274,8 +259,6 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               <RulerIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
               <input 
                 type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
                 value={data.height || ''} 
                 onChange={handleHeightChange} 
                 placeholder="175" 
