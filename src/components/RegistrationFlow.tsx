@@ -80,30 +80,27 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
     
     switch (currentStep) {
       case 1:
-        if (!formData.firstName) newErrors.firstName = 'Nombre(s) es requerido';
-        if (!formData.lastName) newErrors.lastName = 'Apellido(s) es requerido';
-        if (!formData.gender) newErrors.gender = 'Género es requerido';
-        if (!formData.age) newErrors.age = 'Edad es requerida';
-        if (!formData.country) newErrors.country = 'País es requerido';
-        if (!formData.city) newErrors.city = 'Ciudad es requerida';
-        if (!formData.email) newErrors.email = 'Email es requerido';
-        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email no es válido';
-        if (!formData.password) newErrors.password = 'Contraseña es requerida';
-        else if (formData.password.length < 8) newErrors.password = 'La contraseña debe tener al menos 8 caracteres.';
-        if (!formData.confirmPassword) newErrors.confirmPassword = 'Confirmar contraseña es requerido';
-        else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Las contraseñas no coinciden.';
+        if (!formData.firstName) newErrors.firstName = 'Nombre requerido';
+        if (!formData.lastName) newErrors.lastName = 'Apellido requerido';
+        if (!formData.gender) newErrors.gender = 'Género requerido';
+        if (!formData.age) newErrors.age = 'Edad requerida';
+        if (!formData.country) newErrors.country = 'País requerido';
+        if (!formData.city) newErrors.city = 'Ciudad requerida';
+        if (!formData.email) newErrors.email = 'Email requerido';
+        else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Email inválido';
+        if (!formData.password) newErrors.password = 'Contraseña requerida';
+        else if (formData.password.length < 8) newErrors.password = 'Mínimo 8 caracteres';
+        if (!formData.confirmPassword) newErrors.confirmPassword = 'Confirma contraseña';
+        else if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'No coinciden';
         break;
         
       case 2:
         if (formData.allergies.includes('Otro') && !formData.otherAllergies.trim()) {
-          newErrors.otherAllergies = 'Por favor, especifica tus otras alergias.';
+          newErrors.otherAllergies = 'Especifica tus alergias';
         }
         if (formData.nutritionalGoal.length === 0) {
-          newErrors.nutritionalGoal = 'Debes seleccionar al menos un objetivo nutricional.';
+          newErrors.nutritionalGoal = 'Selecciona al menos un objetivo';
         }
-        break;
-        
-      case 3:
         break;
     }
     
@@ -118,7 +115,6 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
     try {
       const { auth: authData, profile } = separateUserData(formData);
       
-      // 1. Crear usuario en Firebase Auth
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         authData.email,
@@ -126,11 +122,9 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       );
       const user = userCredential.user;
 
-      // 2. Actualizar displayName en Auth
       const displayName = `${authData.firstName} ${authData.lastName}`;
       await updateProfile(user, { displayName });
 
-      // 3. Preparar datos de perfil para Firestore
       const userProfile: UserProfile = {
         uid: user.uid,
         gender: profile.gender,
@@ -149,19 +143,16 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
         nutritionalGoal: profile.nutritionalGoal,
         cookingAffinity: profile.cookingAffinity,
         dislikedFoods: profile.dislikedFoods,
-        emailVerified: false, // <-- NUEVO: marca como no verificado
+        emailVerified: false,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
 
-      // 4. Guardar perfil en Firestore
       const userDocRef = doc(db, 'users', user.uid);
       await setDoc(userDocRef, userProfile);
 
-      // 5. ENVIAR CORREO DE VERIFICACIÓN <-- NUEVO
       await sendEmailVerification(user);
       
-      // 6. Guardar en localStorage y mostrar modal
       const fullProfileData = {
         ...userProfile,
         firstName: authData.firstName,
@@ -173,20 +164,20 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       localStorage.removeItem('bocado-form');
       
       setRegisteredEmail(authData.email);
-      setShowVerificationModal(true); // <-- NUEVO: mostrar modal en lugar de completar
+      setShowVerificationModal(true);
 
     } catch (error: any) {
       console.error("Error en registro:", error);
       
       if (error.code === 'auth/email-already-in-use') {
-        setSubmissionError("Este correo electrónico ya está registrado.");
+        setSubmissionError("Este correo ya está registrado");
         setCurrentStep(1);
       } else if (error.code === 'auth/weak-password') {
-        setSubmissionError("La contraseña es muy débil. Usa al menos 8 caracteres.");
+        setSubmissionError("Contraseña muy débil");
       } else if (error.code === 'auth/invalid-email') {
-        setSubmissionError("El formato del correo no es válido.");
+        setSubmissionError("Email inválido");
       } else {
-        setSubmissionError("No se pudo crear la cuenta. Por favor, inténtalo de nuevo.");
+        setSubmissionError("Error al crear cuenta. Intenta de nuevo.");
       }
     } finally {
       setIsLoading(false);
@@ -244,7 +235,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
     setCityOptions([]);
   };
 
-  const handleCountryChange = (code: string, name: string) => {
+  const handleCountryChange = (code: string) => {
     updateFormData('country', code);
     updateFormData('city', '');
   };
@@ -273,62 +264,83 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
     }
   };
 
-  // MODAL DE VERIFICACIÓN DE CORREO <-- NUEVO COMPONENTE
+  // Modal de verificación
   if (showVerificationModal) {
     return (
-      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-md text-center animate-fade-in">
-        <div className="w-16 h-16 bg-bocado-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-bocado-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
+      <div className="min-h-screen flex items-center justify-center px-4 py-6 pt-safe pb-safe">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm text-center animate-fade-in">
+          <div className="w-14 h-14 bg-bocado-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-bocado-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">¡Verifica tu correo!</h2>
+          <p className="text-sm text-bocado-gray mb-4">
+            Enviado a <strong className="text-bocado-text break-all">{registeredEmail}</strong>
+          </p>
+          <p className="text-xs text-bocado-gray/70 mb-6">
+            Revisa tu bandeja de entrada y spam.
+          </p>
+          <button
+            onClick={handleVerificationComplete}
+            className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+          >
+            Ya verifiqué mi correo
+          </button>
+          <p className="text-[10px] text-bocado-gray mt-4">
+            ¿No lo recibiste? Revisa spam o contacta soporte.
+          </p>
         </div>
-        <h2 className="text-2xl font-bold text-bocado-dark-green mb-2">¡Verifica tu correo!</h2>
-        <p className="text-gray-600 mb-4">
-          Hemos enviado un enlace de verificación a <strong>{registeredEmail}</strong>
-        </p>
-        <p className="text-sm text-gray-500 mb-6">
-          Por favor, revisa tu bandeja de entrada (y spam) y haz clic en el enlace para activar tu cuenta.
-        </p>
-        <button
-          onClick={handleVerificationComplete}
-          className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full shadow-lg hover:bg-bocado-green-light transition-colors"
-        >
-          Ya verifiqué mi correo
-        </button>
-        <p className="text-xs text-gray-400 mt-4">
-          ¿No recibiste el correo? Revisa tu carpeta de spam o contacta soporte.
-        </p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg w-full transition-all duration-500">
-      <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
-      <div className="mt-8">
-        {renderStep()}
-        {submissionError && <p className="text-red-500 text-sm mt-4 text-center">{submissionError}</p>}
-      </div>
-      <div className="mt-8 flex justify-between items-center">
-        <button
-          onClick={prevStep}
-          className={`px-6 py-2 rounded-full font-semibold transition-opacity ${currentStep === 1 ? 'opacity-0 cursor-default' : 'opacity-100 bg-gray-200 text-bocado-dark-gray hover:bg-gray-300'}`}
-          disabled={currentStep === 1 || isLoading}
-        >
-          Anterior
-        </button>
-        <button
-          onClick={nextStep}
-          className="bg-bocado-green text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-bocado-green-light transition-colors duration-300 disabled:bg-gray-400"
-          disabled={isLoading}
-        >
-          {isLoading ? 'Finalizando...' : (currentStep === TOTAL_STEPS ? 'Finalizar' : 'Siguiente')}
-        </button>
-      </div>
-      <div className="mt-6 text-center">
-        <button onClick={onGoHome} className="text-sm text-bocado-green font-semibold hover:underline" disabled={isLoading}>
+    <div className="min-h-screen flex flex-col px-4 py-6 pt-safe pb-safe overflow-y-auto no-scrollbar">
+      <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
+        <div className="mb-6">
+          <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+        </div>
+        
+        <div className="flex-1">
+          {renderStep()}
+          {submissionError && (
+            <p className="text-red-500 text-xs text-center bg-red-50 p-3 rounded-xl mt-4 animate-fade-in">
+              {submissionError}
+            </p>
+          )}
+        </div>
+
+        <div className="mt-6 space-y-3">
+          <div className="flex justify-between gap-3">
+            <button
+              onClick={prevStep}
+              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${
+                currentStep === 1 
+                  ? 'invisible' 
+                  : 'bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95'
+              }`}
+              disabled={isLoading}
+            >
+              Anterior
+            </button>
+            <button
+              onClick={nextStep}
+              className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray"
+              disabled={isLoading}
+            >
+              {isLoading ? '...' : (currentStep === TOTAL_STEPS ? 'Finalizar' : 'Siguiente')}
+            </button>
+          </div>
+          
+          <button 
+            onClick={onGoHome} 
+            className="w-full text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray transition-colors py-2"
+            disabled={isLoading}
+          >
             Volver al inicio
-        </button>
+          </button>
+        </div>
       </div>
     </div>
   );

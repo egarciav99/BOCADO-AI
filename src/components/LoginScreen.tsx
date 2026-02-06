@@ -25,8 +25,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const [view, setView] = useState<'login' | 'reset'>('login');
-  
-  // NUEVO: Estado para verificación de correo
   const [needsVerification, setNeedsVerification] = useState(false);
   const [unverifiedUser, setUnverifiedUser] = useState<any>(null);
 
@@ -47,7 +45,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
       const userCredential = await signInWithEmailAndPassword(auth, lowercasedEmail, password);
       const user = userCredential.user;
 
-      // NUEVO: Verificar si el correo está verificado
       if (!user.emailVerified) {
         setNeedsVerification(true);
         setUnverifiedUser(user);
@@ -55,14 +52,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
         return;
       }
 
-      // Si está verificado, continuar con el flujo normal
       const userDocRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
         const firestoreData = userDoc.data();
         
-        // Actualizar estado de verificación en Firestore
         if (!firestoreData.emailVerified) {
           await updateDoc(userDocRef, { emailVerified: true });
         }
@@ -106,7 +101,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
     }
   };
 
-  // NUEVO: Reenviar correo de verificación
   const handleResendVerification = async () => {
     if (!unverifiedUser) return;
     
@@ -121,7 +115,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
     }
   };
 
-  // NUEVO: Cerrar sesión del usuario no verificado
   const handleLogoutUnverified = () => {
     auth.signOut();
     setNeedsVerification(false);
@@ -142,7 +135,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
     setIsLoading(true);
     try {
       await sendPasswordResetEmail(auth, email);
-      setSuccessMessage(`Se ha enviado un correo a ${email} con instrucciones. Revisa tu bandeja de entrada.`);
+      setSuccessMessage(`Se ha enviado un correo a ${email} con instrucciones.`);
     } catch (err: any) {
       console.error("Error sending password reset email:", err.code);
       if (err.code === 'auth/user-not-found') {
@@ -183,44 +176,45 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
     setShowEmailSuggestions(false);
   };
 
-  // NUEVO: Vista de verificación de correo
   if (needsVerification && unverifiedUser) {
     return (
-      <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-md animate-fade-in text-center">
-        <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <h2 className="text-2xl font-bold text-bocado-dark-green mb-2">Correo no verificado</h2>
-        <p className="text-gray-600 mb-4">
-          Para continuar usando Bocado, debes verificar tu correo electrónico.
-        </p>
-        <p className="text-sm text-gray-500 mb-6">
-          Hemos enviado un enlace a <strong>{unverifiedUser.email}</strong>. Revisa tu bandeja de entrada y spam.
-        </p>
-        
-        {successMessage && (
-          <p className="text-green-600 text-sm mb-4 bg-green-50 p-2 rounded">{successMessage}</p>
-        )}
-        {error && (
-          <p className="text-red-500 text-sm mb-4 bg-red-50 p-2 rounded">{error}</p>
-        )}
+      <div className="min-h-screen flex items-center justify-center px-4 py-6 pt-safe pb-safe">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm text-center animate-fade-in">
+          <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <svg className="w-7 h-7 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">Correo no verificado</h2>
+          <p className="text-sm text-bocado-dark-gray mb-4">
+            Para continuar usando Bocado, debes verificar tu correo electrónico.
+          </p>
+          <p className="text-xs text-bocado-gray mb-6 break-all">
+            Hemos enviado un enlace a <strong>{unverifiedUser.email}</strong>
+          </p>
+          
+          {successMessage && (
+            <p className="text-green-600 text-xs mb-3 bg-green-50 p-2 rounded-lg">{successMessage}</p>
+          )}
+          {error && (
+            <p className="text-red-500 text-xs mb-3 bg-red-50 p-2 rounded-lg">{error}</p>
+          )}
 
-        <div className="space-y-3">
-          <button
-            onClick={handleResendVerification}
-            disabled={isLoading}
-            className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full shadow-lg hover:bg-bocado-green-light transition-colors disabled:bg-gray-400"
-          >
-            {isLoading ? 'Enviando...' : 'Reenviar correo de verificación'}
-          </button>
-          <button
-            onClick={handleLogoutUnverified}
-            className="w-full text-gray-500 font-medium py-2 hover:text-gray-700 transition-colors"
-          >
-            Usar otra cuenta
-          </button>
+          <div className="space-y-3">
+            <button
+              onClick={handleResendVerification}
+              disabled={isLoading}
+              className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray"
+            >
+              {isLoading ? 'Enviando...' : 'Reenviar correo'}
+            </button>
+            <button
+              onClick={handleLogoutUnverified}
+              className="w-full text-bocado-gray font-medium py-2 text-sm hover:text-bocado-dark-gray transition-colors"
+            >
+              Usar otra cuenta
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -229,13 +223,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
   const renderLoginView = () => (
     <>
       <div className="text-center mb-6">
-        <BocadoLogo className="w-full max-w-sm -my-16 mx-auto" />
-        <h1 className="text-2xl font-bold text-bocado-dark-green mt-4">Iniciar Sesión</h1>
-        <p className="text-bocado-dark-gray mt-1">Accede a tu perfil para ver tu información.</p>
+        <div className="w-32 h-32 mx-auto mb-2">
+          <BocadoLogo className="w-full h-full" />
+        </div>
+        <h1 className="text-xl font-bold text-bocado-dark-green">Iniciar Sesión</h1>
+        <p className="text-sm text-bocado-gray mt-1">Accede a tu perfil</p>
       </div>
-      <form onSubmit={handleLogin} className="space-y-6">
+      
+      <form onSubmit={handleLogin} className="space-y-4">
         <div className="relative">
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="email" className="block text-xs font-medium text-bocado-dark-gray mb-1">
             Correo Electrónico
           </label>
           <input
@@ -245,18 +242,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
             onChange={handleEmailChange}
             onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 150)}
             autoComplete="email"
-            className={`mt-1 block w-full px-3 py-2 bg-white border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-bocado-green focus:border-bocado-green`}
+            className={`w-full px-4 py-3 bg-bocado-background border-2 ${error ? 'border-red-400' : 'border-transparent'} rounded-xl text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all`}
             placeholder="tu@correo.com"
             disabled={isLoading}
           />
           {showEmailSuggestions && emailSuggestions.length > 0 && (
-            <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
-              <ul className="max-h-60 overflow-auto">
+            <div className="absolute z-10 w-full mt-1 bg-white border border-bocado-border rounded-xl shadow-lg overflow-hidden">
+              <ul className="max-h-48 overflow-auto">
                 {emailSuggestions.map((suggestion) => (
                   <li 
                     key={suggestion}
                     onMouseDown={() => handleEmailSuggestionClick(suggestion)}
-                    className="px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-gray-100"
+                    className="px-4 py-2 text-sm text-bocado-text cursor-pointer hover:bg-bocado-background active:bg-bocado-green/10"
                   >
                     {suggestion}
                   </li>
@@ -267,7 +264,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="password" className="block text-xs font-medium text-bocado-dark-gray mb-1">
             Contraseña
           </label>
           <input
@@ -275,31 +272,30 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
             id="password"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(''); }}
-            className={`mt-1 block w-full px-3 py-2 bg-white border ${error ? 'border-red-500' : 'border-gray-300'} rounded-md shadow-sm focus:outline-none focus:ring-bocado-green focus:border-bocado-green`}
-            placeholder="••••••••••"
+            className={`w-full px-4 py-3 bg-bocado-background border-2 ${error ? 'border-red-400' : 'border-transparent'} rounded-xl text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all`}
+            placeholder="••••••••"
             disabled={isLoading}
           />
         </div>
         
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
+        {error && <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">{error}</p>}
         
-        <div>
-          <button
-            type="submit"
-            className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-lg shadow-lg hover:bg-bocado-green-light transition-colors duration-300 disabled:bg-gray-400"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Cargando...' : 'Entrar'}
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray mt-2"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Cargando...' : 'Entrar'}
+        </button>
+        
         <div className="text-center">
-            <button
-                type="button"
-                onClick={() => setView('reset')}
-                className="text-sm text-bocado-green font-semibold hover:underline"
-            >
-                Olvidé mi contraseña
-            </button>
+          <button
+            type="button"
+            onClick={() => setView('reset')}
+            className="text-xs text-bocado-green font-semibold hover:underline"
+          >
+            Olvidé mi contraseña
+          </button>
         </div>
       </form>
     </>
@@ -308,13 +304,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
   const renderResetView = () => (
     <>
       <div className="text-center mb-6">
-        <BocadoLogo className="w-full max-w-sm -my-16 mx-auto" />
-        <h1 className="text-2xl font-bold text-bocado-dark-green mt-4">Restablecer Contraseña</h1>
-        <p className="text-bocado-dark-gray mt-1">Introduce tu correo para enviarte un enlace de recuperación.</p>
+        <div className="w-32 h-32 mx-auto mb-2">
+          <BocadoLogo className="w-full h-full" />
+        </div>
+        <h1 className="text-xl font-bold text-bocado-dark-green">Restablecer Contraseña</h1>
+        <p className="text-sm text-bocado-gray mt-1">Te enviaremos un enlace</p>
       </div>
-      <form onSubmit={handlePasswordReset} className="space-y-6">
+      
+      <form onSubmit={handlePasswordReset} className="space-y-4">
         <div>
-          <label htmlFor="reset-email" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="reset-email" className="block text-xs font-medium text-bocado-dark-gray mb-1">
             Correo Electrónico
           </label>
           <input
@@ -322,29 +321,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
             id="reset-email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-bocado-green focus:border-bocado-green"
+            className="w-full px-4 py-3 bg-bocado-background border-2 border-transparent rounded-xl text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all"
             placeholder="tu@correo.com"
             disabled={isLoading}
           />
         </div>
         
-        {error && <p className="text-red-500 text-sm text-center">{error}</p>}
-        {successMessage && <p className="text-green-600 text-sm text-center">{successMessage}</p>}
+        {error && <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">{error}</p>}
+        {successMessage && <p className="text-green-600 text-xs text-center bg-green-50 p-2 rounded-lg">{successMessage}</p>}
 
-        <div>
-          <button
-            type="submit"
-            className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-lg shadow-lg hover:bg-bocado-green-light transition-colors duration-300 disabled:bg-gray-400"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Enviando...' : 'Enviar enlace'}
-          </button>
-        </div>
+        <button
+          type="submit"
+          className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray mt-2"
+          disabled={isLoading}
+        >
+          {isLoading ? 'Enviando...' : 'Enviar enlace'}
+        </button>
+        
         <div className="text-center">
           <button
             type="button"
             onClick={() => setView('login')}
-            className="text-sm text-bocado-green font-semibold hover:underline"
+            className="text-xs text-bocado-green font-semibold hover:underline"
           >
             Volver a Iniciar Sesión
           </button>
@@ -354,13 +352,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
   );
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-md animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center px-4 py-6 pt-safe pb-safe">
+      <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
         {view === 'login' ? renderLoginView() : renderResetView()}
-        <div className="mt-6 text-center">
-            <button onClick={onGoHome} className="text-sm text-bocado-dark-gray hover:underline" disabled={isLoading}>
-                Volver al inicio
-            </button>
+        <div className="mt-6 text-center pt-4 border-t border-bocado-border">
+          <button 
+            onClick={onGoHome} 
+            className="text-xs text-bocado-gray hover:text-bocado-dark-gray transition-colors" 
+            disabled={isLoading}
+          >
+            ← Volver al inicio
+          </button>
         </div>
+      </div>
     </div>
   );
 };

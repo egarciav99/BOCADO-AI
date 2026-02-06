@@ -11,7 +11,6 @@ interface MealCardProps {
   onToggleSave: () => void;
 }
 
-// Emoji inteligente pero simple
 const getSmartEmoji = (title: string) => {
   const lower = title.toLowerCase();
 
@@ -36,7 +35,7 @@ const getDifficultyStyle = (difficulty: string) => {
     case 'Difícil':
       return 'bg-red-100 text-red-700';
     default:
-      return 'bg-gray-100 text-gray-600';
+      return 'bg-bocado-background text-bocado-dark-gray';
   }
 };
 
@@ -52,8 +51,7 @@ const MealCard: React.FC<MealCardProps> = ({
   const { recipe } = meal;
   const isRestaurant = recipe.difficulty === 'Restaurante';
   const emoji = getSmartEmoji(recipe.title);
-  const showSavings =
-    recipe.savingsMatch && recipe.savingsMatch !== 'Ninguno';
+  const showSavings = recipe.savingsMatch && recipe.savingsMatch !== 'Ninguno';
 
   const handleSaveClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -61,52 +59,46 @@ const MealCard: React.FC<MealCardProps> = ({
   };
 
   return (
-    <div className="group border border-gray-100 rounded-2xl bg-white transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
+    <div className="group border border-bocado-border rounded-2xl bg-white transition-all duration-200 hover:shadow-bocado active:scale-[0.99]">
       
       {/* HEADER */}
       <div
-        className="p-5 cursor-pointer"
+        className="p-4 cursor-pointer"
         onClick={() => setIsExpanded(!isExpanded)}
       >
-        <div className="flex justify-between items-start gap-4">
+        <div className="flex justify-between items-start gap-3">
           
           {/* Title Section */}
           <div className="flex gap-3 flex-1 min-w-0">
-            <span className="text-2xl shrink-0">{emoji}</span>
+            <span className="text-2xl shrink-0 leading-none">{emoji}</span>
 
-            <div className="min-w-0">
-              <h3 className="text-xl font-semibold text-gray-900 leading-tight group-hover:text-bocado-green transition-colors">
+            <div className="min-w-0 flex-1">
+              <h3 className="text-lg font-semibold text-bocado-text leading-tight group-hover:text-bocado-green transition-colors line-clamp-2">
                 {recipe.title}
               </h3>
 
               <div className="flex flex-wrap gap-2 mt-2 text-xs">
                 {!isRestaurant && (
-                  <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md">
+                  <span className="px-2 py-1 bg-bocado-background text-bocado-dark-gray rounded-lg font-medium">
                     ⏱ {recipe.time}
                   </span>
                 )}
 
                 {recipe.calories !== 'N/A' && (
-                  <span className="px-2 py-1 bg-gray-100 text-gray-600 rounded-md">
-                    🔥 {recipe.calories} kcal
+                  <span className="px-2 py-1 bg-bocado-background text-bocado-dark-gray rounded-lg font-medium">
+                    🔥 {recipe.calories}
                   </span>
                 )}
 
-                {!isRestaurant &&
-                  recipe.difficulty &&
-                  recipe.difficulty !== 'N/A' && (
-                    <span
-                      className={`px-2 py-1 rounded-md ${getDifficultyStyle(
-                        recipe.difficulty
-                      )}`}
-                    >
-                      {recipe.difficulty}
-                    </span>
-                  )}
+                {!isRestaurant && recipe.difficulty && recipe.difficulty !== 'N/A' && (
+                  <span className={`px-2 py-1 rounded-lg font-medium ${getDifficultyStyle(recipe.difficulty)}`}>
+                    {recipe.difficulty}
+                  </span>
+                )}
               </div>
 
               {showSavings && (
-                <span className="inline-block mt-2 text-xs font-medium text-bocado-green">
+                <span className="inline-block mt-2 text-xs font-medium text-bocado-green bg-bocado-green/10 px-2 py-1 rounded-lg">
                   ✨ Usa ingredientes que ya tienes
                 </span>
               )}
@@ -114,21 +106,19 @@ const MealCard: React.FC<MealCardProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="flex flex-col items-center gap-2 shrink-0">
+          <div className="flex flex-col items-center gap-1 shrink-0">
             <button
               onClick={handleSaveClick}
               disabled={isSaving}
-              className={`p-2 rounded-full transition ${
-                isSaved
-                  ? 'text-red-500'
-                  : 'text-gray-300 hover:text-red-400'
+              className={`p-2 rounded-full transition-colors active:scale-90 ${
+                isSaved ? 'text-red-500' : 'text-bocado-gray hover:text-red-400'
               }`}
             >
               <HeartIcon className="w-6 h-6" filled={isSaved} />
             </button>
 
             <ChevronDownIcon
-              className={`w-5 h-5 text-gray-400 transition-transform duration-300 ${
+              className={`w-5 h-5 text-bocado-gray transition-transform duration-200 ${
                 isExpanded ? 'rotate-180' : ''
               }`}
             />
@@ -138,21 +128,21 @@ const MealCard: React.FC<MealCardProps> = ({
 
       {/* EXPANDED CONTENT */}
       {isExpanded && (
-        <div className="px-5 pb-5 pt-3 border-t border-gray-100 space-y-5 animate-fade-in">
+        <div className="px-4 pb-4 pt-2 border-t border-bocado-border space-y-4 animate-fade-in">
           
           {/* Ingredients */}
           <div>
-            <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">
+            <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
               {isRestaurant ? 'Detalles' : 'Ingredientes'}
             </h4>
 
-            <ul className="space-y-2">
+            <ul className="space-y-1.5">
               {recipe.ingredients.map((ing, index) => (
                 <li
                   key={index}
-                  className="text-sm text-gray-700 flex items-start gap-3"
+                  className="text-sm text-bocado-text flex items-start gap-2"
                 >
-                  <span className="w-1.5 h-1.5 bg-bocado-green rounded-full mt-2 shrink-0"></span>
+                  <span className="w-1.5 h-1.5 bg-bocado-green rounded-full mt-1.5 shrink-0"></span>
                   <span className="leading-relaxed">{ing}</span>
                 </li>
               ))}
@@ -162,15 +152,15 @@ const MealCard: React.FC<MealCardProps> = ({
           {/* Instructions */}
           {recipe.instructions && recipe.instructions.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold text-gray-800 uppercase tracking-wide mb-3">
+              <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
                 {isRestaurant ? 'Recomendación' : 'Preparación'}
               </h4>
 
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {recipe.instructions.map((step, i) => (
-                  <div key={i} className="flex gap-3 text-sm text-gray-700">
+                  <div key={i} className="flex gap-2 text-sm text-bocado-text">
                     {!isRestaurant && (
-                      <span className="text-bocado-green font-semibold">
+                      <span className="text-bocado-green font-bold shrink-0">
                         {i + 1}.
                       </span>
                     )}
@@ -184,7 +174,7 @@ const MealCard: React.FC<MealCardProps> = ({
           {/* CTA */}
           <button
             onClick={() => setShowFeedback(true)}
-            className="w-full py-3 rounded-xl bg-bocado-dark-green text-white font-semibold text-sm transition hover:opacity-90 active:scale-[0.98]"
+            className="w-full py-3 rounded-xl bg-bocado-dark-green text-white font-semibold text-sm shadow-bocado hover:bg-bocado-green active:scale-[0.98] transition-all"
           >
             {isRestaurant ? '📍 Fui al lugar' : '🍳 La preparé'}
           </button>

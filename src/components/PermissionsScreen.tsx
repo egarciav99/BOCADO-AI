@@ -10,47 +10,54 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
   const [agreed, setAgreed] = useState(false);
 
   return (
-    <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg w-full max-w-lg animate-fade-in">
-      <div className="text-center mb-6">
-        <LockIcon className="w-16 h-16 text-bocado-green mx-auto mb-4" />
-        <h1 className="text-2xl font-bold text-bocado-dark-green">Tu Privacidad es Importante</h1>
-        <p className="text-bocado-dark-gray mt-2">Antes de empezar, necesitamos tu consentimiento.</p>
-      </div>
-      <div className="text-sm text-gray-700 space-y-4">
-        <p>
-          En Bocado, usamos la información que nos proporcionas (como tus hábitos, objetivos y condiciones de salud) con un único propósito: <strong>crear recomendaciones nutricionales personalizadas y perfectas para ti.</strong>
-        </p>
-        <p>
-          <strong>Tu confianza es nuestra prioridad.</strong> Nos comprometemos a proteger tus datos. No serán compartidos con terceros y solo se utilizarán para mejorar tu experiencia dentro de la aplicación.
-        </p>
-      </div>
-      <div className="mt-8">
-        <label className="flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={() => setAgreed(!agreed)}
-            className="h-5 w-5 rounded border-gray-300 text-bocado-green focus:ring-bocado-green-light"
-          />
-          <span className="ml-3 text-sm text-gray-700 select-none">
-            He leído y acepto el uso de mis datos para la personalización de mi experiencia en Bocado.
-          </span>
-        </label>
-      </div>
-      <div className="mt-8 flex flex-col sm:flex-row-reverse gap-4">
-        <button
-          onClick={onAccept}
-          disabled={!agreed}
-          className="w-full bg-bocado-green text-white font-bold py-3 px-8 rounded-full shadow-md hover:bg-bocado-green-light transition-colors duration-300 disabled:bg-gray-400 disabled:cursor-not-allowed"
-        >
-          Continuar
-        </button>
-        <button
-          onClick={onGoHome}
-          className="w-full bg-gray-200 text-bocado-dark-gray font-semibold py-3 px-8 rounded-full hover:bg-gray-300 transition-colors"
-        >
-          Volver
-        </button>
+    <div className="min-h-screen flex items-center justify-center px-4 py-6 pt-safe pb-safe">
+      <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
+        <div className="text-center mb-6">
+          <div className="w-14 h-14 bg-bocado-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LockIcon className="w-7 h-7 text-bocado-green" />
+          </div>
+          <h1 className="text-xl font-bold text-bocado-dark-green">Tu Privacidad</h1>
+          <p className="text-sm text-bocado-gray mt-1">Antes de empezar, necesitamos tu consentimiento.</p>
+        </div>
+        
+        <div className="text-sm text-bocado-text space-y-3 bg-bocado-background p-4 rounded-xl">
+          <p>
+            Usamos tu información <strong>solo para crear recomendaciones personalizadas</strong>.
+          </p>
+          <p className="text-bocado-gray">
+            Tus datos no se comparten con terceros y están protegidos.
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={() => setAgreed(!agreed)}
+              className="mt-0.5 h-5 w-5 rounded border-bocado-border text-bocado-green focus:ring-bocado-green/20"
+            />
+            <span className="text-xs text-bocado-text leading-relaxed select-none">
+              Acepto el uso de mis datos para personalizar mi experiencia en Bocado.
+            </span>
+          </label>
+        </div>
+
+        <div className="mt-6 space-y-3">
+          <button
+            onClick={onAccept}
+            disabled={!agreed}
+            className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray disabled:cursor-not-allowed"
+          >
+            Continuar
+          </button>
+          <button
+            onClick={onGoHome}
+            className="w-full bg-transparent text-bocado-gray font-semibold py-3 px-6 rounded-full text-sm hover:text-bocado-dark-gray transition-colors"
+          >
+            Volver
+          </button>
+        </div>
       </div>
     </div>
   );

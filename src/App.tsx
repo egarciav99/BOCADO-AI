@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { onAuthStateChanged } from 'firebase/auth'; // Importación necesaria
-import { auth } from './firebaseConfig'; // Importación necesaria
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from './firebaseConfig';
 import HomeScreen from './components/HomeScreen';
 import RegistrationFlow from './components/RegistrationFlow';
 import ConfirmationScreen from './components/ConfirmationScreen';
@@ -15,29 +15,28 @@ function App() {
   const [currentScreen, setCurrentScreen] = useState<AppScreen>('home');
   const [planId, setPlanId] = useState<string | null>(null);
   const [isNewUser, setIsNewUser] = useState(false);
-  const [initializing, setInitializing] = useState(true); // Para no mostrar el home mientras carga el auth
+  const [initializing, setInitializing] = useState(true);
 
-  // --- NUEVO: useEffect para Persistencia de Sesión ---
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // Si hay usuario, vamos a la app
         setCurrentScreen('recommendation');
       } else {
-        // Si no hay usuario, vamos al home
         setCurrentScreen('home');
       }
       setInitializing(false);
     });
 
-    return () => unsubscribe(); // Limpieza del listener
+    return () => unsubscribe();
   }, []);
 
-  // Mientras Firebase verifica la sesión, mostramos un estado de carga simple
   if (initializing) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-bocado-background">
-        <div className="animate-pulse text-bocado-green font-bold">Cargando Bocado IA...</div>
+      <div className="min-h-screen w-full flex items-center justify-center bg-bocado-cream">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-bocado-green font-bold animate-pulse">Cargando Bocado...</p>
+        </div>
       </div>
     );
   }
@@ -72,11 +71,7 @@ function App() {
                     setCurrentScreen('plan');
                   }}
                   onTutorialFinished={() => setIsNewUser(false)}
-                  onLogoutComplete={() => {
-                    // El listener de onAuthStateChanged se encargará de mandar a 'home'
-                    // pero forzamos aquí por seguridad visual
-                    setCurrentScreen('home');
-                  }}
+                  onLogoutComplete={() => setCurrentScreen('home')}
                />;
       case 'plan':
         return <PlanScreen planId={planId!} onStartNewPlan={() => {
@@ -94,10 +89,15 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center p-0 sm:p-4 font-sans bg-bocado-background">
-      <main className="w-full max-w-2xl mx-auto bg-bocado-background">
+    <div className="min-h-screen bg-bocado-cream flex justify-center items-start md:items-center md:p-8">
+      {/* Contenedor que simula un móvil en desktop */}
+      <div className="w-full min-h-screen bg-bocado-background 
+                      md:max-w-[480px] md:max-h-[900px] md:min-h-[800px]
+                      md:rounded-[2.5rem] md:shadow-bocado-lg 
+                      md:border-8 md:border-white
+                      overflow-hidden relative flex flex-col">
         {renderScreen()}
-      </main>
+      </div>
     </div>
   );
 }

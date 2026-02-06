@@ -11,45 +11,63 @@ import { ScaleIcon } from '../icons/ScaleIcon';
 import { RulerIcon } from '../icons/RulerIcon';
 
 const COUNTRIES_LIST = [
-  // Países más populares
   { name: 'México', code: 'MX' },
-  { name: 'Estados Unidos', code: 'US' },
   { name: 'España', code: 'ES' },
-  { name: 'Francia', code: 'FR' },
-  { name: 'Argentina', code: 'AR' },
   { name: 'Colombia', code: 'CO' },
-  { name: 'Italia', code: 'IT' },
-  { name: 'Chile', code: 'CL' },
-  { name: 'Perú', code: 'PE' },
-  { name: 'Brasil', code: 'BR' },
-  { name: 'Reino Unido', code: 'GB' },
-  { name: 'Alemania', code: 'DE' },
-  { name: 'Australia', code: 'AU' },
-  { name: 'Austria', code: 'AT' },
-  { name: 'Bélgica', code: 'BE' },
-  { name: 'Bolivia', code: 'BO' },
+  { name: 'Estados Unidos', code: 'US' },
   { name: 'Canadá', code: 'CA' },
-  { name: 'Costa Rica', code: 'CR' },
-  { name: 'Cuba', code: 'CU' },
-  { name: 'Dinamarca', code: 'DK' },
+  { name: 'Argentina', code: 'AR' },
+  { name: 'Brasil', code: 'BR' },
+  { name: 'Chile', code: 'CL' },
+  { name: 'Colombia', code: 'CO' },
+  { name: 'Perú', code: 'PE' },
+  { name: 'Estados Unidos', code: 'US' },
   { name: 'Ecuador', code: 'EC' },
-  { name: 'El Salvador', code: 'SV' },
+  { name: 'Venezuela', code: 'VE' },
+  { name: 'Uruguay', code: 'UY' },
+  { name: 'Paraguay', code: 'PY' },
+  { name: 'Bolivia', code: 'BO' },
+  { name: 'Panamá', code: 'PA' },
+  { name: 'Costa Rica', code: 'CR' },
   { name: 'Guatemala', code: 'GT' },
   { name: 'Honduras', code: 'HN' },
-  { name: 'Irlanda', code: 'IE' },
-  { name: 'Japón', code: 'JP' },
-  { name: 'Nicaragua', code: 'NI' },
-  { name: 'Noruega', code: 'NO' },
-  { name: 'Países Bajos', code: 'NL' },
-  { name: 'Panamá', code: 'PA' },
-  { name: 'Paraguay', code: 'PY' },
+  { name: 'El Salvador', code: 'SV' },
+  { name: 'República Dominicana', code: 'DO' },
+  { name: 'Cuba', code: 'CU' },
+  { name: 'España', code: 'ES' },
+  { name: 'Francia', code: 'FR' },
+  { name: 'Alemania', code: 'DE' },
+  { name: 'Italia', code: 'IT' },
   { name: 'Portugal', code: 'PT' },
-  { name: 'Suecia', code: 'SE' },
+  { name: 'Reino Unido', code: 'GB' },
+  { name: 'Irlanda', code: 'IE' },
+  { name: 'Países Bajos', code: 'NL' },
+  { name: 'Bélgica', code: 'BE' },
   { name: 'Suiza', code: 'CH' },
-  { name: 'Uruguay', code: 'UY' },
-  { name: 'Venezuela', code: 'VE' },
+  { name: 'Austria', code: 'AT' },
+  { name: 'Suecia', code: 'SE' },
+  { name: 'Noruega', code: 'NO' },
+  { name: 'Dinamarca', code: 'DK' },
+  { name: 'Polonia', code: 'PL' },
+  { name: 'Marruecos', code: 'MA' },
+  { name: 'Egipto', code: 'EG' },
+  { name: 'Sudáfrica', code: 'ZA' },
+  { name: 'Nigeria', code: 'NG' },
+  { name: 'Kenia', code: 'KE' },
+  { name: 'Ghana', code: 'GH' },
+  { name: 'China', code: 'CN' },
+  { name: 'Japón', code: 'JP' },
+  { name: 'Corea del Sur', code: 'KR' },
+  { name: 'India', code: 'IN' },
+  { name: 'Indonesia', code: 'ID' },
+  { name: 'Tailandia', code: 'TH' },
+  { name: 'Vietnam', code: 'VN' },
+  { name: 'Filipinas', code: 'PH' },
+  { name: 'Israel', code: 'IL' },
+  { name: 'Emiratos Árabes Unidos', code: 'AE' },
+  { name: 'Australia', code: 'AU' },
+  { name: 'Nueva Zelanda', code: 'NZ' },
 ];
-
 
 interface ExtendedStep1Props extends FormStepProps {
   cityOptions?: any[];
@@ -68,10 +86,10 @@ const GenderButton: React.FC<{
   <button
     type="button"
     onClick={onClick}
-    className={`flex-1 flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 transition-all duration-200 ${
+    className={`flex-1 flex flex-col items-center justify-center gap-1 p-3 rounded-xl border-2 transition-all duration-200 active:scale-95 ${
       isSelected
-        ? 'bg-bocado-green text-white border-bocado-green shadow-md'
-        : 'bg-white border-gray-100 hover:border-bocado-green/50 text-gray-600'
+        ? 'bg-bocado-green text-white border-bocado-green shadow-sm'
+        : 'bg-white border-bocado-border text-bocado-dark-gray hover:border-bocado-green/50'
     }`}
   >
     {icon}
@@ -119,10 +137,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
     updateData(name as keyof FormData, validValue);
   };
 
-  // Handler para edad - solo números enteros
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Solo dígitos, máximo 3 caracteres
     if (value === '' || (/^\d{0,3}$/.test(value))) {
       const num = parseInt(value);
       if (value === '' || (num >= 1 && num <= 120)) {
@@ -131,21 +147,15 @@ const Step1: React.FC<ExtendedStep1Props> = ({
     }
   };
 
-  // Handler para peso - números con decimal opcional
   const handleWeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    // Máximo 3 enteros y 1 decimal (ej: 85.5)
     if (value === '' || /^\d{0,3}(\.\d{0,1})?$/.test(value)) {
       updateData('weight', value);
     }
   };
 
-  // Handler para estatura - SOLO NÚMEROS ENTEROS (simplificado)
   const handleHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    console.log('Height input:', value); // Debug
-    
-    // Solo dígitos, máximo 3 caracteres
     if (value === '' || /^\d{0,3}$/.test(value)) {
       const num = parseInt(value);
       if (value === '' || (num >= 0 && num <= 300)) {
@@ -172,135 +182,142 @@ const Step1: React.FC<ExtendedStep1Props> = ({
   };
 
   return (
-    <div className="space-y-5 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       {/* Nombre y Apellido */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-bold text-bocado-dark-green mb-1 ml-1 uppercase">Nombre(s) *</label>
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Nombre *</label>
           <input 
             type="text" 
             name="firstName" 
             value={data.firstName} 
             onChange={handleNameChange} 
-            placeholder="Ej. Juan" 
-            className={`w-full px-4 py-3 rounded-xl border-2 transition-all ${errors.firstName ? 'border-red-300 bg-red-50' : 'border-gray-100 focus:border-bocado-green focus:outline-none'}`} 
+            placeholder="Juan" 
+            className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+              errors.firstName ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
+            }`} 
           />
-          {errors.firstName && <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>}
+          {errors.firstName && <p className="text-red-500 text-[10px] mt-1">{errors.firstName}</p>}
         </div>
         <div>
-          <label className="block text-xs font-bold text-bocado-dark-green mb-1 ml-1 uppercase">Apellido(s) *</label>
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Apellido *</label>
           <input 
             type="text" 
             name="lastName" 
             value={data.lastName} 
             onChange={handleNameChange} 
-            placeholder="Ej. Pérez" 
-            className={`w-full px-4 py-3 rounded-xl border-2 transition-all ${errors.lastName ? 'border-red-300 bg-red-50' : 'border-gray-100 focus:border-bocado-green focus:outline-none'}`} 
+            placeholder="Pérez" 
+            className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+              errors.lastName ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
+            }`} 
           />
-          {errors.lastName && <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>}
+          {errors.lastName && <p className="text-red-500 text-[10px] mt-1">{errors.lastName}</p>}
         </div>
       </div>
 
       {/* Género y Edad */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-bold text-bocado-dark-green mb-2 ml-1 uppercase text-center">Género *</label>
-          <div className="flex gap-3">
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center">Género *</label>
+          <div className="flex gap-2">
             {['Mujer', 'Hombre', 'Otro'].map(gender => (
               <GenderButton 
                 key={gender}
                 label={gender}
-                icon={gender === 'Mujer' ? <FemaleIcon className="w-5 h-5"/> : gender === 'Hombre' ? <MaleIcon className="w-5 h-5"/> : <OtherGenderIcon className="w-5 h-5"/>}
+                icon={gender === 'Mujer' ? <FemaleIcon className="w-4 h-4"/> : gender === 'Hombre' ? <MaleIcon className="w-4 h-4"/> : <OtherGenderIcon className="w-4 h-4"/>}
                 isSelected={data.gender === gender}
                 onClick={() => updateData('gender', gender)}
               />
             ))}
           </div>
-          {errors.gender && <p className="text-red-500 text-xs mt-1 text-center">{errors.gender}</p>}
+          {errors.gender && <p className="text-red-500 text-[10px] mt-1 text-center">{errors.gender}</p>}
         </div>
 
         <div>
-          <label className="block text-xs font-bold text-bocado-dark-green mb-1 ml-1 uppercase">Edad *</label>
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Edad *</label>
           <input 
             type="text"
             inputMode="numeric"
             value={data.age} 
             onChange={handleAgeChange} 
             placeholder="25" 
-            className={`w-full px-4 py-3 rounded-xl border-2 transition-all text-center ${errors.age ? 'border-red-300 bg-red-50' : 'border-gray-100 focus:border-bocado-green focus:outline-none'}`} 
+            className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm text-center transition-all ${
+              errors.age ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
+            }`} 
           />
-          {errors.age && <p className="text-red-500 text-xs mt-1">{errors.age}</p>}
+          {errors.age && <p className="text-red-500 text-[10px] mt-1">{errors.age}</p>}
         </div>
       </div>
 
-      {/* PESO Y ESTATURA - OPCIONALES */}
-      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-        <p className="text-xs font-bold text-gray-500 mb-3 uppercase tracking-wide">Datos corporales (opcional)</p>
-        <div className="grid grid-cols-2 gap-4">
+      {/* Datos corporales */}
+      <div className="bg-bocado-background p-3 rounded-xl border border-bocado-border">
+        <p className="text-[10px] font-bold text-bocado-gray mb-2 uppercase tracking-wider">Datos corporales (opcional)</p>
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 ml-1">Peso (kg)</label>
+            <label className="block text-[10px] font-medium text-bocado-dark-gray mb-1">Peso (kg)</label>
             <div className="relative">
-              <ScaleIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <ScaleIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
                 type="text"
                 inputMode="decimal"
                 value={data.weight || ''} 
                 onChange={handleWeightChange} 
-                placeholder="70.5" 
-                className="w-full pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 focus:border-bocado-green focus:outline-none text-sm"
+                placeholder="70" 
+                className="w-full pl-8 pr-6 py-2 rounded-lg border border-bocado-border bg-white text-sm focus:outline-none focus:border-bocado-green"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">kg</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-bocado-gray font-medium">kg</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1 ml-1">Estatura (cm)</label>
+            <label className="block text-[10px] font-medium text-bocado-dark-gray mb-1">Estatura (cm)</label>
             <div className="relative">
-              <RulerIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <RulerIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
                 type="text"
                 value={data.height || ''} 
                 onChange={handleHeightChange} 
                 placeholder="175" 
-                className="w-full pl-9 pr-8 py-2.5 rounded-lg border border-gray-200 focus:border-bocado-green focus:outline-none text-sm"
+                className="w-full pl-8 pr-6 py-2 rounded-lg border border-bocado-border bg-white text-sm focus:outline-none focus:border-bocado-green"
               />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400 font-medium">cm</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-bocado-gray font-medium">cm</span>
             </div>
           </div>
         </div>
-        <p className="text-[10px] text-gray-400 mt-2 leading-tight">
-          Estos datos nos ayudan a personalizar mejor tus planes nutricionales. Puedes completarlos más tarde en tu perfil.
-        </p>
       </div>
 
       {/* País y Ciudad */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="space-y-3">
         <div>
-          <label className="block text-xs font-bold text-bocado-dark-green mb-1 ml-1 uppercase">País *</label>
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">País *</label>
           <div className="relative">
-            <LocationIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <LocationIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
             <select 
               value={data.country} 
               onChange={handleCountrySelect} 
-              className={`w-full pl-10 pr-4 py-3 rounded-xl border-2 appearance-none bg-white transition-all ${errors.country ? 'border-red-300 bg-red-50' : 'border-gray-100 focus:border-bocado-green focus:outline-none'}`}
+              className={`w-full pl-9 pr-4 py-2.5 rounded-xl border-2 appearance-none bg-white text-sm transition-all ${
+                errors.country ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
+              }`}
             >
               <option value="">Selecciona...</option>
               {COUNTRIES_LIST.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
             </select>
           </div>
-          {errors.country && <p className="text-red-500 text-xs mt-1">{errors.country}</p>}
+          {errors.country && <p className="text-red-500 text-[10px] mt-1">{errors.country}</p>}
         </div>
 
         <div className="relative">
-          <label className="block text-xs font-bold text-bocado-dark-green mb-1 ml-1 uppercase">Ciudad *</label>
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Ciudad *</label>
           <div className="relative">
             <input 
               type="text" 
               value={localCityQuery}
               onChange={handleCitySearchChange}
               disabled={!data.country}
-              placeholder={data.country ? "Escribe tu ciudad..." : "Elige un país"}
-              className={`w-full px-4 py-3 rounded-xl border-2 transition-all ${errors.city ? 'border-red-300 bg-red-50' : 'border-gray-100 focus:border-bocado-green focus:outline-none disabled:bg-gray-50'}`} 
+              placeholder={data.country ? "Tu ciudad..." : "Elige país primero"}
+              className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+                errors.city ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
+              } ${!data.country ? 'bg-bocado-background' : 'bg-white'}`} 
             />
             {isSearchingCity && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -310,78 +327,86 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           </div>
 
           {cityOptions.length > 0 && (
-            <div className="absolute z-50 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto">
+            <div className="absolute z-50 w-full mt-1 bg-white border border-bocado-border rounded-xl shadow-bocado max-h-40 overflow-y-auto">
               {cityOptions.map((city: any) => (
                 <button
                   key={city.geonameId}
                   type="button"
                   onClick={() => handleSelectCity(city)}
-                  className="w-full text-left px-4 py-3 text-sm hover:bg-bocado-green/5 border-b border-gray-50 last:border-0 flex justify-between items-center"
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-bocado-background border-b border-bocado-border/50 last:border-0 flex justify-between items-center active:bg-bocado-green/10"
                 >
-                  <span className="font-bold text-gray-700">{city.name}</span>
-                  <span className="text-gray-400 text-[10px] uppercase">{city.adminName1}</span>
+                  <span className="font-medium text-bocado-text">{city.name}</span>
+                  <span className="text-bocado-gray text-[10px]">{city.adminName1}</span>
                 </button>
               ))}
             </div>
           )}
-          {errors.city && <p className="text-red-500 text-xs mt-1">{errors.city}</p>}
+          {errors.city && <p className="text-red-500 text-[10px] mt-1">{errors.city}</p>}
         </div>
       </div>
       
       {/* Email */}
       <div className="relative">
-        <label className="block text-xs font-bold text-bocado-dark-green mb-1 ml-1 uppercase">Email *</label>
+        <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Email *</label>
         <input 
           type="email" 
           value={data.email} 
           onChange={handleEmailChange}
           onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 200)}
           disabled={disableEmail}
-          className={`w-full px-4 py-3 rounded-xl border-2 transition-all ${errors.email ? 'border-red-300 bg-red-50' : 'border-gray-100 focus:border-bocado-green focus:outline-none'} ${disableEmail ? 'bg-gray-100' : ''}`} 
+          className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+            errors.email ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
+          } ${disableEmail ? 'bg-bocado-background' : 'bg-white'}`} 
         />
         {showEmailSuggestions && emailSuggestions.length > 0 && (
-          <div className="absolute z-10 w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-lg">
+          <div className="absolute z-10 w-full mt-1 bg-white border border-bocado-border rounded-xl shadow-bocado overflow-hidden">
             {emailSuggestions.map((s) => (
               <div 
                 key={s} 
                 onClick={() => { updateData('email', s); setShowEmailSuggestions(false); }} 
-                className="px-4 py-2 text-sm hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-0"
+                className="px-3 py-2 text-sm hover:bg-bocado-background cursor-pointer border-b border-bocado-border/50 last:border-0 text-bocado-text"
               >
                 {s}
               </div>
             ))}
           </div>
         )}
-        {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+        {errors.email && <p className="text-red-500 text-[10px] mt-1">{errors.email}</p>}
       </div>
 
       {/* Password */}
       {!hidePasswordFields && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs font-bold text-bocado-dark-green mb-1 ml-1 uppercase">Contraseña *</label>
+            <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Contraseña *</label>
             <div className="relative">
-              <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
                 type="password" 
                 name="password" 
                 value={data.password || ''} 
                 onChange={(e) => updateData('password', e.target.value)} 
-                className={`w-full pl-10 pr-4 py-3 rounded-xl border-2 transition-all ${errors.password ? 'border-red-300 bg-red-50' : 'border-gray-100 focus:border-bocado-green focus:outline-none'}`} 
+                placeholder="8+ caracteres"
+                className={`w-full pl-9 pr-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+                  errors.password ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
+                }`} 
               />
             </div>
-            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            {errors.password && <p className="text-red-500 text-[10px] mt-1">{errors.password}</p>}
           </div>
           <div>
-            <label className="block text-xs font-bold text-bocado-dark-green mb-1 ml-1 uppercase">Confirmar *</label>
+            <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Confirmar *</label>
             <input 
               type="password" 
               name="confirmPassword" 
               value={data.confirmPassword || ''} 
               onChange={(e) => updateData('confirmPassword', e.target.value)} 
-              className={`w-full px-4 py-3 rounded-xl border-2 transition-all ${errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-gray-100 focus:border-bocado-green focus:outline-none'}`} 
+              placeholder="Repite"
+              className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+                errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
+              }`} 
             />
-            {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+            {errors.confirmPassword && <p className="text-red-500 text-[10px] mt-1">{errors.confirmPassword}</p>}
           </div>
         </div>
       )}

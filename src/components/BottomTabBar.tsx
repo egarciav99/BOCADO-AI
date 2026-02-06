@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { RestaurantIcon } from './icons/RestaurantIcon';
 import { UserIcon } from './icons/UserIcon';
@@ -15,14 +14,13 @@ interface BottomTabBarProps {
 
 const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) => {
   
-  // Función auxiliar para renderizar botones
   const renderTabButton = (id: Tab, label: string, Icon: React.FC<React.SVGProps<SVGSVGElement>>) => {
     const isActive = activeTab === id;
     return (
       <button
         onClick={() => onTabChange(id)}
-        className={`flex flex-col items-center justify-center w-full h-full space-y-1 ${
-          isActive ? 'text-bocado-green' : 'text-gray-400 hover:text-gray-600'
+        className={`flex flex-col items-center justify-center w-full h-full space-y-1 pb-safe ${
+          isActive ? 'text-bocado-green' : 'text-bocado-gray hover:text-bocado-dark-gray'
         }`}
       >
         <Icon 
@@ -37,40 +35,43 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-16 z-50">
-      <div className="max-w-2xl mx-auto h-full flex justify-between items-center px-2">
+    // absolute (no fixed) para que respete el contenedor padre
+    <nav className="absolute bottom-0 left-0 right-0 bg-white border-t border-bocado-border h-20 z-50 md:rounded-b-[2rem]">
+      <div className="h-full flex justify-between items-center px-2 max-w-md mx-auto">
         
         {/* IZQUIERDA */}
         <div className="flex flex-1 justify-around">
-            {renderTabButton('saved', 'Recetas', BookIcon)}
-            {renderTabButton('restaurants', 'Lugares', LocationIcon)}
+          {renderTabButton('saved', 'Recetas', BookIcon)}
+          {renderTabButton('restaurants', 'Lugares', LocationIcon)}
         </div>
 
         {/* CENTRO (INICIO) */}
         <div className="flex-shrink-0 mx-2 relative -top-5">
-            <button
-                onClick={() => onTabChange('recommendation')}
-                className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg border-4 border-gray-50 transition-all duration-300 ${
-                    activeTab === 'recommendation' 
-                    ? 'bg-bocado-green text-white scale-110' 
-                    : 'bg-white text-gray-400 hover:text-bocado-green'
-                }`}
-            >
-                <HomeIcon className="w-7 h-7" />
-            </button>
-            <span className={`absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-[10px] font-bold ${activeTab === 'recommendation' ? 'text-bocado-green' : 'text-gray-400'}`}>
-                Inicio
-            </span>
+          <button
+            onClick={() => onTabChange('recommendation')}
+            className={`w-14 h-14 rounded-full flex items-center justify-center shadow-bocado border-4 border-bocado-background transition-all duration-200 ${
+              activeTab === 'recommendation' 
+                ? 'bg-bocado-green text-white scale-110' 
+                : 'bg-white text-bocado-gray hover:text-bocado-green'
+            }`}
+          >
+            <HomeIcon className="w-7 h-7" />
+          </button>
+          <span className={`absolute -bottom-4 left-1/2 transform -translate-x-1/2 text-[10px] font-bold ${
+            activeTab === 'recommendation' ? 'text-bocado-green' : 'text-bocado-gray'
+          }`}>
+            Inicio
+          </span>
         </div>
 
         {/* DERECHA */}
         <div className="flex flex-1 justify-around">
-            {renderTabButton('pantry', 'Mi Cocina', RestaurantIcon)}
-            {renderTabButton('profile', 'Perfil', UserIcon)}
+          {renderTabButton('pantry', 'Mi Cocina', RestaurantIcon)}
+          {renderTabButton('profile', 'Perfil', UserIcon)}
         </div>
 
       </div>
-    </div>
+    </nav>
   );
 };
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface ProgressBarProps {
@@ -7,18 +6,19 @@ interface ProgressBarProps {
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ currentStep, totalSteps }) => {
-  const percentage = ((currentStep - 1) / (totalSteps -1)) * 100;
+  const percentage = Math.min(((currentStep - 1) / (totalSteps - 1)) * 100, 100);
 
   return (
-    <div>
-      <div className="flex justify-between mb-1 text-sm text-bocado-dark-gray font-semibold">
+    <div className="w-full">
+      <div className="flex justify-between mb-2 text-xs font-bold text-bocado-dark-gray uppercase tracking-wider">
         <span>Paso {currentStep} de {totalSteps}</span>
+        <span>{Math.round(percentage)}%</span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2.5">
+      <div className="w-full bg-bocado-background rounded-full h-2 overflow-hidden">
         <div 
-          className="h-2.5 rounded-full transition-all duration-500 ease-out bg-bocado-green" 
-          style={{ width: `${percentage}%` }}>
-        </div>
+          className="h-full rounded-full transition-all duration-500 ease-out bg-bocado-green" 
+          style={{ width: `${percentage}%` }}
+        />
       </div>
     </div>
   );

@@ -74,61 +74,64 @@ const SavedRestaurantsScreen: React.FC = () => {
     }
   };
 
-
   return (
-    <div className="animate-fade-in pb-24">
-      <div className="text-center mb-8 px-4">
-        <h2 className="text-2xl font-bold text-bocado-dark-green flex items-center justify-center gap-2">
-          <LocationIcon className="w-8 h-8" />
-          Mis Lugares
-        </h2>
-        <p className="text-bocado-gray mt-1 text-sm">Lugares recomendados que has guardado.</p>
+    <div className="flex-1 flex flex-col animate-fade-in">
+      {/* Header */}
+      <div className="text-center mb-6 px-4 pt-2">
+        <div className="flex items-center justify-center gap-2 mb-1">
+          <LocationIcon className="w-6 h-6 text-bocado-green" />
+          <h2 className="text-xl font-bold text-bocado-dark-green">Mis Lugares</h2>
+        </div>
+        <p className="text-xs text-bocado-gray">Restaurantes guardados</p>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center items-center py-20">
-            <svg className="animate-spin h-10 w-10 text-bocado-green" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-        </div>
-      ) : savedRestaurants.length === 0 ? (
-        <div className="text-center py-12 px-6 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 mx-4">
-            <p className="text-gray-400 text-lg mb-2">Aún no has guardado lugares.</p>
-            <p className="text-sm text-gray-500">Cuando veas una recomendación que te guste, dale ❤️ y guárdala para verla aquí.</p>
-        </div>
-      ) : (
-        <div className="space-y-4 px-4">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
+        {isLoading ? (
+          <div className="flex justify-center items-center py-20">
+            <div className="w-10 h-10 border-4 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
+          </div>
+        ) : savedRestaurants.length === 0 ? (
+          <div className="text-center py-12 px-6 bg-bocado-background rounded-2xl border-2 border-dashed border-bocado-border mx-4">
+            <p className="text-bocado-gray text-base mb-2">Aún no has guardado lugares</p>
+            <p className="text-xs text-bocado-gray/70">Dale ❤️ a los restaurantes para verlos aquí</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
             {savedRestaurants.map((meal, index) => (
-                <MealCard 
-                    key={index} 
-                    meal={meal}
-                    isSaved={true}
-                    isSaving={isDeleting === meal.recipe.title}
-                    onToggleSave={() => handleDeleteRequest(meal)}
-                />
+              <MealCard 
+                key={index} 
+                meal={meal}
+                isSaved={true}
+                isSaving={isDeleting === meal.recipe.title}
+                onToggleSave={() => handleDeleteRequest(meal)}
+              />
             ))}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {/* Confirmation Modal */}
       {mealToConfirmDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-60 p-4 animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center">
-            <h3 className="text-lg font-bold text-bocado-dark-green">¿Estás seguro?</h3>
-            <p className="text-sm text-bocado-dark-gray mt-2">
-              Se eliminará "<span className="font-semibold">{mealToConfirmDelete.recipe.title}</span>" de tus lugares guardados.
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-bocado w-full max-w-sm p-6 text-center">
+            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-xl">🗑️</span>
+            </div>
+            <h3 className="text-lg font-bold text-bocado-text mb-2">¿Eliminar lugar?</h3>
+            <p className="text-sm text-bocado-gray mb-6">
+              Se eliminará <span className="font-semibold text-bocado-text">"{mealToConfirmDelete.recipe.title}"</span>
             </p>
-            <div className="flex gap-4 mt-6">
+            <div className="flex gap-3">
               <button
                 onClick={() => setMealToConfirmDelete(null)}
-                className="flex-1 bg-gray-200 text-gray-800 font-bold py-3 rounded-full hover:bg-gray-300"
+                className="flex-1 bg-bocado-background text-bocado-dark-gray font-bold py-3 rounded-full text-sm hover:bg-bocado-border transition-colors active:scale-95"
               >
                 Cancelar
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full hover:bg-red-600"
+                className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm hover:bg-red-600 active:scale-95 transition-colors"
               >
                 Eliminar
               </button>

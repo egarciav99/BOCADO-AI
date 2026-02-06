@@ -28,7 +28,6 @@ const MainApp: React.FC<MainAppProps> = ({ onPlanGenerated, showTutorial = false
       if (user) {
         setUserUid(user.uid);
         
-        // Lógica para obtener el nombre inmediatamente y evitar bloqueos en el hijo
         let foundName = '';
         if (user.displayName) {
           foundName = user.displayName.split(' ')[0];
@@ -46,7 +45,6 @@ const MainApp: React.FC<MainAppProps> = ({ onPlanGenerated, showTutorial = false
         
         setUserName(foundName);
         
-        // Pequeño delay de seguridad para que el hijo encuentre el localStorage
         setTimeout(() => {
           setIsLoading(false);
         }, 150);
@@ -76,7 +74,7 @@ const MainApp: React.FC<MainAppProps> = ({ onPlanGenerated, showTutorial = false
 
   if (isLoading) {
       return (
-          <div className="w-full min-h-screen flex items-center justify-center bg-bocado-background">
+          <div className="flex-1 flex items-center justify-center bg-bocado-background">
               <div className="text-center">
                   <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
                   <p className="text-bocado-green font-bold animate-pulse">Sincronizando Bocado...</p>
@@ -88,44 +86,47 @@ const MainApp: React.FC<MainAppProps> = ({ onPlanGenerated, showTutorial = false
   if (!userUid) return null;
 
   return (
-    <div className="w-full min-h-screen bg-bocado-background relative pb-24">
+    <div className="flex-1 flex flex-col relative bg-bocado-background overflow-hidden">
       
       {isTutorialOpen && (
         <TutorialModal onClose={handleTutorialClose} userName={userName} />
       )}
 
-      <div className="max-w-2xl mx-auto pt-4">
-        {activeTab === 'recommendation' && (
-          <RecommendationScreen 
-            key={userUid} // Forzamos el reinicio si el UID cambia
-            userName={userName}
-            onPlanGenerated={onPlanGenerated}
-          />
-        )}
-        {activeTab === 'pantry' && (
-          <div className="p-4 animate-fade-in">
-            <PantryScreen userUid={userUid} />
-          </div>
-        )}
-        {activeTab === 'saved' && (
-          <div className="p-4 animate-fade-in">
-            <SavedRecipesScreen />
-          </div>
-        )}
-        {activeTab === 'restaurants' && (
-          <div className="p-4 animate-fade-in">
-            <SavedRestaurantsScreen />
-          </div>
-        )}
-        {activeTab === 'profile' && (
-          <div className="p-4 animate-fade-in">
-            <ProfileScreen 
-              userUid={userUid}
-              onLogout={handleLogout}
-              onProfileUpdate={handleProfileUpdate}
+      {/* Contenido scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
+        <div className="max-w-md mx-auto">
+          {activeTab === 'recommendation' && (
+            <RecommendationScreen 
+              key={userUid}
+              userName={userName}
+              onPlanGenerated={onPlanGenerated}
             />
-          </div>
-        )}
+          )}
+          {activeTab === 'pantry' && (
+            <div className="p-4 animate-fade-in">
+              <PantryScreen userUid={userUid} />
+            </div>
+          )}
+          {activeTab === 'saved' && (
+            <div className="p-4 animate-fade-in">
+              <SavedRecipesScreen />
+            </div>
+          )}
+          {activeTab === 'restaurants' && (
+            <div className="p-4 animate-fade-in">
+              <SavedRestaurantsScreen />
+            </div>
+          )}
+          {activeTab === 'profile' && (
+            <div className="p-4 animate-fade-in">
+              <ProfileScreen 
+                userUid={userUid}
+                onLogout={handleLogout}
+                onProfileUpdate={handleProfileUpdate}
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />

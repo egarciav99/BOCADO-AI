@@ -18,17 +18,22 @@ const loadingMessages = [
   "¡Casi listo! Preparando la mesa...",
 ];
 
-const ErrorDisplay: React.FC<{ errorCode: string; errorMessage: string; onRetry: () => void; }> = ({ errorCode, errorMessage, onRetry }) => (
-    <div className="bg-white p-8 rounded-2xl shadow-lg text-center animate-fade-in">
-        <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-             <span className="text-2xl">⚠️</span>
-        </div>
-        <h2 className="text-2xl font-bold text-red-600 mt-4">Ocurrió un problema</h2>
-        <p className="mt-4 text-bocado-dark-gray">{errorMessage}</p>
-        <button onClick={onRetry} className="mt-8 bg-bocado-green text-white font-bold py-3 px-10 rounded-full text-lg shadow-lg hover:bg-bocado-green-light">
-            Intentar de nuevo
-        </button>
+const ErrorDisplay: React.FC<{ errorCode: string; errorMessage: string; onRetry: () => void; }> = ({ errorMessage, onRetry }) => (
+  <div className="flex-1 flex items-center justify-center px-4 py-6">
+    <div className="bg-white p-6 rounded-3xl shadow-bocado text-center w-full max-w-sm animate-fade-in">
+      <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+        <span className="text-2xl">⚠️</span>
+      </div>
+      <h2 className="text-lg font-bold text-red-500 mb-2">Ocurrió un problema</h2>
+      <p className="text-sm text-bocado-gray mb-6">{errorMessage}</p>
+      <button 
+        onClick={onRetry} 
+        className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+      >
+        Intentar de nuevo
+      </button>
     </div>
+  </div>
 );
 
 const processFirestoreDoc = (doc: DocumentSnapshot): Plan | null => {
@@ -154,7 +159,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
         setRestaurantPlans(snap.docs.map(processRecommendationDoc).filter((p): p is Plan => p !== null));
     });
 
-    // Timeout de 45 segundos para mostrar error si no llegan datos
     const timeout = setTimeout(() => {
         if (!planFoundRef.current) {
             setHasError(true);
@@ -208,10 +212,10 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
 
   if (isLoading) {
     return (
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full text-center flex flex-col items-center justify-center space-y-4 min-h-[400px]">
-        <div className="animate-spin h-12 w-12 border-4 border-bocado-green border-t-transparent rounded-full"></div>
-        <h2 className="text-2xl font-bold text-bocado-dark-green">Preparando tu mesa... 🧑‍🍳</h2>
-        <p className="text-bocado-dark-gray">{currentLoadingMessage}</p>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+        <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mb-4"></div>
+        <h2 className="text-lg font-bold text-bocado-dark-green mb-2">Preparando tu mesa... 🧑‍🍳</h2>
+        <p className="text-sm text-bocado-gray text-center max-w-xs">{currentLoadingMessage}</p>
       </div>
     );
   }
@@ -221,31 +225,36 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
   }
 
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-lg w-full animate-fade-in pb-20">
-        <div className="max-h-[75vh] overflow-y-auto pr-2 space-y-4 no-scrollbar">
-            <div className="text-center mb-6">
-                <h1 className="text-2xl font-bold text-bocado-dark-green">¡Listo! 🥗</h1>
-                <div className="mt-3 p-4 bg-bocado-green/10 rounded-xl text-bocado-dark-green italic text-lg">
-                    "{selectedPlan.greeting}"
-                </div>
-            </div>
-            <div className="space-y-4">
-                {selectedPlan.meals.map((meal, index) => (
-                    <MealCard 
-                        key={index} 
-                        meal={meal} 
-                        isSaved={meal.recipe.difficulty === 'Restaurante' ? savedRestaurantTitles.has(meal.recipe.title) : savedRecipeTitles.has(meal.recipe.title)} 
-                        isSaving={savingCardTitle === meal.recipe.title} 
-                        onToggleSave={() => handleToggleSave(meal)} 
-                    />
-                ))}
-            </div>
+    <div className="flex-1 flex flex-col animate-fade-in">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 no-scrollbar">
+        <div className="text-center mb-6">
+          <h1 className="text-xl font-bold text-bocado-dark-green mb-3">¡Listo! 🥗</h1>
+          <div className="p-4 bg-bocado-green/10 rounded-2xl">
+            <p className="text-bocado-dark-green italic text-sm leading-relaxed">"{selectedPlan.greeting}"</p>
+          </div>
         </div>
-        <div className="mt-6 pt-6 border-t text-center">
-             <button onClick={onStartNewPlan} className="bg-bocado-green text-white font-bold py-3 px-10 rounded-full text-lg shadow-lg">
-                Volver al inicio
-            </button>
+        
+        <div className="space-y-3">
+          {selectedPlan.meals.map((meal, index) => (
+            <MealCard 
+              key={index} 
+              meal={meal} 
+              isSaved={meal.recipe.difficulty === 'Restaurante' ? savedRestaurantTitles.has(meal.recipe.title) : savedRecipeTitles.has(meal.recipe.title)} 
+              isSaving={savingCardTitle === meal.recipe.title} 
+              onToggleSave={() => handleToggleSave(meal)} 
+            />
+          ))}
         </div>
+      </div>
+      
+      <div className="px-4 py-4 border-t border-bocado-border bg-white">
+        <button 
+          onClick={onStartNewPlan} 
+          className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+        >
+          Volver al inicio
+        </button>
+      </div>
     </div>
   );
 };

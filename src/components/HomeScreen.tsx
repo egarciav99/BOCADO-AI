@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import BocadoLogo from './BocadoLogo';
 import { signOut } from 'firebase/auth';
@@ -38,28 +37,38 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
   };
 
   return (
-    <div className="text-center flex flex-col items-center justify-center min-h-screen space-y-8 animate-fade-in p-4">
-      <BocadoLogo className="w-full max-w-lg -my-20 mx-auto" />
-      <div>
-        <p className="text-xl md:text-2xl text-bocado-dark-gray max-w-md">
-          ¿Qué comer hoy? Ya no es <span className="underline">problema</span>
-        </p>
-        <p className="text-md text-bocado-gray mt-2">
-          Se parte de Bocado, donde tú decides y la IA te acompaña.
+    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 pt-safe">
+      {/* Logo: más pequeño en móvil, mediano en desktop */}
+      <div className="w-48 sm:w-64 md:w-80 mb-8">
+        <BocadoLogo className="w-full h-auto" />
+      </div>
+
+      {/* Texto */}
+      <div className="text-center max-w-sm mb-10">
+        <h1 className="text-2xl sm:text-3xl font-bold text-bocado-dark-gray mb-3">
+          ¿Qué comer hoy?{' '}
+          <span className="underline decoration-bocado-green decoration-4 underline-offset-4">
+            Ya no es problema
+          </span>
+        </h1>
+        <p className="text-sm sm:text-base text-bocado-gray">
+          Sé parte de Bocado, donde tú decides y la IA te acompaña.
         </p>
       </div>
-      <div className="flex flex-col sm:flex-row gap-4">
+
+      {/* Botones: apilados en móvil, lado a lado en desktop */}
+      <div className="flex flex-col w-full max-w-xs gap-3">
         {profileExists ? (
           <>
             <button
               onClick={onGoToApp}
-              className="bg-bocado-green text-white font-bold py-4 px-12 rounded-full text-lg shadow-lg hover:bg-bocado-green-light transition-colors duration-300 transform hover:scale-105"
+              className="w-full bg-bocado-green text-white font-bold py-4 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
             >
               Entrar
             </button>
             <button
               onClick={handleLogout}
-              className="bg-white text-bocado-green border-2 border-bocado-green font-bold py-4 px-12 rounded-full text-lg shadow-lg hover:bg-gray-100 transition-colors duration-300 transform hover:scale-105"
+              className="w-full bg-white text-bocado-green border-2 border-bocado-green font-bold py-4 px-8 rounded-full text-base hover:bg-bocado-background active:scale-95 transition-all"
             >
               Cerrar Sesión
             </button>
@@ -68,13 +77,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
           <>
             <button
               onClick={onStartRegistration}
-              className="bg-bocado-green text-white font-bold py-4 px-12 rounded-full text-lg shadow-lg hover:bg-bocado-green-light transition-colors duration-300 transform hover:scale-105"
+              className="w-full bg-bocado-green text-white font-bold py-4 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
             >
               Registrarse
             </button>
             <button
               onClick={onGoToLogin}
-              className="bg-white text-bocado-green border-2 border-bocado-green font-bold py-4 px-12 rounded-full text-lg shadow-lg hover:bg-gray-100 transition-colors duration-300 transform hover:scale-105"
+              className="w-full bg-white text-bocado-green border-2 border-bocado-green font-bold py-4 px-8 rounded-full text-base hover:bg-bocado-background active:scale-95 transition-all"
             >
               Iniciar Sesión
             </button>
