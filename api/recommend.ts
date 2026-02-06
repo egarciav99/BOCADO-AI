@@ -276,10 +276,8 @@ export default async function handler(req: any, res: any) {
     let parsedData: any;
 
     if (type === 'En casa') {
-      // CORRECCIÓN: URL de Airtable sin espacio
       const formula = buildAirtableFormula(user);
       const airtableUrl = `https://api.airtable.com/v0/${process.env.AIRTABLE_BASE_ID}/${process.env.AIRTABLE_TABLE_NAME}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=100`;
-      
       const airtableRes = await fetch(airtableUrl, {
         headers: { Authorization: `Bearer ${process.env.AIRTABLE_API_KEY}` }
       });
