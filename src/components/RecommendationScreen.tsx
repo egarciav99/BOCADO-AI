@@ -4,7 +4,7 @@ import BocadoLogo from './BocadoLogo';
 import { auth, db, serverTimestamp } from '../firebaseConfig';
 import { collection, addDoc } from 'firebase/firestore';
 import { CurrencyService } from '../data/budgets';
-import { useUserProfileStore } from '../stores/userProfileStore';
+import { useUserProfile } from '../hooks/useUser'; // ✅ Nuevo
 import { useAuthStore } from '../stores/authStore';
 import { env } from '../environment/env';
 
@@ -31,9 +31,9 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   const [cookingTime, setCookingTime] = useState(30);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // ✅ ZUSTAND: Obtenemos perfil y usuario directamente de los stores
-  const { profile, isLoading: isProfileLoading } = useUserProfileStore();
+  // ✅ TANSTACK QUERY: Obtenemos perfil del usuario
   const { user } = useAuthStore();
+  const { data: profile, isLoading: isProfileLoading } = useUserProfile(user?.uid);
 
   const countryCode = (profile?.country || 'MX').toUpperCase().trim(); 
   const currencyConfig = CurrencyService.fromCountryCode(countryCode);

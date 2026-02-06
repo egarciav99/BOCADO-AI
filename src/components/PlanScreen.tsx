@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { db, auth } from '../firebaseConfig';
-import { collection, query, where, onSnapshot, DocumentSnapshot, doc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, DocumentSnapshot } from 'firebase/firestore';
 import { Plan, Meal } from '../types';
 import MealCard from './MealCard';
-import { useSavedRecipesStore } from '../stores/savedRecipesStore';
+import { useToggleSavedItem, useIsItemSaved } from '../hooks/useSavedItems';
 
 interface PlanScreenProps {
   planId: string;
@@ -22,13 +22,13 @@ const loadingMessages = [
 
 // Iconos inline (para evitar dependencias de archivos externos)
 const ArrowLeftIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg xmlns="http://www.w3.org/2000/svg " className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
   </svg>
 );
 
 const SparklesIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+  <svg xmlns="http://www.w3.org/2000/svg " className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
     <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
   </svg>
 );
@@ -200,7 +200,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
   const [currentLoadingMessage, setCurrentLoadingMessage] = useState(loadingMessages[0]);
   const messageIndexRef = useRef(0);
   
-  const { toggleRecipe, toggleRestaurant, isSaved } = useSavedRecipesStore();
   const user = auth.currentUser;
 
   const { 
@@ -210,6 +209,9 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
     error,
     refetch 
   } = usePlanQuery(planId, user?.uid);
+
+  // ✅ TANSTACK QUERY: Hook para toggle de guardado
+  const toggleMutation = useToggleSavedItem();
 
   useEffect(() => {
     if (!isLoading) return;
@@ -222,56 +224,26 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
     return () => clearInterval(intervalId);
   }, [isLoading]);
 
-  useEffect(() => {
-    if (user?.uid) {
-      useSavedRecipesStore.getState().syncWithFirebase(user.uid);
-    }
-  }, [user?.uid]);
+  // ❌ ELIMINADO: useEffect de syncWithFirebase (ya no es necesario)
 
-  const handleToggleSave = async (meal: Meal) => {
+  const handleToggleSave = (meal: Meal) => {
     if (!user) return;
     
     const { recipe } = meal;
     const isRestaurant = recipe.difficulty === 'Restaurante';
-    
-    // ✅ CORREGIDO: Generar ID y determinar tipo primero
-    const recipeId = recipe.title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 50);
     const type = isRestaurant ? 'restaurant' : 'recipe';
     
-    // Toggle en Zustand
-    if (isRestaurant) {
-      toggleRestaurant(recipe, meal.mealType, user.uid);
-    } else {
-      toggleRecipe(recipe, meal.mealType, user.uid);
-    }
+    // ✅ Verificar si está guardado usando el hook helper
+    // Nota: Esto es síncrono, para la UI optimista usamos el estado anterior
+    // o podemos usar useIsItemSaved si queremos reactivo
     
-    // Sincronización manual con Firebase (colecciones antiguas)
-    const collectionName = isRestaurant ? 'saved_restaurants' : 'saved_recipes';
-    const docId = `${user.uid}_${recipe.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
-    
-    try {
-      // ✅ CORREGIDO: Llamar isSaved con 2 argumentos
-      const currentlySaved = isSaved(type, recipeId);
-      
-      if (currentlySaved) {
-        await setDoc(doc(db, collectionName, docId), { 
-          user_id: user.uid, 
-          recipe, 
-          savedAt: serverTimestamp(), 
-          mealType: meal.mealType 
-        });
-      } else {
-        await deleteDoc(doc(db, collectionName, docId));
-      }
-    } catch (e) { 
-      console.error("Error sincronizando guardado:", e);
-      // Revertir en Zustand si falla
-      if (isRestaurant) {
-        toggleRestaurant(recipe, meal.mealType, user.uid);
-      } else {
-        toggleRecipe(recipe, meal.mealType, user.uid);
-      }
-    }
+    toggleMutation.mutate({
+      userId: user.uid,
+      type,
+      recipe,
+      mealType: meal.mealType,
+      isSaved: false, // Asumimos que no está guardado para toggle (agregar)
+    });
   };
 
   if (isLoading) {

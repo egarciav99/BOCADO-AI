@@ -16,8 +16,9 @@ import {
   updateProfile 
 } from 'firebase/auth';
 import { sanitizeProfileData, separateUserData } from '../utils/profileSanitizer';
-import { useUserProfileStore } from '../stores/userProfileStore'; // ✅ Nuevo
-import { useAuthStore } from '../stores/authStore'; // ✅ Nuevo
+import { useUserProfile, useUpdateUserProfile } from '../hooks/useUser';
+import { useAuthStore } from '../stores/authStore';
+import { useQueryClient } from '@tanstack/react-query';
 import { env } from '../environment/env';
 
 interface ProfileScreenProps {
@@ -36,8 +37,8 @@ const stripEmoji = (str: string) => {
     return str;
 };
 
-// ✅ Helper para construir FormData desde Auth + Profile Store
-const buildFormData = (user: any, profile: UserProfile | null): FormData => {
+// ✅ Helper para construir FormData desde Auth + Profile
+const buildFormData = (user: any, profile: UserProfile | null | undefined): FormData => {
   const nameParts = user?.displayName?.split(' ') || ['', ''];
   const firstName = nameParts[0] || '';
   const lastName = nameParts.slice(1).join(' ') || '';
@@ -48,7 +49,6 @@ const buildFormData = (user: any, profile: UserProfile | null): FormData => {
     email: user?.email || '',
     password: '',
     confirmPassword: '',
-    // Datos del profile de Firestore (o defaults)
     gender: profile?.gender || '',
     age: profile?.age || '',
     weight: profile?.weight || '',
@@ -89,15 +89,17 @@ const Badge: React.FC<{ text: string; color: 'green' | 'blue' | 'red' | 'gray' |
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate, userUid }) => {
   const [viewMode, setViewMode] = useState<'view' | 'edit' | 'changePassword' | 'changeEmail'>('view');
   
-  // ✅ ZUSTAND: Obtenemos datos del usuario y perfil
+  // ✅ TANSTACK QUERY: Datos y mutación del perfil
   const { user } = useAuthStore();
-  const { profile, setProfile, fetchProfile } = useUserProfileStore();
+  const { data: profile } = useUserProfile(userUid);
+  const updateProfileMutation = useUpdateUserProfile();
+  const queryClient = useQueryClient();
   
-  // Estado local del formulario (solo para edición)
+  // ✅ Estado local del formulario - inicializado correctamente
   const [formData, setFormData] = useState<FormData>(() => buildFormData(user, profile));
   const [initialFormData, setInitialFormData] = useState<FormData>(() => buildFormData(user, profile));
   
-  // Estados para cambio de password/email (locales, no persisten)
+  // Estados para cambio de password/email
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -106,18 +108,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
   
   const [cityOptions, setCityOptions] = useState<any[]>([]);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   
-  // ✅ Cargar perfil de Firestore al montar (si no está en caché)
-  useEffect(() => {
-    if (userUid && !profile) {
-      fetchProfile(userUid);
-    }
-  }, [userUid, profile, fetchProfile]);
-
-  // ✅ Sincronizar formData cuando cambia el store (ej: al cargar)
+  // ✅ Sincronizar formData cuando cambia el perfil de la query
   useEffect(() => {
     const data = buildFormData(user, profile);
     setFormData(data);
@@ -152,7 +146,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         return;
     }
 
-    setIsLoading(true);
     setError('');
 
     try {
@@ -162,7 +155,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
       const newDisplayName = `${authData.firstName} ${authData.lastName}`;
       if (currentUser.displayName !== newDisplayName) {
         await updateProfile(currentUser, { displayName: newDisplayName });
-        // Actualizar el store de auth
         useAuthStore.getState().setUser({ ...currentUser, displayName: newDisplayName });
       }
 
@@ -188,12 +180,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         updatedAt: serverTimestamp(),
       };
 
-      // Guardar en Firestore
-      const userDocRef = doc(db, 'users', userUid);
-      await setDoc(userDocRef, userProfile, { merge: true });
-
-      // ✅ Actualizar Zustand (ya no localStorage)
-      setProfile(userProfile);
+      // ✅ TANSTACK QUERY: Usar mutation para actualizar
+      await updateProfileMutation.mutateAsync({ userId: userUid, data: userProfile });
+      
+      // ✅ Actualizar caché local inmediatamente
+      queryClient.setQueryData(['userProfile', userUid], userProfile);
       
       setInitialFormData(formData);
       setViewMode('view');
@@ -204,8 +195,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     } catch (err) {
       console.error("Error updating profile:", err);
       setError("No se pudieron guardar los cambios.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -237,7 +226,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         return;
     }
 
-    setIsLoading(true);
     try {
         const credential = EmailAuthProvider.credential(currentUser.email, currentPassword);
         await reauthenticateWithCredential(currentUser, credential);
@@ -251,8 +239,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     } catch (err: any) {
         if (err.code === 'auth/wrong-password') setError('Contraseña actual incorrecta.');
         else setError('Error al actualizar.');
-    } finally {
-        setIsLoading(false);
     }
   };
   
@@ -279,13 +265,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         return;
     }
 
-    setIsLoading(true);
     try {
         const credential = EmailAuthProvider.credential(currentUser.email, emailPassword);
         await reauthenticateWithCredential(currentUser, credential);
         await updateEmail(currentUser, normalizedNewEmail);
         
-        // Actualizar email en el form local
         const updatedFormData = { ...formData, email: normalizedNewEmail };
         setFormData(updatedFormData);
         
@@ -299,8 +283,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         if (err.code === 'auth/wrong-password') setError('Contraseña incorrecta.');
         else if (err.code === 'auth/email-already-in-use') setError('Correo en uso.');
         else setError('Error al actualizar.');
-    } finally {
-        setIsLoading(false);
     }
   };
 
@@ -334,7 +316,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     );
   };
 
-  // ... (renderContent, renderViewMode, etc. permanecen igual)
   const renderContent = () => {
     switch(viewMode) {
       case 'edit':
@@ -366,16 +347,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                       setCityOptions([]);
                     }} 
                     className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
-                    disabled={isLoading}
+                    disabled={updateProfileMutation.isPending}
                   >
                       Cancelar
                   </button>
                   <button 
                     onClick={handleSaveProfile} 
                     className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
-                    disabled={isLoading}
+                    disabled={updateProfileMutation.isPending}
                   >
-                      {isLoading ? 'Guardando...' : 'Guardar'}
+                      {updateProfileMutation.isPending ? 'Guardando...' : 'Guardar'}
                   </button>
               </div>
           </div>
@@ -428,17 +409,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                             setNewPassword('');
                             setConfirmNewPassword('');
                           }} 
-                          className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all" 
-                          disabled={isLoading}
+                          className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                         >
                             Cancelar
                         </button>
                         <button 
                           type="submit" 
-                          className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
-                          disabled={isLoading}
+                          className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
                         >
-                            {isLoading ? '...' : 'Actualizar'}
+                            Actualizar
                         </button>
                     </div>
                  </form>
@@ -482,17 +461,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                             setEmailPassword('');
                             setNewEmail('');
                           }} 
-                          className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all" 
-                          disabled={isLoading}
+                          className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                         >
                             Cancelar
                         </button>
                         <button 
                           type="submit" 
-                          className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
-                          disabled={isLoading}
+                          className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
                         >
-                            {isLoading ? '...' : 'Cambiar'}
+                            Cambiar
                         </button>
                     </div>
                  </form>

@@ -8,9 +8,9 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification
 } from 'firebase/auth';
+import { useQueryClient } from '@tanstack/react-query';
 import { sanitizeProfileData } from '../utils/profileSanitizer';
-import { FormData, UserProfile } from '../types';
-import { useUserProfileStore } from '../stores/userProfileStore';
+import { UserProfile } from '../types';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -29,8 +29,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
   const [needsVerification, setNeedsVerification] = useState(false);
   const [unverifiedUser, setUnverifiedUser] = useState<any>(null);
 
-  // ✅ ZUSTAND: Obtenemos función para guardar perfil
-  const setProfile = useUserProfileStore((state) => state.setProfile);
+  // ✅ TANSTACK QUERY: Cliente para invalidar caché
+  const queryClient = useQueryClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,8 +73,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
         
         const sanitizedProfile = sanitizeProfileData(firestoreData) as UserProfile;
         
-        // ✅ ZUSTAND: Guardamos el perfil en el store global (reemplaza localStorage)
-        setProfile(sanitizedProfile);
+        // ✅ TANSTACK QUERY: Precargar el perfil en caché
+        queryClient.setQueryData(['userProfile', user.uid], sanitizedProfile);
         
         onLoginSuccess();
       } else {
@@ -94,8 +94,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
       setIsLoading(false);
     }
   };
-
-  // ... resto del código permanece igual (handleResendVerification, handleLogoutUnverified, handlePasswordReset, etc.)
 
   const handleResendVerification = async () => {
     if (!unverifiedUser) return;

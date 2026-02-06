@@ -3,7 +3,7 @@ import BocadoLogo from './BocadoLogo';
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
 import { useAuthStore } from '../stores/authStore';
-import { useUserProfileStore } from '../stores/userProfileStore';
+import { useUserProfile } from '../hooks/useUser'; // Nuevo hook TanStack Query
 
 interface HomeScreenProps {
   onStartRegistration: () => void;
@@ -12,9 +12,11 @@ interface HomeScreenProps {
 }
 
 const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp, onGoToLogin }) => {
-  // ✅ ZUSTAND: Obtenemos estado de autenticación y perfil
+  // ✅ ZUSTAND: Solo auth (estado local UI)
   const { isAuthenticated, user } = useAuthStore();
-  const { profile } = useUserProfileStore();
+  
+  // ✅ TANSTACK QUERY: Perfil del usuario (datos del servidor)
+  const { data: profile } = useUserProfile(user?.uid);
 
   // Determinamos si hay una sesión activa con perfil completo
   const hasSession = isAuthenticated || !!profile;
@@ -22,8 +24,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      // ✅ Limpiar stores de Zustand (el auth se limpia automáticamente por onAuthStateChanged en App.tsx)
-      useUserProfileStore.getState().clearProfile();
+      // ✅ Limpiar caché de React Query (opcional, se invalida automáticamente al cambiar user)
+      // No necesitamos limpiar Zustand manualmente, onAuthStateChanged en App.tsx lo maneja
     } catch (error) {
       console.error("Error signing out: ", error);
     }

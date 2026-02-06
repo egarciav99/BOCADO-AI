@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // Agregar useEffect
 import BottomTabBar, { Tab } from './BottomTabBar';
 import RecommendationScreen from './RecommendationScreen';
 import PantryScreen from './PantryScreen';
@@ -7,8 +7,9 @@ import SavedRecipesScreen from './SavedRecipesScreen';
 import SavedRestaurantsScreen from './SavedRestaurantsScreen';
 import TutorialModal from './TutorialModal';
 import { auth } from '../firebaseConfig';
-import { updateProfile } from 'firebase/auth'; // ✅ Para actualizar nombre en Auth
+import { updateProfile } from 'firebase/auth';
 import { useAuthStore } from '../stores/authStore';
+import { useUserProfile } from '../hooks/useUser'; // Nuevo import
 
 interface MainAppProps {
   onPlanGenerated: (id: string) => void;
@@ -26,10 +27,11 @@ const MainApp: React.FC<MainAppProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>('recommendation');
   const [isTutorialOpen, setIsTutorialOpen] = useState(showTutorial);
   
-  // ✅ ZUSTAND: Solo usamos Auth (Firestore no tiene nombres por privacidad)
   const { user, isLoading, isAuthenticated } = useAuthStore();
 
-  // El nombre viene de Firebase Auth (displayName), no de Firestore
+  // ✅ TANSTACK QUERY: Precargar perfil (opcional, para que ProfileScreen tenga datos inmediatos)
+  useUserProfile(user?.uid);
+
   const userName = user?.displayName?.split(' ')[0] || '';
   const userUid = user?.uid || null;
 
@@ -47,14 +49,12 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
   
-  // ✅ Actualiza el nombre en Firebase Auth (no en Firestore por protección de datos)
   const handleProfileUpdate = async (newFirstName: string) => {
     if (user) {
       try {
         await updateProfile(user, {
           displayName: `${newFirstName} ${user.displayName?.split(' ').slice(1).join(' ') || ''}`
         });
-        // Forzamos actualización del store de auth
         useAuthStore.getState().setUser(user);
       } catch (error) {
         console.error("Error actualizando nombre:", error);

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useSavedRecipesStore } from '../stores/savedRecipesStore';
+import React, { useState } from 'react';
+import { useSavedItems, useToggleSavedItem } from '../hooks/useSavedItems';
 import { useAuthStore } from '../stores/authStore';
 import { BookIcon } from './icons/BookIcon';
 import MealCard from './MealCard';
@@ -8,24 +8,12 @@ import { Meal } from '../types';
 const SavedRecipesScreen: React.FC = () => {
   const [mealToConfirmDelete, setMealToConfirmDelete] = useState<Meal | null>(null);
   
-  // ✅ ZUSTAND: Obtenemos datos y funciones del store
-  const { 
-    recipes, 
-    isLoading, 
-    removeRecipe,
-    syncWithFirebase 
-  } = useSavedRecipesStore();
-  
   const { user } = useAuthStore();
+  
+  // ✅ TANSTACK QUERY
+  const { data: recipes = [], isLoading } = useSavedItems(user?.uid, 'recipe');
+  const toggleMutation = useToggleSavedItem();
 
-  // Sincronizar con Firebase al montar
-  useEffect(() => {
-    if (user?.uid) {
-      syncWithFirebase(user.uid);
-    }
-  }, [user?.uid, syncWithFirebase]);
-
-  // Convertir SavedRecipe[] a Meal[] para MealCard
   const savedMeals: Meal[] = recipes.map(saved => ({
     mealType: saved.mealType,
     recipe: saved.recipe
@@ -35,29 +23,26 @@ const SavedRecipesScreen: React.FC = () => {
     setMealToConfirmDelete(meal);
   };
 
-  const confirmDelete = async () => {
+  const confirmDelete = () => {
     if (!mealToConfirmDelete || !user) return;
 
-    // Generar ID igual que en el store
-    const recipeId = mealToConfirmDelete.recipe.title
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '-')
-      .substring(0, 50);
-
-    // ✅ Eliminar via Zustand (actualiza local + Firebase)
-    removeRecipe(recipeId);
+    toggleMutation.mutate({
+      userId: user.uid,
+      type: 'recipe',
+      recipe: mealToConfirmDelete.recipe,
+      mealType: mealToConfirmDelete.mealType,
+      isSaved: true,
+    });
     
     setMealToConfirmDelete(null);
   };
 
-  if (isLoading && recipes.length === 0) {
+  if (isLoading) {
     return (
       <div className="flex-1 flex flex-col animate-fade-in">
         <div className="text-center mb-6 px-4 pt-2">
-          <div className="flex items-center justify-center gap-2 mb-1">
-            <BookIcon className="w-6 h-6 text-bocado-green" />
-            <h2 className="text-xl font-bold text-bocado-dark-green">Mis Recetas</h2>
-          </div>
+          <BookIcon className="w-6 h-6 text-bocado-green mx-auto mb-2" />
+          <h2 className="text-xl font-bold text-bocado-dark-green">Mis Recetas</h2>
         </div>
         <div className="flex justify-center items-center py-20">
           <div className="w-10 h-10 border-4 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
@@ -75,7 +60,7 @@ const SavedRecipesScreen: React.FC = () => {
           <h2 className="text-xl font-bold text-bocado-dark-green">Mis Recetas</h2>
         </div>
         <p className="text-xs text-bocado-gray">Tus platos favoritos guardados</p>
-        {isLoading && <p className="text-[10px] text-bocado-green mt-1">Sincronizando...</p>}
+        {toggleMutation.isPending && <p className="text-[10px] text-bocado-green mt-1">Sincronizando...</p>}
       </div>
 
       {/* Content */}
@@ -89,7 +74,7 @@ const SavedRecipesScreen: React.FC = () => {
           <div className="space-y-3">
             {savedMeals.map((meal, index) => (
               <MealCard 
-                key={index} 
+                key={meal.recipe.title + index} 
                 meal={meal}
                 onInteraction={(type) => {
                   if (type === 'save') handleDeleteRequest(meal);
@@ -120,10 +105,10 @@ const SavedRecipesScreen: React.FC = () => {
               </button>
               <button
                 onClick={confirmDelete}
-                disabled={isLoading}
+                disabled={toggleMutation.isPending}
                 className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm hover:bg-red-600 active:scale-95 transition-colors disabled:opacity-50"
               >
-                {isLoading ? '...' : 'Eliminar'}
+                {toggleMutation.isPending ? '...' : 'Eliminar'}
               </button>
             </div>
           </div>

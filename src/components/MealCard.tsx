@@ -3,7 +3,7 @@ import { Meal } from '../types';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { HeartIcon } from './icons/HeartIcon';
 import FeedbackModal from './FeedbackModal';
-import { useSavedRecipesStore } from '../stores/savedRecipesStore';
+import { useToggleSavedItem, useIsItemSaved } from '../hooks/useSavedItems';
 import { useAuthStore } from '../stores/authStore';
 
 interface MealCardProps {
@@ -37,11 +37,6 @@ const getDifficultyStyle = (difficulty: string): string => {
   }
 };
 
-// Generar ID igual que en el store
-const generateRecipeId = (title: string): string => {
-  return title.toLowerCase().replace(/[^a-z0-9]/g, '-').substring(0, 50);
-};
-
 const MealCard: React.FC<MealCardProps> = ({
   meal,
   onInteraction,
@@ -49,20 +44,16 @@ const MealCard: React.FC<MealCardProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
 
-  // ✅ ZUSTAND: Obtenemos estado y acciones del store
-  const { 
-    isSaved, 
-    toggleRecipe, 
-    toggleRestaurant 
-  } = useSavedRecipesStore();
+  // ✅ TANSTACK QUERY: Hooks para guardados
   const { user } = useAuthStore();
-
-  const { recipe } = meal;
-  const recipeId = generateRecipeId(recipe.title);
-  const isRestaurant = recipe.difficulty === 'Restaurante';
+  const toggleMutation = useToggleSavedItem();
   
-  // ✅ Usamos isSaved con el tipo correcto (2 argumentos ahora)
-  const saved = isSaved(isRestaurant ? 'restaurant' : 'recipe', recipeId);
+  const { recipe } = meal;
+  const isRestaurant = recipe.difficulty === 'Restaurante';
+  const type = isRestaurant ? 'restaurant' : 'recipe';
+  
+  // ✅ Verificar si está guardado (reactivo)
+  const saved = useIsItemSaved(user?.uid, type, recipe.title);
   
   const emoji = getSmartEmoji(recipe.title);
   const showSavings = recipe.savingsMatch && recipe.savingsMatch !== 'Ninguno';
@@ -72,18 +63,18 @@ const MealCard: React.FC<MealCardProps> = ({
     
     if (!user) return;
     
-    // ✅ Usamos el toggle correcto según el tipo
-    let wasSaved: boolean;
-    if (isRestaurant) {
-      wasSaved = toggleRestaurant(recipe, meal.mealType, user.uid);
-    } else {
-      wasSaved = toggleRecipe(recipe, meal.mealType, user.uid);
-    }
+    // ✅ Usar mutation de TanStack Query
+    toggleMutation.mutate({
+      userId: user.uid,
+      type,
+      recipe,
+      mealType: meal.mealType,
+      isSaved: saved, // Si está guardado, lo quitamos; si no, lo agregamos
+    });
     
     onInteraction?.('save', { 
       recipe: recipe.title, 
-      isSaved: wasSaved,
-      recipeId,
+      isSaved: !saved, // Estado después del toggle
       isRestaurant 
     });
   };
@@ -154,7 +145,8 @@ const MealCard: React.FC<MealCardProps> = ({
           <div className="flex flex-col items-center gap-1 shrink-0">
             <button
               onClick={handleSaveClick}
-              className={`p-2 rounded-full transition-all active:scale-90 ${
+              disabled={toggleMutation.isPending}
+              className={`p-2 rounded-full transition-all active:scale-90 disabled:opacity-50 ${
                 saved ? 'text-red-500' : 'text-bocado-gray hover:text-red-400'
               }`}
               aria-label={saved ? 'Quitar de guardados' : 'Guardar receta'}

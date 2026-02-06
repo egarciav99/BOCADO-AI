@@ -90,3 +90,17 @@ export interface PantryDocument {
   items: KitchenItem[]; // Changed from ingredients string[] to object array
   lastUpdated?: any;
 }
+
+export type SavedItemType = 'recipe' | 'restaurant';
+
+export interface SavedItem {
+  id: string;
+  type: SavedItemType;
+  recipe: Recipe;
+  mealType: string;
+  userId: string;
+  savedAt: number;
+  folder?: string;
+  notes?: string;
+  rating?: number;
+}
