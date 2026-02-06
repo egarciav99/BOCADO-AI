@@ -95,7 +95,7 @@ const SavedRestaurantsScreen: React.FC = () => {
       ) : savedRestaurants.length === 0 ? (
         <div className="text-center py-12 px-6 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200 mx-4">
             <p className="text-gray-400 text-lg mb-2">Aún no has guardado lugares.</p>
-            <p className="text-sm text-gray-500">Cuando veas una recomendación de "Comer Fuera" que te guste, guárdala para verla aquí.</p>
+            <p className="text-sm text-gray-500">Cuando veas una recomendación que te guste, dale ❤️ y guárdala para verla aquí.</p>
         </div>
       ) : (
         <div className="space-y-4 px-4">
