@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { EATING_HABITS, MEALS, CRAVINGS } from '../constants';
 import BocadoLogo from './BocadoLogo';
-import { auth, db, serverTimestamp, trackEvent } from '../firebaseConfig';
+import { auth, db, serverTimestamp, trackEvent } from '../firebaseConfig'; // ✅ Importado trackEvent
 import { collection, addDoc } from 'firebase/firestore';
 import { CurrencyService } from '../data/budgets';
 import { useUserProfile } from '../hooks/useUser';
@@ -29,7 +29,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   const [selectedCravings, setSelectedCravings] = useState<string[]>([]);
   const [selectedBudget, setSelectedBudget] = useState('');
   const [cookingTime, setCookingTime] = useState(30);
-  const [servings, setServings] = useState(1); // ✅ Nuevo: Estado para comensales
   const [isGenerating, setIsGenerating] = useState(false);
 
   const { user } = useAuthStore();
@@ -40,16 +39,15 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   const budgetOptions = CurrencyService.getBudgetOptions(countryCode);
 
   const handleTypeChange = (type: 'En casa' | 'Fuera') => {
+      // ✅ ANALÍTICA: Selección de tipo de comida
       trackEvent('recommendation_type_selected', { type });
       
       setRecommendationType(type);
       setSelectedBudget('');
-      if (type === 'En casa') {
-        setSelectedCravings([]);
-      } else {
-        setSelectedMeal('');
-        setCookingTime(30);
-        setServings(1); // Reset servings si sale a comer fuera
+      if (type === 'En casa') setSelectedCravings([]);
+      else {
+          setSelectedMeal('');
+          setCookingTime(30);
       }
   };
 
@@ -74,7 +72,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       type: recommendationType,
       mealType: recommendationType === 'En casa' ? stripEmoji(selectedMeal) : "Fuera de casa",
       cookingTime: recommendationType === 'En casa' ? cookingTime : 0,
-      servings: recommendationType === 'En casa' ? servings : 1, // ✅ Enviado a la IA
       cravings: cravingsList,
       budget: selectedBudget, 
       currency: currencyConfig.code, 
@@ -83,10 +80,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       procesado: false,
     };
 
+    // ✅ ANALÍTICA: Inicio de generación
     trackEvent('recommendation_generation_start', {
       type: recommendationType,
       meal: interactionData.mealType,
-      servings: interactionData.servings,
       budget: selectedBudget,
       cravings_count: cravingsList.length
     });
@@ -102,15 +99,18 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         body: JSON.stringify({ ...interactionData, _id: newDoc.id })
       })
       .then(() => {
+          // ✅ ANALÍTICA: Éxito en la llamada a la API
           trackEvent('recommendation_api_success', { type: recommendationType });
       })
       .catch(error => {
         console.error("Background fetch error:", error);
+        // ✅ ANALÍTICA: Error en la llamada a la API
         trackEvent('recommendation_api_error', { error: 'fetch_failed' });
       });
       
     } catch (error) {
       console.error("Error generating recommendation:", error);
+      // ✅ ANALÍTICA: Error guardando en Firestore
       trackEvent('recommendation_generation_error', { error: 'firestore_save_failed' });
       
       alert('Tuvimos un problema. Por favor, intenta de nuevo.');
@@ -120,6 +120,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
 
   const toggleCraving = (craving: string) => {
     const isSelecting = !selectedCravings.includes(craving);
+    // ✅ ANALÍTICA: Interacción con antojos
     trackEvent('recommendation_craving_toggle', { 
         craving: stripEmoji(craving),
         action: isSelecting ? 'select' : 'deselect'
@@ -131,6 +132,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   };
 
   const handleMealSelect = (meal: string) => {
+    // ✅ ANALÍTICA: Selección de platillo específico
     trackEvent('recommendation_meal_selected', { meal: stripEmoji(meal) });
     setSelectedMeal(meal);
   };
@@ -199,71 +201,23 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
               </div>
               
               {selectedMeal && (
-                <div className="space-y-3">
-                  {/* ✅ Selector de Comensales - Nuevo */}
-                  <div className="bg-bocado-background p-4 rounded-2xl animate-fade-in">
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-bold text-bocado-gray uppercase tracking-wide">¿Para cuántos?</label>
-                      <span className="text-lg font-bold text-bocado-green">{servings} {servings === 1 ? 'persona' : 'personas'}</span>
-                    </div>
-                    <div className="flex items-center gap-4 justify-center">
-                      <button 
-                        onClick={() => {
-                          const val = Math.max(1, servings - 1);
-                          setServings(val);
-                          trackEvent('recommendation_servings_change', { count: val });
-                        }}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white border-2 border-bocado-border text-bocado-green font-bold text-lg active:scale-90 transition-transform disabled:opacity-50"
-                        disabled={servings <= 1}
-                      >-</button>
-                      
-                      <div className="flex-1 max-w-[120px]">
-                        <input 
-                          type="range" 
-                          min="1" 
-                          max="10" 
-                          step="1" 
-                          value={servings} 
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setServings(val);
-                            trackEvent('recommendation_servings_change', { count: val });
-                          }}
-                          className="w-full h-2 bg-bocado-border rounded-lg appearance-none cursor-pointer accent-bocado-green" 
-                        />
-                      </div>
-                      
-                      <button 
-                        onClick={() => {
-                          const val = Math.min(10, servings + 1);
-                          setServings(val);
-                          trackEvent('recommendation_servings_change', { count: val });
-                        }}
-                        className="w-10 h-10 flex items-center justify-center rounded-full bg-white border-2 border-bocado-border text-bocado-green font-bold text-lg active:scale-90 transition-transform disabled:opacity-50"
-                        disabled={servings >= 10}
-                      >+</button>
-                    </div>
+                <div className="bg-bocado-background p-4 rounded-2xl mt-2 animate-fade-in">
+                  <div className="flex justify-between items-center mb-2">
+                    <label className="text-xs font-bold text-bocado-gray uppercase tracking-wide">Tiempo</label>
+                    <span className="text-lg font-bold text-bocado-green">{cookingTime >= 65 ? '60+' : cookingTime} min</span>
                   </div>
-
-                  {/* Selector de Tiempo */}
-                  <div className="bg-bocado-background p-4 rounded-2xl animate-fade-in">
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-xs font-bold text-bocado-gray uppercase tracking-wide">Tiempo</label>
-                      <span className="text-lg font-bold text-bocado-green">{cookingTime >= 65 ? '60+' : cookingTime} min</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="10" 
-                      max="65" 
-                      step="5" 
-                      value={cookingTime} 
-                      onChange={(e) => {
-                          setCookingTime(Number(e.target.value));
-                      }} 
-                      onMouseUp={() => trackEvent('recommendation_time_adjusted', { time: cookingTime })}
-                      className="w-full h-2 bg-bocado-border rounded-lg appearance-none cursor-pointer accent-bocado-green" 
-                    />
-                  </div>
+                  <input 
+                    type="range" 
+                    min="10" 
+                    max="65" 
+                    step="5" 
+                    value={cookingTime} 
+                    onChange={(e) => {
+                        setCookingTime(Number(e.target.value));
+                    }} 
+                    onMouseUp={() => trackEvent('recommendation_time_adjusted', { time: cookingTime })}
+                    className="w-full h-2 bg-bocado-border rounded-lg appearance-none cursor-pointer accent-bocado-green" 
+                  />
                 </div>
               )}
             </div>
