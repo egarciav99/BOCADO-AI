@@ -30,8 +30,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   const [selectedBudget, setSelectedBudget] = useState('');
   const [cookingTime, setCookingTime] = useState(30);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [countdown, setCountdown] = useState(0);
   
   // Prevenir clicks múltiples
   const isProcessingRef = useRef(false);
@@ -53,19 +51,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
     };
   }, []);
 
-  // Countdown para rate limit
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(c => c - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
-
   const handleTypeChange = (type: 'En casa' | 'Fuera') => {
       trackEvent('recommendation_type_selected', { type });
       setRecommendationType(type);
       setSelectedBudget('');
-      setError(null); // Limpiar errores previos
       
       if (type === 'En casa') setSelectedCravings([]);
       else {
@@ -90,7 +79,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
     // Bloquear inmediatamente
     isProcessingRef.current = true;
     setIsGenerating(true);
-    setError(null);
     
     // Crear nuevo abort controller
     abortControllerRef.current = new AbortController();
@@ -123,7 +111,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       // 1. Guardar en Firestore
       const newDoc = await addDoc(collection(db, 'user_interactions'), interactionData);
       
-      // 2. Llamar a la API con manejo de errores
+      // 2. Llamar a la API
       const response = await fetch(env.api.recommendationUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -131,22 +119,19 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         signal: abortControllerRef.current.signal
       });
 
-      // Manejar específicamente el 429 (Rate Limit)
+      // ✅ MANEJO ESPECIAL DEL 429: Navegar a PlanScreen igualmente
+      // para mostrar los mensajes de loading mientras se espera
       if (response.status === 429) {
         const errorData = await response.json().catch(() => ({}));
-        const retryAfter = errorData.retryAfter || 30;
-        
-        setCountdown(retryAfter);
-        setError(`⏳ ${errorData.error || 'Por favor espera unos segundos'}`);
         
         trackEvent('recommendation_rate_limited', { 
-          retryAfter,
+          retryAfter: errorData.retryAfter || 30,
           type: recommendationType 
         });
         
-        // No navegar, quedarse en la pantalla
-        setIsGenerating(false);
-        isProcessingRef.current = false;
+        // 🚀 NAVEGAR INMEDIATAMENTE a PlanScreen
+        // El usuario verá los mensajes de loading en lugar del error
+        onPlanGenerated(newDoc.id);
         return;
       }
 
@@ -170,9 +155,19 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         type: recommendationType 
       });
       
-      setError('Tuvimos un problema. Por favor, intenta de nuevo.');
-      setIsGenerating(false);
-      isProcessingRef.current = false;
+      // Mostrar alerta simple pero navegar igual para no bloquear al usuario
+      // o quedarse en la pantalla si es un error grave (no 429)
+      if (error.message?.includes('Failed to fetch') || error.message?.includes('Network')) {
+        alert('Error de conexión. Por favor verifica tu internet.');
+        setIsGenerating(false);
+        isProcessingRef.current = false;
+      } else {
+        // Para otros errores, navegar igual al plan (podría estar procesándose)
+        // o mostrar error
+        alert('Tuvimos un problema. Por favor, intenta de nuevo.');
+        setIsGenerating(false);
+        isProcessingRef.current = false;
+      }
     }
   };
 
@@ -191,7 +186,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   const handleMealSelect = (meal: string) => {
     trackEvent('recommendation_meal_selected', { meal: stripEmoji(meal) });
     setSelectedMeal(meal);
-    setError(null);
   };
 
   const isSelectionMade = (recommendationType === 'En casa' && selectedMeal) || 
@@ -216,18 +210,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         <h1 className="text-xl font-bold text-bocado-dark-green">¡Hola, {userName || 'Comensal'}! 👋</h1>
         <p className="text-sm text-bocado-gray mt-1">¿Dónde y qué quieres comer hoy?</p>
       </div>
-
-      {/* Mensaje de error */}
-      {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-2xl animate-fade-in">
-          <p className="text-red-600 text-sm font-medium text-center">{error}</p>
-          {countdown > 0 && (
-            <p className="text-red-500 text-xs text-center mt-1">
-              Reintentar en {countdown} segundos...
-            </p>
-          )}
-        </div>
-      )}
 
       {/* Selector principal */}
       <div className="grid grid-cols-2 gap-3 mb-6">
@@ -326,7 +308,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                       onClick={() => {
                           trackEvent('recommendation_budget_selected', { budget: option.value });
                           setSelectedBudget(option.value);
-                          setError(null);
                       }} 
                       disabled={isGenerating}
                       className={`w-full py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all flex justify-between items-center active:scale-[0.98] disabled:opacity-50 ${
@@ -348,7 +329,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
           <div className={`mt-6 transition-all duration-300 ${isSelectionMade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
             <button 
               onClick={handleGenerateRecommendation} 
-              disabled={isGenerating || countdown > 0} 
+              disabled={isGenerating} 
               className="w-full bg-bocado-green text-white font-bold py-4 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isGenerating ? (
@@ -356,8 +337,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <span>Cocinando...</span>
                 </>
-              ) : countdown > 0 ? (
-                <span>Espera {countdown}s...</span>
               ) : "¡A comer! 🍽️"}
             </button>
           </div>
