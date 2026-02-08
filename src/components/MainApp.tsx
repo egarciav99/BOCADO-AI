@@ -6,8 +6,8 @@ import ProfileScreen from './ProfileScreen';
 import SavedRecipesScreen from './SavedRecipesScreen';
 import SavedRestaurantsScreen from './SavedRestaurantsScreen';
 import TutorialModal from './TutorialModal';
-import ErrorBoundary from './ErrorBoundary'; // ✅ Importado
-import { auth, trackEvent } from '../firebaseConfig'; // ✅ Importado trackEvent
+import ErrorBoundary from './ErrorBoundary';
+import { auth, trackEvent } from '../firebaseConfig';
 import { updateProfile } from 'firebase/auth';
 import { useAuthStore } from '../stores/authStore';
 import { useUserProfile } from '../hooks/useUser';
@@ -29,14 +29,11 @@ const MainApp: React.FC<MainAppProps> = ({
   const [isTutorialOpen, setIsTutorialOpen] = useState(showTutorial);
   
   const { user, isLoading, isAuthenticated } = useAuthStore();
-
-  // ✅ TANSTACK QUERY: Precargar perfil
   useUserProfile(user?.uid);
 
   const userName = user?.displayName?.split(' ')[0] || '';
   const userUid = user?.uid || null;
 
-  // ✅ ANALÍTICA: Trackeo de cambio de pestañas
   useEffect(() => {
     trackEvent('tab_changed', { tab_name: activeTab });
   }, [activeTab]);
@@ -74,7 +71,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
   if (isLoading) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-bocado-background">
+      <div className="h-screen w-full flex items-center justify-center bg-bocado-background">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-bocado-green font-bold animate-pulse">Sincronizando Bocado...</p>
@@ -86,16 +83,16 @@ const MainApp: React.FC<MainAppProps> = ({
   if (!isAuthenticated || !userUid) return null;
 
   return (
-    <div className="flex-1 flex flex-col relative bg-bocado-background overflow-hidden">
+    // ✅ h-screen y overflow-hidden para contener todo
+    <div className="h-screen w-full flex flex-col bg-bocado-background overflow-hidden relative">
       
       {isTutorialOpen && (
         <TutorialModal onClose={handleTutorialClose} userName={userName} />
       )}
 
-      <div className="flex-1 overflow-y-auto overflow-x-hidden pb-20">
-        <div className="max-w-md mx-auto">
-          {/* ✅ ErrorBoundary envuelve el contenido de las pestañas */}
-          {/* Si una pestaña falla, el BottomTabBar sigue funcionando */}
+      {/* Contenido scrolleable con padding bottom generoso para la barra flotante */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth pb-28">
+        <div className="max-w-md mx-auto min-h-full">
           <ErrorBoundary>
             {activeTab === 'recommendation' && (
               <RecommendationScreen 
@@ -130,8 +127,9 @@ const MainApp: React.FC<MainAppProps> = ({
             )}
           </ErrorBoundary>
         </div>
-      </div>
+      </main>
 
+      {/* ✅ BottomTabBar fuera del scroll, siempre visible */}
       <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
