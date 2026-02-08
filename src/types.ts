@@ -53,7 +53,14 @@ export interface Recipe {
   savingsMatch: string; // coincidencia_despensa
   ingredients: string[];
   instructions: string[];
-  cuisine?: string; // Nuevo campo para Tipo de Comida (Restaurantes)
+  cuisine?: string; // Tipo de Comida (Restaurantes)
+  
+  // ✅ CAMPOS ESPECÍFICOS PARA RESTAURANTES (opcionales)
+  link_maps?: string;                    // URL de Google Maps
+  direccion_aproximada?: string;         // Dirección del lugar
+  plato_sugerido?: string;              // Plato recomendado
+  por_que_es_bueno?: string;            // Descripción por qué encaja con el perfil
+  hack_saludable?: string;              // Tip para pedir saludable
 }
 
 export interface Meal {

@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { db, auth, trackEvent } from '../firebaseConfig'; // ✅ Importado trackEvent
+import { db, auth, trackEvent } from '../firebaseConfig';
 import { collection, query, where, onSnapshot, DocumentSnapshot } from 'firebase/firestore';
 import { Plan, Meal } from '../types';
 import MealCard from './MealCard';
@@ -76,8 +76,17 @@ const processRecommendationDoc = (doc: DocumentSnapshot): Plan | null => {
         difficulty: 'Restaurante', 
         calories: 'N/A', 
         savingsMatch: 'Ninguno',
-        ingredients: [rec.direccion_aproximada, rec.link_maps].filter(Boolean),
-        instructions: [rec.plato_sugerido, rec.por_que_es_bueno, rec.hack_saludable].filter(Boolean)
+        
+        // Campos separados para restaurantes
+        link_maps: rec.link_maps || null,
+        direccion_aproximada: rec.direccion_aproximada || null,
+        plato_sugerido: rec.plato_sugerido || null,
+        por_que_es_bueno: rec.por_que_es_bueno || null,
+        hack_saludable: rec.hack_saludable || null,
+        
+        // Arrays vacíos para restaurantes (no se usan pero evitan undefined)
+        ingredients: [],
+        instructions: []
       }
     }));
 
@@ -119,7 +128,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
   const { data: selectedPlan, isLoading, isError, error, refetch } = usePlanQuery(planId, user?.uid);
   const toggleMutation = useToggleSavedItem();
 
-  // ✅ ANALÍTICA: Trackeo cuando el plan se carga con éxito
   useEffect(() => {
     if (selectedPlan) {
       trackEvent('plan_viewed', {
@@ -130,7 +138,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
     }
   }, [selectedPlan, planId, user]);
 
-  // ✅ ANALÍTICA: Trackeo si hay un error
   useEffect(() => {
     if (isError) {
       trackEvent('plan_error', {
@@ -155,7 +162,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
     if (!user) return;
     const isRestaurant = meal.recipe.difficulty === 'Restaurante';
     
-    // ✅ ANALÍTICA: Guardar receta/restaurante
     trackEvent('plan_item_saved', {
         item_title: meal.recipe.title,
         type: isRestaurant ? 'restaurant' : 'recipe'
@@ -171,7 +177,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
   };
 
   const handleStartNew = () => {
-    trackEvent('plan_return_home'); // ✅ Analítica
+    trackEvent('plan_return_home');
     onStartNewPlan();
   };
 
@@ -227,7 +233,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
       
       <div className="px-4 py-4 border-t border-bocado-border bg-white">
         <button 
-          onClick={handleStartNew} // ✅ Handler con analítica
+          onClick={handleStartNew}
           className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
         >
           Volver al inicio
