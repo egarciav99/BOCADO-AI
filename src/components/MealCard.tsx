@@ -16,7 +16,7 @@ const getSmartEmoji = (title: string): string => {
   const lower = title.toLowerCase();
   if (lower.includes('pollo')) return '🍗';
   if (lower.includes('pescado') || lower.includes('salmon')) return '🐟';
-  if (lower.includes('carne') || lower.includes('res')) return '🥩';
+  if (lower.includes('carne')) return '🥩';
   if (lower.includes('ensalada')) return '🥗';
   if (lower.includes('pasta')) return '🍝';
   if (lower.includes('taco')) return '🌮';
@@ -44,6 +44,7 @@ const MealCard: React.FC<MealCardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [copiedAddress, setCopiedAddress] = useState(false); // ✅ Estado para feedback de copiado
 
   const { user } = useAuthStore();
   const toggleMutation = useToggleSavedItem();
@@ -115,15 +116,59 @@ const MealCard: React.FC<MealCardProps> = ({
     }
   };
 
-  // ✅ NUEVO: Handler para búsqueda fallback en Maps (restaurantes antiguos)
+  // ✅ CORREGIDO: Búsqueda fallback usa Nombre + Dirección + Ciudad (más preciso)
   const handleSearchMapsFallback = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const query = encodeURIComponent(recipe.title);
+    
+    // Concatenar todo lo disponible para máxima precisión
+    const searchParts = [recipe.title];
+    
+    if (recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}`) {
+      searchParts.push(recipe.direccion_aproximada);
+    }
+    
+    const searchTerm = searchParts.join(' ');
+    const query = encodeURIComponent(searchTerm);
+    
     trackEvent('restaurant_maps_fallback_search', {
       restaurant: recipe.title,
-      query: query
+      query: searchTerm,
+      has_address: !!recipe.direccion_aproximada
     });
+    
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
+  };
+
+  // ✅ NUEVO: Copiar dirección al portapapeles
+  const handleCopyAddress = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const textToCopy = recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}`
+      ? `${recipe.title} - ${recipe.direccion_aproximada}`
+      : recipe.title;
+    
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopiedAddress(true);
+      trackEvent('restaurant_address_copied', { 
+        restaurant: recipe.title,
+        address: recipe.direccion_aproximada 
+      });
+      
+      // Resetear el estado después de 2 segundos
+      setTimeout(() => setCopiedAddress(false), 2000);
+    } catch (err) {
+      console.error('Error copying:', err);
+      // Fallback para navegadores antiguos
+      const textArea = document.createElement("textarea");
+      textArea.value = textToCopy;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      setCopiedAddress(true);
+      setTimeout(() => setCopiedAddress(false), 2000);
+    }
   };
 
   return (
@@ -204,10 +249,10 @@ const MealCard: React.FC<MealCardProps> = ({
       {isExpanded && (
         <div className="px-4 pb-4 pt-2 border-t border-bocado-border space-y-4 animate-fade-in">
           
-          {/* ✅ SECCIÓN PARA RESTAURANTES CON MANEJO DE FALLBACK */}
+          {/* SECCIÓN PARA RESTAURANTES CON MANEJO DE FALLBACK MEJORADO */}
           {isRestaurant && (
             <div className="space-y-3">
-              {/* Si tiene link_maps (nuevo formato) */}
+              {/* Si tiene link preciso (nuevo formato) */}
               {recipe.link_maps ? (
                 <div className="mb-3">
                   <button
@@ -218,24 +263,48 @@ const MealCard: React.FC<MealCardProps> = ({
                     <span>Ver ubicación en Google Maps</span>
                   </button>
                   {recipe.direccion_aproximada && (
-                    <p className="text-xs text-bocado-gray text-center mt-2 px-2">
+                    <p className="text-xs text-bocado-gray text-center mt-2 px-2 flex items-center justify-center gap-1">
                       {recipe.direccion_aproximada}
                     </p>
                   )}
                 </div>
               ) : (
-                /* Si NO tiene link_maps (formato antiguo) - FALLBACK */
-                <div className="mb-3 p-4 bg-gray-50 rounded-xl border border-gray-200 text-center">
-                  <p className="text-xs text-bocado-gray mb-3">
-                    📝 Este lugar fue guardado antes de la actualización y no tiene ubicación detallada
+                /* Si NO tiene link preciso (formato antiguo) - FALLBACK MEJORADO */
+                <div className="mb-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+                  <p className="text-xs text-amber-700 mb-3 text-center font-medium">
+                    ⚠️ Ubicación aproximada (guardado antes de la actualización)
                   </p>
-                  <button
-                    onClick={handleSearchMapsFallback}
-                    className="w-full py-2 px-4 bg-white border border-blue-200 rounded-lg text-sm text-blue-600 hover:bg-blue-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>🔍</span>
-                    <span>Buscar "{recipe.title}" en Maps</span>
-                  </button>
+                  
+                  {/* Mostrar dirección si existe */}
+                  {recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}` && (
+                    <p className="text-sm font-medium text-bocado-text mb-3 text-center bg-white p-2 rounded-lg border border-amber-100">
+                      {recipe.direccion_aproximada}
+                    </p>
+                  )}
+                  
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleSearchMapsFallback}
+                      className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-1 font-medium"
+                    >
+                      <span>🔍</span>
+                      <span>Buscar en Maps</span>
+                    </button>
+                    <button
+                      onClick={handleCopyAddress}
+                      className={`flex-1 py-2.5 border rounded-lg text-xs transition-all flex items-center justify-center gap-1 font-medium ${
+                        copiedAddress 
+                          ? 'bg-green-50 border-green-200 text-green-600' 
+                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span>{copiedAddress ? '✓' : '📋'}</span>
+                      <span>{copiedAddress ? 'Copiado' : 'Copiar'}</span>
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-amber-600/70 text-center mt-2">
+                    Tip: Guarda el restaurante nuevamente desde "Fuera" para obtener la ubicación exacta
+                  </p>
                 </div>
               )}
 
@@ -272,9 +341,6 @@ const MealCard: React.FC<MealCardProps> = ({
                 <div className="text-center py-4 px-4 bg-bocado-background rounded-xl">
                   <p className="text-xs text-bocado-gray">
                     Información detallada no disponible para este lugar guardado anteriormente
-                  </p>
-                  <p className="text-[10px] text-bocado-gray/60 mt-1">
-                    Guarda el restaurante nuevamente desde "Fuera" para ver todos los detalles
                   </p>
                 </div>
               )}

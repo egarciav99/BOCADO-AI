@@ -260,21 +260,29 @@ async function checkRateLimit(userId: string): Promise<{ allowed: boolean; secon
 // 7. UTILIDAD PARA GENERAR LINKS DE MAPS
 // ============================================
 
-const generateMapsLink = (restaurantName: string, city: string): string => {
-  // Limpiar y codificar correctamente
-  const cleanName = restaurantName.replace(/[^\w\s-]/g, '').trim();
-  const cleanCity = (city || '').replace(/[^\w\s-]/g, '').trim();
-  const query = encodeURIComponent(`${cleanName} ${cleanCity}`.trim());
-  return `https://www.google.com/maps/search/?api=1&query=${query}`;
+const generateMapsLink = (restaurantName: string, address: string, city: string): string => {
+  // Limpiar caracteres especiales pero mantener espacios para la query
+  const cleanName = restaurantName.replace(/[^\w\s\-&,]/g, '').trim();
+  const cleanAddress = (address || '').replace(/[^\w\s\-&,]/g, '').trim();
+  const cleanCity = (city || '').replace(/[^\w\s\-&]/g, '').trim();
+  
+  // Priorizar: Nombre + Dirección + Ciudad (más preciso)
+  // Fallback: Nombre + Ciudad
+  const searchQuery = cleanAddress 
+    ? `${cleanName} ${cleanAddress} ${cleanCity}`
+    : `${cleanName} ${cleanCity}`;
+  
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery)}`;
 };
 
 const sanitizeRecommendation = (rec: any, city: string) => {
-  // Asegurar que el link de Maps sea válido y no tenga espacios
+  // Asegurar que el link de Maps sea válido y use dirección si existe
   if (rec.nombre_restaurante) {
-    rec.link_maps = generateMapsLink(rec.nombre_restaurante, city);
+    const address = rec.direccion_aproximada || '';
+    rec.link_maps = generateMapsLink(rec.nombre_restaurante, address, city);
   }
   
-  // Asegurar que no haya campos undefined que rompan el frontend
+  // Asegurar que no haya campos undefined
   rec.direccion_aproximada = rec.direccion_aproximada || `En ${city}`;
   rec.por_que_es_bueno = rec.por_que_es_bueno || 'Opción saludable disponible';
   rec.plato_sugerido = rec.plato_sugerido || 'Consulta el menú saludable';
@@ -398,7 +406,6 @@ export default async function handler(req: any, res: any) {
         throw new Error(`Missing Airtable config: BASE_ID=${!!baseId}, TABLE_NAME=${!!tableName}, API_KEY=${!!apiKey}`);
       }
       
-      // CORREGIDO: Eliminado el espacio después de v0/
       const airtableUrl = `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(tableName)}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=100`;
       
       let airtableItems: AirtableIngredient[] = [];
@@ -482,7 +489,7 @@ Responde ÚNICAMENTE con este JSON exacto (sin markdown, sin texto extra):
 }`;
 
     } else {
-      // CORREGIDO: Prompt simplificado sin intentar ejecutar JS en el template
+      // CORREGIDO: Prompt mejorado para exigir direcciones específicas reales
       finalPrompt = `Actúa como "Bocado", un experto en nutrición y guía gastronómico local en ${user.city || "su ciudad"}.
 
 ### PERFIL DEL USUARIO
@@ -500,8 +507,29 @@ ${historyContext}
 
 ${feedbackContext}
 
+### REQUISITOS CRÍTICOS PARA RESTAURANTES:
+1. USA NOMBRES REALES Y ESPECÍFICOS de restaurantes que existan en ${user.city}
+2. PROPORCIONA DIRECCIONES EXACTAS: Calle, número y colonia/zona (ej: "Calle Arturo Soria 126, Chamartín")
+3. Si no conoces la dirección exacta, usa la zona/centro comercial específico (ej: "Plaza Norte, local 45")
+4. NO uses direcciones vagas como "Por el centro" o "Zona Rosa"
+5. Verifica que el nombre + dirección corresponda a un lugar real
+
+### EJEMPLO CORRECTO:
+{
+  "nombre_restaurante": "El Bund",
+  "direccion_aproximada": "Calle Arturo Soria 126, Chamartín, 28043 Madrid",
+  "tipo_comida": "China Saludable"
+}
+
+### EJEMPLO INCORRECTO:
+{
+  "nombre_restaurante": "Restaurante Chino Bueno",
+  "direccion_aproximada": "Por el centro de Madrid",
+  "tipo_comida": "Asiática"
+}
+
 ### TAREA
-Genera **5 RECOMENDACIONES** de restaurantes reales o tipos de cocina específicos en ${user.city || "su ciudad"}.
+Genera **5 RECOMENDACIONES** de restaurantes reales en ${user.city || "su ciudad"}.
 
 Responde ÚNICAMENTE con este JSON exacto (sin markdown, sin texto adicional):
 
@@ -511,20 +539,19 @@ Responde ÚNICAMENTE con este JSON exacto (sin markdown, sin texto adicional):
   "recomendaciones": [
     {
       "id": 1,
-      "nombre_restaurante": "Nombre exacto del lugar para búsqueda",
+      "nombre_restaurante": "Nombre exacto del lugar",
       "tipo_comida": "Ej: Italiana, Vegana, Mexicana",
-      "direccion_aproximada": "Zona o dirección aproximada",
-      "por_que_es_bueno": "Explicación de por qué encaja con su perfil",
+      "direccion_aproximada": "Calle Número, Colonia/Zona, Ciudad (formato completo)",
       "plato_sugerido": "Nombre de un plato específico recomendado",
+      "por_que_es_bueno": "Explicación de por qué encaja con su perfil",
       "hack_saludable": "Consejo práctico para pedir más saludable"
     }
   ]
 }
 
 IMPORTANTE: 
-- NO incluyas el campo "link_maps", se generará automáticamente
-- Usa nombres de restaurantes reales y específicos de ${user.city}
-- Si no conoces nombres exactos, sugiere tipos de restaurante muy específicos (ej: "Restaurante de comida india vegana en Zona Rosa")`;
+- NO incluyas el campo "link_maps", se generará automáticamente usando el nombre + dirección
+- Las direcciones deben ser específicas para que Google Maps pueda ubicarlas correctamente`;
     }
 
     const result = await model.generateContent({
@@ -554,7 +581,7 @@ IMPORTANTE:
     // POST-PROCESAMIENTO PARA LINKS CLICKEABLES
     // ============================================
     if (type === 'Fuera' && parsedData.recomendaciones) {
-      // Generar links válidos en el backend
+      // Generar links válidos en el backend usando nombre + dirección + ciudad
       parsedData.recomendaciones = parsedData.recomendaciones.map((rec: any) => 
         sanitizeRecommendation(rec, user.city || "")
       );
