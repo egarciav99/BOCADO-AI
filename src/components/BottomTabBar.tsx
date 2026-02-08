@@ -13,70 +13,65 @@ interface BottomTabBarProps {
 }
 
 const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) => {
-  
-  const renderTabButton = (id: Tab, label: string, Icon: React.FC<React.SVGProps<SVGSVGElement>>) => {
-    const isActive = activeTab === id;
-    return (
-      <button
-        onClick={() => onTabChange(id)}
-        className={`flex flex-col items-center justify-center space-y-1 w-16 ${
-          isActive ? 'text-bocado-green' : 'text-bocado-gray hover:text-bocado-dark-gray'
-        }`}
-      >
-        <Icon 
-          className={`w-5 h-5 transition-all duration-200 ${isActive ? 'scale-110' : ''}`} 
-          strokeWidth={isActive ? 2.5 : 1.5}
-        />
-        <span className={`text-[10px] font-medium whitespace-nowrap ${isActive ? 'font-bold' : ''}`}>
-          {label}
-        </span>
-      </button>
-    );
-  };
+  const isActive = (id: Tab) => activeTab === id;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 px-6 pb-safe">
-      <div className="mx-auto max-w-md relative">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-safe">
+      <div className="mx-auto max-w-md bg-white/95 backdrop-blur-xl border border-white/60 shadow-[0_-4px-20px_rgba(0,0,0,0.1)] rounded-3xl mb-3 overflow-visible">
         
-        {/* Barra glassmorphism más baja y compacta */}
-        <div className="bg-white/95 backdrop-blur-xl border border-white/60 shadow-[0_-2px_16px_rgba(0,0,0,0.08)] rounded-3xl mb-3 px-6 py-3">
-          <div className="flex items-center justify-between h-12">
-            
-            {/* IZQUIERDA - Recetas y Lugares */}
-            <div className="flex items-center gap-6">
-              {renderTabButton('saved', 'Recetas', BookIcon)}
-              {renderTabButton('restaurants', 'Lugares', LocationIcon)}
-            </div>
+        {/* Contenedor flex simple: 5 elementos, mismo tamaño, centrados verticalmente */}
+        <div className="flex items-center justify-between h-16 px-2 relative">
+          
+          {/* 1. Recetas */}
+          <button
+            onClick={() => onTabChange('saved')}
+            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('saved') ? 'text-bocado-green' : 'text-bocado-gray'}`}
+          >
+            <BookIcon className="w-5 h-5" strokeWidth={isActive('saved') ? 2.5 : 1.5} />
+            <span className="text-[10px] font-medium whitespace-nowrap">Recetas</span>
+          </button>
 
-            {/* CENTRO - Inicio (más bajito, apenas sobresale) */}
-            <div className="relative -mt-2">
-              <button
-                onClick={() => onTabChange('recommendation')}
-                className={`w-11 h-11 rounded-full flex items-center justify-center shadow-lg border-[2.5px] border-white transition-all duration-200 ${
-                  activeTab === 'recommendation' 
-                    ? 'bg-bocado-green text-white scale-110' 
-                    : 'bg-bocado-dark-green/90 text-white hover:scale-105'
-                }`}
-              >
-                <HomeIcon className="w-5 h-5" strokeWidth={2.5} />
-              </button>
-              {/* Label debajo del círculo, no afuera */}
-              <span className={`block text-center text-[9px] font-bold mt-0.5 ${
-                activeTab === 'recommendation' ? 'text-bocado-green' : 'text-bocado-gray'
-              }`}>
-                Inicio
-              </span>
-            </div>
+          {/* 2. Lugares */}
+          <button
+            onClick={() => onTabChange('restaurants')}
+            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('restaurants') ? 'text-bocado-green' : 'text-bocado-gray'}`}
+          >
+            <LocationIcon className="w-5 h-5" strokeWidth={isActive('restaurants') ? 2.5 : 1.5} />
+            <span className="text-[10px] font-medium whitespace-nowrap">Lugares</span>
+          </button>
 
-            {/* DERECHA - Mi Cocina y Perfil */}
-            <div className="flex items-center gap-6">
-              {renderTabButton('pantry', 'Mi Cocina', RestaurantIcon)}
-              {renderTabButton('profile', 'Perfil', UserIcon)}
-            </div>
-
+          {/* 3. Inicio (Centro) - más grande y elevado */}
+          <div className="flex flex-col items-center justify-center flex-1 h-full relative">
+            <button
+              onClick={() => onTabChange('recommendation')}
+              className={`w-12 h-12 rounded-full flex items-center justify-center border-2 border-white shadow-md -mt-4 transition-transform ${isActive('recommendation') ? 'bg-bocado-green text-white scale-110' : 'bg-bocado-dark-green text-white'}`}
+            >
+              <HomeIcon className="w-6 h-6" strokeWidth={2.5} />
+            </button>
+            <span className={`text-[10px] font-bold mt-1 ${isActive('recommendation') ? 'text-bocado-green' : 'text-bocado-gray'}`}>
+              Inicio
+            </span>
           </div>
-        </div>
 
+          {/* 4. Mi Cocina */}
+          <button
+            onClick={() => onTabChange('pantry')}
+            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('pantry') ? 'text-bocado-green' : 'text-bocado-gray'}`}
+          >
+            <RestaurantIcon className="w-5 h-5" strokeWidth={isActive('pantry') ? 2.5 : 1.5} />
+            <span className="text-[10px] font-medium whitespace-nowrap">Mi Cocina</span>
+          </button>
+
+          {/* 5. Perfil */}
+          <button
+            onClick={() => onTabChange('profile')}
+            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('profile') ? 'text-bocado-green' : 'text-bocado-gray'}`}
+          >
+            <UserIcon className="w-5 h-5" strokeWidth={isActive('profile') ? 2.5 : 1.5} />
+            <span className="text-[10px] font-medium whitespace-nowrap">Perfil</span>
+          </button>
+
+        </div>
       </div>
     </nav>
   );
