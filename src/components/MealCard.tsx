@@ -115,6 +115,17 @@ const MealCard: React.FC<MealCardProps> = ({
     }
   };
 
+  // ✅ NUEVO: Handler para búsqueda fallback en Maps (restaurantes antiguos)
+  const handleSearchMapsFallback = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const query = encodeURIComponent(recipe.title);
+    trackEvent('restaurant_maps_fallback_search', {
+      restaurant: recipe.title,
+      query: query
+    });
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <div className="group border border-bocado-border rounded-2xl bg-white transition-all duration-200 hover:shadow-bocado active:scale-[0.99]">
       
@@ -193,27 +204,42 @@ const MealCard: React.FC<MealCardProps> = ({
       {isExpanded && (
         <div className="px-4 pb-4 pt-2 border-t border-bocado-border space-y-4 animate-fade-in">
           
-          {/* Botón de Google Maps para restaurantes */}
-          {isRestaurant && recipe.link_maps && (
-            <div className="mb-3">
-              <button
-                onClick={handleOpenMaps}
-                className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-              >
-                <span>📍</span>
-                <span>Ver ubicación en Google Maps</span>
-              </button>
-              {recipe.direccion_aproximada && (
-                <p className="text-xs text-bocado-gray text-center mt-2 px-2">
-                  {recipe.direccion_aproximada}
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Campos específicos de restaurante */}
+          {/* ✅ SECCIÓN PARA RESTAURANTES CON MANEJO DE FALLBACK */}
           {isRestaurant && (
             <div className="space-y-3">
+              {/* Si tiene link_maps (nuevo formato) */}
+              {recipe.link_maps ? (
+                <div className="mb-3">
+                  <button
+                    onClick={handleOpenMaps}
+                    className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>📍</span>
+                    <span>Ver ubicación en Google Maps</span>
+                  </button>
+                  {recipe.direccion_aproximada && (
+                    <p className="text-xs text-bocado-gray text-center mt-2 px-2">
+                      {recipe.direccion_aproximada}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                /* Si NO tiene link_maps (formato antiguo) - FALLBACK */
+                <div className="mb-3 p-4 bg-gray-50 rounded-xl border border-gray-200 text-center">
+                  <p className="text-xs text-bocado-gray mb-3">
+                    📝 Este lugar fue guardado antes de la actualización y no tiene ubicación detallada
+                  </p>
+                  <button
+                    onClick={handleSearchMapsFallback}
+                    className="w-full py-2 px-4 bg-white border border-blue-200 rounded-lg text-sm text-blue-600 hover:bg-blue-50 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                  >
+                    <span>🔍</span>
+                    <span>Buscar "{recipe.title}" en Maps</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Campos de información (solo si existen) */}
               {recipe.plato_sugerido && (
                 <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
                   <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-1">
@@ -238,6 +264,18 @@ const MealCard: React.FC<MealCardProps> = ({
                     💡 Hack saludable
                   </h4>
                   <p className="text-sm text-bocado-text">{recipe.hack_saludable}</p>
+                </div>
+              )}
+              
+              {/* Mensaje si no hay ningún dato extra */}
+              {!recipe.plato_sugerido && !recipe.por_que_es_bueno && !recipe.hack_saludable && (
+                <div className="text-center py-4 px-4 bg-bocado-background rounded-xl">
+                  <p className="text-xs text-bocado-gray">
+                    Información detallada no disponible para este lugar guardado anteriormente
+                  </p>
+                  <p className="text-[10px] text-bocado-gray/60 mt-1">
+                    Guarda el restaurante nuevamente desde "Fuera" para ver todos los detalles
+                  </p>
                 </div>
               )}
             </div>
