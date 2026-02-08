@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react'; // ✅ Agregado useEffect
 import { useSavedItems, useToggleSavedItem } from '../hooks/useSavedItems';
 import { useAuthStore } from '../stores/authStore';
+import { trackEvent } from '../firebaseConfig'; // ✅ Importar trackEvent
 import { LocationIcon } from './icons/LocationIcon';
 import MealCard from './MealCard';
 import { Meal } from '../types';
@@ -14,13 +15,27 @@ const SavedRestaurantsScreen: React.FC = () => {
   const { data: restaurants = [], isLoading } = useSavedItems(user?.uid, 'restaurant');
   const toggleMutation = useToggleSavedItem();
 
-  // Mapear a Meal[]
+  // ✅ ANALÍTICA: Trackear cuando se carga la pantalla
+  useEffect(() => {
+    if (user) {
+      trackEvent('saved_restaurants_screen_viewed', {
+        count: restaurants.length,
+        userId: user.uid
+      });
+    }
+  }, [user, restaurants.length]);
+
+  // Mapear a Meal[] (preserva todos los campos incluyendo link_maps)
   const savedRestaurants: Meal[] = restaurants.map(saved => ({
     mealType: saved.mealType,
-    recipe: saved.recipe
+    recipe: saved.recipe // Ahora incluye link_maps, direccion_aproximada, etc.
   }));
 
   const handleDeleteRequest = (meal: Meal) => {
+    // ✅ ANALÍTICA: Intención de eliminar
+    trackEvent('saved_restaurant_delete_initiated', {
+      restaurant: meal.recipe.title
+    });
     setMealToConfirmDelete(meal);
   };
 
@@ -29,15 +44,32 @@ const SavedRestaurantsScreen: React.FC = () => {
 
     const isSaved = restaurants.some(r => r.recipe.title === mealToConfirmDelete.recipe.title);
     
+    // ✅ ANALÍTICA: Confirmación de eliminación
+    trackEvent('saved_restaurant_deleted', {
+      restaurant: mealToConfirmDelete.recipe.title
+    });
+    
     toggleMutation.mutate({
       userId: user.uid,
       type: 'restaurant',
       recipe: mealToConfirmDelete.recipe,
       mealType: mealToConfirmDelete.mealType,
-      isSaved: true, // Está guardado, así que lo eliminamos
+      isSaved: true,
     });
     
     setMealToConfirmDelete(null);
+  };
+
+  // ✅ Manejar expansión para analytics
+  const handleInteraction = (type: string, data?: any) => {
+    if (type === 'expand' && data?.recipe) {
+      trackEvent('saved_restaurant_expanded', {
+        restaurant: data.recipe
+      });
+    }
+    if (type === 'save') {
+      handleDeleteRequest(data);
+    }
   };
 
   if (isLoading) {
@@ -59,7 +91,9 @@ const SavedRestaurantsScreen: React.FC = () => {
       <div className="text-center mb-6 px-4 pt-2">
         <LocationIcon className="w-6 h-6 text-bocado-green mx-auto mb-2" />
         <h2 className="text-xl font-bold text-bocado-dark-green">Mis Lugares</h2>
-        <p className="text-xs text-bocado-gray">Restaurantes guardados</p>
+        <p className="text-xs text-bocado-gray">
+          {savedRestaurants.length} {savedRestaurants.length === 1 ? 'lugar guardado' : 'lugares guardados'}
+        </p> {/* ✅ Mostrar contador dinámico */}
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
@@ -74,16 +108,14 @@ const SavedRestaurantsScreen: React.FC = () => {
               <MealCard 
                 key={meal.recipe.title + index} 
                 meal={meal}
-                onInteraction={(type) => {
-                  if (type === 'save') handleDeleteRequest(meal);
-                }}
+                onInteraction={handleInteraction} // ✅ Manejar todas las interacciones
               />
             ))}
           </div>
         )}
       </div>
 
-      {/* Modal de confirmación igual que antes... */}
+      {/* Modal de confirmación */}
       {mealToConfirmDelete && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-fade-in">
           <div className="bg-white rounded-3xl shadow-bocado w-full max-w-sm p-6 text-center">
@@ -91,9 +123,15 @@ const SavedRestaurantsScreen: React.FC = () => {
               <span className="text-xl">🗑️</span>
             </div>
             <h3 className="text-lg font-bold text-bocado-text mb-2">¿Eliminar lugar?</h3>
-            <p className="text-sm text-bocado-gray mb-6">
+            <p className="text-sm text-bocado-gray mb-2">
               "{mealToConfirmDelete.recipe.title}"
             </p>
+            {/* ✅ Mostrar dirección si existe para confirmar cuál es */}
+            {mealToConfirmDelete.recipe.direccion_aproximada && (
+              <p className="text-xs text-bocado-gray/60 mb-6">
+                📍 {mealToConfirmDelete.recipe.direccion_aproximada}
+              </p>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() => setMealToConfirmDelete(null)}
