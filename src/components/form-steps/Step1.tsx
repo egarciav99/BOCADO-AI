@@ -191,10 +191,11 @@ const Step1: React.FC<ExtendedStep1Props> = ({
         </div>
       </div>
 
-      {/* Género y Edad - Responsive: columna en móvil, grid en desktop */}
-      <div className="flex flex-col sm:grid sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">Género *</label>
+      {/* Género y Edad - Desktop: lado a lado, Móvil: Género arriba, Edad abajo */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Género - Primero en DOM para que aparezca primero siempre */}
+        <div className="order-1">
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center md:text-left">Género *</label>
           <div className="flex gap-2">
             {['Mujer', 'Hombre', 'Otro'].map(gender => (
               <GenderButton 
@@ -209,10 +210,11 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               />
             ))}
           </div>
-          {errors.gender && <p className="text-red-500 text-[10px] mt-1 text-center sm:text-left">{errors.gender}</p>}
+          {errors.gender && <p className="text-red-500 text-[10px] mt-1 text-center md:text-left">{errors.gender}</p>}
         </div>
 
-        <div>
+        {/* Edad - Segundo en DOM */}
+        <div className="order-2">
           <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Edad *</label>
           <input 
             type="text"

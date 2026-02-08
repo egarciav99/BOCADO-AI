@@ -3,7 +3,27 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // ============================================
-// RATE LIMITING DISTRIBUIDO (INLINE para evitar problemas de importación en Vercel)
+// 1. INICIALIZACIÓN DE FIREBASE
+// ============================================
+if (!getApps().length) {
+  try {
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (!serviceAccountKey) {
+      throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY no definida");
+    }
+    const serviceAccount = JSON.parse(serviceAccountKey.trim());
+    initializeApp({ credential: cert(serviceAccount) });
+    console.log('✅ Firebase inicializado correctamente');
+  } catch (error) {
+    console.error("❌ Error Firebase Init:", error);
+    throw error;
+  }
+}
+
+const db = getFirestore();
+
+// ============================================
+// RATE LIMITING DISTRIBUIDO (INLINE - después de inicializar Firebase)
 // ============================================
 
 interface RateLimitConfig {
@@ -37,7 +57,6 @@ const DEFAULT_CONFIG: RateLimitConfig = {
 };
 
 class DistributedRateLimiter {
-  private db = getFirestore();
   private config: RateLimitConfig;
 
   constructor(config: Partial<RateLimitConfig> = {}) {
@@ -45,11 +64,11 @@ class DistributedRateLimiter {
   }
 
   async checkRateLimit(userId: string): Promise<RateLimitResult> {
-    const counterRef = this.db.collection('rate_limit_v2').doc(userId);
+    const counterRef = db.collection('rate_limit_v2').doc(userId);
     const now = Date.now();
 
     try {
-      return await this.db.runTransaction<RateLimitResult>(async (t) => {
+      return await db.runTransaction<RateLimitResult>(async (t) => {
         const doc = await t.get(counterRef);
         const data = doc.exists ? doc.data() as RateLimitRecord : null;
 
@@ -129,11 +148,11 @@ class DistributedRateLimiter {
   }
 
   async completeProcess(userId: string): Promise<void> {
-    const counterRef = this.db.collection('rate_limit_v2').doc(userId);
+    const counterRef = db.collection('rate_limit_v2').doc(userId);
     const now = Date.now();
 
     try {
-      await this.db.runTransaction(async (t) => {
+      await db.runTransaction(async (t) => {
         const doc = await t.get(counterRef);
         
         if (!doc.exists) {
@@ -163,7 +182,7 @@ class DistributedRateLimiter {
   }
 
   async failProcess(userId: string, errorInfo?: string): Promise<void> {
-    const counterRef = this.db.collection('rate_limit_v2').doc(userId);
+    const counterRef = db.collection('rate_limit_v2').doc(userId);
 
     try {
       await counterRef.update({
@@ -185,7 +204,7 @@ class DistributedRateLimiter {
     canRequest: boolean;
     nextAvailableAt?: number;
   } | null> {
-    const counterRef = this.db.collection('rate_limit_v2').doc(userId);
+    const counterRef = db.collection('rate_limit_v2').doc(userId);
     const now = Date.now();
 
     try {
@@ -226,25 +245,6 @@ class DistributedRateLimiter {
 }
 
 const rateLimiter = new DistributedRateLimiter();
-
-// ============================================
-// 1. INICIALIZACIÓN DE FIREBASE
-// ============================================
-if (!getApps().length) {
-  try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountKey) {
-      throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY no definida");
-    }
-    const serviceAccount = JSON.parse(serviceAccountKey.trim());
-    initializeApp({ credential: cert(serviceAccount) });
-  } catch (error) {
-    console.error("❌ Error Firebase Init:", error);
-    throw error;
-  }
-}
-
-const db = getFirestore();
 
 // ============================================
 // 2. TIPOS E INTERFACES

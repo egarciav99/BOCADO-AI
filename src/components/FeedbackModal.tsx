@@ -39,7 +39,8 @@ const StarButton: React.FC<StarButtonProps> = React.memo(({
   onClick,
   isDisabled,
 }) => {
-  const handleClick = useCallback(() => {
+  const handleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     if (!isDisabled) onClick(star);
   }, [star, onClick, isDisabled]);
 
@@ -215,7 +216,10 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         }
       }}
     >
-      <div className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center transform transition-transform duration-300 translate-y-0">
+      <div 
+        className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center transform transition-transform duration-300 translate-y-0"
+        onClick={(e) => e.stopPropagation()}
+      >
         
         {/* Indicador de arrastre (mobile) */}
         <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6 sm:hidden" />
@@ -257,6 +261,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
               <textarea
                 value={comment}
                 onChange={handleCommentChange}
+                onClick={(e) => e.stopPropagation()}
                 placeholder="¿Algún detalle extra? (opcional)"
                 disabled={isPending}
                 className="w-full p-4 bg-bocado-background border-none rounded-2xl text-sm focus:ring-2 focus:ring-bocado-green/30 resize-none text-bocado-text placeholder-bocado-gray/50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -271,14 +276,20 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
             {/* Action buttons */}
             <div className="flex gap-3 pb-safe">
               <button
-                onClick={() => handleClose()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClose();
+                }}
                 disabled={isPending}
                 className="flex-1 py-3 rounded-2xl font-bold text-bocado-gray hover:bg-bocado-background transition-colors active:scale-95 disabled:opacity-50"
               >
                 Omitir
               </button>
               <button
-                onClick={handleSubmit}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSubmit();
+                }}
                 disabled={rating === 0 || isPending}
                 className="flex-1 bg-bocado-green text-white py-3 rounded-2xl font-bold shadow-bocado disabled:bg-bocado-gray/30 disabled:shadow-none transition-all active:scale-95 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
