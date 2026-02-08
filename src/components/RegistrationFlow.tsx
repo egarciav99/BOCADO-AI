@@ -17,7 +17,7 @@ import { env } from '../environment/env';
 
 // ✅ CORRECCIÓN ERRORES 2305: Asegúrate que en userSchema.ts 
 // los nombres coincidan exactamente (ej. userStep1Schema o step1Schema)
-import { step1Schema, step2Schema } from '../schemas/userSchema';
+import { step1Schema, step2Schema, step3Schema } from '../schemas/userSchema';
 
 const TOTAL_STEPS = 3;
 
@@ -37,8 +37,10 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   const [cityOptions, setCityOptions] = useState<any[]>([]);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
 
-  const formData = useProfileDraftStore((state) => state);
-  const updateField = useProfileDraftStore((state) => state.updateField);
+  // V2: Usar la estructura anidada del store
+  const formData = useProfileDraftStore((state) => state.formData) as FormData;
+  const updateField = useProfileDraftStore((state) => state.updateFormField);
+  const updateFormData = useProfileDraftStore((state) => state.updateFormData);
   const clearDraft = useProfileDraftStore((state) => state.clearDraft);
   const isHydrated = useProfileDraftStore((state) => state.isHydrated);
 
@@ -50,6 +52,22 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       });
     }
   }, [currentStep, isHydrated]);
+
+  // ✅ AUDITORÍA: Detectar abandono del registro al desmontar el componente
+  const isCompletedRef = React.useRef(false);
+  
+  useEffect(() => {
+    return () => {
+      // Solo dispara el evento si el registro no se completó
+      if (!isCompletedRef.current) {
+        trackEvent('registration_abandoned', {
+          step_number: currentStep,
+          step_name: `step_${currentStep}`,
+          total_steps: TOTAL_STEPS
+        });
+      }
+    };
+  }, [currentStep]);
   
   const validateStep = useCallback(async () => {
     setSubmissionError('');
@@ -59,6 +77,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       result = step1Schema.safeParse(formData);
     } else if (currentStep === 2) {
       result = step2Schema.safeParse(formData);
+    } else if (currentStep === 3) {
+      result = step3Schema.safeParse(formData);
     } else {
       return true;
     }
@@ -126,6 +146,9 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
         country: profile.country
       });
 
+      // ✅ AUDITORÍA: Marcar registro como completado antes de limpiar
+      isCompletedRef.current = true;
+      
       clearDraft();
       setRegisteredEmail(authData.email);
       setShowVerificationModal(true);
@@ -168,7 +191,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
     }
   };
 
-  const updateFormData = (field: keyof FormData, value: any) => {
+  const updateFormDataFn = (field: keyof FormData, value: any) => {
     updateField(field, value);
   };
 
@@ -200,7 +223,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   };
 
   const renderStep = () => {
-    const commonProps = { data: formData, updateData: updateFormData, errors };
+    const commonProps = { data: formData, updateData: updateFormDataFn, errors };
     switch (currentStep) {
       case 1:
         return (

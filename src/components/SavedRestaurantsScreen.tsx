@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react'; // ✅ Agregado useEffect
+import React, { useState, useEffect } from 'react';
 import { useSavedItems, useToggleSavedItem } from '../hooks/useSavedItems';
 import { useAuthStore } from '../stores/authStore';
-import { trackEvent } from '../firebaseConfig'; // ✅ Importar trackEvent
+import { trackEvent } from '../firebaseConfig';
 import { LocationIcon } from './icons/LocationIcon';
 import MealCard from './MealCard';
 import { Meal } from '../types';
@@ -11,8 +11,15 @@ const SavedRestaurantsScreen: React.FC = () => {
   
   const { user } = useAuthStore();
   
-  // ✅ TANSTACK QUERY: Datos del servidor
-  const { data: restaurants = [], isLoading } = useSavedItems(user?.uid, 'restaurant');
+  // ✅ TANSTACK QUERY + PAGINACIÓN
+  const savedItems = useSavedItems(user?.uid, 'restaurant');
+  const restaurants = savedItems.data || [];
+  const isLoading = savedItems.isLoading;
+  const fetchNextPage = savedItems.fetchNextPage;
+  const hasNextPage = savedItems.hasNextPage;
+  const isFetchingNextPage = savedItems.isFetchingNextPage;
+  const totalLoaded = savedItems.totalLoaded;
+  
   const toggleMutation = useToggleSavedItem();
 
   // ✅ ANALÍTICA: Trackear cuando se carga la pantalla
@@ -26,7 +33,7 @@ const SavedRestaurantsScreen: React.FC = () => {
   }, [user, restaurants.length]);
 
   // Mapear a Meal[] (preserva todos los campos incluyendo link_maps)
-  const savedRestaurants: Meal[] = restaurants.map(saved => ({
+  const savedRestaurants: Meal[] = restaurants.map((saved: any) => ({
     mealType: saved.mealType,
     recipe: saved.recipe // Ahora incluye link_maps, direccion_aproximada, etc.
   }));
@@ -42,7 +49,7 @@ const SavedRestaurantsScreen: React.FC = () => {
   const confirmDelete = () => {
     if (!mealToConfirmDelete || !user) return;
 
-    const isSaved = restaurants.some(r => r.recipe.title === mealToConfirmDelete.recipe.title);
+    const isSaved = restaurants.some((r: any) => r.recipe.title === mealToConfirmDelete.recipe.title);
     
     // ✅ ANALÍTICA: Confirmación de eliminación
     trackEvent('saved_restaurant_deleted', {
@@ -92,8 +99,8 @@ const SavedRestaurantsScreen: React.FC = () => {
         <LocationIcon className="w-6 h-6 text-bocado-green mx-auto mb-2" />
         <h2 className="text-xl font-bold text-bocado-dark-green">Mis Lugares</h2>
         <p className="text-xs text-bocado-gray">
-          {savedRestaurants.length} {savedRestaurants.length === 1 ? 'lugar guardado' : 'lugares guardados'}
-        </p> {/* ✅ Mostrar contador dinámico */}
+          {totalLoaded} {totalLoaded === 1 ? 'lugar guardado' : 'lugares guardados'}
+        </p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
@@ -108,9 +115,36 @@ const SavedRestaurantsScreen: React.FC = () => {
               <MealCard 
                 key={meal.recipe.title + index} 
                 meal={meal}
-                onInteraction={handleInteraction} // ✅ Manejar todas las interacciones
+                onInteraction={handleInteraction}
               />
             ))}
+            
+            {/* Botón Cargar Más */}
+            {hasNextPage && (
+              <div className="pt-4 pb-2">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="w-full py-3 px-4 bg-bocado-background text-bocado-dark-gray font-medium rounded-xl border border-bocado-border hover:bg-bocado-border/50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-sm">Cargando...</span>
+                    </>
+                  ) : (
+                    <span className="text-sm">Cargar más lugares</span>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {/* Mensaje de fin */}
+            {!hasNextPage && savedRestaurants.length > 0 && (
+              <p className="text-center text-xs text-bocado-gray/60 py-4">
+                No hay más lugares guardados
+              </p>
+            )}
           </div>
         )}
       </div>

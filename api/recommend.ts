@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { rateLimiter } from './utils/rateLimit';
 
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
@@ -198,63 +199,11 @@ const scoreIngredients = (
 };
 
 // ============================================
-// 6. RATE LIMITING ROBUSTO (LIMPIA ATASCOS)
+// 6. RATE LIMITING DISTRIBUIDO (V2)
 // ============================================
-
-async function checkRateLimit(userId: string): Promise<{ allowed: boolean; secondsLeft?: number; error?: string }> {
-  try {
-    const recentSnap = await db.collection('user_interactions')
-      .where('userId', '==', userId)
-      .where('createdAt', '>', new Date(Date.now() - 10 * 60 * 1000))
-      .get();
-    
-    const now = Date.now();
-    const COOLDOWN = 30000;
-    const STUCK_THRESHOLD = 120000;
-    
-    let hasActiveProcess = false;
-    let lastCompletedTime = 0;
-    
-    for (const doc of recentSnap.docs) {
-      const data = doc.data();
-      const status = data.status;
-      const createdAt = data.createdAt?.toMillis() || 0;
-      
-      if (status === 'processing') {
-        if (now - createdAt > STUCK_THRESHOLD) {
-          console.log(`🧹 Limpiando proceso atascado ${doc.id} (${Math.round((now - createdAt)/1000)}s)`);
-          await doc.ref.update({ 
-            status: 'timeout', 
-            error: 'Auto-cleanup: proceso atascado',
-            cleanedAt: FieldValue.serverTimestamp()
-          });
-        } else {
-          hasActiveProcess = true;
-        }
-      }
-      
-      if (status === 'completed' || status === 'error' || status === 'timeout') {
-        if (createdAt > lastCompletedTime) {
-          lastCompletedTime = createdAt;
-        }
-      }
-    }
-    
-    if (hasActiveProcess) {
-      return { allowed: false, secondsLeft: 30, error: 'Ya estás generando una recomendación. Espera un momento.' };
-    }
-    
-    if (lastCompletedTime > 0 && now - lastCompletedTime < COOLDOWN) {
-      const secondsLeft = Math.ceil((COOLDOWN - (now - lastCompletedTime)) / 1000);
-      return { allowed: false, secondsLeft, error: `Espera ${secondsLeft} segundos antes de generar otra recomendación.` };
-    }
-    
-    return { allowed: true };
-  } catch (error: any) {
-    console.error('Rate limit check error:', error);
-    return { allowed: true };
-  }
-}
+// Reemplazado por: ./utils/rateLimit.ts
+// Usa transacciones atómicas de Firestore para evitar race conditions
+// y es escalable a múltiples instancias serverless
 
 // ============================================
 // 7. UTILIDAD PARA GENERAR LINKS DE MAPS
@@ -297,17 +246,46 @@ const sanitizeRecommendation = (rec: any, city: string) => {
 
 export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (req.method === 'OPTIONS') return res.status(200).end();
+  
+  // ============================================
+  // GET /api/recommend?userId=xxx - Status del rate limit
+  // ============================================
+  if (req.method === 'GET') {
+    const { userId } = req.query;
+    if (!userId) {
+      return res.status(400).json({ error: 'userId requerido' });
+    }
+    
+    const status = await rateLimiter.getStatus(userId);
+    if (!status) {
+      return res.status(200).json({ 
+        canRequest: true, 
+        requestsInWindow: 0,
+        remainingRequests: 5 
+      });
+    }
+    
+    return res.status(200).json({
+      ...status,
+      nextAvailableIn: status.nextAvailableAt 
+        ? Math.max(0, Math.ceil((status.nextAvailableAt - Date.now()) / 1000))
+        : 0,
+    });
+  }
+  
   if (req.method !== 'POST') return res.status(405).json({ error: 'Método no permitido' });
 
   let interactionRef: FirebaseFirestore.DocumentReference | null = null;
+  let userId: string | null = null;
 
   try {
     const request: RequestBody = req.body;
-    const { userId, type, _id } = request;
+    userId = request.userId;
+    const { type, _id } = request;
     const interactionId = _id || `int_${Date.now()}`;
 
     if (!userId) return res.status(400).json({ error: 'userId requerido' });
@@ -315,11 +293,15 @@ export default async function handler(req: any, res: any) {
       return res.status(400).json({ error: 'type debe ser "En casa" o "Fuera"' });
     }
 
-    const rateCheck = await checkRateLimit(userId);
+    // ============================================
+    // RATE LIMITING V2 - Transacción atómica
+    // ============================================
+    const rateCheck = await rateLimiter.checkRateLimit(userId);
     if (!rateCheck.allowed) {
       return res.status(429).json({ 
         error: rateCheck.error,
-        retryAfter: rateCheck.secondsLeft 
+        retryAfter: rateCheck.secondsLeft,
+        remainingRequests: rateCheck.remainingRequests 
       });
     }
 
@@ -607,10 +589,22 @@ IMPORTANTE:
     
     await batch.commit();
 
+    // ============================================
+    // ÉXITO: Marcar proceso como completado
+    // ============================================
+    await rateLimiter.completeProcess(userId);
+
     return res.status(200).json(parsedData);
 
   } catch (error: any) {
     console.error("❌ Error completo:", error);
+    
+    // ============================================
+    // ERROR: Marcar proceso como fallido (no cuenta para rate limit)
+    // ============================================
+    if (userId) {
+      await rateLimiter.failProcess(userId, error.message);
+    }
     
     if (interactionRef) {
       try {

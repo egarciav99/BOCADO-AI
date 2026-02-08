@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Meal } from '../types';
+import React, { useState, useCallback, useMemo, memo } from 'react';
+import type { Meal } from '../types';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { HeartIcon } from './icons/HeartIcon';
 import FeedbackModal from './FeedbackModal';
@@ -12,59 +12,197 @@ interface MealCardProps {
   onInteraction?: (type: 'expand' | 'save' | 'feedback', data?: any) => void;
 }
 
+// ============================================
+// UTILIDADES MEMOIZADAS (definidas fuera del componente)
+// ============================================
+
+const EMOJI_MAP: Record<string, string> = {
+  pollo: '🍗',
+  pescado: '🐟',
+  salmón: '🐟',
+  salmon: '🐟',
+  carne: '🥩',
+  ensalada: '🥗',
+  pasta: '🍝',
+  taco: '🌮',
+  huevo: '🍳',
+  sopa: '🍲',
+};
+
 const getSmartEmoji = (title: string): string => {
   const lower = title.toLowerCase();
-  if (lower.includes('pollo')) return '🍗';
-  if (lower.includes('pescado') || lower.includes('salmon')) return '🐟';
-  if (lower.includes('carne')) return '🥩';
-  if (lower.includes('ensalada')) return '🥗';
-  if (lower.includes('pasta')) return '🍝';
-  if (lower.includes('taco')) return '🌮';
-  if (lower.includes('huevo')) return '🍳';
-  if (lower.includes('sopa')) return '🍲';
+  for (const [key, emoji] of Object.entries(EMOJI_MAP)) {
+    if (lower.includes(key)) return emoji;
+  }
   return '🍽️';
 };
 
-const getDifficultyStyle = (difficulty: string): string => {
-  switch (difficulty) {
-    case 'Fácil':
-      return 'bg-green-100 text-green-700';
-    case 'Media':
-      return 'bg-yellow-100 text-yellow-700';
-    case 'Difícil':
-      return 'bg-red-100 text-red-700';
-    default:
-      return 'bg-bocado-background text-bocado-dark-gray';
-  }
+const DIFFICULTY_STYLES: Record<string, string> = {
+  'Fácil': 'bg-green-100 text-green-700',
+  'Media': 'bg-yellow-100 text-yellow-700',
+  'Difícil': 'bg-red-100 text-red-700',
 };
 
-const MealCard: React.FC<MealCardProps> = ({
+const getDifficultyStyle = (difficulty: string): string => {
+  return DIFFICULTY_STYLES[difficulty] || 'bg-bocado-background text-bocado-dark-gray';
+};
+
+// ============================================
+// COMPONENTES HIJO MEMOIZADOS
+// ============================================
+
+interface RestaurantInfoSectionProps {
+  recipe: Meal['recipe'];
+  onOpenMaps: (e: React.MouseEvent) => void;
+  onSearchMapsFallback: (e: React.MouseEvent) => void;
+  onCopyAddress: (e: React.MouseEvent) => void;
+  copiedAddress: boolean;
+}
+
+const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
+  recipe,
+  onOpenMaps,
+  onSearchMapsFallback,
+  onCopyAddress,
+  copiedAddress,
+}) => {
+  const hasPreciseLocation = !!recipe.link_maps;
+
+  return (
+    <div className="space-y-3">
+      {hasPreciseLocation ? (
+        <div className="mb-3">
+          <button
+            onClick={onOpenMaps}
+            className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            <span>📍</span>
+            <span>Ver ubicación en Google Maps</span>
+          </button>
+          {recipe.direccion_aproximada && (
+            <p className="text-xs text-bocado-gray text-center mt-2 px-2 flex items-center justify-center gap-1">
+              {recipe.direccion_aproximada}
+            </p>
+          )}
+        </div>
+      ) : (
+        <div className="mb-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+          <p className="text-xs text-amber-700 mb-3 text-center font-medium">
+            ⚠️ Ubicación aproximada (guardado antes de la actualización)
+          </p>
+          
+          {recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}` && (
+            <p className="text-sm font-medium text-bocado-text mb-3 text-center bg-white p-2 rounded-lg border border-amber-100">
+              {recipe.direccion_aproximada}
+            </p>
+          )}
+          
+          <div className="flex gap-2">
+            <button
+              onClick={onSearchMapsFallback}
+              className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-1 font-medium"
+            >
+              <span>🔍</span>
+              <span>Buscar en Maps</span>
+            </button>
+            <button
+              onClick={onCopyAddress}
+              className={`flex-1 py-2.5 border rounded-lg text-xs transition-all flex items-center justify-center gap-1 font-medium ${
+                copiedAddress 
+                  ? 'bg-green-50 border-green-200 text-green-600' 
+                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span>{copiedAddress ? '✓' : '📋'}</span>
+              <span>{copiedAddress ? 'Copiado' : 'Copiar'}</span>
+            </button>
+          </div>
+          <p className="text-[10px] text-amber-600/70 text-center mt-2">
+            Tip: Guarda el restaurante nuevamente desde "Fuera" para obtener la ubicación exacta
+          </p>
+        </div>
+      )}
+
+      {recipe.plato_sugerido && (
+        <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
+          <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-1">
+            🍽️ Plato sugerido
+          </h4>
+          <p className="text-sm text-bocado-text">{recipe.plato_sugerido}</p>
+        </div>
+      )}
+
+      {recipe.por_que_es_bueno && (
+        <div className="bg-green-50 p-3 rounded-xl border border-green-100">
+          <h4 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-1">
+            ✨ Por qué es bueno
+          </h4>
+          <p className="text-sm text-bocado-text">{recipe.por_que_es_bueno}</p>
+        </div>
+      )}
+
+      {recipe.hack_saludable && (
+        <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
+          <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">
+            💡 Hack saludable
+          </h4>
+          <p className="text-sm text-bocado-text">{recipe.hack_saludable}</p>
+        </div>
+      )}
+      
+      {!recipe.plato_sugerido && !recipe.por_que_es_bueno && !recipe.hack_saludable && (
+        <div className="text-center py-4 px-4 bg-bocado-background rounded-xl">
+          <p className="text-xs text-bocado-gray">
+            Información detallada no disponible para este lugar guardado anteriormente
+          </p>
+        </div>
+      )}
+    </div>
+  );
+});
+
+RestaurantInfoSection.displayName = 'RestaurantInfoSection';
+
+// ============================================
+// COMPONENTE PRINCIPAL MEMOIZADO
+// ============================================
+
+const MealCard: React.FC<MealCardProps> = memo(({
   meal,
   onInteraction,
 }) => {
+  const { recipe } = meal;
+  
+  // Estados locales
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [copiedAddress, setCopiedAddress] = useState(false); // ✅ Estado para feedback de copiado
+  const [copiedAddress, setCopiedAddress] = useState(false);
 
+  // Hooks de autenticación y datos
   const { user } = useAuthStore();
   const toggleMutation = useToggleSavedItem();
-  
-  const { recipe } = meal;
-  const isRestaurant = recipe.difficulty === 'Restaurante';
-  const type = isRestaurant ? 'restaurant' : 'recipe';
-  
-  const saved = useIsItemSaved(user?.uid, type, recipe.title);
-  
-  const emoji = getSmartEmoji(recipe.title);
-  const showSavings = recipe.savingsMatch && recipe.savingsMatch !== 'Ninguno';
+  const saved = useIsItemSaved(user?.uid, recipe.difficulty === 'Restaurante' ? 'restaurant' : 'recipe', recipe.title);
 
-  const handleSaveClick = (e: React.MouseEvent) => {
+  // Memoización de valores computados
+  const isRestaurant = useMemo(() => recipe.difficulty === 'Restaurante', [recipe.difficulty]);
+  const type = useMemo(() => isRestaurant ? 'restaurant' : 'recipe', [isRestaurant]);
+  const emoji = useMemo(() => getSmartEmoji(recipe.title), [recipe.title]);
+  const showSavings = useMemo(() => 
+    recipe.savingsMatch && recipe.savingsMatch !== 'Ninguno', 
+    [recipe.savingsMatch]
+  );
+
+  // ============================================
+  // HANDLERS MEMOIZADOS CON useCallback
+  // ============================================
+
+  const handleSaveClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (!user) return;
     
     trackEvent(saved ? 'recipe_unsaved' : 'recipe_saved', {
       item_title: recipe.title,
-      type: type,
+      type,
       userId: user.uid
     });
 
@@ -81,31 +219,33 @@ const MealCard: React.FC<MealCardProps> = ({
       isSaved: !saved, 
       isRestaurant 
     });
-  };
+  }, [user, saved, recipe, type, meal.mealType, toggleMutation, onInteraction, isRestaurant]);
 
-  const handleExpand = () => {
-    const newState = !isExpanded;
-    setIsExpanded(newState);
-    if (newState) {
-      trackEvent('recipe_expanded', {
-        item_title: recipe.title,
-        type: type,
-        is_restaurant: isRestaurant
-      });
-      onInteraction?.('expand', { recipe: recipe.title });
-    }
-  };
+  const handleExpand = useCallback(() => {
+    setIsExpanded(prev => {
+      const newState = !prev;
+      if (newState) {
+        trackEvent('recipe_expanded', {
+          item_title: recipe.title,
+          type,
+          is_restaurant: isRestaurant
+        });
+        onInteraction?.('expand', { recipe: recipe.title });
+      }
+      return newState;
+    });
+  }, [recipe.title, type, isRestaurant, onInteraction]);
 
-  const handleFeedbackOpen = () => {
+  const handleFeedbackOpen = useCallback(() => {
     trackEvent('feedback_button_click', {
-        item_title: recipe.title,
-        type: type
+      item_title: recipe.title,
+      type,
     });
     setShowFeedback(true);
     onInteraction?.('feedback', { recipe: recipe.title });
-  };
+  }, [recipe.title, type, onInteraction]);
 
-  const handleOpenMaps = (e: React.MouseEvent) => {
+  const handleOpenMaps = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     if (recipe.link_maps) {
       trackEvent('restaurant_maps_clicked', {
@@ -114,13 +254,11 @@ const MealCard: React.FC<MealCardProps> = ({
       });
       window.open(recipe.link_maps, '_blank', 'noopener,noreferrer');
     }
-  };
+  }, [recipe.link_maps, recipe.title]);
 
-  // ✅ CORREGIDO: Búsqueda fallback usa Nombre + Dirección + Ciudad (más preciso)
-  const handleSearchMapsFallback = (e: React.MouseEvent) => {
+  const handleSearchMapsFallback = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // Concatenar todo lo disponible para máxima precisión
     const searchParts = [recipe.title];
     
     if (recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}`) {
@@ -137,10 +275,9 @@ const MealCard: React.FC<MealCardProps> = ({
     });
     
     window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
-  };
+  }, [recipe.title, recipe.direccion_aproximada]);
 
-  // ✅ NUEVO: Copiar dirección al portapapeles
-  const handleCopyAddress = async (e: React.MouseEvent) => {
+  const handleCopyAddress = useCallback(async (e: React.MouseEvent) => {
     e.stopPropagation();
     
     const textToCopy = recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}`
@@ -155,7 +292,6 @@ const MealCard: React.FC<MealCardProps> = ({
         address: recipe.direccion_aproximada 
       });
       
-      // Resetear el estado después de 2 segundos
       setTimeout(() => setCopiedAddress(false), 2000);
     } catch (err) {
       console.error('Error copying:', err);
@@ -169,7 +305,10 @@ const MealCard: React.FC<MealCardProps> = ({
       setCopiedAddress(true);
       setTimeout(() => setCopiedAddress(false), 2000);
     }
-  };
+  }, [recipe.title, recipe.direccion_aproximada]);
+
+  // Cleanup de timeout al desmontar
+  // (El timeout se maneja dentro de handleCopyAddress)
 
   return (
     <div className="group border border-bocado-border rounded-2xl bg-white transition-all duration-200 hover:shadow-bocado active:scale-[0.99]">
@@ -249,102 +388,15 @@ const MealCard: React.FC<MealCardProps> = ({
       {isExpanded && (
         <div className="px-4 pb-4 pt-2 border-t border-bocado-border space-y-4 animate-fade-in">
           
-          {/* SECCIÓN PARA RESTAURANTES CON MANEJO DE FALLBACK MEJORADO */}
+          {/* SECCIÓN PARA RESTAURANTES */}
           {isRestaurant && (
-            <div className="space-y-3">
-              {/* Si tiene link preciso (nuevo formato) */}
-              {recipe.link_maps ? (
-                <div className="mb-3">
-                  <button
-                    onClick={handleOpenMaps}
-                    className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-                  >
-                    <span>📍</span>
-                    <span>Ver ubicación en Google Maps</span>
-                  </button>
-                  {recipe.direccion_aproximada && (
-                    <p className="text-xs text-bocado-gray text-center mt-2 px-2 flex items-center justify-center gap-1">
-                      {recipe.direccion_aproximada}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                /* Si NO tiene link preciso (formato antiguo) - FALLBACK MEJORADO */
-                <div className="mb-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
-                  <p className="text-xs text-amber-700 mb-3 text-center font-medium">
-                    ⚠️ Ubicación aproximada (guardado antes de la actualización)
-                  </p>
-                  
-                  {/* Mostrar dirección si existe */}
-                  {recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}` && (
-                    <p className="text-sm font-medium text-bocado-text mb-3 text-center bg-white p-2 rounded-lg border border-amber-100">
-                      {recipe.direccion_aproximada}
-                    </p>
-                  )}
-                  
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleSearchMapsFallback}
-                      className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-1 font-medium"
-                    >
-                      <span>🔍</span>
-                      <span>Buscar en Maps</span>
-                    </button>
-                    <button
-                      onClick={handleCopyAddress}
-                      className={`flex-1 py-2.5 border rounded-lg text-xs transition-all flex items-center justify-center gap-1 font-medium ${
-                        copiedAddress 
-                          ? 'bg-green-50 border-green-200 text-green-600' 
-                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span>{copiedAddress ? '✓' : '📋'}</span>
-                      <span>{copiedAddress ? 'Copiado' : 'Copiar'}</span>
-                    </button>
-                  </div>
-                  <p className="text-[10px] text-amber-600/70 text-center mt-2">
-                    Tip: Guarda el restaurante nuevamente desde "Fuera" para obtener la ubicación exacta
-                  </p>
-                </div>
-              )}
-
-              {/* Campos de información (solo si existen) */}
-              {recipe.plato_sugerido && (
-                <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
-                  <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-1">
-                    🍽️ Plato sugerido
-                  </h4>
-                  <p className="text-sm text-bocado-text">{recipe.plato_sugerido}</p>
-                </div>
-              )}
-
-              {recipe.por_que_es_bueno && (
-                <div className="bg-green-50 p-3 rounded-xl border border-green-100">
-                  <h4 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-1">
-                    ✨ Por qué es bueno
-                  </h4>
-                  <p className="text-sm text-bocado-text">{recipe.por_que_es_bueno}</p>
-                </div>
-              )}
-
-              {recipe.hack_saludable && (
-                <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
-                  <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">
-                    💡 Hack saludable
-                  </h4>
-                  <p className="text-sm text-bocado-text">{recipe.hack_saludable}</p>
-                </div>
-              )}
-              
-              {/* Mensaje si no hay ningún dato extra */}
-              {!recipe.plato_sugerido && !recipe.por_que_es_bueno && !recipe.hack_saludable && (
-                <div className="text-center py-4 px-4 bg-bocado-background rounded-xl">
-                  <p className="text-xs text-bocado-gray">
-                    Información detallada no disponible para este lugar guardado anteriormente
-                  </p>
-                </div>
-              )}
-            </div>
+            <RestaurantInfoSection
+              recipe={recipe}
+              onOpenMaps={handleOpenMaps}
+              onSearchMapsFallback={handleSearchMapsFallback}
+              onCopyAddress={handleCopyAddress}
+              copiedAddress={copiedAddress}
+            />
           )}
 
           {/* Ingredientes (solo para recetas en casa) */}
@@ -356,7 +408,7 @@ const MealCard: React.FC<MealCardProps> = ({
               <ul className="space-y-1.5">
                 {recipe.ingredients.map((ing, index) => (
                   <li key={index} className="text-sm text-bocado-text flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 bg-bocado-green rounded-full mt-1.5 shrink-0"></span>
+                    <span className="w-1.5 h-1.5 bg-bocado-green rounded-full mt-1.5 shrink-0" />
                     <span className="leading-relaxed">{ing}</span>
                   </li>
                 ))}
@@ -400,6 +452,8 @@ const MealCard: React.FC<MealCardProps> = ({
       />
     </div>
   );
-};
+});
+
+MealCard.displayName = 'MealCard';
 
 export default MealCard;

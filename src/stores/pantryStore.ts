@@ -1,73 +1,31 @@
 // stores/pantryStore.ts
 import { create } from 'zustand';
-import { KitchenItem, Freshness, Zone } from '../types';
+import { Zone } from '../types';
 
-interface PantryState {
-  items: KitchenItem[];
-  isLoading: boolean;
-  lastUpdated: number | null;
+/**
+ * Store de Zustand SOLO para estado UI de la despensa.
+ * Los datos de Firebase se manejan con TanStack Query en usePantry hook.
+ */
+interface PantryUIState {
+  // Estado de navegación UI
   activeZone: Zone | null;
+  activeCategory: string;
   
-  setItems: (items: KitchenItem[]) => void;
-  addItem: (item: KitchenItem) => void;
-  removeItem: (id: string) => void;
-  updateItem: (id: string, updates: Partial<KitchenItem>) => void;
-  toggleFreshness: (id: string) => void;
+  // Actions
   setActiveZone: (zone: Zone | null) => void;
-  setLoading: (loading: boolean) => void;
-  
-  // Selectores computados
-  getItemsByZone: (zone: Zone) => KitchenItem[];
-  getUrgentItems: () => KitchenItem[];
+  setActiveCategory: (category: string) => void;
+  reset: () => void;
 }
 
-const freshnessCycle: Record<Freshness, Freshness> = {
-  'fresh': 'soon',
-  'soon': 'expired',
-  'expired': 'fresh'
+const initialState = {
+  activeZone: null,
+  activeCategory: 'Todos',
 };
 
-export const usePantryStore = create<PantryState>((set, get) => ({
-  items: [],
-  isLoading: false,
-  lastUpdated: null,
-  activeZone: null,
-  
-  setItems: (items) => set({ items, lastUpdated: Date.now() }),
-  
-  addItem: (item) => set((state) => ({ 
-    items: [...state.items, item],
-    lastUpdated: Date.now() 
-  })),
-  
-  removeItem: (id) => set((state) => ({ 
-    items: state.items.filter((item) => item.id !== id),
-    lastUpdated: Date.now() 
-  })),
-  
-  updateItem: (id, updates) => set((state) => ({
-    items: state.items.map((item) => 
-      item.id === id ? { ...item, ...updates } : item
-    ),
-    lastUpdated: Date.now(),
-  })),
-  
-  toggleFreshness: (id) => set((state) => ({
-    items: state.items.map((item) => {
-      if (item.id !== id) return item;
-      return { 
-        ...item, 
-        freshness: freshnessCycle[item.freshness] 
-      };
-    }),
-    lastUpdated: Date.now(),
-  })),
+export const usePantryStore = create<PantryUIState>((set) => ({
+  ...initialState,
   
   setActiveZone: (zone) => set({ activeZone: zone }),
-  setLoading: (loading) => set({ isLoading: loading }),
-  
-  getItemsByZone: (zone) => get().items.filter(item => item.zone === zone),
-  getUrgentItems: () => get().items.filter(item => 
-    item.freshness === 'expired' || item.freshness === 'soon'
-  ),
+  setActiveCategory: (category) => set({ activeCategory: category }),
+  reset: () => set(initialState),
 }));

@@ -111,3 +111,30 @@ export interface SavedItem {
   notes?: string;
   rating?: number;
 }
+
+// ============================================
+// FEEDBACK / CALIFICACIÓN
+// ============================================
+
+export type FeedbackType = 'home' | 'away';
+
+export interface FeedbackData {
+  userId: string;
+  itemId: string;
+  type: FeedbackType;
+  rating: number;
+  comment: string;
+  metadata: {
+    title: string;
+    timestamp: string;
+  };
+  createdAt?: any;
+}
+
+export interface FeedbackSubmission {
+  itemTitle: string;
+  type: FeedbackType;
+  rating: number;
+  comment: string;
+  originalData: Recipe;
+}

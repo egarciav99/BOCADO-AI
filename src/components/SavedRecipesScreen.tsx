@@ -10,11 +10,18 @@ const SavedRecipesScreen: React.FC = () => {
   
   const { user } = useAuthStore();
   
-  // ✅ TANSTACK QUERY
-  const { data: recipes = [], isLoading } = useSavedItems(user?.uid, 'recipe');
+  // ✅ TANSTACK QUERY + PAGINACIÓN
+  const savedItems = useSavedItems(user?.uid, 'recipe');
+  const recipes = savedItems.data || [];
+  const isLoading = savedItems.isLoading;
+  const fetchNextPage = savedItems.fetchNextPage;
+  const hasNextPage = savedItems.hasNextPage;
+  const isFetchingNextPage = savedItems.isFetchingNextPage;
+  const totalLoaded = savedItems.totalLoaded;
+  
   const toggleMutation = useToggleSavedItem();
 
-  const savedMeals: Meal[] = recipes.map(saved => ({
+  const savedMeals: Meal[] = recipes.map((saved: any) => ({
     mealType: saved.mealType,
     recipe: saved.recipe
   }));
@@ -59,7 +66,12 @@ const SavedRecipesScreen: React.FC = () => {
           <BookIcon className="w-6 h-6 text-bocado-green" />
           <h2 className="text-xl font-bold text-bocado-dark-green">Mis Recetas</h2>
         </div>
-        <p className="text-xs text-bocado-gray">Tus platos favoritos guardados</p>
+        <p className="text-xs text-bocado-gray">
+          Tus platos favoritos guardados
+          {totalLoaded > 0 && (
+            <span className="ml-1 text-bocado-green font-medium">({totalLoaded})</span>
+          )}
+        </p>
         {toggleMutation.isPending && <p className="text-[10px] text-bocado-green mt-1">Sincronizando...</p>}
       </div>
 
@@ -81,6 +93,33 @@ const SavedRecipesScreen: React.FC = () => {
                 }}
               />
             ))}
+            
+            {/* Botón Cargar Más */}
+            {hasNextPage && (
+              <div className="pt-4 pb-2">
+                <button
+                  onClick={() => fetchNextPage()}
+                  disabled={isFetchingNextPage}
+                  className="w-full py-3 px-4 bg-bocado-background text-bocado-dark-gray font-medium rounded-xl border border-bocado-border hover:bg-bocado-border/50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isFetchingNextPage ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-sm">Cargando...</span>
+                    </>
+                  ) : (
+                    <span className="text-sm">Cargar más recetas</span>
+                  )}
+                </button>
+              </div>
+            )}
+            
+            {/* Mensaje de fin */}
+            {!hasNextPage && savedMeals.length > 0 && (
+              <p className="text-center text-xs text-bocado-gray/60 py-4">
+                No hay más recetas guardadas
+              </p>
+            )}
           </div>
         )}
       </div>

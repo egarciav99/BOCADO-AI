@@ -6,6 +6,7 @@ import { collection, addDoc } from 'firebase/firestore';
 import { CurrencyService } from '../data/budgets';
 import { useUserProfile } from '../hooks/useUser';
 import { useAuthStore } from '../stores/authStore';
+import { useRateLimit } from '../hooks/useRateLimit';
 import { env } from '../environment/env';
 
 interface RecommendationScreenProps {
@@ -34,6 +35,15 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
 
   const { user } = useAuthStore();
   const { data: profile, isLoading: isProfileLoading } = useUserProfile(user?.uid);
+  
+  // Rate limit status para mostrar al usuario
+  const { 
+    canRequest, 
+    isDisabled: isRateLimited, 
+    message: rateLimitMessage,
+    formattedTimeLeft,
+    refreshStatus 
+  } = useRateLimit(user?.uid);
 
   const countryCode = (profile?.country || 'MX').toUpperCase().trim(); 
   const currencyConfig = CurrencyService.fromCountryCode(countryCode);
@@ -150,6 +160,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
 
       // Éxito
       trackEvent('recommendation_api_success', { type: recommendationType });
+      refreshStatus(); // 🔄 Actualizar rate limit después de éxito
       resetProcessingState(); // ✅ Limpieza antes de navegar
       onPlanGenerated(newDoc.id);
       
@@ -339,11 +350,20 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
             </div>
           )}
 
-          {/* Botón acción */}
+          {/* Botón acción con rate limit */}
           <div className={`mt-6 transition-all duration-300 ${isSelectionMade ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'}`}>
+            {/* Indicador de rate limit */}
+            {!isGenerating && !canRequest && (
+              <div className="mb-3 px-4 py-2 bg-amber-50 border border-amber-200 rounded-xl text-center">
+                <p className="text-xs text-amber-700">
+                  ⏱️ <span className="font-medium">{rateLimitMessage}</span>
+                </p>
+              </div>
+            )}
+            
             <button 
               onClick={handleGenerateRecommendation} 
-              disabled={isGenerating} 
+              disabled={isGenerating || isRateLimited} 
               className="w-full bg-bocado-green text-white font-bold py-4 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {isGenerating ? (
@@ -351,8 +371,21 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                   <span>Cocinando...</span>
                 </>
-              ) : "¡A comer! 🍽️"}
+              ) : isRateLimited ? (
+                <>
+                  <span>⏱️ Espera {formattedTimeLeft}</span>
+                </>
+              ) : (
+                "¡A comer! 🍽️"
+              )}
             </button>
+            
+            {/* Contador de requests restantes */}
+            {canRequest && !isGenerating && (
+              <p className="text-center text-xs text-bocado-gray mt-2">
+                {rateLimitMessage} en los últimos 10 min
+              </p>
+            )}
           </div>
         </div>
       )}

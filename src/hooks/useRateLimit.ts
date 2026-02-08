@@ -1,0 +1,82 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
+import { env } from '../environment/env';
+
+interface RateLimitStatus {
+  requestsInWindow: number;
+  currentProcess?: { startedAt: number; interactionId: string };
+  canRequest: boolean;
+  nextAvailableAt?: number;
+  nextAvailableIn: number;
+  remainingRequests?: number;
+}
+
+const DEFAULT_STATUS: RateLimitStatus = {
+  requestsInWindow: 0,
+  canRequest: true,
+  nextAvailableIn: 0,
+  remainingRequests: 5,
+};
+
+/**
+ * Hook para consultar el estado del rate limit del usuario
+ * Permite mostrar al usuario cuándo puede hacer su siguiente request
+ */
+export const useRateLimit = (userId: string | undefined) => {
+  const queryClient = useQueryClient();
+
+  const { data: status = DEFAULT_STATUS, isLoading } = useQuery({
+    queryKey: ['rateLimit', userId],
+    queryFn: async (): Promise<RateLimitStatus> => {
+      if (!userId) return DEFAULT_STATUS;
+      
+      const response = await fetch(`${env.api.recommendationUrl}?userId=${userId}`);
+      
+      if (!response.ok) {
+        // Si falla, asumir que puede hacer request (fail-open)
+        return DEFAULT_STATUS;
+      }
+      
+      return response.json();
+    },
+    enabled: !!userId,
+    // Refrescar cada 10 segundos para mantener el contador actualizado
+    refetchInterval: 1000 * 10,
+    // No considerar stale para evitar flashes
+    staleTime: 1000 * 5,
+  });
+
+  /**
+   * Invalida la caché del rate limit
+   * Útil después de iniciar una generación
+   */
+  const refreshStatus = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['rateLimit', userId] });
+  }, [queryClient, userId]);
+
+  /**
+   * Formatea el tiempo restante para mostrar al usuario
+   */
+  const formattedTimeLeft = useCallback((seconds: number): string => {
+    if (seconds <= 0) return 'Ahora';
+    if (seconds < 60) return `${seconds}s`;
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds}s`;
+  }, []);
+
+  return {
+    ...status,
+    isLoading,
+    refreshStatus,
+    formattedTimeLeft: formattedTimeLeft(status.nextAvailableIn),
+    // Helper para deshabilitar botón
+    isDisabled: !status.canRequest || isLoading,
+    // Mensaje para mostrar al usuario
+    message: status.canRequest 
+      ? `${status.remainingRequests ?? 5} restantes` 
+      : `Espera ${formattedTimeLeft(status.nextAvailableIn)}`,
+  };
+};
+
+export default useRateLimit;

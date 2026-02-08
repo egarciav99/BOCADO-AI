@@ -32,6 +32,33 @@ export const step2Schema = z.object({
   path: ["otherAllergies"],
 });
 
+// ✅ Esquema para el Paso 3 (Actividad y Preferencias)
+export const step3Schema = z.object({
+  activityLevel: z.string().min(1, "Selecciona tu nivel de actividad"),
+  otherActivityLevel: z.string().optional(),
+  activityFrequency: z.string().optional(),
+  dislikedFoods: z.array(z.string()).default([]),
+}).refine((data) => {
+  // Si seleccionó "Otro" en actividad, el campo otherActivityLevel debe tener texto
+  if (data.activityLevel === 'Otro' && (!data.otherActivityLevel || data.otherActivityLevel.trim() === '')) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Especifica tu actividad",
+  path: ["otherActivityLevel"],
+}).refine((data) => {
+  // Si NO es sedentario, debe seleccionar frecuencia
+  if (data.activityLevel && data.activityLevel !== '🪑 Sedentario' && (!data.activityFrequency || data.activityFrequency.trim() === '')) {
+    return false;
+  }
+  return true;
+}, {
+  message: "Selecciona la frecuencia de tu actividad",
+  path: ["activityFrequency"],
+});
+
 // Tipos para TypeScript
 export type UserStep1Data = z.infer<typeof step1Schema>;
 export type UserStep2Data = z.infer<typeof step2Schema>;
+export type UserStep3Data = z.infer<typeof step3Schema>;
