@@ -29,8 +29,13 @@ export const useRateLimit = (userId: string | undefined) => {
     queryKey: ['rateLimit', userId],
     queryFn: async (): Promise<RateLimitStatus> => {
       if (!userId) return DEFAULT_STATUS;
-      
-      const response = await fetch(`${env.api.recommendationUrl}?userId=${userId}`);
+      const token = await fetchAuthToken();
+      if (!token) return DEFAULT_STATUS;
+      const response = await fetch(`${env.api.recommendationUrl}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
       
       if (!response.ok) {
         // Si falla, asumir que puede hacer request (fail-open)
@@ -77,6 +82,17 @@ export const useRateLimit = (userId: string | undefined) => {
       ? `${status.remainingRequests ?? 5} restantes` 
       : `Espera ${formattedTimeLeft(status.nextAvailableIn)}`,
   };
+};
+
+const fetchAuthToken = async (): Promise<string | null> => {
+  try {
+    const { auth } = await import('../firebaseConfig');
+    const currentUser = auth.currentUser;
+    if (!currentUser) return null;
+    return await currentUser.getIdToken();
+  } catch {
+    return null;
+  }
 };
 
 export default useRateLimit;

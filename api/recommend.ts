@@ -1,5 +1,6 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 // ============================================
@@ -474,17 +475,28 @@ export default async function handler(req: any, res: any) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const authHeader = req.headers?.authorization || req.headers?.Authorization || '';
+  const tokenMatch = typeof authHeader === 'string' ? authHeader.match(/^Bearer\s+(.+)$/i) : null;
+  const idToken = tokenMatch?.[1];
+
+  if (!idToken) {
+    return res.status(401).json({ error: 'Auth token requerido' });
+  }
+
+  let authUserId: string;
+  try {
+    const decoded = await getAdminAuth().verifyIdToken(idToken);
+    authUserId = decoded.uid;
+  } catch (err) {
+    return res.status(401).json({ error: 'Auth token inválido' });
+  }
   
   // ============================================
   // GET /api/recommend?userId=xxx - Status del rate limit
   // ============================================
   if (req.method === 'GET') {
-    const { userId } = req.query;
-    if (!userId) {
-      return res.status(400).json({ error: 'userId requerido' });
-    }
-    
-    const status = await rateLimiter.getStatus(userId);
+    const status = await rateLimiter.getStatus(authUserId);
     if (!status) {
       return res.status(200).json({ 
         canRequest: true, 
@@ -508,7 +520,10 @@ export default async function handler(req: any, res: any) {
 
   try {
     const request: RequestBody = req.body;
-    userId = request.userId;
+    userId = authUserId;
+    if (request.userId && request.userId !== authUserId) {
+      return res.status(403).json({ error: 'userId no coincide con el token' });
+    }
     const { type, _id } = request;
     const interactionId = _id || `int_${Date.now()}`;
     

@@ -5,6 +5,7 @@ import {
   query, 
   where, 
   getDocs, 
+  getDoc,
   doc, 
   setDoc, 
   deleteDoc, 
@@ -291,15 +292,25 @@ export const useToggleSavedItem = () => {
       const key = type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
       
       // Cancelar queries pendientes
-      await queryClient.cancelQueries({ queryKey: [key, userId] });
+      await queryClient.cancelQueries({ queryKey: [key, userId], exact: false });
       
-      const previousItems = queryClient.getQueryData<SavedItem[]>([key, userId]) || [];
+      const previousPage = queryClient.getQueryData<FetchSavedItemsResult>([key, userId, 'page', 1]);
+      const previousAll = queryClient.getQueryData<SavedItem[]>([key, userId, 'all']) || [];
       
       if (isSaved) {
         // Optimistic remove
+        if (previousPage) {
+          queryClient.setQueryData<FetchSavedItemsResult>(
+            [key, userId, 'page', 1],
+            {
+              ...previousPage,
+              items: previousPage.items.filter((item) => item.recipe.title !== recipe.title),
+            }
+          );
+        }
         queryClient.setQueryData<SavedItem[]>(
-          [key, userId],
-          previousItems.filter((item: SavedItem) => item.recipe.title !== recipe.title)
+          [key, userId, 'all'],
+          previousAll.filter((item) => item.recipe.title !== recipe.title)
         );
       } else {
         // Optimistic add
@@ -311,23 +322,38 @@ export const useToggleSavedItem = () => {
           userId,
           savedAt: Date.now(),
         };
-        queryClient.setQueryData<SavedItem[]>([key, userId], [newItem, ...previousItems]);
+        if (previousPage) {
+          queryClient.setQueryData<FetchSavedItemsResult>(
+            [key, userId, 'page', 1],
+            {
+              ...previousPage,
+              items: [newItem, ...previousPage.items].slice(0, PAGE_SIZE),
+            }
+          );
+        }
+        queryClient.setQueryData<SavedItem[]>(
+          [key, userId, 'all'],
+          [newItem, ...previousAll]
+        );
       }
       
-      return { previousItems };
+      return { previousPage, previousAll };
     },
     
     onError: (err, variables, context) => {
-      if (context?.previousItems) {
-        const key = variables.type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
-        queryClient.setQueryData([key, variables.userId], context.previousItems);
+      const key = variables.type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+      if (context?.previousPage) {
+        queryClient.setQueryData([key, variables.userId, 'page', 1], context.previousPage);
+      }
+      if (context?.previousAll) {
+        queryClient.setQueryData([key, variables.userId, 'all'], context.previousAll);
       }
     },
     
     onSettled: (data, error, variables) => {
       const key = variables.type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
       // Invalidar para refetch con datos frescos (pero sin onSnapshot)
-      queryClient.invalidateQueries({ queryKey: [key, variables.userId] });
+      queryClient.invalidateQueries({ queryKey: [key, variables.userId], exact: false });
     },
   });
 };
@@ -342,20 +368,24 @@ export const useIsItemSaved = (
   title: string
 ): boolean => {
   const key = type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+
+  const collectionName = type === 'recipe' ? 'saved_recipes' : 'saved_restaurants';
+  const docId = userId ? `${userId}_${title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}` : '';
   
-  // Usar el mismo queryKey que useSavedItems para compartir el caché
-  const { data: result } = useQuery<FetchSavedItemsResult>({
-    queryKey: [key, userId, 'page', 1],
-    enabled: !!userId,
+  const { data: isSaved = false } = useQuery<boolean>({
+    queryKey: ['isSaved', key, userId, docId],
+    enabled: !!userId && !!docId,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
     queryFn: async () => {
-      if (!userId) return { items: [], hasMore: false };
-      return fetchSavedItems(userId, type, undefined);
+      if (!userId || !docId) return false;
+      const docRef = doc(db, collectionName, docId);
+      const snap = await getDoc(docRef);
+      return snap.exists();
     },
   });
-  
-  return (result?.items || []).some((item: SavedItem) => item.recipe.title === title);
+
+  return isSaved;
 };
 
 // ============================================
@@ -580,5 +610,4 @@ export const useUserFeedback = (
     refetchOnWindowFocus: true,
   });
 };
-
 

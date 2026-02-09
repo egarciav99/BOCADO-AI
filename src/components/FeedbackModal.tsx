@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useId } from 'react';
+import { createPortal } from 'react-dom';
 import { trackEvent } from '../firebaseConfig';
 import { useAuthStore } from '../stores/authStore';
 import { useFeedbackMutation } from '../hooks/useSavedItems';
@@ -15,8 +16,8 @@ interface FeedbackModalProps {
 const MAX_COMMENT_LENGTH = 500;
 const SUCCESS_CLOSE_DELAY = 2000;
 
-// Track global modal state to prevent multiple instances
-let globalModalOpen = false;
+// Track global modal ownership to prevent multiple instances
+let activeModalId: string | null = null;
 
 const sanitizeComment = (text: string): string => {
   return text
@@ -87,6 +88,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   type,
   originalData,
 }) => {
+  const modalInstanceId = useId();
   // Estado local del formulario
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -127,12 +129,19 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   // Resetear estado cuando se abre el modal y manejar estado global
   useEffect(() => {
     if (isOpen) {
+      if (activeModalId === null) {
+        activeModalId = modalInstanceId;
+      }
+
+      if (activeModalId !== modalInstanceId) {
+        return;
+      }
+
       setRating(0);
       setComment('');
       setLocalError('');
       reset();
       isSubmittingRef.current = false;
-      globalModalOpen = true;
       
       // Prevenir scroll en el body cuando el modal está abierto
       const originalOverflow = document.body.style.overflow;
@@ -141,17 +150,21 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
       return () => {
         document.body.style.overflow = originalOverflow;
       };
-    } else {
-      globalModalOpen = false;
     }
-  }, [isOpen, reset]);
+
+    if (activeModalId === modalInstanceId) {
+      activeModalId = null;
+    }
+  }, [isOpen, reset, modalInstanceId]);
   
   // Cleanup al desmontar
   useEffect(() => {
     return () => {
-      globalModalOpen = false;
+      if (activeModalId === modalInstanceId) {
+        activeModalId = null;
+      }
     };
-  }, []);
+  }, [modalInstanceId]);
 
   // Handler de calificación - memoizado para prevenir re-renders
   const handleRatingClick = useCallback((selectedRating: number) => {
@@ -229,60 +242,65 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
   // No renderizar si no está abierto o si ya hay otro modal abierto globalmente
   if (!isOpen) return null;
-  
+
+  // Claim ownership early to prevent multiple instances rendering in the same frame.
+  if (activeModalId === null) {
+    activeModalId = modalInstanceId;
+  }
+
   // Validación para evitar múltiples instancias del modal
-  if (globalModalOpen && !isSuccess) {
-    // Ya hay un modal abierto, no renderizar este
+  if (activeModalId !== modalInstanceId) {
     return null;
   }
 
   // Determinar mensaje de error a mostrar
   const errorMessage = localError || (isError && error instanceof Error ? error.message : '');
 
-  // Handler para absorber todos los eventos del backdrop
-  const handleBackdropPointerDown = useCallback((e: React.PointerEvent | React.TouchEvent | React.MouseEvent) => {
-    // Absorber el evento completamente
-    e.preventDefault();
-    e.stopPropagation();
-    
-    // Solo cerrar si es un click directo en el backdrop (no en el contenido)
-    if (e.target === e.currentTarget && !isPending && 'buttons' in e && e.buttons === 1) {
-      handleClose();
-    }
-  }, [handleClose, isPending]);
-  
-  // Handler específico para eventos táctiles
-  const handleBackdropTouch = useCallback((e: React.TouchEvent) => {
+  // Handlers para absorber todos los eventos del backdrop
+  const handleBackdropPointerDown = useCallback((e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
   }, []);
 
-  return (
+  const handleBackdropClick = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.target === e.currentTarget && !isPending) {
+      handleClose();
+    }
+  }, [handleClose, isPending]);
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <>
       {/* Backdrop dedicado que bloquea todos los eventos */}
       <div 
-        className="fixed inset-0 z-[9998] bg-black/60 backdrop-blur-sm"
+        className="fixed inset-0 z-[2147483646] bg-black/60 backdrop-blur-sm"
         style={{ 
           touchAction: 'none',
           pointerEvents: 'auto',
         }}
-        onClick={handleBackdropPointerDown}
+        onPointerDownCapture={handleBackdropPointerDown}
+        onClickCapture={handleBackdropPointerDown}
+        onTouchStartCapture={handleBackdropPointerDown}
+        onTouchEndCapture={handleBackdropPointerDown}
         onPointerDown={handleBackdropPointerDown}
-        onTouchStart={handleBackdropTouch}
-        onTouchMove={handleBackdropTouch}
-        onTouchEnd={handleBackdropTouch}
+        onClick={handleBackdropClick}
         aria-hidden="true"
       />
       
       {/* Contenedor del modal con z-index superior */}
       <div 
-        className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-4 animate-fade-in"
+        className="fixed inset-0 z-[2147483647] flex items-end sm:items-center justify-center p-4 animate-fade-in"
         style={{ pointerEvents: 'none' }}
       >
         <div 
           className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center transform transition-transform duration-300 translate-y-0"
           style={{ pointerEvents: 'auto' }}
           onClick={(e) => e.stopPropagation()}
+          onPointerDown={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
           aria-labelledby="feedback-title"
@@ -390,7 +408,8 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         )}
         </div>
       </div>
-    </>
+    </>,
+    document.body
   );
 };
 

@@ -131,9 +131,13 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
     try {
       const newDoc = await addDoc(collection(db, 'user_interactions'), interactionData);
       
+      const token = await user.getIdToken();
       const response = await fetch(env.api.recommendationUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify({ ...interactionData, _id: newDoc.id }),
         signal: abortControllerRef.current.signal
       });

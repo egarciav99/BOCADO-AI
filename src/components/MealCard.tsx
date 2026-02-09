@@ -239,13 +239,14 @@ const MealCard: React.FC<MealCardProps> = memo(({
   const handleFeedbackOpen = useCallback((e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
+    if (showFeedback) return;
     trackEvent('feedback_button_click', {
       item_title: recipe.title,
       type,
     });
     setShowFeedback(true);
     onInteraction?.('feedback', { recipe: recipe.title });
-  }, [recipe.title, type, onInteraction]);
+  }, [recipe.title, type, onInteraction, showFeedback]);
 
   const handleFeedbackClose = useCallback(() => {
     setShowFeedback(false);

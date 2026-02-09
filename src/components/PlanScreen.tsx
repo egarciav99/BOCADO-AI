@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { db, auth, trackEvent } from '../firebaseConfig';
-import { collection, query, where, onSnapshot, DocumentSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, limit, doc, getDoc, DocumentSnapshot } from 'firebase/firestore';
 import { Plan, Meal } from '../types';
 import MealCard from './MealCard';
 import { useToggleSavedItem } from '../hooks/useSavedItems';
@@ -98,24 +98,56 @@ const processRecommendationDoc = (doc: DocumentSnapshot): Plan | null => {
 const usePlanQuery = (planId: string | undefined, userId: string | undefined) => {
   return useQuery({
     queryKey: ['plan', planId, userId],
-    queryFn: () => {
-      return new Promise<Plan>((resolve, reject) => {
-        if (!planId || !userId) return reject(new Error('Faltan parámetros'));
-        let resolved = false;
-        const timeoutId = setTimeout(() => { if (!resolved) reject(new Error('Timeout: No se encontró el plan')); }, 90000);
+    queryFn: async () => {
+      if (!planId || !userId) {
+        throw new Error('Faltan parámetros');
+      }
 
-        const unsubRec = onSnapshot(query(collection(db, "historial_recetas"), where("user_id", "==", userId)), (snap) => {
-          const found = snap.docs.map(processFirestoreDoc).find(p => p?.interaction_id === planId || p?._id === planId);
-          if (found && !resolved) { resolved = true; clearTimeout(timeoutId); unsubRec(); unsubRem(); resolve(found); }
-        }, (err) => { if (!resolved) reject(err); });
+      // 1) Consulta directa por interaction_id (más eficiente y precisa)
+      const [recipesSnap, recsSnap] = await Promise.all([
+        getDocs(query(
+          collection(db, "historial_recetas"),
+          where("user_id", "==", userId),
+          where("interaction_id", "==", planId),
+          limit(1)
+        )),
+        getDocs(query(
+          collection(db, "historial_recomendaciones"),
+          where("user_id", "==", userId),
+          where("interaction_id", "==", planId),
+          limit(1)
+        ))
+      ]);
 
-        const unsubRem = onSnapshot(query(collection(db, "historial_recomendaciones"), where("user_id", "==", userId)), (snap) => {
-          const found = snap.docs.map(processRecommendationDoc).find(p => p?.interaction_id === planId || p?._id === planId);
-          if (found && !resolved) { resolved = true; clearTimeout(timeoutId); unsubRec(); unsubRem(); resolve(found); }
-        }, (err) => { if (!resolved) reject(err); });
+      if (!recipesSnap.empty) {
+        const docSnap = recipesSnap.docs[0];
+        const plan = processFirestoreDoc(docSnap);
+        if (plan) return plan;
+      }
 
-        return () => { clearTimeout(timeoutId); unsubRec(); unsubRem(); };
-      });
+      if (!recsSnap.empty) {
+        const docSnap = recsSnap.docs[0];
+        const plan = processRecommendationDoc(docSnap);
+        if (plan) return plan;
+      }
+
+      // 2) Fallback legacy: docId == planId
+      const [recipesDoc, recsDoc] = await Promise.all([
+        getDoc(doc(db, "historial_recetas", planId)),
+        getDoc(doc(db, "historial_recomendaciones", planId)),
+      ]);
+
+      if (recipesDoc.exists()) {
+        const plan = processFirestoreDoc(recipesDoc);
+        if (plan) return plan;
+      }
+
+      if (recsDoc.exists()) {
+        const plan = processRecommendationDoc(recsDoc);
+        if (plan) return plan;
+      }
+
+      throw new Error('No se encontró el plan');
     },
     enabled: !!planId && !!userId,
     staleTime: 1000 * 60 * 5,
