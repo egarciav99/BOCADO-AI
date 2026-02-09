@@ -196,7 +196,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
         {/* Género - Primero en DOM para que aparezca primero siempre */}
         <div className="order-1">
           <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center md:text-left">Género *</label>
-          <div className="flex gap-2">
+          <div className="flex gap-2 md:max-w-[280px]">
             {['Mujer', 'Hombre', 'Otro'].map(gender => (
               <GenderButton 
                 key={gender}
@@ -223,7 +223,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             onChange={handleAgeChange} 
             onFocus={() => trackEvent('registration_input_focus', { field: 'age' })}
             placeholder="25" 
-            className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm text-center transition-all ${
+            className={`w-full md:w-24 px-3 py-2.5 rounded-xl border-2 text-sm text-center transition-all ${
               errors.age ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
             }`} 
           />

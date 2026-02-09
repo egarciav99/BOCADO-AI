@@ -443,13 +443,15 @@ const MealCard: React.FC<MealCardProps> = memo(({
         </div>
       )}
 
-      <FeedbackModal
-        isOpen={showFeedback}
-        onClose={() => setShowFeedback(false)}
-        itemTitle={recipe.title}
-        type={isRestaurant ? 'away' : 'home'}
-        originalData={recipe}
-      />
+      <div onClick={(e) => e.stopPropagation()}>
+        <FeedbackModal
+          isOpen={showFeedback}
+          onClose={() => setShowFeedback(false)}
+          itemTitle={recipe.title}
+          type={isRestaurant ? 'away' : 'home'}
+          originalData={recipe}
+        />
+      </div>
     </div>
   );
 });
