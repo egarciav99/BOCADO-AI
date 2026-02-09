@@ -39,7 +39,8 @@ const StarButton: React.FC<StarButtonProps> = React.memo(({
   onClick,
   isDisabled,
 }) => {
-  const handleClick = useCallback((e: React.MouseEvent) => {
+  const handleClick = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     if (!isDisabled) onClick(star);
   }, [star, onClick, isDisabled]);
@@ -47,12 +48,17 @@ const StarButton: React.FC<StarButtonProps> = React.memo(({
   return (
     <button
       onClick={handleClick}
+      onTouchEnd={handleClick}
       disabled={isDisabled}
-      className={`text-4xl sm:text-3xl transition-all active:scale-125 disabled:opacity-50 ${
-        isActive ? 'grayscale-0 scale-110' : 'grayscale opacity-30 hover:opacity-50'
+      className={`text-4xl sm:text-3xl transition-all active:scale-125 disabled:opacity-50 select-none cursor-pointer ${
+        isActive ? 'grayscale-0 scale-110' : 'grayscale opacity-40 hover:opacity-70'
       }`}
-      style={{ touchAction: 'manipulation' }}
+      style={{ 
+        touchAction: 'manipulation',
+        WebkitTapHighlightColor: 'transparent',
+      }}
       aria-label={`Calificar con ${star} estrellas`}
+      type="button"
     >
       ⭐
     </button>
@@ -210,7 +216,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     <div 
       className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in"
       onClick={(e) => {
-        // Cerrar al hacer click en el backdrop (fuera del modal)
+        // Cerrar solo si se hace clic directamente en el backdrop (fuera del modal)
         if (e.target === e.currentTarget && !isPending) {
           handleClose();
         }
@@ -244,7 +250,10 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
             )}
             
             {/* Star Rating - Componentes memoizados */}
-            <div className="flex justify-center gap-3 sm:gap-2 mb-6">
+            <div 
+              className="flex justify-center gap-3 sm:gap-2 mb-6"
+              onClick={(e) => e.stopPropagation()}
+            >
               {[1, 2, 3, 4, 5].map((star) => (
                 <StarButton
                   key={star}

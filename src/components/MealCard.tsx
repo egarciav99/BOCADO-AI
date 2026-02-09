@@ -236,7 +236,9 @@ const MealCard: React.FC<MealCardProps> = memo(({
     });
   }, [recipe.title, type, isRestaurant, onInteraction]);
 
-  const handleFeedbackOpen = useCallback(() => {
+  const handleFeedbackOpen = useCallback((e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     trackEvent('feedback_button_click', {
       item_title: recipe.title,
       type,
@@ -244,6 +246,10 @@ const MealCard: React.FC<MealCardProps> = memo(({
     setShowFeedback(true);
     onInteraction?.('feedback', { recipe: recipe.title });
   }, [recipe.title, type, onInteraction]);
+
+  const handleFeedbackClose = useCallback(() => {
+    setShowFeedback(false);
+  }, []);
 
   const handleOpenMaps = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -436,22 +442,24 @@ const MealCard: React.FC<MealCardProps> = memo(({
           {/* Botón de feedback */}
           <button
             onClick={handleFeedbackOpen}
+            onMouseDown={(e) => e.stopPropagation()}
+            onTouchStart={(e) => e.stopPropagation()}
             className="w-full py-3 rounded-xl bg-bocado-dark-green text-white font-semibold text-sm shadow-bocado hover:bg-bocado-green active:scale-[0.98] transition-all"
+            type="button"
           >
             {isRestaurant ? '📍 Fui al lugar' : '🍳 La preparé'}
           </button>
         </div>
       )}
 
-      <div onClick={(e) => e.stopPropagation()}>
-        <FeedbackModal
-          isOpen={showFeedback}
-          onClose={() => setShowFeedback(false)}
-          itemTitle={recipe.title}
-          type={isRestaurant ? 'away' : 'home'}
-          originalData={recipe}
-        />
-      </div>
+      {/* Feedback Modal - Renderizado fuera del flujo del card para evitar problemas de propagación */}
+      <FeedbackModal
+        isOpen={showFeedback}
+        onClose={handleFeedbackClose}
+        itemTitle={recipe.title}
+        type={isRestaurant ? 'away' : 'home'}
+        originalData={recipe}
+      />
     </div>
   );
 });

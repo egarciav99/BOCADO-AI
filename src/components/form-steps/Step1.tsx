@@ -191,12 +191,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
         </div>
       </div>
 
-      {/* Género y Edad - Desktop: lado a lado, Móvil: Género arriba, Edad abajo */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {/* Género - Primero en DOM para que aparezca primero siempre */}
-        <div className="order-1">
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center md:text-left">Género *</label>
-          <div className="flex gap-2 md:max-w-[280px]">
+      {/* Género y Edad - Desktop: lado a lado, Móvil: stacked */}
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        {/* Género - Izquierda en desktop */}
+        <div className="flex-1">
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">Género *</label>
+          <div className="flex gap-2 max-w-[320px] mx-auto sm:mx-0">
             {['Mujer', 'Hombre', 'Otro'].map(gender => (
               <GenderButton 
                 key={gender}
@@ -210,12 +210,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               />
             ))}
           </div>
-          {errors.gender && <p className="text-red-500 text-[10px] mt-1 text-center md:text-left">{errors.gender}</p>}
+          {errors.gender && <p className="text-red-500 text-[10px] mt-1 text-center sm:text-left">{errors.gender}</p>}
         </div>
 
-        {/* Edad - Segundo en DOM */}
-        <div className="order-2">
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Edad *</label>
+        {/* Edad - Derecha en desktop */}
+        <div className="sm:w-28">
+          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider text-center sm:text-left">Edad *</label>
           <input 
             type="text"
             inputMode="numeric"
@@ -223,11 +223,11 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             onChange={handleAgeChange} 
             onFocus={() => trackEvent('registration_input_focus', { field: 'age' })}
             placeholder="25" 
-            className={`w-full md:w-24 px-3 py-2.5 rounded-xl border-2 text-sm text-center transition-all ${
+            className={`w-full sm:w-24 px-3 py-2.5 rounded-xl border-2 text-sm text-center sm:text-left transition-all ${
               errors.age ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
             }`} 
           />
-          {errors.age && <p className="text-red-500 text-[10px] mt-1">{errors.age}</p>}
+          {errors.age && <p className="text-red-500 text-[10px] mt-1 text-center sm:text-left">{errors.age}</p>}
         </div>
       </div>
 
