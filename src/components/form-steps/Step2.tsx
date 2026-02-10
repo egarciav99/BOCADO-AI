@@ -70,7 +70,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
     <div className="space-y-5 animate-fade-in">
       {/* Enfermedades */}
       <div>
-        <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+        <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           ¿Enfermedades crónicas? <span className="text-bocado-gray font-normal normal-case">(opcional)</span>
         </label>
         <div className="flex flex-wrap gap-2">
@@ -87,7 +87,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       
       {/* Alergias */}
       <div>
-        <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+        <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           ¿Alergias o intolerancias? <span className="text-bocado-gray font-normal normal-case">(opcional)</span>
         </label>
         <div className="flex flex-wrap gap-2">
@@ -103,7 +103,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
         
         {data.allergies.includes('Otro') && (
           <div className="mt-3">
-            <label className="block text-[10px] font-medium text-bocado-dark-gray mb-1">
+            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">
               Especifica:
             </label>
             <input
@@ -116,14 +116,14 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
                 errors.otherAllergies ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
               }`}
             />
-            {errors.otherAllergies && <p className="text-red-500 text-[10px] mt-1">{errors.otherAllergies}</p>}
+            {errors.otherAllergies && <p className="text-red-500 text-2xs mt-1">{errors.otherAllergies}</p>}
           </div>
         )}
       </div>
 
       {/* Objetivos */}
       <div>
-        <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+        <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           Objetivo nutricional *
         </label>
         <div className="flex flex-wrap gap-2">
@@ -136,8 +136,8 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
             />
           ))}
         </div>
-        {errors.nutritionalGoal && <p className="text-red-500 text-[10px] mt-2">{errors.nutritionalGoal}</p>}
-        <p className="text-[10px] text-bocado-gray mt-2">Puedes seleccionar varios (excepto subir/bajar peso juntos)</p>
+        {errors.nutritionalGoal && <p className="text-red-500 text-2xs mt-2">{errors.nutritionalGoal}</p>}
+        <p className="text-2xs text-bocado-gray mt-2">Puedes seleccionar varios (excepto subir/bajar peso juntos)</p>
       </div>
     </div>
   );

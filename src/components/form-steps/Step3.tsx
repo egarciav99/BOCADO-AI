@@ -97,7 +97,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
     <div className="space-y-5 animate-fade-in">
       {/* Actividad */}
       <div>
-        <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+        <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           Actividad física
         </label>
         <div className="flex flex-wrap gap-2">
@@ -135,7 +135,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
 
       {/* Frecuencia */}
       <div>
-        <label className={`block text-[10px] font-bold mb-2 uppercase tracking-wider transition-colors ${
+        <label className={`block text-2xs font-bold mb-2 uppercase tracking-wider transition-colors ${
           data.activityLevel === '🪑 Sedentario' ? 'text-bocado-gray' : 'text-bocado-dark-gray'
         }`}>
           Frecuencia
@@ -161,10 +161,10 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
 
       {/* Ingredientes que no le gustan */}
       <div>
-        <label className="block text-[10px] font-bold text-bocado-dark-gray uppercase tracking-wider mb-1">
+        <label className="block text-2xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-1">
           Ingredientes que NO te gustan
         </label>
-        <p className="text-[10px] text-bocado-gray mb-3">Evitaremos estos alimentos en tus planes</p>
+        <p className="text-2xs text-bocado-gray mb-3">Evitaremos estos alimentos en tus planes</p>
         
         {/* Buscador */}
         <div className="relative mb-3">
@@ -210,7 +210,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
         <div className="mt-3 space-y-2">
           {customDislikes.length > 0 && (
             <div className="p-3 bg-bocado-background rounded-xl">
-              <p className="text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase">Añadidos manualmente:</p>
+              <p className="text-2xs font-bold text-bocado-dark-gray mb-2 uppercase">Añadidos manualmente:</p>
               <div className="flex flex-wrap gap-2">
                 {customDislikes.map(food => (
                   <button 

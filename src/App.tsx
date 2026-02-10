@@ -107,8 +107,8 @@ function AppContent() {
       
       <div className="min-h-screen bg-bocado-cream flex justify-center items-start md:items-center md:p-8">
         <div className="w-full min-h-screen bg-bocado-background 
-                        md:max-w-[480px] md:max-h-[900px] md:min-h-[800px]
-                        md:rounded-[2.5rem] md:shadow-bocado-lg 
+                        md:max-w-app md:max-h-[900px] md:min-h-[800px]
+                        md:rounded-4xl md:shadow-bocado-lg 
                         md:border-8 md:border-white
                         overflow-hidden relative flex flex-col">
           {/* ✅ ENVOLVEMOS EL RENDER EN SUSPENSE */}

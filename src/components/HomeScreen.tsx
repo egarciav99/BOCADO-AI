@@ -47,36 +47,36 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 pt-safe">
       {/* Logo */}
-      <div className="w-72 sm:w-90 md:w-84 mb-8">
+      <div className="w-64 sm:w-72 md:w-80 mb-8">
         <BocadoLogo className="w-full h-auto" />
       </div>
 
       {/* Texto */}
       <div className="text-center max-w-sm mb-10">
-        <h1 className="text-xl sm:text-xl font-bold text-bocado-dark-gray mb-3">
+        <h1 className="text-xl font-bold text-bocado-dark-gray mb-3">
           ¿Qué comer hoy?{' '}
           <span className="underline decoration-bocado-green decoration-4 underline-offset-4">
             Ya no es problema
           </span>
         </h1>
-        <p className="text-sm sm:text-base text-bocado-gray">
+        <p className="text-base text-bocado-gray">
           Sé parte de Bocado, donde tú decides y la IA te acompaña.
         </p>
       </div>
 
       {/* Botones */}
-      <div className="flex flex-col w-full max-w-xs gap-3">
+      <div className="flex flex-col w-full max-w-xs gap-4">
         {hasSession ? (
           <>
             <button
-              onClick={handleEnterApp} // ✅ Handler con analítica
-              className="w-full bg-bocado-green text-white font-bold py-4 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+              onClick={handleEnterApp}
+              className="w-full bg-bocado-green text-white font-bold py-3.5 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
             >
               Entrar
             </button>
             <button
-              onClick={handleLogout} // ✅ Handler con analítica
-              className="w-full bg-white text-bocado-green border-2 border-bocado-green font-bold py-4 px-8 rounded-full text-base hover:bg-bocado-background active:scale-95 transition-all"
+              onClick={handleLogout}
+              className="w-full bg-white text-bocado-green border-2 border-bocado-green font-bold py-3.5 px-8 rounded-full text-base hover:bg-bocado-background active:scale-95 transition-all"
             >
               Cerrar Sesión
             </button>
@@ -84,14 +84,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
         ) : (
           <>
             <button
-              onClick={handleStartRegistration} // ✅ Handler con analítica
-              className="w-full bg-bocado-green text-white font-bold py-4 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+              onClick={handleStartRegistration}
+              className="w-full bg-bocado-green text-white font-bold py-3.5 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
             >
               Registrarse
             </button>
             <button
-              onClick={handleGoToLogin} // ✅ Handler con analítica
-              className="w-full bg-white text-bocado-green border-2 border-bocado-green font-bold py-4 px-8 rounded-full text-base hover:bg-bocado-background active:scale-95 transition-all"
+              onClick={handleGoToLogin}
+              className="w-full bg-white text-bocado-green border-2 border-bocado-green font-bold py-3.5 px-8 rounded-full text-base hover:bg-bocado-background active:scale-95 transition-all"
             >
               Iniciar Sesión
             </button>

@@ -23,9 +23,18 @@ export default {
       fontFamily: {
         sans: ['Verdana', 'Geneva', 'sans-serif'],
       },
+      fontSize: {
+        // Sistema tipográfico consistente
+        '2xs': ['0.625rem', { lineHeight: '0.875rem' }],  // 10px - Labels pequeños
+        'xs': ['0.75rem', { lineHeight: '1rem' }],        // 12px - Labels, captions
+        'sm': ['0.875rem', { lineHeight: '1.25rem' }],    // 14px - Texto secundario
+        'base': ['1rem', { lineHeight: '1.5rem' }],       // 16px - Texto body
+        'lg': ['1.125rem', { lineHeight: '1.75rem' }],    // 18px - Subtítulos
+        'xl': ['1.25rem', { lineHeight: '1.75rem' }],     // 20px - Títulos pantalla
+      },
       maxWidth: {
         'mobile': '480px',
-        'app': '480px', // Bocado está optimizado para mobile-first
+        'app': '480px',
       },
       spacing: {
         18: '4.5rem',

@@ -144,7 +144,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
             <button
               key={cat}
               onClick={() => handleCategorySelect(cat)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold transition-all active:scale-95 ${
+              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-2xs font-bold transition-all active:scale-95 ${
                 activeCategory === cat 
                   ? 'bg-bocado-green text-white shadow-sm' 
                   : 'bg-bocado-background text-bocado-dark-gray'
@@ -159,7 +159,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
         {suggestedItems.length > 0 && (
           <div className="mb-4">
-            <p className="text-[10px] font-bold text-bocado-gray mb-2 uppercase tracking-wider">Sugerencias</p>
+            <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">Sugerencias</p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               {suggestedItems.map(item => (
                 <button
@@ -168,8 +168,8 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
                   className="flex items-center gap-1.5 bg-white border border-bocado-border hover:border-bocado-green hover:bg-bocado-green/5 rounded-full px-3 py-1.5 shadow-sm transition-all active:scale-95 whitespace-nowrap"
                 >
                   <span className="text-base">{item.emoji}</span>
-                  <span className="text-xs font-medium text-bocado-text">{item.name}</span>
-                  <span className="text-bocado-green font-bold text-xs">+</span>
+                  <span className="text-sm font-medium text-bocado-text">{item.name}</span>
+                  <span className="text-bocado-green font-bold text-sm">+</span>
                 </button>
               ))}
             </div>
@@ -215,7 +215,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
                   <span className="text-xs">×</span>
                 </button>
                 <span className="text-2xl select-none leading-none mt-1">{item.emoji}</span>
-                <span className="font-medium text-bocado-text text-[10px] text-center leading-tight line-clamp-2 w-full px-1">{item.name}</span>
+                <span className="font-medium text-bocado-text text-2xs text-center leading-tight line-clamp-2 w-full px-1">{item.name}</span>
                 <div className={`w-1.5 h-1.5 rounded-full mt-0.5 ${getFreshnessRing(item.freshness)}`} />
               </div>
             ))}
@@ -226,7 +226,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
       {urgentItems.length > 0 && (
         <div className="absolute bottom-20 left-4 right-4 bg-white border-t-2 border-red-400 rounded-xl p-3 shadow-bocado-lg z-30 flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider">Caducidad</span>
+            <span className="text-2xs font-bold text-red-500 uppercase tracking-wider">Caducidad</span>
             <span className="text-xs font-bold text-bocado-text">{urgentItems.length} ítems</span>
           </div>
           <div className="flex -space-x-2">

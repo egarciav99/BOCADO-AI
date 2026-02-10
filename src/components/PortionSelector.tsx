@@ -26,11 +26,11 @@ const PortionSelector: React.FC<PortionSelectorProps> = ({
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <Users className="w-4 h-4 text-bocado-green" />
-          <span className="text-sm font-bold text-bocado-dark-gray">
+          <span className="text-base font-bold text-bocado-dark-gray">
             ¿Para cuántos?
           </span>
         </div>
-        <span className="text-xs text-bocado-gray">
+        <span className="text-sm text-bocado-gray">
           Receta base: {baseServings}
         </span>
       </div>
@@ -51,7 +51,7 @@ const PortionSelector: React.FC<PortionSelectorProps> = ({
             `}
           >
             <span className="text-lg mb-0.5">{option.icon}</span>
-            <span className="text-[10px] font-bold whitespace-nowrap">
+            <span className="text-2xs font-bold whitespace-nowrap">
               {option.value}
             </span>
           </button>
@@ -61,7 +61,7 @@ const PortionSelector: React.FC<PortionSelectorProps> = ({
       {/* Opción personalizada (8+) */}
       <div className="mt-2 pt-2 border-t border-bocado-border/30">
         <div className="flex items-center justify-between">
-          <span className="text-xs text-bocado-gray">Más opciones:</span>
+          <span className="text-sm text-bocado-gray">Más opciones:</span>
           <div className="flex gap-2">
             {PORTION_OPTIONS.slice(6).map((option) => (
               <button

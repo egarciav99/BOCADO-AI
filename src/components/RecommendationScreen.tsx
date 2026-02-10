@@ -268,7 +268,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         <div className="flex-1 animate-fade-in">
           {recommendationType === 'En casa' ? (
             <div className="space-y-4">
-              <p className="text-center text-xs font-bold text-bocado-gray uppercase tracking-wider">¿Qué vas a preparar?</p>
+              <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider">¿Qué vas a preparar?</p>
               <div className="grid grid-cols-2 gap-2">
                 {MEALS.map(meal => (
                   <button 
@@ -289,7 +289,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
               {selectedMeal && (
                 <div className="bg-bocado-background p-4 rounded-2xl mt-2 animate-fade-in">
                   <div className="flex justify-between items-center mb-2">
-                    <label className="text-xs font-bold text-bocado-gray uppercase tracking-wide">Tiempo</label>
+                    <label className="text-2xs font-bold text-bocado-gray uppercase tracking-wide">Tiempo</label>
                     <span className="text-lg font-bold text-bocado-green">{cookingTime >= 65 ? '60+' : cookingTime} min</span>
                   </div>
                   <input 
@@ -311,7 +311,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
           ) : (
             <div className="space-y-4">
               <div>
-                <p className="text-center text-xs font-bold text-bocado-gray uppercase tracking-wider mb-3">¿Qué se te antoja?</p>
+                <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-3">¿Qué se te antoja?</p>
                 <div className="grid grid-cols-2 gap-2">
                   {CRAVINGS.map(craving => (
                     <button 
@@ -331,7 +331,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
               </div>
 
               <div>
-                <p className="text-center text-xs font-bold text-bocado-gray uppercase tracking-wider mb-3">
+                <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-3">
                   Presupuesto ({currencyConfig.name})
                 </p>
                 <div className="space-y-2">

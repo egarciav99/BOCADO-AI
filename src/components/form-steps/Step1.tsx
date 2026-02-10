@@ -160,7 +160,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       {/* Nombre y Apellido */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Nombre *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Nombre *</label>
           <input 
             type="text" 
             name="firstName" 
@@ -172,10 +172,10 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               errors.firstName ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
             }`} 
           />
-          {errors.firstName && <p className="text-red-500 text-[10px] mt-1">{errors.firstName}</p>}
+          {errors.firstName && <p className="text-red-500 text-2xs mt-1">{errors.firstName}</p>}
         </div>
         <div>
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Apellido *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Apellido *</label>
           <input 
             type="text" 
             name="lastName" 
@@ -187,7 +187,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               errors.lastName ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
             }`} 
           />
-          {errors.lastName && <p className="text-red-500 text-[10px] mt-1">{errors.lastName}</p>}
+          {errors.lastName && <p className="text-red-500 text-2xs mt-1">{errors.lastName}</p>}
         </div>
       </div>
 
@@ -195,7 +195,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         {/* Género - Izquierda en desktop */}
         <div className="flex-1">
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">Género *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">Género *</label>
           <div className="flex gap-2 max-w-[320px] mx-auto sm:mx-0">
             {['Mujer', 'Hombre', 'Otro'].map(gender => (
               <GenderButton 
@@ -210,12 +210,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               />
             ))}
           </div>
-          {errors.gender && <p className="text-red-500 text-[10px] mt-1 text-center sm:text-left">{errors.gender}</p>}
+          {errors.gender && <p className="text-red-500 text-2xs mt-1 text-center sm:text-left">{errors.gender}</p>}
         </div>
 
         {/* Edad - Derecha en desktop */}
         <div className="sm:w-28">
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider text-center sm:text-left">Edad *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider text-center sm:text-left">Edad *</label>
           <input 
             type="text"
             inputMode="numeric"
@@ -227,16 +227,16 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               errors.age ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
             }`} 
           />
-          {errors.age && <p className="text-red-500 text-[10px] mt-1 text-center sm:text-left">{errors.age}</p>}
+          {errors.age && <p className="text-red-500 text-2xs mt-1 text-center sm:text-left">{errors.age}</p>}
         </div>
       </div>
 
       {/* Datos corporales */}
       <div className="bg-bocado-background p-3 rounded-xl border border-bocado-border">
-        <p className="text-[10px] font-bold text-bocado-gray mb-2 uppercase tracking-wider">Datos corporales (opcional)</p>
+        <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">Datos corporales (opcional)</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] font-medium text-bocado-dark-gray mb-1">Peso (kg)</label>
+            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">Peso (kg)</label>
             <div className="relative">
               <ScaleIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
@@ -247,12 +247,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 placeholder="70" 
                 className="w-full pl-8 pr-6 py-2 rounded-lg border border-bocado-border bg-white text-sm focus:outline-none focus:border-bocado-green"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-bocado-gray font-medium">kg</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-2xs text-bocado-gray font-medium">kg</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-[10px] font-medium text-bocado-dark-gray mb-1">Estatura (cm)</label>
+            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">Estatura (cm)</label>
             <div className="relative">
               <RulerIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
@@ -262,7 +262,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 placeholder="175" 
                 className="w-full pl-8 pr-6 py-2 rounded-lg border border-bocado-border bg-white text-sm focus:outline-none focus:border-bocado-green"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-bocado-gray font-medium">cm</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-2xs text-bocado-gray font-medium">cm</span>
             </div>
           </div>
         </div>
@@ -271,7 +271,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       {/* País y Ciudad */}
       <div className="space-y-3">
         <div>
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">País *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">País *</label>
           <div className="relative">
             <LocationIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
             <select 
@@ -285,11 +285,11 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               {COUNTRIES_LIST.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
             </select>
           </div>
-          {errors.country && <p className="text-red-500 text-[10px] mt-1">{errors.country}</p>}
+          {errors.country && <p className="text-red-500 text-2xs mt-1">{errors.country}</p>}
         </div>
 
         <div className="relative">
-          <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Ciudad *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Ciudad *</label>
           <div className="relative">
             <input 
               type="text" 
@@ -319,18 +319,18 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                   className="w-full text-left px-3 py-2 text-sm hover:bg-bocado-background border-b border-bocado-border/50 last:border-0 flex justify-between items-center active:bg-bocado-green/10"
                 >
                   <span className="font-medium text-bocado-text">{city.name}</span>
-                  <span className="text-bocado-gray text-[10px]">{city.adminName1}</span>
+                  <span className="text-bocado-gray text-2xs">{city.adminName1}</span>
                 </button>
               ))}
             </div>
           )}
-          {errors.city && <p className="text-red-500 text-[10px] mt-1">{errors.city}</p>}
+          {errors.city && <p className="text-red-500 text-2xs mt-1">{errors.city}</p>}
         </div>
       </div>
       
       {/* Email */}
       <div className="relative">
-        <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Email *</label>
+        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Email *</label>
         <input 
           type="email" 
           value={data.email} 
@@ -359,14 +359,14 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             ))}
           </div>
         )}
-        {errors.email && <p className="text-red-500 text-[10px] mt-1">{errors.email}</p>}
+        {errors.email && <p className="text-red-500 text-2xs mt-1">{errors.email}</p>}
       </div>
 
       {/* Password */}
       {!hidePasswordFields && (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Contraseña *</label>
+            <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Contraseña *</label>
             <div className="relative">
               <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
@@ -381,10 +381,10 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 }`} 
               />
             </div>
-            {errors.password && <p className="text-red-500 text-[10px] mt-1">{errors.password}</p>}
+            {errors.password && <p className="text-red-500 text-2xs mt-1">{errors.password}</p>}
           </div>
           <div>
-            <label className="block text-[10px] font-bold text-bocado-dark-gray mb-1 uppercase tracking-wider">Confirmar *</label>
+            <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Confirmar *</label>
             <input 
               type="password" 
               name="confirmPassword" 
@@ -396,7 +396,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
               }`} 
             />
-            {errors.confirmPassword && <p className="text-red-500 text-[10px] mt-1">{errors.confirmPassword}</p>}
+            {errors.confirmPassword && <p className="text-red-500 text-2xs mt-1">{errors.confirmPassword}</p>}
           </div>
         </div>
       )}

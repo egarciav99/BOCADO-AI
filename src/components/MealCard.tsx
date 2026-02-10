@@ -41,9 +41,9 @@ const getSmartEmoji = (title: string): string => {
 };
 
 const DIFFICULTY_STYLES: Record<string, string> = {
-  'Fácil': 'bg-green-100 text-green-700',
-  'Media': 'bg-yellow-100 text-yellow-700',
-  'Difícil': 'bg-red-100 text-red-700',
+  'Fácil': 'bg-bocado-green/10 text-bocado-green',
+  'Media': 'bg-amber-100 text-amber-700',
+  'Difícil': 'bg-red-100 text-red-600',
 };
 
 const getDifficultyStyle = (difficulty: string): string => {

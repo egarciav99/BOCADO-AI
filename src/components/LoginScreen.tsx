@@ -205,18 +205,18 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
             </svg>
           </div>
           <h2 className="text-xl font-bold text-bocado-dark-green mb-2">Correo no verificado</h2>
-          <p className="text-sm text-bocado-dark-gray mb-4">
+          <p className="text-base text-bocado-dark-gray mb-4">
             Para continuar usando Bocado, debes verificar tu correo electrónico.
           </p>
-          <p className="text-xs text-bocado-gray mb-6 break-all">
+          <p className="text-sm text-bocado-gray mb-6 break-all">
             Hemos enviado un enlace a <strong>{unverifiedUser.email}</strong>
           </p>
           
           {successMessage && (
-            <p className="text-green-600 text-xs mb-3 bg-green-50 p-2 rounded-lg">{successMessage}</p>
+            <p className="text-green-600 text-sm mb-3 bg-green-50 p-2 rounded-lg">{successMessage}</p>
           )}
           {error && (
-            <p className="text-red-500 text-xs mb-3 bg-red-50 p-2 rounded-lg">{error}</p>
+            <p className="text-red-500 text-sm mb-3 bg-red-50 p-2 rounded-lg">{error}</p>
           )}
 
           <div className="space-y-3">
@@ -283,7 +283,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-xs font-medium text-bocado-dark-gray mb-1">
+          <label htmlFor="password" className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
             Contraseña
           </label>
           <input
@@ -297,7 +297,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
           />
         </div>
         
-        {error && <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">{error}</p>}
+        {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</p>}
         
         <button
           type="submit"
@@ -336,7 +336,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
       
       <form onSubmit={handlePasswordReset} className="space-y-4">
         <div>
-          <label htmlFor="reset-email" className="block text-xs font-medium text-bocado-dark-gray mb-1">
+          <label htmlFor="reset-email" className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
             Correo Electrónico
           </label>
           <input
@@ -350,8 +350,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
           />
         </div>
         
-        {error && <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">{error}</p>}
-        {successMessage && <p className="text-green-600 text-xs text-center bg-green-50 p-2 rounded-lg">{successMessage}</p>}
+        {error && <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">{error}</p>}
+        {successMessage && <p className="text-green-600 text-sm text-center bg-green-50 p-2 rounded-lg">{successMessage}</p>}
 
         <button
           type="submit"

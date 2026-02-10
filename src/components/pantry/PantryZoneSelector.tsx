@@ -32,7 +32,7 @@ export const PantryZoneSelector: React.FC<PantryZoneSelectorProps> = ({
         <RestaurantIcon className="w-7 h-7 text-bocado-dark-green" />
         <h1 className="text-xl font-bold text-bocado-dark-green">Mi Cocina</h1>
       </div>
-      <p className="text-center text-bocado-gray text-xs mb-6">Control de ingredientes</p>
+      <p className="text-center text-bocado-gray text-sm mb-6">Control de ingredientes</p>
 
       <div className="space-y-3">
         {(Object.keys(ZONES) as Zone[]).map(zone => (
@@ -49,7 +49,7 @@ export const PantryZoneSelector: React.FC<PantryZoneSelectorProps> = ({
               <div className="text-xl text-bocado-gray">›</div>
             </div>
             {getBadgeCount(zone) > 0 && (
-              <div className="absolute top-3 right-3 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs shadow-md animate-pulse">
+              <div className="absolute top-3 right-3 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-2xs shadow-md animate-pulse">
                 {getBadgeCount(zone)}
               </div>
             )}
@@ -61,7 +61,7 @@ export const PantryZoneSelector: React.FC<PantryZoneSelectorProps> = ({
         <div className="mt-6 bg-white border border-red-100 rounded-2xl p-3 shadow-bocado">
           <div className="flex items-center gap-2 mb-2 border-b border-red-50 pb-2">
             <span className="text-base">🚨</span>
-            <h3 className="text-[10px] font-bold text-red-500 uppercase tracking-wide">Por caducar</h3>
+            <h3 className="text-2xs font-bold text-red-500 uppercase tracking-wide">Por caducar</h3>
           </div>
           <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
             {urgentItems.slice(0, 5).map(item => (
@@ -73,7 +73,7 @@ export const PantryZoneSelector: React.FC<PantryZoneSelectorProps> = ({
                 }`}>
                   <span className="text-base">{item.emoji}</span>
                 </div>
-                <span className="text-[9px] text-bocado-dark-gray truncate w-full text-center mt-1">{item.name}</span>
+                <span className="text-2xs text-bocado-dark-gray truncate w-full text-center mt-1">{item.name}</span>
               </div>
             ))}
           </div>

@@ -69,7 +69,7 @@ const buildFormData = (user: any, profile: UserProfile | null | undefined): Form
 
 const InfoSection: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
     <div className="mb-4">
-        <h3 className="text-[10px] font-bold text-bocado-gray uppercase tracking-wider mb-2">{title}</h3>
+        <h3 className="text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-2">{title}</h3>
         <div className="flex flex-wrap gap-2">{children}</div>
     </div>
 );
@@ -410,7 +410,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                  <h2 className="text-lg font-bold text-bocado-dark-green mb-4">Cambiar Contraseña</h2>
                  <form onSubmit={handleChangePassword} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-medium text-bocado-dark-gray mb-1">Contraseña Actual</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Contraseña Actual</label>
                         <input 
                           type="password" 
                           value={currentPassword} 
@@ -420,7 +420,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-bocado-dark-gray mb-1">Nueva Contraseña</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Nueva Contraseña</label>
                         <input 
                           type="password" 
                           value={newPassword} 
@@ -430,7 +430,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-bocado-dark-gray mb-1">Confirmar</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Confirmar</label>
                         <input 
                           type="password" 
                           value={confirmNewPassword} 
@@ -469,11 +469,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
       case 'changeEmail':
           return (
             <div className="animate-fade-in">
-                 <h2 className="text-lg font-bold text-bocado-dark-green mb-2">Cambiar Correo</h2>
-                 <p className="text-xs text-bocado-gray mb-4">Se enviará un link de verificación.</p>
+                 <h2 className="text-xl font-bold text-bocado-dark-green mb-2">Cambiar Correo</h2>
+                 <p className="text-sm text-bocado-gray mb-4">Se enviará un link de verificación.</p>
                  <form onSubmit={handleChangeEmail} className="space-y-4">
                     <div>
-                        <label className="block text-xs font-medium text-bocado-dark-gray mb-1">Contraseña</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Contraseña</label>
                         <input 
                           type="password" 
                           value={emailPassword} 
@@ -483,7 +483,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         />
                     </div>
                     <div>
-                        <label className="block text-xs font-medium text-bocado-dark-gray mb-1">Nuevo Correo</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Nuevo Correo</label>
                         <input 
                           type="email" 
                           value={newEmail} 
@@ -583,7 +583,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                  <div className="mt-6 pt-6 border-t border-bocado-border">
                     <div className="flex items-center gap-2 mb-3">
                         <LockIcon className="w-4 h-4 text-bocado-gray" />
-                        <h3 className="font-bold text-bocado-dark-green text-xs uppercase tracking-wider">Seguridad</h3>
+                        <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">Seguridad</h3>
                     </div>
                     <div className="space-y-2">
                         <button 
@@ -634,7 +634,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                 </div>
                 <div>
                     <h1 className="text-lg font-bold text-bocado-dark-green">Mi Perfil</h1>
-                    <p className="text-[10px] text-bocado-gray truncate max-w-[150px]">{formData.email}</p>
+                    <p className="text-xs text-bocado-gray truncate max-w-[150px]">{formData.email}</p>
                 </div>
             </div>
             {viewMode === 'view' && (

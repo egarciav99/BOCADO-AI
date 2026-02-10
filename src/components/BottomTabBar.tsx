@@ -28,7 +28,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
             className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('saved') ? 'text-bocado-green' : 'text-bocado-gray'}`}
           >
             <BookIcon className="w-5 h-5" strokeWidth={isActive('saved') ? 2.5 : 1.5} />
-            <span className="text-[10px] font-medium whitespace-nowrap">Recetas</span>
+            <span className="text-2xs font-medium whitespace-nowrap">Recetas</span>
           </button>
 
           {/* 2. Lugares */}
@@ -37,7 +37,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
             className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('restaurants') ? 'text-bocado-green' : 'text-bocado-gray'}`}
           >
             <LocationIcon className="w-5 h-5" strokeWidth={isActive('restaurants') ? 2.5 : 1.5} />
-            <span className="text-[10px] font-medium whitespace-nowrap">Lugares</span>
+            <span className="text-2xs font-medium whitespace-nowrap">Lugares</span>
           </button>
 
           {/* 3. Inicio (Centro) - más grande y elevado */}
@@ -48,7 +48,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
             >
               <HomeIcon className="w-6 h-6" strokeWidth={2.5} />
             </button>
-            <span className={`text-[10px] font-bold mt-1 ${isActive('recommendation') ? 'text-bocado-green' : 'text-bocado-gray'}`}>
+            <span className={`text-2xs font-bold mt-1 ${isActive('recommendation') ? 'text-bocado-green' : 'text-bocado-gray'}`}>
               Inicio
             </span>
           </div>
@@ -59,7 +59,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
             className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('pantry') ? 'text-bocado-green' : 'text-bocado-gray'}`}
           >
             <RestaurantIcon className="w-5 h-5" strokeWidth={isActive('pantry') ? 2.5 : 1.5} />
-            <span className="text-[10px] font-medium whitespace-nowrap">Mi Cocina</span>
+            <span className="text-2xs font-medium whitespace-nowrap">Mi Cocina</span>
           </button>
 
           {/* 5. Perfil */}
@@ -68,7 +68,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
             className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('profile') ? 'text-bocado-green' : 'text-bocado-gray'}`}
           >
             <UserIcon className="w-5 h-5" strokeWidth={isActive('profile') ? 2.5 : 1.5} />
-            <span className="text-[10px] font-medium whitespace-nowrap">Perfil</span>
+            <span className="text-2xs font-medium whitespace-nowrap">Perfil</span>
           </button>
 
         </div>
