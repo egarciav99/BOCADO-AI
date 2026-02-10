@@ -1,5 +1,6 @@
 import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
 import { useCallback, useRef, useState, useEffect } from 'react';
+import { logger } from '../utils/logger';
 
 // ============================================
 // PAGINACIÓN INTELIGENTE PARA FIRESTORE
@@ -268,7 +269,7 @@ export function useChangeDetection<T extends { [key: string]: any }>({
         currentTimestamp
       );
     } catch (error) {
-      console.error('Error checking for changes:', error);
+      logger.error('Error checking for changes:', error);
     }
   }, [queryClient, queryKey, lastModifiedField, enabled]);
 

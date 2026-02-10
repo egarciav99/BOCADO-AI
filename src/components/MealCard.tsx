@@ -6,6 +6,7 @@ import FeedbackModal from './FeedbackModal';
 import { useToggleSavedItem, useIsItemSaved } from '../hooks/useSavedItems';
 import { useAuthStore } from '../stores/authStore';
 import { trackEvent } from '../firebaseConfig';
+import { logger } from '../utils/logger';
 
 interface MealCardProps {
   meal: Meal;
@@ -301,7 +302,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
       
       setTimeout(() => setCopiedAddress(false), 2000);
     } catch (err) {
-      console.error('Error copying:', err);
+      logger.error('Error copying:', err);
       // Fallback para navegadores antiguos
       const textArea = document.createElement("textarea");
       textArea.value = textToCopy;

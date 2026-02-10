@@ -1,5 +1,33 @@
 import { UserProfile, FormData, AuthData } from '../types';
 
+// Logger seguro que respeta el entorno
+export const safeLog = (level: 'log' | 'error' | 'warn', message: string, error?: any) => {
+  const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development';
+  
+  if (error) {
+    const errorMessage = error?.message || String(error);
+    
+    // Detectar errores que pueden contener datos sensibles
+    const sensitivePatterns = [
+      /api[_-]?key/i,
+      /token/i,
+      /password/i,
+      /secret/i,
+      /credential/i,
+    ];
+    
+    const hasSensitiveData = sensitivePatterns.some(pattern => pattern.test(errorMessage));
+    
+    if (hasSensitiveData && !isDev) {
+      console[level](message, '[Error sanitizado - ver logs de desarrollo]');
+    } else {
+      console[level](message, isDev ? error : errorMessage.substring(0, 200));
+    }
+  } else {
+    console[level](message);
+  }
+};
+
 export const sanitizeProfileData = (data: any): UserProfile => {
   if (!data) {
     return {

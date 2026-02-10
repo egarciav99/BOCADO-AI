@@ -1,7 +1,9 @@
+import { logger } from '../utils/logger';
+
 const getEnvVar = (key: string): string => {
   const value = import.meta.env[key];
   if (typeof value === 'undefined') {
-    console.warn(`Missing environment variable: ${key}`);
+    logger.warn(`Missing environment variable: ${key}`);
     return ""; 
   }
   return value;

@@ -19,6 +19,7 @@ import {
 import { db, trackEvent } from '../firebaseConfig';
 import { Recipe, SavedItem, SavedItemType, FeedbackType, FeedbackData } from '../types';
 import { useVisibilityAwarePolling } from './usePaginatedFirestoreQuery';
+import { logger } from '../utils/logger';
 
 const SAVED_RECIPES_KEY = 'savedRecipes';
 const SAVED_RESTAURANTS_KEY = 'savedRestaurants';
@@ -84,7 +85,7 @@ const fetchSavedItems = async (
   } catch (error: any) {
     // Si el error es por índice faltante, hacer fallback a consulta simple
     if (error?.message?.includes('index') || error?.code === 'failed-precondition') {
-      console.warn(`⚠️ Índice faltante en ${collectionName}, usando fallback`);
+      logger.warn(`⚠️ Índice faltante en ${collectionName}, usando fallback`);
       
       // Fallback: consulta sin orderBy (ordena en memoria)
       const q = query(
@@ -219,7 +220,7 @@ export const useSavedItems = (
       setLoadedPages(prev => new Set([...prev, nextPageNum]));
       
     } catch (error) {
-      console.error('Error fetching next page:', error);
+      logger.error('Error fetching next page:', error);
       setPaginationState(prev => ({ ...prev, isFetchingNextPage: false }));
     }
   }, [paginationState, userId, type, loadedPages]);

@@ -14,6 +14,7 @@ import {
 } from 'firebase/auth';
 import { separateUserData } from '../utils/profileSanitizer';
 import { env } from '../environment/env';
+import { logger } from '../utils/logger';
 
 // ✅ CORRECCIÓN ERRORES 2305: Asegúrate que en userSchema.ts 
 // los nombres coincidan exactamente (ej. userStep1Schema o step1Schema)
@@ -154,7 +155,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       setShowVerificationModal(true);
 
     } catch (error: any) {
-      console.error("Error en registro:", error);
+      logger.error("Error en registro:", error);
       trackEvent('registration_failed', { error_code: error.code || 'unknown_error', step: currentStep });
 
       if (error.code === 'auth/email-already-in-use') {
@@ -208,7 +209,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       const data = await response.json();
       setCityOptions(data.geonames || []);
     } catch (error) {
-      console.error('Error buscando ciudades:', error);
+      logger.error('Error buscando ciudades:', error);
       setCityOptions([]);
     } finally {
       setIsSearchingCity(false);

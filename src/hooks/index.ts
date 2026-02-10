@@ -1,6 +1,7 @@
 // hooks/index.ts - Exportaciones centralizadas
 
 export { useUserProfile, useUpdateUserProfile } from './useUser';
+export { usePWA } from './usePWA';
 export { 
   useSavedItems, 
   useToggleSavedItem, 

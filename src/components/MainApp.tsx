@@ -11,6 +11,7 @@ import { auth, trackEvent } from '../firebaseConfig';
 import { updateProfile } from 'firebase/auth';
 import { useAuthStore } from '../stores/authStore';
 import { useUserProfile } from '../hooks/useUser';
+import { logger } from '../utils/logger';
 
 interface MainAppProps {
   onPlanGenerated: (id: string) => void;
@@ -50,7 +51,7 @@ const MainApp: React.FC<MainAppProps> = ({
       await auth.signOut();
       onLogoutComplete();
     } catch (error) {
-      console.error("Error al cerrar sesión:", error);
+      logger.error("Error al cerrar sesión:", error);
       trackEvent('logout_error');
     }
   };
@@ -64,7 +65,7 @@ const MainApp: React.FC<MainAppProps> = ({
         useAuthStore.getState().setUser(user);
         trackEvent('display_name_updated');
       } catch (error) {
-        console.error("Error actualizando nombre:", error);
+        logger.error("Error actualizando nombre:", error);
       }
     }
   };

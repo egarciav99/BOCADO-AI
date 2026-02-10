@@ -77,7 +77,7 @@ class DistributedRateLimiter {
           const processAge = now - data.currentProcess.startedAt;
           
           if (processAge > this.config.stuckThresholdMs) {
-            console.log(`🧹 Limpiando proceso atascado para ${userId} (${Math.round(processAge / 1000)}s)`);
+            safeLog('log', `🧹 Limpiando proceso atascado para ${userId?.substring(0, 8)}... (${Math.round(processAge / 1000)}s)`);
             t.update(counterRef, {
               currentProcess: null,
               'metadata.cleanedAt': FieldValue.serverTimestamp(),
@@ -143,7 +143,7 @@ class DistributedRateLimiter {
         };
       });
     } catch (error: any) {
-      console.error('❌ Error en rate limit transaction:', error);
+      safeLog('error', '❌ Error en rate limit transaction', error);
       return { allowed: true, remainingRequests: 1 };
     }
   }
@@ -178,7 +178,7 @@ class DistributedRateLimiter {
         });
       });
     } catch (error) {
-      console.error('❌ Error marcando proceso como completado:', error);
+      safeLog('error', '❌ Error marcando proceso como completado', error);
     }
   }
 
@@ -195,7 +195,7 @@ class DistributedRateLimiter {
         updatedAt: FieldValue.serverTimestamp(),
       });
     } catch (error) {
-      console.error('❌ Error marcando proceso como fallido:', error);
+      safeLog('error', '❌ Error marcando proceso como fallido', error);
     }
   }
 
@@ -239,7 +239,7 @@ class DistributedRateLimiter {
         nextAvailableAt,
       };
     } catch (error) {
-      console.error('Error obteniendo status:', error);
+      safeLog('error', 'Error obteniendo status', error);
       return null;
     }
   }
@@ -248,8 +248,26 @@ class DistributedRateLimiter {
 const rateLimiter = new DistributedRateLimiter();
 
 // ============================================
-// 2. TIPOS E INTERFACES
+// 2. VALIDACIÓN CON ZOD
 // ============================================
+
+import { z } from 'zod';
+
+// Schema para validar el body de la request
+const RequestBodySchema = z.object({
+  userId: z.string().min(1).max(128),
+  type: z.enum(['En casa', 'Fuera']),
+  mealType: z.string().max(50).optional().nullable(),
+  cookingTime: z.union([z.string(), z.number()]).optional().nullable(),
+  cravings: z.union([z.string(), z.array(z.string())]).optional().nullable(),
+  budget: z.string().max(50).optional().nullable(),
+  currency: z.string().max(10).optional().nullable(),
+  dislikedFoods: z.array(z.string().max(100)).max(50).optional().default([]),
+  _id: z.string().max(128).optional(),
+});
+
+type RequestBody = z.infer<typeof RequestBodySchema>;
+
 interface UserProfile {
   nutritionalGoal?: string;
   allergies?: string[];
@@ -263,18 +281,6 @@ interface UserProfile {
   height?: string;
   activityLevel?: string;
   activityFrequency?: string;
-}
-
-interface RequestBody {
-  userId: string;
-  type: 'En casa' | 'Fuera';
-  mealType?: string;
-  cookingTime?: string;
-  cravings?: string;
-  budget?: string;
-  currency?: string;
-  dislikedFoods?: string[];
-  _id?: string;
 }
 
 interface AirtableIngredient {
@@ -303,6 +309,54 @@ interface AirtableIngredient {
 // ============================================
 // 3. FUNCIONES DE UTILIDAD
 // ============================================
+
+// Sanitiza errores para no exponer datos sensibles en logs
+const sanitizeError = (error: any): { message: string; code?: string; safeToLog: boolean } => {
+  const errorMessage = error?.message || String(error);
+  
+  // Detectar errores que pueden contener datos sensibles
+  const sensitivePatterns = [
+    /api[_-]?key/i,
+    /token/i,
+    /password/i,
+    /secret/i,
+    /credential/i,
+    /firebase/i,
+    /airtable.*v0\/.*\//i, // URLs de Airtable con API key
+  ];
+  
+  const hasSensitiveData = sensitivePatterns.some(pattern => pattern.test(errorMessage));
+  
+  if (hasSensitiveData) {
+    return {
+      message: 'Error sanitizado: contiene datos sensibles',
+      code: error?.code,
+      safeToLog: false
+    };
+  }
+  
+  return {
+    message: errorMessage.substring(0, 500), // Limitar longitud
+    code: error?.code,
+    safeToLog: true
+  };
+};
+
+// Logger seguro que respeta el entorno
+const safeLog = (level: 'log' | 'error' | 'warn', message: string, error?: any) => {
+  const isDev = process.env.NODE_ENV === 'development';
+  
+  if (error) {
+    const sanitized = sanitizeError(error);
+    if (sanitized.safeToLog || isDev) {
+      console[level](message, isDev ? error : sanitized.message);
+    } else {
+      console[level](message, '[Error sanitizado - ver logs seguros]');
+    }
+  } else {
+    console[level](message);
+  }
+};
 
 const normalizeText = (text: string): string => 
   text ? text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() : "";
@@ -424,11 +478,67 @@ const scoreIngredients = (
 };
 
 // ============================================
-// 6. RATE LIMITING DISTRIBUIDO (V2)
+// 6. RATE LIMITING POR IP (Protección contra abuso)
 // ============================================
-// Reemplazado por: ./utils/rateLimit.ts
-// Usa transacciones atómicas de Firestore para evitar race conditions
-// y es escalable a múltiples instancias serverless
+
+class IPRateLimiter {
+  private config = {
+    windowMs: 60 * 1000, // 1 minuto
+    maxRequests: 30,     // 30 requests por minuto por IP
+    blockDurationMs: 5 * 60 * 1000, // 5 minutos de bloqueo si excede
+  };
+
+  async checkIPLimit(ip: string): Promise<{ allowed: boolean; retryAfter?: number }> {
+    const docRef = db.collection('ip_rate_limits').doc(ip);
+    const now = Date.now();
+
+    try {
+      return await db.runTransaction(async (t) => {
+        const doc = await t.get(docRef);
+        const data = doc.exists ? doc.data() as any : null;
+
+        // Si está bloqueado
+        if (data?.blockedUntil && data.blockedUntil > now) {
+          return { 
+            allowed: false, 
+            retryAfter: Math.ceil((data.blockedUntil - now) / 1000)
+          };
+        }
+
+        const requests = (data?.requests || [])
+          .filter((ts: number) => now - ts < this.config.windowMs);
+
+        // Si excede el límite, bloquear
+        if (requests.length >= this.config.maxRequests) {
+          t.set(docRef, {
+            requests: [...requests, now],
+            blockedUntil: now + this.config.blockDurationMs,
+            updatedAt: FieldValue.serverTimestamp(),
+          });
+          return { 
+            allowed: false, 
+            retryAfter: Math.ceil(this.config.blockDurationMs / 1000)
+          };
+        }
+
+        // Registrar request
+        t.set(docRef, {
+          requests: [...requests, now],
+          blockedUntil: null,
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+
+        return { allowed: true };
+      });
+    } catch (error) {
+      safeLog('error', 'Error en IP rate limit', error);
+      // Fail open: permitir si hay error
+      return { allowed: true };
+    }
+  }
+}
+
+const ipRateLimiter = new IPRateLimiter();
 
 // ============================================
 // 7. UTILIDAD PARA GENERAR LINKS DE MAPS
@@ -469,12 +579,64 @@ const sanitizeRecommendation = (rec: any, city: string) => {
 // 8. HANDLER PRINCIPAL
 // ============================================
 
+// ============================================
+// 8. CORS CONFIGURATION
+// ============================================
+
+const ALLOWED_ORIGINS = [
+  // Producción
+  'https://bocado-ai.vercel.app',
+  'https://bocado.app',
+  'https://www.bocado.app',
+  'https://app.bocado.app',
+  // Desarrollo
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5173',
+];
+
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return false;
+  // Permitir localhost en desarrollo
+  if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
+    return true;
+  }
+  return ALLOWED_ORIGINS.includes(origin);
+};
+
+// ============================================
+// 9. HANDLER PRINCIPAL
+// ============================================
+
 export default async function handler(req: any, res: any) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  const origin = req.headers.origin;
+  
+  // Verificar origen permitido
+  if (!isOriginAllowed(origin)) {
+    return res.status(403).json({ error: 'Origin not allowed' });
+  }
+  
+  res.setHeader('Access-Control-Allow-Origin', origin || ALLOWED_ORIGINS[0]);
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // ============================================
+  // RATE LIMITING POR IP (anti-abuso)
+  // ============================================
+  const clientIP = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown').toString().split(',')[0].trim();
+  const ipCheck = await ipRateLimiter.checkIPLimit(clientIP);
+  
+  if (!ipCheck.allowed) {
+    return res.status(429).json({
+      error: 'Demasiadas solicitudes desde esta IP. Inténtalo más tarde.',
+      retryAfter: ipCheck.retryAfter,
+      code: 'IP_RATE_LIMITED'
+    });
+  }
 
   const authHeader = req.headers?.authorization || req.headers?.Authorization || '';
   const tokenMatch = typeof authHeader === 'string' ? authHeader.match(/^Bearer\s+(.+)$/i) : null;
@@ -519,7 +681,14 @@ export default async function handler(req: any, res: any) {
   let userId: string | null = null;
 
   try {
-    const request: RequestBody = req.body;
+    // Validar body con Zod
+    const parseResult = RequestBodySchema.safeParse(req.body);
+    if (!parseResult.success) {
+      const issues = parseResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ');
+      return res.status(400).json({ error: 'Invalid request body', details: issues });
+    }
+    
+    const request: RequestBody = parseResult.data;
     userId = authUserId;
     if (request.userId && request.userId !== authUserId) {
       return res.status(403).json({ error: 'userId no coincide con el token' });
@@ -527,12 +696,9 @@ export default async function handler(req: any, res: any) {
     const { type, _id } = request;
     const interactionId = _id || `int_${Date.now()}`;
     
-    console.log(`🚀 Nueva solicitud: type=${type}, userId=${userId}, interactionId=${interactionId}`);
+    console.log(`🚀 Nueva solicitud: type=${type}, userId=${userId?.substring(0, 8)}..., interactionId=${interactionId?.substring(0, 20)}...`);
 
     if (!userId) return res.status(400).json({ error: 'userId requerido' });
-    if (!type || !['En casa', 'Fuera'].includes(type)) {
-      return res.status(400).json({ error: 'type debe ser "En casa" o "Fuera"' });
-    }
 
     // ============================================
     // RATE LIMITING V2 - Transacción atómica
@@ -577,7 +743,7 @@ export default async function handler(req: any, res: any) {
       } catch (indexError: any) {
         // Fallback sin orderBy si falta el índice
         if (indexError?.message?.includes('index') || indexError?.code === 'failed-precondition') {
-          console.log('⚠️ Índice faltante en historial, usando fallback');
+          safeLog('log', '⚠️ Índice faltante en historial, usando fallback');
           const allHistory = await db.collection(historyCol)
             .where('user_id', '==', userId)
             .limit(20)
@@ -616,7 +782,7 @@ export default async function handler(req: any, res: any) {
         }
       }
     } catch (e: any) {
-      console.log("No se pudo obtener historial:", e?.message || e);
+      safeLog('log', "No se pudo obtener historial", e);
     }
 
     let feedbackContext = "";
@@ -635,7 +801,7 @@ export default async function handler(req: any, res: any) {
         feedbackContext = `### ⭐️ PREFERENCIAS BASADAS EN FEEDBACK PREVIO:\n${logs}\nUsa esto para entender qué le gusta o no al usuario.`;
       }
     } catch (e) {
-      console.log("No se pudo obtener feedback:", e);
+      safeLog('log', "No se pudo obtener feedback", e);
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -658,7 +824,7 @@ export default async function handler(req: any, res: any) {
       const apiKey = process.env.AIRTABLE_API_KEY?.trim();
       
       if (!baseId || !tableName || !apiKey) {
-        throw new Error(`Missing Airtable config: BASE_ID=${!!baseId}, TABLE_NAME=${!!tableName}, API_KEY=${!!apiKey}`);
+        throw new Error(`Missing Airtable config: BASE_ID=${!!baseId}, TABLE_NAME=${!!tableName}, API_KEY=${!!apiKey ? 'SET' : 'MISSING'}`);
       }
       
       const airtableUrl = `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(tableName)}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=100`;
@@ -682,7 +848,7 @@ export default async function handler(req: any, res: any) {
         airtableItems = airtableData.records || [];
         
       } catch (airtableError: any) {
-        console.error("❌ Airtable Fetch Failed:", airtableError.message);
+        safeLog('error', "❌ Airtable Fetch Failed", airtableError);
         airtableItems = [];
       }
 
@@ -870,8 +1036,11 @@ IMPORTANTE:
     return res.status(200).json(parsedData);
 
   } catch (error: any) {
-    console.error("❌ Error completo:", error);
-    console.error("Stack trace:", error.stack);
+    safeLog('error', "❌ Error completo en API", error);
+    // Stack trace solo en desarrollo
+    if (process.env.NODE_ENV === 'development') {
+      console.error("Stack trace:", error.stack);
+    }
     
     // Identificar tipo de error para mejor diagnóstico
     let errorMessage = error.message || "Error interno del servidor";
@@ -892,7 +1061,7 @@ IMPORTANTE:
       try {
         await rateLimiter.failProcess(userId, error.message);
       } catch (rlError) {
-        console.error("Error actualizando rate limit:", rlError);
+        safeLog('error', "Error actualizando rate limit", rlError);
       }
     }
     
@@ -905,7 +1074,7 @@ IMPORTANTE:
           errorAt: FieldValue.serverTimestamp()
         });
       } catch (e) {
-        console.error("No se pudo actualizar el estado de error:", e);
+        safeLog('error', "No se pudo actualizar el estado de error", e);
       }
     }
     

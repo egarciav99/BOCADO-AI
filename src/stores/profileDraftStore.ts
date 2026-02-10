@@ -10,7 +10,10 @@
 // - Los datos iniciales vienen de useUserProfile + defaultValues
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { encryptedStorage } from '../utils/encryptedStorage';
+import { useEffect, useMemo, useCallback } from 'react';
+import { useUserProfile, useUpdateUserProfile } from '../hooks/useUser';
 
 // ============================================
 // ESTADO DE UI PARA FORMULARIOS MULTI-PASO
@@ -83,6 +86,7 @@ export const useProfileDraftStore = create<ProfileDraftState>()(
     }),
     {
       name: 'bocado-form-draft-v2',
+      storage: createJSONStorage(() => encryptedStorage),
       onRehydrateStorage: () => (state) => {
         if (state) state.isHydrated = true;
       },
@@ -99,9 +103,6 @@ export const useProfileDraftStore = create<ProfileDraftState>()(
 // ============================================
 // HOOK DE INTEGRACIÓN: Draft + Perfil Real
 // ============================================
-
-import { useEffect, useMemo } from 'react';
-import { useUserProfile } from '../hooks/useUser';
 
 interface UseProfileDraftWithDataOptions {
   userId: string | undefined;
@@ -130,7 +131,7 @@ export const useProfileDraftWithData = (options: UseProfileDraftWithDataOptions)
     if (resetOnMount && userId) {
       draft.resetForm();
     }
-  }, [userId, resetOnMount]);
+  }, [userId, resetOnMount, draft]);
   
   // Merge: Perfil real + cambios del borrador
   const mergedData = useMemo(() => {
@@ -173,8 +174,6 @@ export const useProfileDraftWithData = (options: UseProfileDraftWithDataOptions)
 // ============================================
 // HOOK PARA FORMULARIOS DE EDICIÓN
 // ============================================
-
-import { useCallback } from 'react';
 
 interface UseEditableProfileOptions {
   userId: string | undefined;
@@ -257,6 +256,3 @@ export const useEditableProfile = (options: UseEditableProfileOptions) => {
     discardChanges,
   };
 };
-
-// Import necesario
-import { useUpdateUserProfile } from '../hooks/useUser';

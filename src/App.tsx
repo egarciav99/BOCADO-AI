@@ -3,7 +3,8 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { auth, trackEvent } from './firebaseConfig';
 import { useAuthStore } from './stores/authStore';
-import ErrorBoundary from './components/ErrorBoundary'; // ✅ Importado el componente
+import ErrorBoundary from './components/ErrorBoundary';
+import PWABanner from './components/PWABanner';
 
 // ✅ IMPORTACIÓN DINÁMICA (Lazy Loading)
 const HomeScreen = lazy(() => import('./components/HomeScreen'));
@@ -100,18 +101,23 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-bocado-cream flex justify-center items-start md:items-center md:p-8">
-      <div className="w-full min-h-screen bg-bocado-background 
-                      md:max-w-[480px] md:max-h-[900px] md:min-h-[800px]
-                      md:rounded-[2.5rem] md:shadow-bocado-lg 
-                      md:border-8 md:border-white
-                      overflow-hidden relative flex flex-col">
-        {/* ✅ ENVOLVEMOS EL RENDER EN SUSPENSE */}
-        <Suspense fallback={<ScreenLoader />}>
-          {renderScreen()}
-        </Suspense>
+    <>
+      {/* PWA Banner para notificaciones (instalación, offline, updates) */}
+      <PWABanner />
+      
+      <div className="min-h-screen bg-bocado-cream flex justify-center items-start md:items-center md:p-8">
+        <div className="w-full min-h-screen bg-bocado-background 
+                        md:max-w-[480px] md:max-h-[900px] md:min-h-[800px]
+                        md:rounded-[2.5rem] md:shadow-bocado-lg 
+                        md:border-8 md:border-white
+                        overflow-hidden relative flex flex-col">
+          {/* ✅ ENVOLVEMOS EL RENDER EN SUSPENSE */}
+          <Suspense fallback={<ScreenLoader />}>
+            {renderScreen()}
+          </Suspense>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

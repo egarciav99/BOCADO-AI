@@ -4,6 +4,7 @@ import { signOut } from 'firebase/auth';
 import { auth, trackEvent } from '../firebaseConfig'; // ✅ Importado trackEvent
 import { useAuthStore } from '../stores/authStore';
 import { useUserProfile } from '../hooks/useUser';
+import { logger } from '../utils/logger';
 
 interface HomeScreenProps {
   onStartRegistration: () => void;
@@ -39,7 +40,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
       trackEvent('home_logout', { userId: user?.uid }); // ✅ Analítica
       await signOut(auth);
     } catch (error) {
-      console.error("Error signing out: ", error);
+      logger.error("Error signing out: ", error);
     }
   };
 

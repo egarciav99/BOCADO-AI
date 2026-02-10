@@ -15,7 +15,7 @@ import {
   sendEmailVerification, 
   updateProfile 
 } from 'firebase/auth';
-import { sanitizeProfileData, separateUserData } from '../utils/profileSanitizer';
+import { sanitizeProfileData, separateUserData, safeLog } from '../utils/profileSanitizer';
 import { useUserProfile, useUpdateUserProfile } from '../hooks/useUser';
 import { useAuthStore } from '../stores/authStore';
 import { useQueryClient } from '@tanstack/react-query';
@@ -118,11 +118,35 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     setInitialFormData(data);
   }, [user, profile]);
 
-  const fetchCities = async (query: string) => {
-    if (query.trim().length < 3) {
-        setCityOptions([]);
-        return;
+  // Debounce hook para búsqueda de ciudades
+  const useDebounce = (value: string, delay: number = 500) => {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }, [value, delay]);
+
+    return debouncedValue;
+  };
+
+  const [cityQuery, setCityQuery] = useState('');
+  const debouncedCityQuery = useDebounce(cityQuery, 500);
+
+  useEffect(() => {
+    if (debouncedCityQuery.trim().length >= 3) {
+      fetchCities(debouncedCityQuery);
+    } else {
+      setCityOptions([]);
     }
+  }, [debouncedCityQuery]);
+
+  const fetchCities = async (query: string) => {
     setIsSearchingCity(true);
     try {
         const countryCode = (formData.country || 'MX').toUpperCase(); 
@@ -133,10 +157,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         const data = await res.json();
         setCityOptions(data.geonames || []);
     } catch (error) {
-        console.error("Error buscando ciudades:", error);
+        safeLog('error', "Error buscando ciudades", error);
     } finally {
         setIsSearchingCity(false);
     }
+  };
+
+  // Wrapper para mantener compatibilidad con el componente existente
+  const handleCitySearch = (query: string) => {
+    setCityQuery(query);
   };
 
   const handleSaveProfile = async () => {
@@ -194,7 +223,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
       
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error("Error updating profile:", err);
+      safeLog('error', "Error updating profile:", err);
       // ✅ ANALÍTICA: Error en actualización
       trackEvent('profile_update_error');
       setError("No se pudieron guardar los cambios.");
@@ -341,7 +370,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                 disableEmail={true}
                 cityOptions={cityOptions}
                 isSearchingCity={isSearchingCity}
-                onSearchCity={fetchCities}
+                onSearchCity={handleCitySearch}
                 onClearCityOptions={() => setCityOptions([])}
                 onCountryChange={(code) => updateData('country', code)}
               />

@@ -3,58 +3,100 @@ import {
   initializeFirestore, 
   persistentLocalCache, 
   persistentMultipleTabManager,
-  serverTimestamp // ✅ Añadido para resolver error 2304
+  serverTimestamp
 } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
-import { getAnalytics, isSupported, logEvent, setUserId, setUserProperties } from "firebase/analytics"; // ✅ Añadidas funciones de Analytics
+import { getAnalytics, isSupported, logEvent, setUserId, setUserProperties } from "firebase/analytics";
 import { env } from './environment/env';
+import { logger } from './utils/logger';
 
 const app = !getApps().length ? initializeApp(env.firebase) : getApp();
 
-// ✅ CONFIGURACIÓN OFFLINE (Firestore Persistence)
-// Solo declaramos 'db' UNA vez (resuelve error 2451)
+// CONFIGURACIÓN OFFLINE (Firestore Persistence)
 const db = initializeFirestore(app, {
   localCache: persistentLocalCache({
     tabManager: persistentMultipleTabManager()
   })
 });
 
-// ✅ AUTH
-// Solo declaramos 'auth' UNA vez (resuelve error 2451)
+// AUTH
 const auth = getAuth(app);
 
-// ✅ ANALYTICS
+// ANALYTICS con manejo de race condition
 let analytics: ReturnType<typeof getAnalytics> | null = null;
+let analyticsReady = false;
+const eventQueue: Array<{ eventName: string; params?: Record<string, any> }> = [];
+
+const processEventQueue = () => {
+  if (!analytics) return;
+  
+  while (eventQueue.length > 0) {
+    const event = eventQueue.shift();
+    if (event) {
+      try {
+        logEvent(analytics, event.eventName, event.params);
+      } catch (e) {
+        // Silenciar errores de analytics
+      }
+    }
+  }
+};
 
 if (typeof window !== 'undefined') {
   isSupported().then((supported) => {
     if (supported) {
       analytics = getAnalytics(app);
-      console.log('✅ Analytics inicializado');
+      analyticsReady = true;
+      processEventQueue();
+      
+      if (import.meta.env.DEV) {
+        logger.info('✅ Analytics inicializado');
+      }
     }
   }).catch((err) => {
-    console.warn('Analytics no soportado:', err);
+    if (import.meta.env.DEV) {
+      logger.warn('Analytics no soportado:', err);
+    }
   });
 }
 
-// Helper para trackear eventos
+// Helper para trackear eventos (con cola para race condition)
 export const trackEvent = (eventName: string, params?: Record<string, any>) => {
-  if (analytics) {
-    logEvent(analytics, eventName, params);
+  if (analyticsReady && analytics) {
+    try {
+      logEvent(analytics, eventName, params);
+    } catch (e) {
+      // Silenciar errores de analytics
+    }
+  } else {
+    // Encolar evento para procesar cuando analytics esté listo
+    eventQueue.push({ eventName, params });
+    // Limitar tamaño de cola
+    if (eventQueue.length > 100) {
+      eventQueue.shift();
+    }
   }
 };
 
-// ✅ AUDITORÍA: Establecer el ID de usuario en Analytics
+// Establecer el ID de usuario en Analytics
 export const setAnalyticsUser = (userId: string | null) => {
   if (analytics && userId) {
-    setUserId(analytics, userId);
+    try {
+      setUserId(analytics, userId);
+    } catch (e) {
+      // Silenciar errores
+    }
   }
 };
 
-// ✅ AUDITORÍA: Establecer propiedades del usuario en Analytics
+// Establecer propiedades del usuario en Analytics
 export const setAnalyticsProperties = (properties: Record<string, any>) => {
   if (analytics) {
-    setUserProperties(analytics, properties);
+    try {
+      setUserProperties(analytics, properties);
+    } catch (e) {
+      // Silenciar errores
+    }
   }
 };
 

@@ -8,6 +8,7 @@ import { useUserProfile } from '../hooks/useUser';
 import { useAuthStore } from '../stores/authStore';
 import { useRateLimit } from '../hooks/useRateLimit';
 import { env } from '../environment/env';
+import { logger } from '../utils/logger';
 
 interface RecommendationScreenProps {
   userName: string;
@@ -93,7 +94,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
     
     if (!profile || (!isHomeSelectionComplete && !isAwaySelectionComplete)) return;
     if (!user) {
-      console.error("No hay usuario autenticado");
+      logger.error("No hay usuario autenticado");
       return;
     }
 
@@ -177,7 +178,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         return;
       }
       
-      console.error("Error generating recommendation:", error);
+      logger.error("Error generating recommendation:", error);
       
       trackEvent('recommendation_generation_error', { 
         error: error.message,

@@ -5,9 +5,10 @@
 // NO duplicar datos entre Zustand y React Query.
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { User } from 'firebase/auth';
 import { setAnalyticsUser } from '../firebaseConfig';
+import { encryptedStorage } from '../utils/encryptedStorage';
 
 /**
  * Estado de autenticación - SOLO información de sesión
@@ -62,6 +63,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'bocado-auth-v2',
+      storage: createJSONStorage(() => encryptedStorage),
       // Solo persistir estado de sesión, NO datos del user
       partialize: (state) => ({ 
         isAuthenticated: state.isAuthenticated,

@@ -11,6 +11,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { sanitizeProfileData } from '../utils/profileSanitizer';
 import { UserProfile } from '../types';
+import { logger } from '../utils/logger';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -82,7 +83,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
         auth.signOut();
       }
     } catch (err: any) {
-      console.error("Error logging in:", err.code);
+      logger.error("Error logging in:", err.code);
       
       // ✅ ANALÍTICA: Error en login
       trackEvent('login_error', { 
@@ -145,7 +146,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
       trackEvent('password_reset_requested', { success: true });
       setSuccessMessage(`Se ha enviado un correo a ${email} con instrucciones.`);
     } catch (err: any) {
-      console.error("Error sending password reset email:", err.code);
+      logger.error("Error sending password reset email:", err.code);
       // ✅ ANALÍTICA: Error en solicitud de reset
       trackEvent('password_reset_requested', { success: false, error: err.code });
       

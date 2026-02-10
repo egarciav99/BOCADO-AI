@@ -1,3 +1,5 @@
+import type { Timestamp } from 'firebase/firestore';
+
 // Datos que van a Firebase Auth (sensibles)
 export interface AuthData {
   firstName: string;
@@ -27,8 +29,8 @@ export interface UserProfile {
   nutritionalGoal: string[];
   cookingAffinity: string;
   dislikedFoods: string[];
-  createdAt?: any;
-  updatedAt?: any;
+  createdAt?: Timestamp | Date;
+  updatedAt?: Timestamp | Date;
 }
 
 // Para el formulario completo (unión de ambos)
@@ -94,8 +96,8 @@ export interface KitchenItem {
 }
 
 export interface PantryDocument {
-  items: KitchenItem[]; // Changed from ingredients string[] to object array
-  lastUpdated?: any;
+  items: KitchenItem[];
+  lastUpdated?: Timestamp | Date;
 }
 
 export type SavedItemType = 'recipe' | 'restaurant';
@@ -106,7 +108,7 @@ export interface SavedItem {
   recipe: Recipe;
   mealType: string;
   userId: string;
-  savedAt: number;
+  savedAt: number | Timestamp; // number en frontend (ms), Timestamp en Firestore
   folder?: string;
   notes?: string;
   rating?: number;
@@ -128,7 +130,7 @@ export interface FeedbackData {
     title: string;
     timestamp: string;
   };
-  createdAt?: any;
+  createdAt?: Timestamp | Date | string;
 }
 
 export interface FeedbackSubmission {
