@@ -332,25 +332,27 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     
     if (parts.length === 0) return null;
     
+    // Calculamos IMC para mostrar solo el número sin etiquetas clínicas
+    // que puedan ser desmotivantes para el usuario
     let bmi = null;
-    let bmiText = '';
     if (formData.weight && formData.height) {
       const w = parseFloat(formData.weight);
       const h = parseInt(formData.height) / 100;
       if (w > 0 && h > 0) {
         bmi = (w / (h * h)).toFixed(1);
-        const bmiNum = parseFloat(bmi);
-        if (bmiNum < 18.5) bmiText = 'Bajo';
-        else if (bmiNum < 25) bmiText = 'Normal';
-        else if (bmiNum < 30) bmiText = 'Sobrepeso';
-        else bmiText = 'Obesidad';
       }
     }
     
     return (
       <InfoSection title="Datos Corporales">
         <Badge text={parts.join(' / ')} color="yellow" />
-        {bmi && <Badge text={`IMC: ${bmi} (${bmiText})`} color="gray" />}
+        {bmi && (
+          <Badge 
+            text={`IMC: ${bmi}`} 
+            color="gray" 
+            title="Índice de masa corporal"
+          />
+        )}
       </InfoSection>
     );
   };

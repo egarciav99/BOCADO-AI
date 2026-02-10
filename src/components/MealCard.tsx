@@ -3,10 +3,12 @@ import type { Meal } from '../types';
 import { ChevronDownIcon } from './icons/ChevronDownIcon';
 import { HeartIcon } from './icons/HeartIcon';
 import FeedbackModal from './FeedbackModal';
+import PortionSelector from './PortionSelector';
 import { useToggleSavedItem, useIsItemSaved } from '../hooks/useSavedItems';
 import { useAuthStore } from '../stores/authStore';
 import { trackEvent } from '../firebaseConfig';
 import { logger } from '../utils/logger';
+import { scaleIngredientsSimple, detectBaseServings } from '../utils/portionScaler';
 
 interface MealCardProps {
   meal: Meal;
@@ -178,6 +180,20 @@ const MealCard: React.FC<MealCardProps> = memo(({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
+  
+  // Estado para escalar porciones (solo recetas, no restaurantes)
+  const [servings, setServings] = useState(2);
+  const baseServings = useMemo(() => detectBaseServings(recipe), [recipe]);
+  const scaledIngredients = useMemo(() => 
+    recipe.ingredients ? scaleIngredientsSimple(recipe.ingredients, { 
+      baseServings, 
+      targetServings: servings 
+    }) : [],
+    [recipe.ingredients, baseServings, servings]
+  );
+  
+  // Calculamos el "multiplicador aparente" para mostrar info al usuario
+  const displayMultiplier = servings / baseServings;
 
   // Hooks de autenticación y datos
   const { user } = useAuthStore();
@@ -407,14 +423,31 @@ const MealCard: React.FC<MealCardProps> = memo(({
             />
           )}
 
+          {/* Selector de porciones (solo para recetas) */}
+          {!isRestaurant && recipe.ingredients && recipe.ingredients.length > 0 && (
+            <PortionSelector
+              value={servings}
+              onChange={(val) => {
+                setServings(val);
+                trackEvent('recipe_servings_changed', {
+                  item_title: recipe.title,
+                  from: servings,
+                  to: val,
+                });
+              }}
+              baseServings={baseServings}
+              className="mb-4"
+            />
+          )}
+
           {/* Ingredientes (solo para recetas en casa) */}
           {!isRestaurant && recipe.ingredients && recipe.ingredients.length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
-                Ingredientes
+                Ingredientes {servings !== baseServings && `(${servings} pers.)`}
               </h4>
               <ul className="space-y-1.5">
-                {recipe.ingredients.map((ing, index) => (
+                {scaledIngredients.map((ing, index) => (
                   <li key={index} className="text-sm text-bocado-text flex items-start gap-2">
                     <span className="w-1.5 h-1.5 bg-bocado-green rounded-full mt-1.5 shrink-0" />
                     <span className="leading-relaxed">{ing}</span>
