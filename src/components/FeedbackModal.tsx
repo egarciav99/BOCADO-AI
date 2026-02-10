@@ -240,6 +240,21 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     onClose();
   }, [onClose, rating, isSuccess, itemTitle, type]);
 
+  // Handlers para absorber todos los eventos del backdrop
+  const handleBackdropPointerDown = useCallback((e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  }, []);
+
+  const handleBackdropClick = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (e.target === e.currentTarget && !isPending) {
+      handleClose();
+    }
+  }, [handleClose, isPending]);
+
   // No renderizar si no está abierto o si ya hay otro modal abierto globalmente
   if (!isOpen) return null;
 
@@ -255,21 +270,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
 
   // Determinar mensaje de error a mostrar
   const errorMessage = localError || (isError && error instanceof Error ? error.message : '');
-
-  // Handlers para absorber todos los eventos del backdrop
-  const handleBackdropPointerDown = useCallback((e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-  }, []);
-
-  const handleBackdropClick = useCallback((e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (e.target === e.currentTarget && !isPending) {
-      handleClose();
-    }
-  }, [handleClose, isPending]);
 
   if (typeof document === 'undefined') return null;
 

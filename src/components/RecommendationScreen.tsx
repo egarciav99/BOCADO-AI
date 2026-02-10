@@ -151,9 +151,12 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
           type: recommendationType 
         });
         
-        // Navegar pero limpiar estados antes (por si el usuario vuelve atrás)
+        // Mostrar mensaje y refrescar status del rate limit
+        const fallbackSeconds = typeof errorData.retryAfter === 'number' ? errorData.retryAfter : 30;
+        const fallbackMessage = `Espera ${fallbackSeconds}s antes de generar otra recomendación.`;
+        setError(errorData.error || fallbackMessage);
+        refreshStatus();
         resetProcessingState();
-        onPlanGenerated(newDoc.id);
         return;
       }
 
@@ -385,7 +388,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
             </button>
             
             {/* Contador de requests restantes */}
-            {canRequest && !isGenerating && (
+            {canRequest && !isGenerating && rateLimitMessage && (
               <p className="text-center text-xs text-bocado-gray mt-2">
                 {rateLimitMessage} en los últimos 10 min
               </p>

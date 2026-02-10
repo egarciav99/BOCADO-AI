@@ -79,7 +79,7 @@ export const useRateLimit = (userId: string | undefined) => {
     isDisabled: !status.canRequest || isLoading,
     // Mensaje para mostrar al usuario
     message: status.canRequest 
-      ? `${status.remainingRequests ?? 5} restantes` 
+      ? '' 
       : `Espera ${formattedTimeLeft(status.nextAvailableIn)}`,
   };
 };
