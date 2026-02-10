@@ -30,7 +30,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-6 pt-safe pb-safe bg-bocado-cream/50">
+    <div className="min-h-screen flex items-center justify-center px-4 py-8 pt-safe pb-safe bg-bocado-cream/50">
       <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
         <div className="text-center mb-6">
           <div className="w-14 h-14 bg-bocado-green/10 rounded-full flex items-center justify-center mx-auto mb-4">

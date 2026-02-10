@@ -260,7 +260,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
 
       {/* Modal de categoría */}
       {modalCategory && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 animate-fade-in">
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 px-4 animate-fade-in">
           <div className="bg-white p-4 rounded-2xl shadow-bocado w-full max-w-sm max-h-[80vh] flex flex-col">
             <h3 className="text-base font-bold text-bocado-dark-green mb-3">{modalCategory}</h3>
             

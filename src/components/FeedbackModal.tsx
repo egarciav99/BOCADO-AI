@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useEffect, useRef, useId } from 'react';
-import { createPortal } from 'react-dom';
 import { trackEvent } from '../firebaseConfig';
 import { useAuthStore } from '../stores/authStore';
 import { useFeedbackMutation } from '../hooks/useSavedItems';
@@ -271,13 +270,12 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   // Determinar mensaje de error a mostrar
   const errorMessage = localError || (isError && error instanceof Error ? error.message : '');
 
-  if (typeof document === 'undefined') return null;
-
-  return createPortal(
+  {/* Modal renderizado dentro del árbol normal, no en portal, para mantenerse dentro del "teléfono" */}
+  return (
     <>
       {/* Backdrop dedicado que bloquea todos los eventos */}
       <div 
-        className="fixed inset-0 z-[2147483646] bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 z-[2147483646] bg-black/60 backdrop-blur-sm"
         style={{ 
           touchAction: 'none',
           pointerEvents: 'auto',
@@ -293,7 +291,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
       
       {/* Contenedor del modal con z-index superior */}
       <div 
-        className="fixed inset-0 z-[2147483647] flex items-end sm:items-center justify-center p-4 animate-fade-in"
+        className="absolute inset-0 z-[2147483647] flex items-end sm:items-center justify-center p-4 animate-fade-in"
         style={{ pointerEvents: 'none' }}
       >
         <div 
@@ -408,8 +406,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         )}
         </div>
       </div>
-    </>,
-    document.body
+    </>
   );
 };
 

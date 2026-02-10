@@ -361,7 +361,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     switch(viewMode) {
       case 'edit':
         return (
-          <div className="space-y-6 animate-fade-in pb-24">
+          <div className="flex flex-col h-full animate-fade-in">
+            <div className="flex-1 overflow-y-auto space-y-6 pb-4">
               {error && <p className="text-red-500 text-xs text-center bg-red-50 p-3 rounded-xl">{error}</p>}
               
               <Step1 
@@ -378,29 +379,30 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
               />
               <Step2 data={formData} updateData={updateData} errors={{}} />
               <Step3 data={formData} updateData={updateData} errors={{}} />
-              
-              <div className="fixed bottom-0 left-0 right-0 bg-white p-4 border-t border-bocado-border flex gap-3 z-50">
-                  <button 
-                    onClick={() => { 
-                      trackEvent('profile_edit_cancel'); // ✅ Analítica
-                      setViewMode('view'); 
-                      setFormData(initialFormData); 
-                      setError('');
-                      setCityOptions([]);
-                    }} 
-                    className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
-                    disabled={updateProfileMutation.isPending}
-                  >
-                      Cancelar
-                  </button>
-                  <button 
-                    onClick={handleSaveProfile} 
-                    className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
-                    disabled={updateProfileMutation.isPending}
-                  >
-                      {updateProfileMutation.isPending ? 'Guardando...' : 'Guardar'}
-                  </button>
-              </div>
+            </div>
+            
+            <div className="bg-white p-4 border-t border-bocado-border flex gap-3 shrink-0">
+                <button 
+                  onClick={() => { 
+                    trackEvent('profile_edit_cancel');
+                    setViewMode('view'); 
+                    setFormData(initialFormData); 
+                    setError('');
+                    setCityOptions([]);
+                  }} 
+                  className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
+                  disabled={updateProfileMutation.isPending}
+                >
+                    Cancelar
+                </button>
+                <button 
+                  onClick={handleSaveProfile} 
+                  className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
+                  disabled={updateProfileMutation.isPending}
+                >
+                    {updateProfileMutation.isPending ? 'Guardando...' : 'Guardar'}
+                </button>
+            </div>
           </div>
         );
         

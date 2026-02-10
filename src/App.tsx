@@ -101,23 +101,21 @@ function AppContent() {
   };
 
   return (
-    <>
-      {/* PWA Banner para notificaciones (instalación, offline, updates) */}
-      <PWABanner />
-      
-      <div className="min-h-screen bg-bocado-cream flex justify-center items-start md:items-center md:p-8">
-        <div className="w-full min-h-screen bg-bocado-background 
-                        md:max-w-app md:max-h-[900px] md:min-h-[800px]
-                        md:rounded-4xl md:shadow-bocado-lg 
-                        md:border-8 md:border-white
-                        overflow-hidden relative flex flex-col">
-          {/* ✅ ENVOLVEMOS EL RENDER EN SUSPENSE */}
-          <Suspense fallback={<ScreenLoader />}>
-            {renderScreen()}
-          </Suspense>
-        </div>
+    <div className="min-h-screen bg-bocado-cream flex justify-center items-start md:items-center md:p-8">
+      <div className="w-full min-h-screen bg-bocado-background 
+                      md:max-w-app md:max-h-[900px] md:min-h-[800px]
+                      md:rounded-4xl md:shadow-bocado-lg 
+                      md:border-8 md:border-white
+                      overflow-hidden relative flex flex-col">
+        {/* PWA Banner dentro del contenedor del teléfono */}
+        <PWABanner />
+        
+        {/* ✅ ENVOLVEMOS EL RENDER EN SUSPENSE */}
+        <Suspense fallback={<ScreenLoader />}>
+          {renderScreen()}
+        </Suspense>
       </div>
-    </>
+    </div>
   );
 }
 

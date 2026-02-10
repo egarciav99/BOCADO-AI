@@ -27,7 +27,7 @@ const PWABanner: React.FC = () => {
   // Banner de actualización (prioridad alta)
   if (updateAvailable) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-blue-500 text-white px-4 py-3 shadow-lg">
+      <div className="absolute top-0 left-0 right-0 z-50 bg-blue-500 text-white px-4 py-3 shadow-lg">
         <div className="flex items-center justify-between max-w-lg mx-auto">
           <div className="flex items-center gap-3">
             <RefreshCw className="w-5 h-5" />
@@ -57,7 +57,7 @@ const PWABanner: React.FC = () => {
   // Banner de instalación
   if (isInstallable) {
     return (
-      <div className="fixed bottom-4 left-4 right-4 z-50 bg-bocado-green text-white px-4 py-4 rounded-2xl shadow-xl max-w-sm mx-auto">
+      <div className="absolute bottom-4 left-4 right-4 z-50 bg-bocado-green text-white px-4 py-4 rounded-2xl shadow-xl max-w-sm mx-auto">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
@@ -90,7 +90,7 @@ const PWABanner: React.FC = () => {
   // Banner offline
   if (isOffline) {
     return (
-      <div className="fixed top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2">
+      <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500 text-white px-4 py-2">
         <div className="flex items-center justify-center gap-2">
           <WifiOff className="w-4 h-4" />
           <span className="text-xs font-medium">

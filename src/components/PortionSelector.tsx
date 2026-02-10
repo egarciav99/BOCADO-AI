@@ -82,15 +82,6 @@ const PortionSelector: React.FC<PortionSelectorProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Indicador de escala actual */}
-      {value !== baseServings && (
-        <div className="mt-2 text-center">
-          <span className="text-xs text-bocado-green font-medium">
-            Ingredientes multiplicados ×{(value / baseServings).toFixed(1)}
-          </span>
-        </div>
-      )}
     </div>
   );
 };

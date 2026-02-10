@@ -84,8 +84,9 @@ const MainApp: React.FC<MainAppProps> = ({
   if (!isAuthenticated || !userUid) return null;
 
   return (
-    // ✅ h-screen y overflow-hidden para contener todo
-    <div className="h-screen w-full flex flex-col bg-bocado-background overflow-hidden relative">
+    // ✅ relative es crucial para que los absolute children se contengan aquí
+    // ✅ pt-safe para móviles con notch
+    <div className="h-full w-full flex flex-col bg-bocado-background overflow-hidden relative pt-safe">
       
       {isTutorialOpen && (
         <TutorialModal onClose={handleTutorialClose} userName={userName} />
@@ -103,22 +104,22 @@ const MainApp: React.FC<MainAppProps> = ({
               />
             )}
             {activeTab === 'pantry' && (
-              <div className="p-4 animate-fade-in">
+              <div className="p-4 animate-fade-in h-full">
                 <PantryScreen userUid={userUid} />
               </div>
             )}
             {activeTab === 'saved' && (
-              <div className="p-4 animate-fade-in">
+              <div className="p-4 animate-fade-in h-full">
                 <SavedRecipesScreen />
               </div>
             )}
             {activeTab === 'restaurants' && (
-              <div className="p-4 animate-fade-in">
+              <div className="p-4 animate-fade-in h-full">
                 <SavedRestaurantsScreen />
               </div>
             )}
             {activeTab === 'profile' && (
-              <div className="p-4 animate-fade-in">
+              <div className="p-4 animate-fade-in h-full">
                 <ProfileScreen 
                   userUid={userUid}
                   onLogout={handleLogout}
@@ -130,7 +131,7 @@ const MainApp: React.FC<MainAppProps> = ({
         </div>
       </main>
 
-      {/* ✅ BottomTabBar fuera del scroll, siempre visible */}
+      {/* ✅ BottomTabBar posicionado absolute dentro del contenedor */}
       <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );

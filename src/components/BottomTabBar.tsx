@@ -16,7 +16,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
   const isActive = (id: Tab) => activeTab === id;
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 px-4 pb-safe">
+    <nav className="absolute bottom-0 left-0 right-0 z-50 px-4 pb-safe">
       <div className="mx-auto max-w-md bg-white/95 backdrop-blur-xl border border-white/60 shadow-[0_-4px-20px_rgba(0,0,0,0.1)] rounded-3xl mb-3 overflow-visible">
         
         {/* Contenedor flex simple: 5 elementos, mismo tamaño, centrados verticalmente */}

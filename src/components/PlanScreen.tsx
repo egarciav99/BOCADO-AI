@@ -241,10 +241,10 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
   }
 
   return (
-    // ✅ CORREGIDO: h-full y min-h-0 para forzar el scroll correcto
+    // ✅ Estructura flex para contener todo dentro del "teléfono"
     <div className="flex-1 flex flex-col h-full min-h-0 animate-fade-in">
-      {/* ✅ CORREGIDO: overflow-y-auto con flex-1 y min-h-0 */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-32 no-scrollbar min-h-0">
+      {/* Contenido scrolleable */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 no-scrollbar min-h-0">
         <div className="text-center mb-6">
           <h1 className="text-xl font-bold text-bocado-dark-green mb-3">¡Listo! 🥗</h1>
           <div className="p-4 bg-bocado-green/10 rounded-2xl">
@@ -252,7 +252,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
           </div>
         </div>
         
-        {/* ✅ Agregado max-w-2xl mx-auto para mejor lectura en desktop */}
         <div className="space-y-3 max-w-2xl mx-auto">
           {selectedPlan.meals.map((meal, index) => (
             <MealCard 
@@ -265,12 +264,12 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
           ))}
         </div>
         
-        {/* Espacio adicional al final para asegurar que todo sea visible */}
-        <div className="h-20"></div>
+        {/* Espacio al final */}
+        <div className="h-4"></div>
       </div>
       
-      {/* ✅ Botón fijo abajo con z-index */}
-      <div className="fixed bottom-0 left-0 right-0 px-4 py-4 border-t border-bocado-border bg-white z-10 md:relative md:bottom-auto md:border-t-0 md:bg-transparent md:px-4 md:py-2">
+      {/* ✅ Botón al final del flex, no fixed */}
+      <div className="px-4 py-4 border-t border-bocado-border bg-white shrink-0">
         <div className="max-w-2xl mx-auto">
           <button 
             onClick={handleStartNew}

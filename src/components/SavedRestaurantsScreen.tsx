@@ -94,7 +94,7 @@ const SavedRestaurantsScreen: React.FC = () => {
   }
 
   return (
-    <div className="flex-1 flex flex-col animate-fade-in">
+    <div className="flex-1 flex flex-col animate-fade-in relative">
       <div className="text-center mb-6 px-4 pt-2">
         <LocationIcon className="w-6 h-6 text-bocado-green mx-auto mb-2" />
         <h2 className="text-xl font-bold text-bocado-dark-green">Mis Lugares</h2>
@@ -151,7 +151,7 @@ const SavedRestaurantsScreen: React.FC = () => {
 
       {/* Modal de confirmación */}
       {mealToConfirmDelete && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-fade-in">
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-fade-in">
           <div className="bg-white rounded-3xl shadow-bocado w-full max-w-sm p-6 text-center">
             <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-xl">🗑️</span>

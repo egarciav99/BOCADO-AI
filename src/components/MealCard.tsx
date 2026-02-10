@@ -335,7 +335,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
   // (El timeout se maneja dentro de handleCopyAddress)
 
   return (
-    <div className="group border border-bocado-border rounded-2xl bg-white transition-all duration-200 hover:shadow-bocado active:scale-[0.99]">
+    <div className="group relative border border-bocado-border rounded-2xl bg-white transition-all duration-200 hover:shadow-bocado active:scale-[0.99]">
       
       {/* HEADER */}
       <div

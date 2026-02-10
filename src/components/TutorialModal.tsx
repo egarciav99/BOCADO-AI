@@ -105,7 +105,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
   const content = steps[currentStep];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 animate-fade-in">
+    <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm px-4 animate-fade-in">
       <div className="bg-white rounded-3xl shadow-bocado w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]">
         
         {/* Visual Area */}
