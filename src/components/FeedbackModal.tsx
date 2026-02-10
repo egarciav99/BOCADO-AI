@@ -291,7 +291,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
       
       {/* Contenedor del modal con z-index superior */}
       <div 
-        className="absolute inset-0 z-[2147483647] flex items-end sm:items-center justify-center p-4 animate-fade-in"
+        className="absolute inset-0 z-[2147483647] flex items-end sm:items-center justify-center px-safe py-4 animate-fade-in"
         style={{ pointerEvents: 'none' }}
       >
         <div 

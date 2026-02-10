@@ -197,7 +197,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
 
   if (needsVerification && unverifiedUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-8 pt-safe pb-safe">
+      <div className="min-h-full flex items-center justify-center px-4 py-8 pt-safe pb-safe">
         <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm text-center animate-fade-in">
           <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -375,7 +375,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
   );
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-8 pt-safe pb-safe">
+    <div className="min-h-full flex items-center justify-center px-4 py-8 pt-safe pb-safe">
       <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
         {view === 'login' ? renderLoginView() : renderResetView()}
         <div className="mt-6 text-center pt-4 border-t border-bocado-border">

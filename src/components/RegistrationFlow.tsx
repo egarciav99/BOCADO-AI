@@ -248,7 +248,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
 
   if (!isHydrated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bocado-cream">
+      <div className="min-h-full flex items-center justify-center bg-bocado-cream">
         <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -256,7 +256,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
 
   if (showVerificationModal) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-4 py-6 pt-safe pb-safe">
+      <div className="min-h-full flex items-center justify-center px-4 py-6 pt-safe pb-safe">
         <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm text-center animate-fade-in">
           <div className="w-14 h-14 bg-bocado-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-7 h-7 text-bocado-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -272,7 +272,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   }
 
   return (
-    <div className="min-h-screen flex flex-col px-4 py-8 pt-safe pb-safe overflow-y-auto no-scrollbar">
+    <div className="min-h-full flex flex-col px-4 py-8 pt-safe pb-safe overflow-y-auto no-scrollbar">
       <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
         <div className="mb-6">
           <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />

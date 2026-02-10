@@ -45,7 +45,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12 pt-safe">
+    <div className="min-h-full flex flex-col items-center justify-center px-6 py-12 pt-safe">
       {/* Logo */}
       <div className="w-64 sm:w-72 md:w-80 mb-8">
         <BocadoLogo className="w-full h-auto" />

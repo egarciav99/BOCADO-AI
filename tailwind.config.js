@@ -35,6 +35,8 @@ export default {
       maxWidth: {
         'mobile': '480px',
         'app': '480px',
+        'app-lg': '560px',
+        'app-xl': '640px',
       },
       spacing: {
         18: '4.5rem',

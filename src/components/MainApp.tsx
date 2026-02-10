@@ -94,7 +94,7 @@ const MainApp: React.FC<MainAppProps> = ({
 
       {/* Contenido scrolleable con padding bottom generoso para la barra flotante */}
       <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth pb-28">
-        <div className="max-w-md mx-auto min-h-full">
+        <div className="max-w-md md:max-w-lg mx-auto min-h-full">
           <ErrorBoundary>
             {activeTab === 'recommendation' && (
               <RecommendationScreen 

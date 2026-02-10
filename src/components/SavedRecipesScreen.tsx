@@ -78,7 +78,7 @@ const SavedRecipesScreen: React.FC = () => {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pb-24 no-scrollbar">
         {savedMeals.length === 0 ? (
-          <div className="text-center py-12 px-6 bg-bocado-background rounded-2xl border-2 border-dashed border-bocado-border mx-4">
+          <div className="text-center py-12 px-6 bg-bocado-background rounded-2xl border-2 border-dashed border-bocado-border">
             <p className="text-bocado-gray text-base mb-2">Aún no has guardado recetas</p>
             <p className="text-xs text-bocado-gray/70">Dale ❤️ a las recetas para verlas aquí</p>
           </div>

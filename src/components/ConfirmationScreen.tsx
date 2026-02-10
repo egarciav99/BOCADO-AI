@@ -7,7 +7,7 @@ interface ConfirmationScreenProps {
 
 const ConfirmationScreen: React.FC<ConfirmationScreenProps> = ({ onGoHome }) => {
   return (
-    <div className="min-h-screen flex items-center justify-center px-6 py-12 pt-safe pb-safe">
+    <div className="min-h-full flex items-center justify-center px-6 py-12 pt-safe pb-safe">
       <div className="text-center flex flex-col items-center justify-center space-y-6 bg-white p-8 sm:p-10 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
         
         <CheckCircleIcon className="w-16 h-16 sm:w-20 sm:h-20 text-bocado-green"/>
