@@ -108,9 +108,40 @@ await page.click('text=Enviar');
 
 ## CI/CD
 
-Los tests se ejecutan automáticamente en GitHub Actions en cada PR.
+### GitHub Actions Workflows
 
-Ver `.github/workflows/playwright.yml`
+| Workflow | Descripción | Trigger |
+|----------|-------------|---------|
+| `ci.yml` | Unit tests + Build | Push/PR a main/develop |
+| `e2e-manual.yml` | E2E Tests manuales | workflow_dispatch |
+
+### Configuración para CI
+
+Los tests E2E requieren Firebase configurado. Para habilitarlos en CI:
+
+1. Ve a Settings > Secrets > Actions
+2. Agrega los siguientes secrets:
+   - `VITE_FIREBASE_API_KEY`
+   - `VITE_FIREBASE_AUTH_DOMAIN`
+   - `VITE_FIREBASE_PROJECT_ID`
+   - `VITE_FIREBASE_STORAGE_BUCKET`
+   - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+   - `VITE_FIREBASE_APP_ID`
+
+3. Los tests E2E se ejecutarán automáticamente cuando estos secrets estén configurados.
+
+### Correr E2E manualmente
+
+```bash
+# En GitHub Actions
+1. Ve a Actions > E2E Tests (Manual)
+2. Click en "Run workflow"
+3. Selecciona el navegador y archivo de test (opcional)
+
+# Localmente
+npm run test:e2e:install-browsers
+npm run test:e2e
+```
 
 ## Troubleshooting
 
