@@ -41,7 +41,11 @@ export async function register(page: Page, user: TestUser): Promise<void> {
   // Navegar a la página de inicio
   await page.goto('/');
 
-  // Click en "Empezar"
+  // Esperar a que la página esté completamente cargada
+  await page.waitForLoadState('networkidle');
+  
+  // Click en "Empezar" - esperar a que el botón sea visible
+  await page.waitForSelector(SELECTORS.home.startButton, { state: 'visible', timeout: 5000 });
   await page.click(SELECTORS.home.startButton);
 
   // === Step 1: Datos personales ===
@@ -57,6 +61,7 @@ export async function register(page: Page, user: TestUser): Promise<void> {
 
   // === Step 2: Datos corporales ===
   await page.waitForTimeout(500); // Pequeña espera para transición
+  await page.waitForLoadState('domcontentloaded');
   
   if (user.birthDate) {
     await page.fill(SELECTORS.register.birthDateInput, user.birthDate);
@@ -83,6 +88,7 @@ export async function register(page: Page, user: TestUser): Promise<void> {
 
   // === Step 3: Preferencias ===
   await page.waitForTimeout(500); // Pequeña espera para transición
+  await page.waitForLoadState('domcontentloaded');
   
   if (user.activityLevel) {
     await page.selectOption(SELECTORS.register.activityLevelSelect, user.activityLevel);
@@ -100,6 +106,10 @@ export async function register(page: Page, user: TestUser): Promise<void> {
 
   // Esperar redirección a la app
   await page.waitForURL(/\/(recommendation|home|app)/, { timeout: 15000 });
+  
+  // Esperar a que los elementos interactivos de la página de recomendación estén renderizados
+  await page.waitForSelector(SELECTORS.recommendation.homeOption, { state: 'visible', timeout: 10000 });
+  await page.waitForSelector(SELECTORS.recommendation.mealTypeBreakfast, { state: 'visible', timeout: 10000 });
 }
 
 /**
@@ -107,6 +117,8 @@ export async function register(page: Page, user: TestUser): Promise<void> {
  */
 export async function registerBasic(page: Page, user: TestUser): Promise<void> {
   await page.goto('/');
+  await page.waitForLoadState('networkidle');
+  await page.waitForSelector(SELECTORS.home.startButton, { state: 'visible', timeout: 5000 });
   await page.click(SELECTORS.home.startButton);
 
   // Solo completar step 1
