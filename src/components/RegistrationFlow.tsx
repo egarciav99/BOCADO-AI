@@ -345,8 +345,13 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
         <div className="mt-6 space-y-3">
           <div className="flex justify-between gap-3">
             <button onClick={prevStep} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${currentStep === 1 ? 'invisible' : 'bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95'}`} disabled={isLoading}>Anterior</button>
-            <button onClick={nextStep} className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" disabled={isLoading}>
-              {isLoading ? '...' : (currentStep === TOTAL_STEPS ? 'Finalizar' : 'Siguiente')}
+            <button 
+              data-testid={currentStep === TOTAL_STEPS ? 'submit-button' : 'next-button'}
+              onClick={nextStep} 
+              className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
+              disabled={isLoading}
+            >
+              {isLoading ? '...' : (currentStep === TOTAL_STEPS ? 'Crear cuenta' : 'Siguiente')}
             </button>
           </div>
           <button onClick={onGoHome} className="w-full text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray transition-colors py-2" disabled={isLoading}>Volver al inicio</button>

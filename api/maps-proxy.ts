@@ -147,10 +147,16 @@ async function getCachedResponse(cacheKey: string): Promise<any | null> {
 async function setCachedResponse(cacheKey: string, response: any, ttlMinutes: number = 60): Promise<void> {
   try {
     const docRef = db.collection('maps_proxy_cache').doc(cacheKey);
+    
+    // ✅ FIX: Calcular expiresAt correctamente sumando el TTL
+    const now = Date.now();
+    const expiresAt = new Date(now + ttlMinutes * 60 * 1000);
+    
     await docRef.set({
       response,
-      expiresAt: FieldValue.serverTimestamp(),
+      expiresAt: expiresAt,  // Timestamp futuro calculado
       createdAt: FieldValue.serverTimestamp(),
+      ttlMinutes: ttlMinutes, // Guardar para debugging
     });
   } catch (error) {
     // Silenciar errores de cache

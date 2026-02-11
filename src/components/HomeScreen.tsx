@@ -69,31 +69,35 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
         {hasSession ? (
           <>
             <button
+              data-testid="enter-app-button"
               onClick={handleEnterApp}
               className="w-full bg-bocado-green text-white font-bold py-3.5 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
             >
               Entrar
             </button>
             <button
+              data-testid="logout-button"
               onClick={handleLogout}
               className="w-full bg-white text-bocado-green border-2 border-bocado-green font-bold py-3.5 px-8 rounded-full text-base hover:bg-bocado-background active:scale-95 transition-all"
             >
-              Cerrar Sesión
+              Cerrar sesión
             </button>
           </>
         ) : (
           <>
             <button
+              data-testid="start-button"
               onClick={handleStartRegistration}
               className="w-full bg-bocado-green text-white font-bold py-3.5 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
             >
-              Registrarse
+              Empezar
             </button>
             <button
+              data-testid="login-button"
               onClick={handleGoToLogin}
               className="w-full bg-white text-bocado-green border-2 border-bocado-green font-bold py-3.5 px-8 rounded-full text-base hover:bg-bocado-background active:scale-95 transition-all"
             >
-              Iniciar Sesión
+              Iniciar sesión
             </button>
           </>
         )}

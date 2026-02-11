@@ -20,6 +20,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
           
           {/* 1. Recetas */}
           <button
+            data-testid="nav-saved"
             onClick={() => onTabChange('saved')}
             className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('saved') ? 'text-bocado-green' : 'text-bocado-gray'}`}
           >
@@ -29,6 +30,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
 
           {/* 2. Lugares */}
           <button
+            data-testid="nav-restaurants"
             onClick={() => onTabChange('restaurants')}
             className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('restaurants') ? 'text-bocado-green' : 'text-bocado-gray'}`}
           >
@@ -39,6 +41,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
           {/* 3. Inicio (Centro) - más grande y elevado */}
           <div className="flex flex-col items-center justify-center flex-1 h-full relative">
             <button
+              data-testid="nav-recommendation"
               onClick={() => onTabChange('recommendation')}
               className={`w-12 h-12 rounded-full flex items-center justify-center border-2 border-white shadow-md -mt-4 transition-transform ${isActive('recommendation') ? 'bg-bocado-green text-white scale-110' : 'bg-bocado-dark-green text-white'}`}
             >
@@ -51,15 +54,17 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
 
           {/* 4. Mi Cocina */}
           <button
+            data-testid="nav-pantry"
             onClick={() => onTabChange('pantry')}
             className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('pantry') ? 'text-bocado-green' : 'text-bocado-gray'}`}
           >
             <UtensilsCrossed className="w-5 h-5" strokeWidth={isActive('pantry') ? 2.5 : 1.5} />
-            <span className="text-2xs font-medium whitespace-nowrap">Mi Cocina</span>
+            <span className="text-2xs font-medium whitespace-nowrap">Despensa</span>
           </button>
 
           {/* 5. Perfil */}
           <button
+            data-testid="nav-profile"
             onClick={() => onTabChange('profile')}
             className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('profile') ? 'text-bocado-green' : 'text-bocado-gray'}`}
           >

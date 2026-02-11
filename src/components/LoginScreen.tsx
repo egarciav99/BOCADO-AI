@@ -259,6 +259,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
           <input
             type="email"
             id="email"
+            name="email"
+            data-testid="email-input"
             value={email}
             onChange={handleEmailChange}
             onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 150)}
@@ -291,6 +293,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
           <input
             type="password"
             id="password"
+            name="password"
+            data-testid="password-input"
             value={password}
             onChange={(e) => { setPassword(e.target.value); setError(''); }}
             className={`w-full px-4 py-3 bg-bocado-background border-2 ${error ? 'border-red-400' : 'border-transparent'} rounded-xl text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all`}
@@ -303,10 +307,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
         
         <button
           type="submit"
+          data-testid="login-submit-button"
           className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray mt-2"
           disabled={isLoading}
         >
-          {isLoading ? 'Cargando...' : 'Entrar'}
+          {isLoading ? 'Cargando...' : 'Iniciar sesión'}
         </button>
         
         <div className="text-center">

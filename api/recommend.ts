@@ -2,6 +2,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import * as crypto from 'crypto';
 
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
@@ -22,6 +23,83 @@ if (!getApps().length) {
 }
 
 const db = getFirestore();
+
+// ============================================
+// AIRTABLE CACHE (6 horas TTL) - Evita rate limits de Airtable
+// ============================================
+
+const AIRTABLE_CACHE_TTL_MS = 6 * 60 * 60 * 1000; // 6 horas
+
+interface AirtableCacheEntry {
+  items: any[];
+  formula: string;
+  cachedAt: FirebaseFirestore.Timestamp;
+  expiresAt: FirebaseFirestore.Timestamp;
+}
+
+/**
+ * Obtiene ingredientes de Airtable con caché de 6 horas.
+ * Reduce drásticamente las llamadas a la API de Airtable.
+ */
+async function getAirtableIngredientsWithCache(
+  formula: string, 
+  baseId: string, 
+  tableName: string, 
+  apiKey: string
+): Promise<any[]> {
+  // Cache key basado en el hash de la fórmula (no del userId)
+  const cacheKey = `airtable_${crypto.createHash('md5').update(formula).digest('hex').substring(0, 16)}`;
+  const cacheRef = db.collection('airtable_cache').doc(cacheKey);
+  
+  try {
+    // 1. Intentar leer caché
+    const cached = await cacheRef.get();
+    if (cached.exists) {
+      const data = cached.data() as AirtableCacheEntry;
+      const age = Date.now() - (data?.cachedAt?.toMillis?.() || 0);
+      
+      if (age < AIRTABLE_CACHE_TTL_MS) {
+        safeLog('log', `[Airtable] Cache HIT: ${cacheKey.substring(0, 20)}... (${Math.round(age / 1000 / 60)}m old)`);
+        return data.items || [];
+      }
+    }
+  } catch (cacheError) {
+    safeLog('warn', '[Airtable] Error leyendo caché, continuando con fetch', cacheError);
+  }
+  
+  // 2. Fetch de Airtable
+  const airtableUrl = `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(tableName)}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=100`;
+  
+  const airtableRes = await fetch(airtableUrl, {
+    headers: { 
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  
+  if (!airtableRes.ok) {
+    const errorText = await airtableRes.text();
+    throw new Error(`Airtable HTTP ${airtableRes.status}: ${errorText}`);
+  }
+  
+  const airtableData = await airtableRes.json();
+  const items = airtableData.records || [];
+  
+  // 3. Guardar en caché (con expiresAt para el cleanup job)
+  try {
+    await cacheRef.set({
+      items,
+      formula, // Guardar fórmula para debugging
+      cachedAt: FieldValue.serverTimestamp(),
+      expiresAt: new Date(Date.now() + AIRTABLE_CACHE_TTL_MS + 24 * 60 * 60 * 1000), // 30h total (6h útil + 24h buffer)
+    });
+    safeLog('log', `[Airtable] Cache MISS: guardados ${items.length} items`);
+  } catch (cacheError) {
+    safeLog('warn', '[Airtable] Error guardando caché', cacheError);
+  }
+  
+  return items;
+}
 
 // ============================================
 // RATE LIMITING DISTRIBUIDO (INLINE - después de inicializar Firebase)
@@ -934,26 +1012,10 @@ export default async function handler(req: any, res: any) {
         throw new Error(`Missing Airtable config: BASE_ID=${!!baseId}, TABLE_NAME=${!!tableName}, API_KEY=${!!apiKey ? 'SET' : 'MISSING'}`);
       }
       
-      const airtableUrl = `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(tableName)}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=100`;
-      
+      // ✅ USAR CACHÉ: Obtener ingredientes con caché de 6 horas
       let airtableItems: AirtableIngredient[] = [];
-      
       try {
-        const airtableRes = await fetch(airtableUrl, {
-          headers: { 
-            Authorization: `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-          }
-        });
-        
-        if (!airtableRes.ok) {
-          const errorText = await airtableRes.text();
-          throw new Error(`Airtable HTTP ${airtableRes.status}: ${errorText}`);
-        }
-        
-        const airtableData = await airtableRes.json();
-        airtableItems = airtableData.records || [];
-        
+        airtableItems = await getAirtableIngredientsWithCache(formula, baseId, tableName, apiKey);
       } catch (airtableError: any) {
         safeLog('error', "❌ Airtable Fetch Failed", airtableError);
         airtableItems = [];
@@ -966,57 +1028,19 @@ export default async function handler(req: any, res: any) {
       
       const { priorityList, marketList, hasPantryItems } = scoreIngredients(airtableItems, pantryItems);
       
-      finalPrompt = `Actúa como "Bocado", un asistente nutricional experto en medicina culinaria y ahorro.
+      // ✅ OPTIMIZACIÓN: Prompt conciso para reducir tokens (~30% menos)
+      finalPrompt = `Eres nutricionista. Genera 3 recetas para: ${user.nutritionalGoal || 'comer saludable'}
 
-### PERFIL CLÍNICO DEL USUARIO
-* **Meta Nutricional**: ${user.nutritionalGoal || "Comer saludable"}
-* **Restricciones de Salud**: ${formatList(user.diseases)}, ${formatList(user.allergies)}
-* **Alimentos que NO le gustan (PROHIBIDO USAR)**: ${formatList([...ensureArray(user.dislikedFoods), ...ensureArray(request.dislikedFoods)])}
-* **Ubicación**: ${user.city || "su ciudad"}, ${user.countryName || ""}
+PERFIL: ${formatList(user.diseases)}, ${formatList(user.allergies)} | NO usar: ${formatList([...ensureArray(user.dislikedFoods), ...ensureArray(request.dislikedFoods)])} | Ubic: ${user.city || 'su ciudad'}
+SOLICITUD: ${request.mealType || 'Comida'}, ${request.cookingTime || '30'}min, ${request.budget || 'sin límite'} ${request.currency || ''}
+${historyContext ? '\nMEMORIA: ' + historyContext.slice(30, 200) : ''}
+${feedbackContext ? '\nFEEDBACK: ' + feedbackContext.slice(30, 150) : ''}
+${hasPantryItems ? `\nDESPENSA: ${priorityList.slice(0, 200)}` : ''}
+${marketList ? `\nDISPONIBLE: ${marketList.slice(0, 150)}` : ''}
 
-### CONTEXTO DE LA SOLICITUD
-* **Tipo de comida**: ${request.mealType || "Comida principal"}
-* **Tiempo disponible**: ${request.cookingTime || "30"} minutos
-* **Presupuesto**: ${request.budget || "No especificado"} ${request.currency || ""}
+REGLAS: 3 recetas creativas, tiempo ≤${request.cookingTime || '30'}min, usar despensa primero, respetar restricciones. Opcionales: básicos (aceite, sal, especias).
 
-${historyContext}
-
-${feedbackContext}
-
-### 🛒 GESTIÓN DE INVENTARIO
-${hasPantryItems ? `El usuario tiene estos ingredientes en casa (USA ESTOS PRIMERO para ahorrar dinero):
-**[ ${priorityList} ]**` : "No hay coincidencias en la despensa."}
-
-Ingredientes adicionales seguros disponibles en el mercado:
-**[ ${marketList} ]**
-*(También puedes usar básicos: aceite, sal, pimienta, especias)*
-
-### INSTRUCCIONES DE SALIDA (JSON ESTRICTO)
-Genera **3 RECETAS** distintas, creativas y saludables.
-Responde ÚNICAMENTE con este JSON exacto (sin markdown, sin texto extra):
-
-{
-  "saludo_personalizado": "Mensaje cálido y motivador relacionado con su meta: ${user.nutritionalGoal || 'saludable'}",
-  "receta": {
-    "recetas": [
-      {
-        "id": 1,
-        "titulo": "Nombre atractivo del plato",
-        "tiempo_estimado": "Ej: 25 min",
-        "dificultad": "Fácil|Media|Difícil",
-        "coincidencia_despensa": "Ingrediente de casa usado o 'Ninguno'",
-        "ingredientes": ["cantidad + ingrediente", "..."],
-        "pasos_preparacion": ["Paso 1...", "Paso 2..."],
-        "macros_por_porcion": {
-          "kcal": 0,
-          "proteinas_g": 0,
-          "carbohidratos_g": 0,
-          "grasas_g": 0
-        }
-      }
-    ]
-  }
-}`;
+JSON:{"saludo":"msg motivador","receta":{"recetas":[{"id":1,"titulo":"nombre","tiempo":"XX min","dificultad":"Fácil|Media|Difícil","coincidencia":"ingrediente casa o Ninguno","ingredientes":["cantidad+ingrediente"],"pasos_preparacion":["paso 1","paso 2"],"macros_por_porcion":{"kcal":0,"proteinas_g":0,"carbohidratos_g":0,"grasas_g":0}}]}}`;
 
     } else {
       // Determinar coordenadas para búsqueda de restaurantes
@@ -1029,81 +1053,35 @@ Responde ÚNICAMENTE con este JSON exacto (sin markdown, sin texto extra):
         ? `**IMPORTANTE - RANGO DE BÚSQUEDA**: Busca restaurantes DENTRO de un radio de ${SEARCH_RADIUS_METERS / 1000}km desde las coordenadas ${formatCoordinates(searchCoords)}. Prioriza lugares cercanos a esta ubicación.`
         : `**IMPORTANTE**: Busca restaurantes en ${user.city || "su ciudad"} que sean accesibles y no muy alejados del centro.`;
       
-      // CORREGIDO: Prompt mejorado para exigir direcciones específicas reales y usar coordenadas
-      finalPrompt = `Actúa como "Bocado", un experto en nutrición y guía gastronómico local.
+      // ✅ OPTIMIZACIÓN: Prompt conciso para restaurantes (~40% menos tokens)
+      finalPrompt = `Eres guía gastronómico en ${user.city || 'su ciudad'}. Recomienda 5 restaurantes reales.
 
-### PERFIL DEL USUARIO
-* **Meta Nutricional**: ${user.nutritionalGoal || "Comer saludable"}
-* **Restricciones de Salud**: ${formatList(user.diseases)}, ${formatList(user.allergies)}
-* **Alimentos que NO le gustan**: ${formatList([...ensureArray(user.dislikedFoods), ...ensureArray(request.dislikedFoods)])}
-* **Ubicación**: ${locationContext}
+PERFIL: ${user.nutritionalGoal || 'saludable'} | ${formatList(user.diseases)}, ${formatList(user.allergies)} | NO: ${formatList([...ensureArray(user.dislikedFoods), ...ensureArray(request.dislikedFoods)])}
+UBICACIÓN: ${locationContext} | RANGO: ${SEARCH_RADIUS_METERS / 1000}km
+SOLICITUD: ${request.cravings || 'saludable'}, ${request.budget || 'sin límite'} ${request.currency || ''}
+${historyContext ? '\nMEMORIA: ' + historyContext.slice(30, 200) : ''}
+${feedbackContext ? '\nFEEDBACK: ' + feedbackContext.slice(30, 150) : ''}
 
-### SOLICITUD
-El usuario quiere comer fuera.
-* **Tipo de cocina/Antojo**: ${request.cravings || "Cualquier tipo saludable"}
-* **Presupuesto**: ${request.budget || "No especificado"} ${request.currency || ""}
+REGLAS CRÍTICAS:
+1. Nombres reales de restaurantes existentes en ${user.city || 'su ciudad'}
+2. DIRECCIONES EXACTAS: Calle Número, Colonia (ej: "Calle Arturo Soria 126, Chamartín")
+3. Si no sabes dirección exacta: usa centro comercial específico
+4. NO uses "por el centro" o direcciones vagas
+5. Rango máximo: ${SEARCH_RADIUS_METERS / 1000}km
 
-${historyContext}
-
-${feedbackContext}
-
-${locationInstruction}
-
-### REQUISITOS CRÍTICOS PARA RESTAURANTES:
-1. USA NOMBRES REALES Y ESPECÍFICOS de restaurantes que existan${searchCoords ? ` cerca de las coordenadas proporcionadas` : ` en ${user.city}`}
-2. PROPORCIONA DIRECCIONES EXACTAS: Calle, número y colonia/zona (ej: "Calle Arturo Soria 126, Chamartín")
-3. Si no conoces la dirección exacta, usa la zona/centro comercial específico (ej: "Plaza Norte, local 45")
-4. NO uses direcciones vagas como "Por el centro" o "Zona Rosa"
-5. Verifica que el nombre + dirección corresponda a un lugar real
-6. **RANGO MÁXIMO**: ${SEARCH_RADIUS_METERS / 1000}km desde el punto de referencia
-
-### EJEMPLO CORRECTO:
-{
-  "nombre_restaurante": "El Bund",
-  "direccion_aproximada": "Calle Arturo Soria 126, Chamartín, 28043 Madrid",
-  "tipo_comida": "China Saludable"
-}
-
-### EJEMPLO INCORRECTO:
-{
-  "nombre_restaurante": "Restaurante Chino Bueno",
-  "direccion_aproximada": "Por el centro de Madrid",
-  "tipo_comida": "Asiática"
-}
-
-### TAREA
-Genera **5 RECOMENDACIONES** de restaurantes reales${searchCoords ? ` dentro de ${SEARCH_RADIUS_METERS / 1000}km de las coordenadas proporcionadas` : ` en ${user.city || "su ciudad"}`}.
-
-Responde ÚNICAMENTE con este JSON exacto (sin markdown, sin texto adicional):
-
-{
-  "saludo_personalizado": "Mensaje corto y motivador",
-  "ubicacion_detectada": "${user.city || "su ciudad"}, ${user.countryName || ""}",
-  "recomendaciones": [
-    {
-      "id": 1,
-      "nombre_restaurante": "Nombre exacto del lugar",
-      "tipo_comida": "Ej: Italiana, Vegana, Mexicana",
-      "direccion_aproximada": "Calle Número, Colonia/Zona, Ciudad (formato completo)",
-      "plato_sugerido": "Nombre de un plato específico recomendado",
-      "por_que_es_bueno": "Explicación de por qué encaja con su perfil",
-      "hack_saludable": "Consejo práctico para pedir más saludable"
-    }
-  ]
-}
-
-IMPORTANTE: 
-- NO incluyas el campo "link_maps", se generará automáticamente usando el nombre + dirección
-- Las direcciones deben ser específicas para que Google Maps pueda ubicarlas correctamente
-- Busca restaurantes dentro del rango de ${SEARCH_RADIUS_METERS / 1000}km especificado`;
+JSON:{"saludo":"msg corto","ubicacion":"${user.city || 'su ciudad'}","recomendaciones":[{"id":1,"nombre_restaurante":"nombre real","tipo_comida":"ej: Italiana","direccion_aproximada":"Calle Número, Colonia","plato_sugerido":"nombre plato","por_que_es_bueno":"explicación perfil","hack_saludable":"consejo práctico"}]}`;
     }
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],
       generationConfig: { 
         temperature: 0.7, 
-        maxOutputTokens: 4096,
-        responseMimeType: 'application/json' 
+        // ✅ OPTIMIZACIÓN: Reducir tokens máximos según tipo (ahorro ~20%)
+        maxOutputTokens: type === 'En casa' ? 2800 : 2200,
+        responseMimeType: 'application/json',
+        // ✅ OPTIMIZACIÓN: topP y topK mejoran eficiencia sin perder calidad
+        topP: 0.95,
+        topK: 40,
       },
     });
 

@@ -120,9 +120,11 @@ const GenderButton: React.FC<{
   icon: React.ReactNode;
   isSelected: boolean;
   onClick: () => void;
-}> = ({ label, icon, isSelected, onClick }) => (
+  testId?: string;
+}> = ({ label, icon, isSelected, onClick, testId }) => (
   <button
     type="button"
+    data-testid={testId}
     onClick={onClick}
     className={`flex-1 flex flex-col items-center justify-center gap-1 p-3 rounded-xl border-2 transition-all duration-200 active:scale-95 ${
       isSelected
@@ -230,7 +232,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Nombre *</label>
           <input 
             type="text" 
-            name="firstName" 
+            name="firstName"
+            data-testid="firstName-input"
             value={data.firstName} 
             onChange={handleNameChange} 
             onFocus={() => trackEvent('registration_input_focus', { field: 'firstName' })}
@@ -245,7 +248,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Apellido *</label>
           <input 
             type="text" 
-            name="lastName" 
+            name="lastName"
+            data-testid="lastName-input"
             value={data.lastName} 
             onChange={handleNameChange} 
             onFocus={() => trackEvent('registration_input_focus', { field: 'lastName' })}
@@ -264,15 +268,20 @@ const Step1: React.FC<ExtendedStep1Props> = ({
         <div className="flex-1">
           <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">Género *</label>
           <div className="flex gap-2 max-w-[320px] mx-auto sm:mx-0">
-            {['Mujer', 'Hombre', 'Otro'].map(gender => (
+            {[
+              { label: 'Mujer', testId: 'gender-female' },
+              { label: 'Hombre', testId: 'gender-male' },
+              { label: 'Otro', testId: 'gender-other' }
+            ].map(({ label, testId }) => (
               <GenderButton 
-                key={gender}
-                label={gender}
-                icon={gender === 'Mujer' ? <FemaleIcon className="w-4 h-4"/> : gender === 'Hombre' ? <MaleIcon className="w-4 h-4"/> : <OtherGenderIcon className="w-4 h-4"/>}
-                isSelected={data.gender === gender}
+                key={label}
+                label={label}
+                testId={testId}
+                icon={label === 'Mujer' ? <FemaleIcon className="w-4 h-4"/> : label === 'Hombre' ? <MaleIcon className="w-4 h-4"/> : <OtherGenderIcon className="w-4 h-4"/>}
+                isSelected={data.gender === label}
                 onClick={() => {
-                  trackEvent('registration_gender_select', { gender });
-                  updateData('gender', gender);
+                  trackEvent('registration_gender_select', { gender: label });
+                  updateData('gender', label);
                 }}
               />
             ))}
@@ -399,7 +408,9 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       <div className="relative">
         <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Email *</label>
         <input 
-          type="email" 
+          type="email"
+          name="email"
+          data-testid="email-input"
           value={data.email} 
           onChange={handleEmailChange}
           onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 200)}
@@ -438,7 +449,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
                 type="password" 
-                name="password" 
+                name="password"
+                data-testid="password-input"
                 value={data.password || ''} 
                 onChange={(e) => updateData('password', e.target.value)} 
                 onFocus={() => trackEvent('registration_input_focus', { field: 'password' })}
@@ -454,7 +466,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Confirmar *</label>
             <input 
               type="password" 
-              name="confirmPassword" 
+              name="confirmPassword"
+              data-testid="confirmPassword-input"
               value={data.confirmPassword || ''} 
               onChange={(e) => updateData('confirmPassword', e.target.value)} 
               onFocus={() => trackEvent('registration_input_focus', { field: 'confirmPassword' })}

@@ -30,9 +30,10 @@ export function initSentry(): void {
     tracesSampleRate: ENVIRONMENT === 'production' ? 0.1 : 1.0,
     // 10% de transacciones en producción, 100% en desarrollo
     
+    // ✅ OPTIMIZACIÓN: Reducir Sentry Replay para ahorrar cuota
     // Session Replay (para reproducir errores)
-    replaysSessionSampleRate: 0.01, // 1% de sesiones
-    replaysOnErrorSampleRate: 1.0,  // 100% de sesiones con error
+    replaysSessionSampleRate: 0.005, // 0.5% de sesiones (antes 1%)
+    replaysOnErrorSampleRate: 0.8,   // 80% de sesiones con error (antes 100%)
     
     // Configuración de errores
     beforeSend(event) {

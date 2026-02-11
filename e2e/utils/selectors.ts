@@ -83,11 +83,12 @@ export const SELECTORS = {
 
   // Navegación inferior
   bottomNav: {
-    home: '[data-testid="nav-home"], a[href="/"], button:has-text("Inicio")',
-    recommendation: '[data-testid="nav-recommendation"], a[href*="recommendation"], button:has-text("Recomendación")',
-    pantry: '[data-testid="nav-pantry"], a[href*="pantry"], button:has-text("Despensa")',
-    plan: '[data-testid="nav-plan"], a[href*="plan"], button:has-text("Plan")',
-    profile: '[data-testid="nav-profile"], a[href*="profile"], button:has-text("Perfil")',
+    home: '[data-testid="nav-recommendation"], button:has-text("Inicio")',
+    recommendation: '[data-testid="nav-recommendation"], button:has-text("Inicio")',
+    pantry: '[data-testid="nav-pantry"], button:has-text("Despensa")',
+    saved: '[data-testid="nav-saved"], button:has-text("Recetas")',
+    restaurants: '[data-testid="nav-restaurants"], button:has-text("Lugares")',
+    profile: '[data-testid="nav-profile"], button:has-text("Perfil")',
   },
 
   // Perfil

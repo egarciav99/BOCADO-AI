@@ -329,6 +329,7 @@ exports.manualCleanup = functions.https.onCall(async (data, context) => {
     'historial_recomendaciones',
     'maps_proxy_cache',
     'maps_proxy_rate_limits',
+    'airtable_cache',  // ✅ NUEVO: Caché de Airtable
   ]);
 
   if (!collection || typeof collection !== 'string' || !allowedCollections.has(collection)) {
@@ -367,4 +368,56 @@ exports.manualCleanup = functions.https.onCall(async (data, context) => {
     console.error('Error in manual cleanup:', error);
     throw new functions.https.HttpsError('internal', 'Cleanup failed');
   }
+});
+
+/**
+ * Cleanup old airtable_cache documents
+ * Runs every 6 hours
+ * Deletes documents older than 24 hours (TTL de 6h + buffer de 18h)
+ */
+exports.cleanupAirtableCache = functions.pubsub
+  .schedule('0 */6 * * *') // Every 6 hours
+  .timeZone('America/Mexico_City')
+  .onRun(async (context) => {
+    const cutoffDate = admin.firestore.Timestamp.fromDate(
+      new Date(Date.now() - 24 * 60 * 60 * 1000) // 24 hours ago
+    );
+
+    let deletedCount = 0;
+    let batchCount = 0;
+    const MAX_BATCHES = 5;
+
+    try {
+      while (batchCount < MAX_BATCHES) {
+        const snapshot = await db.collection('airtable_cache')
+          .where('expiresAt', '<', cutoffDate)
+          .limit(500)
+          .get();
+
+        if (snapshot.empty) {
+          break;
+        }
+
+        const batch = db.batch();
+        snapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+          deletedCount++;
+        });
+
+        await batch.commit();
+        batchCount++;
+        
+        console.log(`Batch ${batchCount}: Deleted ${snapshot.size} expired airtable cache entries`);
+        
+        if (batchCount < MAX_BATCHES) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
+
+      console.log(`Total deleted from airtable_cache: ${deletedCount} in ${batchCount} batches`);
+      return { deleted: deletedCount, batches: batchCount };
+    } catch (error) {
+      console.error('Error cleaning up airtable cache:', error);
+      throw error;
+    }
 });

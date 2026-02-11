@@ -5,6 +5,11 @@ import { auth } from '../firebaseConfig';
 // ✅ NUEVO: Usar proxy en lugar de API key directa
 const MAPS_PROXY_URL = env.api.recommendationUrl.replace('/recommend', '/maps-proxy');
 
+// ✅ OPTIMIZACIÓN: Caché local en memoria + Debounce
+const localCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutos
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+
 export interface PlacePrediction {
   placeId: string;
   description: string;
@@ -63,6 +68,7 @@ async function proxyRequest(action: string, params: Record<string, any>): Promis
 
 /**
  * Busca ciudades usando Google Places Autocomplete API (vía proxy)
+ * ✅ OPTIMIZACIÓN: Sin debounce - para búsquedas directas
  */
 export async function searchCities(
   query: string,
@@ -89,6 +95,88 @@ export async function searchCities(
     logger.error('Error searching cities:', error);
     return [];
   }
+}
+
+// ✅ OPTIMIZACIÓN: Debounce + caché local para autocomplete
+interface DebouncedSearchCallbacks {
+  onResults: (results: PlacePrediction[]) => void;
+  onError?: (error: Error) => void;
+}
+
+/**
+ * Busca ciudades con debounce (300ms) y caché local.
+ * Reduce drásticamente las llamadas a la API mientras el usuario escribe.
+ * 
+ * Uso:
+ * ```typescript
+ * searchCitiesDebounced('madr', {
+ *   onResults: (results) => setPredictions(results),
+ *   onError: (err) => console.error(err)
+ * });
+ * ```
+ */
+export function searchCitiesDebounced(
+  query: string,
+  callbacks: DebouncedSearchCallbacks,
+  countryCode?: string,
+  delay = 300
+): void {
+  // Cancelar timer anterior
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+  }
+
+  const trimmedQuery = query.trim();
+  
+  // Si query muy corta, limpiar resultados
+  if (!trimmedQuery || trimmedQuery.length < 2) {
+    callbacks.onResults([]);
+    return;
+  }
+
+  // Check caché local primero
+  const cacheKey = `${trimmedQuery.toLowerCase()}_${countryCode?.toLowerCase() || 'all'}`;
+  const cached = localCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    callbacks.onResults(cached.data);
+    return;
+  }
+
+  // Debounce: esperar a que el usuario deje de escribir
+  debounceTimer = setTimeout(async () => {
+    try {
+      const results = await searchCities(trimmedQuery, countryCode);
+      
+      // Guardar en caché local
+      localCache.set(cacheKey, { 
+        data: results, 
+        timestamp: Date.now() 
+      });
+      
+      // Limpiar caché si crece demasiado (>1000 entradas)
+      if (localCache.size > 1000) {
+        const firstKey = localCache.keys().next().value;
+        if (firstKey) localCache.delete(firstKey);
+      }
+      
+      callbacks.onResults(results);
+    } catch (error) {
+      logger.error('Error in debounced search:', error);
+      callbacks.onError?.(error as Error);
+    }
+  }, delay);
+}
+
+/**
+ * Limpia el caché local (útil en logout o para testing)
+ */
+export function clearMapsCache(): void {
+  localCache.clear();
+  if (debounceTimer) {
+    clearTimeout(debounceTimer);
+    debounceTimer = null;
+  }
+  logger.info('Maps local cache cleared');
 }
 
 /**
