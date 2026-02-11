@@ -134,11 +134,11 @@ function AppContent() {
           <NetworkStatusToast />
           
           {/* ✅ ENVOLVEMOS EL RENDER EN SUSPENSE con Error Boundary */}
-          <SuspenseErrorBoundary>
+          <ErrorBoundary>
             <Suspense fallback={<ScreenLoader />}>
               {renderScreen()}
             </Suspense>
-          </SuspenseErrorBoundary>
+          </ErrorBoundary>
         </div>
       </div>
     </SentryErrorBoundary>
