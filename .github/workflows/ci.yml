@@ -57,7 +57,7 @@ jobs:
       run: npx playwright install --with-deps chromium
     
     - name: Run Playwright tests
-      run: npm run test:e2e:skip-check
+      run: npm run test:e2e
       env:
         CI: true
         VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
