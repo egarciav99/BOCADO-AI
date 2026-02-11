@@ -16,7 +16,9 @@
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:install-deps": "npx playwright install-deps chromium",
-    "generate-icons": "node scripts/generate-pwa-icons.js"
+    "generate-icons": "node scripts/generate-pwa-icons.js",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -48,6 +50,16 @@
     "typescript": "^5.2.2",
     "vite": "^5.2.0",
     "vite-plugin-pwa": "^1.2.0",
-    "vitest": "^4.0.18"
+    "vitest": "^4.0.18",
+    "storybook": "^10.2.8",
+    "@storybook/react-vite": "^10.2.8",
+    "@chromatic-com/storybook": "^5.0.1",
+    "@storybook/addon-vitest": "^10.2.8",
+    "@storybook/addon-a11y": "^10.2.8",
+    "@storybook/addon-docs": "^10.2.8",
+    "@storybook/addon-onboarding": "^10.2.8",
+    "playwright": "^1.58.2",
+    "@vitest/browser-playwright": "^4.0.18",
+    "@vitest/coverage-v8": "^4.0.18"
   }
 }

@@ -7,11 +7,26 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
-    exclude: ['node_modules/', 'functions/node_modules/', 'e2e/', '**/playwright/**'],
+    exclude: [
+      'node_modules/', 
+      'functions/node_modules/', 
+      'e2e/', 
+      '**/playwright/**',
+      '.storybook/',
+      '**/*.stories.tsx',
+      '**/*.stories.ts',
+    ],
     include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
     coverage: {
       reporter: ['text', 'html'],
-      exclude: ['node_modules/', 'functions/', 'src/test/', 'e2e/'],
+      exclude: [
+        'node_modules/', 
+        'functions/', 
+        'src/test/', 
+        'e2e/',
+        '.storybook/',
+        '**/*.stories.tsx',
+      ]
     },
   },
 });

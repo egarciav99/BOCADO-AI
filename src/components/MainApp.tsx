@@ -29,6 +29,11 @@ const MainApp: React.FC<MainAppProps> = ({
   const [activeTab, setActiveTab] = useState<Tab>('recommendation');
   const [isTutorialOpen, setIsTutorialOpen] = useState(showTutorial);
   
+  // Sincronizar estado del tutorial cuando cambia la prop
+  useEffect(() => {
+    setIsTutorialOpen(showTutorial);
+  }, [showTutorial]);
+  
   const { user, isLoading, isAuthenticated } = useAuthStore();
   useUserProfile(user?.uid);
 
