@@ -86,20 +86,33 @@ const MainApp: React.FC<MainAppProps> = ({
     );
   }
   
-  if (!isAuthenticated || !userUid) return null;
+  if (!isAuthenticated || !userUid) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-bocado-background p-4">
+        <div className="text-center">
+          <p className="text-bocado-gray mb-4">Sesión no válida. Redirigiendo...</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-bocado-green text-white px-6 py-3 rounded-full font-bold"
+          >
+            Recargar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    // ✅ relative es crucial para que los absolute children se contengan aquí
-    // ✅ pt-safe para móviles con notch
+    // ✅ h-full para ocupar todo el espacio del contenedor padre
     <div className="h-full w-full flex flex-col bg-bocado-background overflow-hidden pt-safe">
       
       {isTutorialOpen && (
         <TutorialModal onClose={handleTutorialClose} userName={userName} />
       )}
 
-      {/* Contenido scrolleable con padding bottom generoso para la barra flotante */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth">
-        <div className="max-w-md md:max-w-lg mx-auto min-h-full">
+      {/* Contenido scrolleable - ocupa todo el espacio restante */}
+      <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth min-h-0">
+        <div className="max-w-md md:max-w-lg mx-auto">
           <ErrorBoundary>
             {activeTab === 'recommendation' && (
               <RecommendationScreen 
@@ -137,7 +150,7 @@ const MainApp: React.FC<MainAppProps> = ({
         </div>
       </main>
 
-      {/* ✅ BottomTabBar posicionado absolute dentro del contenedor */}
+      {/* BottomTabBar - siempre visible abajo */}
       <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );

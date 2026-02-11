@@ -66,11 +66,11 @@ try {
   const err2 = tryRun(tmpBin);
   if (err2) {
     console.warn(`[esbuild] Copied binary still failing: ${err2.message}`);
-    process.exit(1);
+    process.exit(0);
   }
   fs.writeFileSync(OUT_FILE, tmpBin, 'utf8');
   console.log(`[esbuild] Workaround active. Using binary: ${tmpBin}`);
 } catch (copyErr) {
   console.warn(`[esbuild] Workaround failed: ${copyErr.message}`);
-  process.exit(1);
+  process.exit(0);
 }

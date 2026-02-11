@@ -10,7 +10,7 @@ import PWABanner from './components/PWABanner';
 import NetworkStatusToast from './components/NetworkStatusToast';
 import { captureError, setUserContext, addBreadcrumb } from './utils/sentry';
 
-// ✅ IMPORTACIÓN ESTÁTICA (temporalmente para debugging)
+// ✅ IMPORTACIÓN ESTÁTICA (sin lazy loading)
 import HomeScreen from './components/HomeScreen';
 import RegistrationFlow from './components/RegistrationFlow';
 import LoginScreen from './components/LoginScreen';
@@ -30,13 +30,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// ✅ Componente de Carga Simple para el Suspense
-const ScreenLoader = () => (
-  <div className="flex-1 flex items-center justify-center bg-bocado-background">
-    <div className="w-8 h-8 border-3 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
-  </div>
-);
-
 function AppContent() {
   const [currentScreen, setCurrentScreen] = React.useState<AppScreen>('home');
   const [planId, setPlanId] = React.useState<string | null>(null);
@@ -46,19 +39,13 @@ function AppContent() {
   
   const { setUser, isLoading, isAuthenticated } = useAuthStore();
 
-  // Log de renderizado para debugging
-  React.useEffect(() => {
-    console.log('[App] AppContent mounted, currentScreen:', currentScreen);
-    console.log('[App] isLoading:', isLoading, 'isAuthenticated:', isAuthenticated);
-  }, []);
+
 
   // Timeout de seguridad: si Firebase no responde en 5s, forzar continuar
   React.useEffect(() => {
     const timer = setTimeout(() => {
       if (isLoading) {
-        console.warn('[App] Auth timeout - Firebase no respondió, forzando continuar');
         setAuthTimeout(true);
-        // Forzar el estado de carga a falso
         useAuthStore.getState().setLoading(false);
       }
     }, 5000);
@@ -95,11 +82,9 @@ function AppContent() {
   }, [currentScreen]);
 
   useEffect(() => {
-    console.log('[App] Iniciando onAuthStateChanged...');
-    
     // Verificar que Firebase esté configurado
     if (!env.firebase.apiKey || env.firebase.apiKey === '') {
-      console.error('[App] ERROR: Firebase API Key no configurada');
+      console.error('[App] Firebase API Key no configurada');
       setAuthTimeout(true);
       useAuthStore.getState().setLoading(false);
       return;
@@ -109,7 +94,6 @@ function AppContent() {
     
     try {
       unsubscribe = onAuthStateChanged(auth, (user) => {
-        console.log('[App] Auth state changed:', user ? 'authenticated' : 'not authenticated');
         setUser(user);
         // Sincronizar usuario con Sentry para tracking de errores
         setUserContext(user?.uid || null, user?.email || undefined);
@@ -121,13 +105,11 @@ function AppContent() {
           setCurrentScreen('home');
         }
       }, (error) => {
-        console.error('[App] Auth state error:', error);
         captureError(error, { type: 'auth_state_change_error' });
         setAuthTimeout(true);
         useAuthStore.getState().setLoading(false);
       });
     } catch (error) {
-      console.error('[App] Error setting up auth listener:', error);
       captureError(error as Error, { type: 'auth_setup_error' });
       setAuthTimeout(true);
       useAuthStore.getState().setLoading(false);
@@ -200,8 +182,6 @@ function AppContent() {
   }
 
   const renderScreen = () => {
-    console.log('[App] Rendering screen:', currentScreen);
-    
     try {
       switch (currentScreen) {
         case 'permissions':
@@ -216,11 +196,9 @@ function AppContent() {
           return <PlanScreen planId={planId!} onStartNewPlan={() => { setPlanId(null); setCurrentScreen('recommendation'); }} />;
         case 'home':
         default:
-          console.log('[App] Rendering HomeScreen');
           return <HomeScreen onStartRegistration={() => setCurrentScreen('permissions')} onGoToApp={() => setCurrentScreen('recommendation')} onGoToLogin={() => setCurrentScreen('login')} />;
       }
     } catch (error) {
-      console.error('[App] Error rendering screen:', error);
       setRenderError(error as Error);
       throw error;
     }
@@ -229,9 +207,8 @@ function AppContent() {
   return (
     <SentryErrorBoundary>
       <div className="min-h-screen bg-bocado-cream flex justify-center items-start md:items-center md:p-8 lg:p-10 2xl:p-12">
-        <div className="w-full min-h-full bg-bocado-background 
+        <div className="w-full h-screen md:h-[min(900px,calc(100vh-4rem))] md:min-h-[640px] bg-bocado-background 
                         md:max-w-app lg:max-w-app-lg xl:max-w-app-xl
-                        md:h-[min(900px,calc(100vh-4rem))] md:min-h-[640px]
                         md:rounded-4xl md:shadow-bocado-lg 
                         md:border-8 md:border-white
                         overflow-hidden relative flex flex-col">
@@ -241,10 +218,12 @@ function AppContent() {
           {/* Notificaciones de estado de red */}
           <NetworkStatusToast />
           
-          {/* Renderizado sin lazy loading para debugging */}
-          <ErrorBoundary>
-            {renderScreen()}
-          </ErrorBoundary>
+          {/* Renderizado con Error Boundary - ocupa todo el espacio disponible */}
+          <div className="flex-1 min-h-0">
+            <ErrorBoundary>
+              {renderScreen()}
+            </ErrorBoundary>
+          </div>
         </div>
       </div>
     </SentryErrorBoundary>

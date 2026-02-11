@@ -21,7 +21,7 @@ jobs:
         cache: 'npm'
     
     - name: Install dependencies
-      run: bash scripts/npm-ci-safe.sh
+      run: npm ci
     
     - name: Run Unit Tests
       run: npm run test
@@ -53,7 +53,7 @@ jobs:
         cache: 'npm'
     
     - name: Install dependencies
-      run: bash scripts/npm-ci-safe.sh
+      run: npm ci
     
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
