@@ -6,6 +6,7 @@ import { useAuthStore } from './stores/authStore';
 import ErrorBoundary from './components/ErrorBoundary';
 import { SentryErrorBoundary } from './components/SentryErrorBoundary';
 import PWABanner from './components/PWABanner';
+import NetworkStatusToast from './components/NetworkStatusToast';
 import { captureError, setUserContext, addBreadcrumb } from './utils/sentry';
 
 // ✅ IMPORTACIÓN DINÁMICA (Lazy Loading)
@@ -128,6 +129,9 @@ function AppContent() {
                         overflow-hidden relative flex flex-col">
           {/* PWA Banner dentro del contenedor del teléfono */}
           <PWABanner />
+          
+          {/* Notificaciones de estado de red */}
+          <NetworkStatusToast />
           
           {/* ✅ ENVOLVEMOS EL RENDER EN SUSPENSE */}
           <Suspense fallback={<ScreenLoader />}>

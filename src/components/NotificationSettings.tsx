@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import { useSmartNotifications, SmartReminder } from '../hooks/useSmartNotifications';
-import { BellIcon } from './icons/BellIcon';
-import { BellSlashIcon } from './icons/BellSlashIcon';
-import { ClockIcon } from './icons/ClockIcon';
-import { HomeIcon } from './icons/HomeIcon';
-import { StarIcon } from './icons/StarIcon';
+import { Bell, BellOff, Clock, Home, Star } from './icons';
 import { trackEvent } from '../firebaseConfig';
 
 interface NotificationSettingsProps {
@@ -40,7 +36,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
         <div className="bg-white rounded-3xl p-6 w-full max-w-sm animate-fade-in">
           <div className="text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <BellSlashIcon className="w-8 h-8 text-gray-400" />
+              <BellOff className="w-8 h-8 text-gray-400" />
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-2">Notificaciones no disponibles</h2>
             <p className="text-sm text-gray-500 mb-6">
@@ -146,7 +142,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 bg-bocado-green/10 rounded-xl flex items-center justify-center">
-                <BellIcon className="w-6 h-6 text-bocado-green" />
+                <Bell className="w-6 h-6 text-bocado-green" />
               </div>
               <div>
                 <h2 className="text-xl font-bold text-bocado-dark-green">Recordatorios</h2>
@@ -168,7 +164,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
           {permission !== 'granted' && (
             <div className="mx-6 mt-6 p-4 bg-blue-50 rounded-xl">
               <div className="flex items-start gap-3">
-                <BellIcon className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                <Bell className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-blue-800 mb-1">
                     Activa las notificaciones
@@ -262,7 +258,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                             onClick={() => startEditing(reminder)}
                             className="flex items-center gap-1 text-sm font-medium text-bocado-dark-gray hover:text-bocado-green transition-colors"
                           >
-                            <ClockIcon className="w-4 h-4" />
+                            <Clock className="w-4 h-4" />
                             {formatTime(reminder.hour, reminder.minute)}
                           </button>
                         )}

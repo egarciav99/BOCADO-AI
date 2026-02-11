@@ -48,7 +48,21 @@ export default {
       boxShadow: {
         'bocado': '0 4px 20px -2px rgba(49, 101, 89, 0.15)',
         'bocado-lg': '0 10px 40px -4px rgba(49, 101, 89, 0.2)',
-      }
+      },
+      animation: {
+        'skeleton-pulse': 'skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'skeleton-shimmer': 'skeleton-shimmer 1.5s infinite',
+      },
+      keyframes: {
+        'skeleton-pulse': {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0.5' },
+        },
+        'skeleton-shimmer': {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+      },
     },
   },
   plugins: [],

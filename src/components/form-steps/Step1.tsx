@@ -5,10 +5,7 @@ import { EMAIL_DOMAINS } from '../../constants';
 import { MaleIcon } from '../icons/MaleIcon';
 import { FemaleIcon } from '../icons/FemaleIcon';
 import { OtherGenderIcon } from '../icons/OtherGenderIcon';
-import { LockIcon } from '../icons/LockIcon';
-import { LocationIcon } from '../icons/LocationIcon';
-import { ScaleIcon } from '../icons/ScaleIcon';
-import { RulerIcon } from '../icons/RulerIcon';
+import { Lock, MapPin, Scale, Ruler } from '../icons';
 import { trackEvent } from '../../firebaseConfig';
 import type { PlacePrediction } from '../../services/mapsService';
 
@@ -308,7 +305,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           <div>
             <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">Peso (kg)</label>
             <div className="relative">
-              <ScaleIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
+              <Scale className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
                 type="text"
                 inputMode="decimal"
@@ -324,7 +321,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           <div>
             <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">Estatura (cm)</label>
             <div className="relative">
-              <RulerIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
+              <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
                 type="text"
                 value={data.height || ''} 
@@ -343,7 +340,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
         <div>
           <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">País *</label>
           <div className="relative">
-            <LocationIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
+            <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
             <select 
               value={data.country} 
               onChange={handleCountrySelect} 
@@ -438,7 +435,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           <div>
             <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Contraseña *</label>
             <div className="relative">
-              <LockIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
+              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
                 type="password" 
                 name="password" 

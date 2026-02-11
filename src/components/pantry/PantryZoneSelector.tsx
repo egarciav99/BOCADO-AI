@@ -1,7 +1,7 @@
 // components/pantry/PantryZoneSelector.tsx
 import React from 'react';
 import { KitchenItem, Zone } from '../../types';
-import { RestaurantIcon } from '../icons/RestaurantIcon';
+import { UtensilsCrossed } from '../icons';
 import { ZONES } from './constants';
 import { trackEvent } from '../../firebaseConfig';
 
@@ -29,7 +29,7 @@ export const PantryZoneSelector: React.FC<PantryZoneSelectorProps> = ({
   return (
     <div className="flex-1 px-4 pt-4 pb-24 overflow-y-auto">
       <div className="flex items-center justify-center gap-2 mb-1">
-        <RestaurantIcon className="w-7 h-7 text-bocado-dark-green" />
+        <UtensilsCrossed className="w-7 h-7 text-bocado-dark-green" />
         <h1 className="text-xl font-bold text-bocado-dark-green">Mi Cocina</h1>
       </div>
       <p className="text-center text-bocado-gray text-sm mb-6">Control de ingredientes</p>

@@ -2,14 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { FormStepProps } from './FormStepProps';
 import { ACTIVITY_LEVELS, ACTIVITY_FREQUENCIES, FOOD_CATEGORIES } from '../../constants';
 import { FormData } from '../../types';
-import { MeatIcon } from '../icons/MeatIcon';
-import { FishIcon } from '../icons/FishIcon';
-import { DairyIcon } from '../icons/DairyIcon';
-import { VegetableIcon } from '../icons/VegetableIcon';
-import { FruitIcon } from '../icons/FruitIcon';
-import { GrainsIcon } from '../icons/GrainsIcon';
-import { NutsIcon } from '../icons/NutsIcon';
-import { SpicesIcon } from '../icons/SpicesIcon';
+import { MeatIcon, FishIcon, DairyIcon, VegetableIcon, FruitIcon, GrainsIcon, NutsIcon, SpicesIcon } from '../icons';
 import { trackEvent } from '../../firebaseConfig'; // ✅ Importado trackEvent
 
 const categoryIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {

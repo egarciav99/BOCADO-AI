@@ -45,7 +45,10 @@ export interface UserProfile {
 }
 
 // Para el formulario completo (unión de ambos)
-export interface FormData extends AuthData, Omit<UserProfile, 'uid' | 'createdAt' | 'updatedAt'> {}
+export interface FormData extends AuthData, Omit<UserProfile, 'uid' | 'createdAt' | 'updatedAt'> {
+  // Campo temporal para almacenar el placeId de Google Places al seleccionar ciudad
+  cityPlaceId?: string;
+}
 
 // Updated to support simple string ingredients from the new structure
 export type Ingredient = string; 

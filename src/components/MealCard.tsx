@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import type { Meal } from '../types';
-import { ChevronDownIcon } from './icons/ChevronDownIcon';
-import { HeartIcon } from './icons/HeartIcon';
+import { ChevronDown, Heart } from './icons';
 import FeedbackModal from './FeedbackModal';
 import PortionSelector from './PortionSelector';
 import { useToggleSavedItem, useIsItemSaved } from '../hooks/useSavedItems';
@@ -396,10 +395,10 @@ const MealCard: React.FC<MealCardProps> = memo(({
                 saved ? 'text-red-500' : 'text-bocado-gray hover:text-red-400'
               }`}
             >
-              <HeartIcon className="w-6 h-6" filled={saved} />
+              <Heart className="w-6 h-6" fill={saved ? "currentColor" : "none"} />
             </button>
 
-            <ChevronDownIcon
+            <ChevronDown
               className={`w-5 h-5 text-bocado-gray transition-transform duration-200 ${
                 isExpanded ? 'rotate-180' : ''
               }`}

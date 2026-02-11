@@ -11,12 +11,12 @@ import { UserProfile } from '../types';
 import { useEffect } from 'react';
 
 // Helper para convertir undefined a null antes de guardar en Firestore
-const cleanForFirestore = <T extends Record<string, any>>(obj: T): T => {
+const cleanForFirestore = (obj: Record<string, any>): Record<string, any> => {
   const cleanValue = (value: any): any => {
     if (value === undefined) return null;
     if (value === null) return null;
     if (typeof value === 'object' && !Array.isArray(value)) {
-      const cleanedObj: any = {};
+      const cleanedObj: Record<string, any> = {};
       Object.keys(value).forEach(k => {
         cleanedObj[k] = cleanValue(value[k]);
       });
@@ -25,7 +25,7 @@ const cleanForFirestore = <T extends Record<string, any>>(obj: T): T => {
     return value;
   };
 
-  const cleaned = { ...obj };
+  const cleaned: Record<string, any> = { ...obj };
   Object.keys(cleaned).forEach(key => {
     cleaned[key] = cleanValue(cleaned[key]);
   });

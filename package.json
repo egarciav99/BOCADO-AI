@@ -10,6 +10,12 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:e2e": "./e2e/check-deps.sh && playwright test",
+    "test:e2e:skip-check": "playwright test",
+    "test:e2e:ui": "./e2e/check-deps.sh && playwright test --ui",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:install-deps": "npx playwright install-deps chromium",
     "generate-icons": "node scripts/generate-pwa-icons.js"
   },
   "dependencies": {
@@ -27,6 +33,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/react": "^19.0.0",

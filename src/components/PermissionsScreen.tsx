@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
 import { trackEvent } from '../firebaseConfig';
-import { LockIcon } from './icons/LockIcon';
-import { ShieldCheckIcon } from './icons/ShieldCheckIcon';
-import { EyeIcon } from './icons/EyeIcon';
-import { TrashIcon } from './icons/TrashIcon';
+import { Lock, ShieldCheck, Eye, Trash2 } from './icons';
 
 interface PermissionsScreenProps {
   onAccept: () => void;
@@ -37,9 +34,9 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
   ];
 
   const benefits = [
-    { icon: <ShieldCheckIcon className="w-5 h-5" />, text: 'Tus datos nunca se venden a terceros' },
-    { icon: <EyeIcon className="w-5 h-5" />, text: 'Puedes ver y descargar tus datos cuando quieras' },
-    { icon: <TrashIcon className="w-5 h-5" />, text: 'Puedes eliminar tu cuenta y datos en cualquier momento' },
+    { icon: <ShieldCheck className="w-5 h-5" />, text: 'Tus datos nunca se venden a terceros' },
+    { icon: <Eye className="w-5 h-5" />, text: 'Puedes ver y descargar tus datos cuando quieras' },
+    { icon: <Trash2 className="w-5 h-5" />, text: 'Puedes eliminar tu cuenta y datos en cualquier momento' },
   ];
 
   return (
@@ -48,7 +45,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-bocado-green/20 to-bocado-green/5 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
-            <LockIcon className="w-8 h-8 text-bocado-green" />
+            <Lock className="w-8 h-8 text-bocado-green" />
           </div>
           <h1 className="text-2xl font-bold text-bocado-dark-green mb-2">
             Protegemos tu privacidad
@@ -181,7 +178,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
 
         {/* Footer de confianza */}
         <div className="mt-6 flex items-center justify-center gap-1 text-xs text-bocado-gray">
-          <ShieldCheckIcon className="w-4 h-4 text-bocado-green" />
+          <ShieldCheck className="w-4 h-4 text-bocado-green" />
           <span>Tus datos están encriptados y protegidos</span>
         </div>
       </div>

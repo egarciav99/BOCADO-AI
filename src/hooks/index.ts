@@ -15,6 +15,7 @@ export { usePantry } from './usePantry';
 export { useRateLimit } from './useRateLimit';
 export { useAnalyticsProperties } from './useAnalyticsProperties';
 export { useSmartNotifications } from './useSmartNotifications';
+export { useNetworkStatus, useIsOnline } from './useNetworkStatus';
 
 // Nuevos hooks para escalabilidad
 export {
@@ -24,3 +25,16 @@ export {
   type PaginatedResult,
   type PaginationState,
 } from './usePaginatedFirestoreQuery';
+
+// Feature Flags
+export {
+  useFeatureFlag,
+  useFeatureFlags,
+  useMultipleFeatureFlags,
+  usePrefetchFeatureFlags,
+  useFeatureFlagsSubscription,
+  useInvalidateFeatureFlags,
+  getFeatureFlagsQueryKey,
+  type UseFeatureFlagReturn,
+  type UseFeatureFlagsReturn,
+} from './useFeatureFlag';

@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { RestaurantIcon } from './icons/RestaurantIcon';
-import { BookIcon } from './icons/BookIcon';
-import { UserIcon } from './icons/UserIcon';
-import { LocationIcon } from './icons/LocationIcon';
-import { HomeIcon } from './icons/HomeIcon';
+import { UtensilsCrossed, BookOpen, User, MapPin, Home } from './icons';
 import BocadoLogo from './BocadoLogo';
 import { trackEvent } from '../firebaseConfig'; // ✅ Importado trackEvent
 
@@ -27,7 +23,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
     {
       title: "1. Inicio",
       description: "Elige si comes en casa o fuera. La IA genera tu plan personalizado al instante.",
-      icon: <HomeIcon className="w-16 h-16" />,
+      icon: <Home className="w-16 h-16" />,
       color: "bg-bocado-green",
       textColor: "text-white",
       id: "home"
@@ -35,7 +31,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
     {
       title: "2. Mi Cocina",
       description: "Gestiona tu inventario. Toca ingredientes para su estado de frescura: 🟢 fresco, 🟡 por caducar, y 🔴 urgente.",
-      icon: <RestaurantIcon className="w-16 h-16" />,
+      icon: <UtensilsCrossed className="w-16 h-16" />,
       color: "bg-bocado-dark-green",
       textColor: "text-white",
       id: "pantry"
@@ -43,7 +39,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
     {
       title: "3. Mis Recetas",
       description: "Guarda recetas con ❤️ para cocinarlas cuando quieras.",
-      icon: <BookIcon className="w-16 h-16" />,
+      icon: <BookOpen className="w-16 h-16" />,
       color: "bg-bocado-green-light",
       textColor: "text-white",
       id: "recipes"
@@ -51,7 +47,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
     {
       title: "4. Mis Lugares",
       description: "Guarda restaurantes saludables recomendados al comer fuera.",
-      icon: <LocationIcon className="w-16 h-16" />,
+      icon: <MapPin className="w-16 h-16" />,
       color: "bg-bocado-dark-gray",
       textColor: "text-white",
       id: "restaurants"
@@ -59,7 +55,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
     {
       title: "5. Perfil",
       description: "Mantén tus datos actualizados para mejores recomendaciones.",
-      icon: <UserIcon className="w-16 h-16" />,
+      icon: <User className="w-16 h-16" />,
       color: "bg-bocado-background",
       textColor: "text-bocado-dark-green",
       id: "profile"

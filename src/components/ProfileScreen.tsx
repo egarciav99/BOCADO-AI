@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FormData, UserProfile } from '../types';
-import { UserIcon } from './icons/UserIcon';
-import { LockIcon } from './icons/LockIcon';
-import { DownloadIcon } from './icons/DownloadIcon';
-import { TrashIcon } from './icons/TrashIcon';
-import { ExclamationIcon } from './icons/ExclamationIcon';
-import { DocumentTextIcon } from './icons/DocumentTextIcon';
-import { BellIcon } from './icons/BellIcon';
+import { User, Lock, Download, Trash2, AlertTriangle, FileText, Bell } from './icons';
 import Step1 from './form-steps/Step1';
 import Step2 from './form-steps/Step2';
 import Step3 from './form-steps/Step3';
@@ -28,6 +22,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { env } from '../environment/env';
 import { searchCities, getPlaceDetails, PlacePrediction } from '../services/mapsService';
+import { ProfileSkeleton } from './skeleton';
 
 interface ProfileScreenProps {
   onLogout?: () => void;
@@ -98,7 +93,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
   const { user } = useAuthStore();
-  const { data: profile } = useUserProfile(userUid);
+  const { data: profile, isLoading: isProfileLoading } = useUserProfile(userUid);
   const updateProfileMutation = useUpdateUserProfile();
   const queryClient = useQueryClient();
   
@@ -746,7 +741,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
               <div className="space-y-4">
                 <div className="bg-bocado-background/50 p-4 rounded-xl space-y-3">
                   <div className="flex items-start gap-3">
-                    <DocumentTextIcon className="w-5 h-5 text-bocado-green mt-0.5 flex-shrink-0" />
+                    <FileText className="w-5 h-5 text-bocado-green mt-0.5 flex-shrink-0" />
                     <div>
                       <p className="text-sm font-medium text-bocado-text">¿Qué incluye?</p>
                       <ul className="text-xs text-bocado-gray mt-1 space-y-1">
@@ -777,7 +772,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                     onClick={handleExportData}
                     className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
-                    <DownloadIcon className="w-4 h-4" />
+                    <Download className="w-4 h-4" />
                     Preparar datos
                   </button>
                 </div>
@@ -816,7 +811,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                     onClick={handleDownloadJSON}
                     className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
-                    <DownloadIcon className="w-4 h-4" />
+                    <Download className="w-4 h-4" />
                     Descargar JSON
                   </button>
                 </div>
@@ -830,7 +825,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
           <div className="animate-fade-in">
             <div className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
-                <ExclamationIcon className="w-6 h-6 text-red-600" />
+                <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
               <h2 className="text-xl font-bold text-red-600">Eliminar cuenta</h2>
             </div>
@@ -904,7 +899,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                     </>
                   ) : (
                     <>
-                      <TrashIcon className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4" />
                       Eliminar todo
                     </>
                   )}
@@ -978,7 +973,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
 
                  <div className="mt-6 pt-6 border-t border-bocado-border">
                     <div className="flex items-center gap-2 mb-3">
-                        <LockIcon className="w-4 h-4 text-bocado-gray" />
+                        <Lock className="w-4 h-4 text-bocado-gray" />
                         <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">Seguridad</h3>
                     </div>
                     <div className="space-y-2">
@@ -1008,7 +1003,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                  {/* Preferencias */}
                  <div className="mt-6 pt-6 border-t border-bocado-border">
                     <div className="flex items-center gap-2 mb-3">
-                        <BellIcon className="w-4 h-4 text-bocado-gray" />
+                        <Bell className="w-4 h-4 text-bocado-gray" />
                         <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">Preferencias</h3>
                     </div>
                     <div className="space-y-2">
@@ -1020,7 +1015,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
                         >
                             <div className="flex items-center gap-2">
-                                <BellIcon className="w-4 h-4 text-bocado-green" />
+                                <Bell className="w-4 h-4 text-bocado-green" />
                                 <span>Recordatorios y notificaciones</span>
                             </div>
                             <span className="text-bocado-gray">›</span>
@@ -1031,7 +1026,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                  {/* Privacidad y Datos (GDPR) */}
                  <div className="mt-6 pt-6 border-t border-bocado-border">
                     <div className="flex items-center gap-2 mb-3">
-                        <DocumentTextIcon className="w-4 h-4 text-bocado-gray" />
+                        <FileText className="w-4 h-4 text-bocado-gray" />
                         <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">Privacidad y Datos</h3>
                     </div>
                     <div className="space-y-2">
@@ -1043,7 +1038,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
                         >
                             <div className="flex items-center gap-2">
-                                <DownloadIcon className="w-4 h-4 text-bocado-green" />
+                                <Download className="w-4 h-4 text-bocado-green" />
                                 <span>Descargar mis datos</span>
                             </div>
                             <span className="text-bocado-gray">›</span>
@@ -1056,7 +1051,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           className="w-full flex items-center justify-between px-4 py-3 bg-red-50 rounded-xl text-sm font-medium text-red-600 hover:bg-red-100 active:scale-95 transition-all"
                         >
                             <div className="flex items-center gap-2">
-                                <TrashIcon className="w-4 h-4" />
+                                <Trash2 className="w-4 h-4" />
                                 <span>Eliminar mi cuenta</span>
                             </div>
                             <span className="text-red-400">›</span>
@@ -1083,13 +1078,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     }
   };
 
+  // Mostrar skeleton mientras carga el perfil
+  if (isProfileLoading) {
+    return <ProfileSkeleton />;
+  }
+
   return (
     <div className="flex-1 flex flex-col animate-fade-in">
         {/* Header */}
         <div className="flex justify-between items-center mb-6 px-4 pt-2">
             <div className="flex items-center gap-2">
                 <div className="bg-bocado-green/10 p-2 rounded-full">
-                    <UserIcon className="w-5 h-5 text-bocado-green"/>
+                    <User className="w-5 h-5 text-bocado-green"/>
                 </div>
                 <div>
                     <h1 className="text-lg font-bold text-bocado-dark-green">Mi Perfil</h1>

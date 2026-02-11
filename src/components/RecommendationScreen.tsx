@@ -9,7 +9,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useRateLimit } from '../hooks/useRateLimit';
 import { env, SEARCH_RADIUS } from '../environment/env';
 import { logger } from '../utils/logger';
-import { LocationIcon } from './icons/LocationIcon';
+import { MapPin } from './icons';
+import { ProfileSkeleton } from './skeleton';
 
 interface RecommendationScreenProps {
   userName: string;
@@ -279,19 +280,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   }
 
   if (isProfileLoading || !profile) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
-        <div className="w-10 h-10 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="text-bocado-gray text-sm animate-pulse font-medium">
-          {isNewUser ? 'Preparando tu perfil...' : 'Sincronizando perfil...'}
-        </p>
-        {isNewUser && (
-          <p className="text-bocado-gray text-xs mt-2 text-center max-w-xs">
-            Esto puede tomar unos segundos la primera vez
-          </p>
-        )}
-      </div>
-    );
+    return <ProfileSkeleton />;
   }
 
   return (
@@ -434,7 +423,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
               <div className="bg-bocado-background/50 p-3 rounded-xl">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <LocationIcon className={`w-4 h-4 ${
+                    <MapPin className={`w-4 h-4 ${
                       userPosition ? 'text-bocado-green' : 
                       locationPermission === 'denied' ? 'text-red-400' : 
                       'text-bocado-gray'

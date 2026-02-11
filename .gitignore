@@ -29,3 +29,12 @@ Thumbs.db
 
 # Firebase
 .firebase/
+
+# Playwright
+playwright-report/
+test-results/
+ playwright/.cache/
+
+# E2E Tests - Environment
+e2e/.env
+!.env.test

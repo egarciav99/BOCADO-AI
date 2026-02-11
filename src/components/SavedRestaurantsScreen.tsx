@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useSavedItems, useToggleSavedItem } from '../hooks/useSavedItems';
 import { useAuthStore } from '../stores/authStore';
 import { trackEvent } from '../firebaseConfig';
-import { LocationIcon } from './icons/LocationIcon';
+import { MapPin } from './icons';
 import MealCard from './MealCard';
 import { Meal } from '../types';
+import { RecipeListSkeleton } from './skeleton';
 
 const SavedRestaurantsScreen: React.FC = () => {
   const [mealToConfirmDelete, setMealToConfirmDelete] = useState<Meal | null>(null);
@@ -80,23 +81,13 @@ const SavedRestaurantsScreen: React.FC = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex-1 flex flex-col animate-fade-in">
-        <div className="text-center mb-6 px-4 pt-2">
-          <LocationIcon className="w-6 h-6 text-bocado-green mx-auto mb-2" />
-          <h2 className="text-xl font-bold text-bocado-dark-green">Mis Lugares</h2>
-        </div>
-        <div className="flex justify-center items-center py-20">
-          <div className="w-10 h-10 border-4 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
+    return <RecipeListSkeleton count={4} />;
   }
 
   return (
     <div className="flex-1 flex flex-col animate-fade-in relative">
       <div className="text-center mb-6 px-4 pt-2">
-        <LocationIcon className="w-6 h-6 text-bocado-green mx-auto mb-2" />
+        <MapPin className="w-6 h-6 text-bocado-green mx-auto mb-2" />
         <h2 className="text-xl font-bold text-bocado-dark-green">Mis Lugares</h2>
         <p className="text-xs text-bocado-gray">
           {totalLoaded} {totalLoaded === 1 ? 'lugar guardado' : 'lugares guardados'}
