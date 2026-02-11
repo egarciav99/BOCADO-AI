@@ -46,10 +46,17 @@ export const USER_PREFERENCES_KEY = 'userPreferences';
 const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
   if (!userId) return null;
   
+  console.log('🔍 Fetching profile for:', userId);
+  
   const docRef = doc(db, 'users', userId);
   const docSnap = await getDoc(docRef);
   
-  if (!docSnap.exists()) return null;
+  if (!docSnap.exists()) {
+    console.warn('⚠️ Profile not found for:', userId);
+    return null;
+  }
+  
+  console.log('✅ Profile found');
   
   return { 
     uid: userId, 
@@ -81,18 +88,20 @@ export const useUserProfile = (
   userId: string | undefined,
   options: UseUserProfileOptions = {}
 ): UseQueryResult<UserProfile | null, Error> => {
-  const { enabled = true, staleTime = 1000 * 30 } = options; // Reducido a 30s para detectar cambios rápido
+  const { enabled = true, staleTime = 1000 * 30 } = options;
   
   return useQuery({
     queryKey: [USER_PROFILE_KEY, userId],
     queryFn: () => fetchUserProfile(userId!),
     enabled: !!userId && enabled,
     staleTime, 
-    gcTime: 1000 * 60 * 5, // Reducido a 5 minutos
-    retry: 3, // Aumentado a 3 reintentos
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-    // Si no hay perfil, no considerarlo como error, pero sí reintentar
-    select: (data) => data,
+    gcTime: 1000 * 60 * 5,
+    // Reintentar si no se encuentra el perfil (eventual consistency)
+    retry: (failureCount, error) => {
+      // Reintentar hasta 5 veces con delay exponencial
+      return failureCount < 5;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),
   });
 };
 

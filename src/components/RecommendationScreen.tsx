@@ -38,15 +38,15 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   const { user } = useAuthStore();
   const { data: profile, isLoading: isProfileLoading, isError: isProfileError } = useUserProfile(user?.uid);
   
-  // Track si el perfil no se encuentra después de cargar
+  // Track si el perfil no se encuentra después de cargar (con timeout mayor para reintentos)
   const [profileNotFound, setProfileNotFound] = useState(false);
   
   useEffect(() => {
     if (!isProfileLoading && !profile && !isProfileError) {
-      // Esperar un poco y verificar si realmente no existe
+      // Esperar más tiempo para permitir reintentos del hook (5 reintentos ~ 15s max)
       const timer = setTimeout(() => {
         setProfileNotFound(true);
-      }, 3000);
+      }, 8000);
       return () => clearTimeout(timer);
     }
   }, [isProfileLoading, profile, isProfileError]);

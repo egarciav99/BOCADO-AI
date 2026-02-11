@@ -7,6 +7,7 @@ import Step2 from './form-steps/Step2';
 import Step3 from './form-steps/Step3';
 import { db, auth, trackEvent } from '../firebaseConfig';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { useQueryClient } from '@tanstack/react-query';
 import { 
   createUserWithEmailAndPassword, 
   updateProfile, 
@@ -58,6 +59,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   const [submissionError, setSubmissionError] = useState('');
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
+  const queryClient = useQueryClient();
 
   const [cityOptions, setCityOptions] = useState<PlacePrediction[]>([]);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
@@ -184,11 +186,15 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
         updatedAt: serverTimestamp() as UserProfile['updatedAt'],
       };
 
-      console.log('💾 Guardando perfil en Firestore...', { uid: user.uid, profile: userProfile });
+      console.log('💾 Guardando perfil en Firestore...', { uid: user.uid });
       const cleanedProfile = cleanForFirestore(userProfile);
-      console.log('🧹 Perfil limpio:', cleanedProfile);
       await setDoc(doc(db, 'users', user.uid), cleanedProfile);
       console.log('✅ Perfil guardado exitosamente');
+      
+      // Invalidar cache del perfil para forzar recarga
+      queryClient.invalidateQueries({ queryKey: ['userProfile', user.uid] });
+      queryClient.setQueryData(['userProfile', user.uid], cleanedProfile);
+      
       await sendEmailVerification(user);
       
       trackEvent('registration_complete', {
