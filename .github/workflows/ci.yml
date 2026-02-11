@@ -39,8 +39,9 @@ jobs:
   e2e:
     name: E2E Tests
     runs-on: ubuntu-latest
-    # Solo correr E2E si hay secrets configurados o en manual dispatch
-    if: github.event_name == 'workflow_dispatch' || secrets.VITE_FIREBASE_API_KEY != ''
+    # Solo correr E2E en manual dispatch
+    # Para correr automaticamente, quitar esta condición y configurar los secrets
+    if: github.event_name == 'workflow_dispatch'
     
     steps:
     - uses: actions/checkout@v4
