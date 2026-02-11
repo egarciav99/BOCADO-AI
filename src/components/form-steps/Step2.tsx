@@ -22,8 +22,13 @@ const MultiSelectButton: React.FC<{
 );
 
 const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
+  // Asegurar que los arrays existan (fallback a array vacío)
+  const diseases = data.diseases || [];
+  const allergies = data.allergies || [];
+  const nutritionalGoal = data.nutritionalGoal || [];
+
   const toggleSelection = (field: 'diseases' | 'allergies', value: string) => {
-    const currentValues = data[field] as string[];
+    const currentValues = (data[field] || []) as string[];
     const isSelecting = !currentValues.includes(value);
 
     // ✅ ANALÍTICA: Tracking de selección de salud
@@ -78,7 +83,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
             <MultiSelectButton 
               key={disease} 
               option={disease} 
-              selected={data.diseases.includes(disease)} 
+              selected={diseases.includes(disease)} 
               onToggle={() => toggleSelection('diseases', disease)} 
             />
           ))}
@@ -95,13 +100,13 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
             <MultiSelectButton 
               key={allergy} 
               option={allergy} 
-              selected={data.allergies.includes(allergy)} 
+              selected={allergies.includes(allergy)} 
               onToggle={() => toggleSelection('allergies', allergy)} 
             />
           ))}
         </div>
         
-        {data.allergies.includes('Otro') && (
+        {allergies.includes('Otro') && (
           <div className="mt-3">
             <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">
               Especifica:
@@ -131,7 +136,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
             <MultiSelectButton 
               key={goal} 
               option={goal} 
-              selected={data.nutritionalGoal.includes(goal)} 
+              selected={nutritionalGoal.includes(goal)} 
               onToggle={() => toggleNutritionalGoal(goal)} 
             />
           ))}
