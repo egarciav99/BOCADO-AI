@@ -345,6 +345,7 @@ const RequestBodySchema = z.object({
   budget: z.string().max(50).optional().nullable(),
   currency: z.string().max(10).optional().nullable(),
   dislikedFoods: z.array(z.string().max(100)).max(50).optional().default([]),
+  onlyPantryIngredients: z.boolean().optional().default(false),
   _id: z.string().max(128).optional(),
   // Ubicación del usuario (opcional - geolocalización del navegador)
   userLocation: z.object({
@@ -1029,6 +1030,10 @@ export default async function handler(req: any, res: any) {
       const { priorityList, marketList, hasPantryItems } = scoreIngredients(airtableItems, pantryItems);
       
       // ✅ OPTIMIZACIÓN: Prompt conciso para reducir tokens (~30% menos)
+      const pantryRule = request.onlyPantryIngredients
+        ? "usar SOLO ingredientes de la despensa (sin excepciones, sin básicos)"
+        : "usar despensa primero, respetar restricciones. Opcionales: básicos (aceite, sal, especias)";
+
       finalPrompt = `Eres nutricionista. Genera 3 recetas para: ${user.nutritionalGoal || 'comer saludable'}
 
 PERFIL: ${formatList(user.diseases)}, ${formatList(user.allergies)} | NO usar: ${formatList([...ensureArray(user.dislikedFoods), ...ensureArray(request.dislikedFoods)])} | Ubic: ${user.city || 'su ciudad'}
@@ -1036,9 +1041,9 @@ SOLICITUD: ${request.mealType || 'Comida'}, ${request.cookingTime || '30'}min, $
 ${historyContext ? '\nMEMORIA: ' + historyContext.slice(30, 200) : ''}
 ${feedbackContext ? '\nFEEDBACK: ' + feedbackContext.slice(30, 150) : ''}
 ${hasPantryItems ? `\nDESPENSA: ${priorityList.slice(0, 200)}` : ''}
-${marketList ? `\nDISPONIBLE: ${marketList.slice(0, 150)}` : ''}
+${marketList && !request.onlyPantryIngredients ? `\nDISPONIBLE: ${marketList.slice(0, 150)}` : ''}
 
-REGLAS: 3 recetas creativas, tiempo ≤${request.cookingTime || '30'}min, usar despensa primero, respetar restricciones. Opcionales: básicos (aceite, sal, especias).
+REGLAS: 3 recetas creativas, tiempo ≤${request.cookingTime || '30'}min, ${pantryRule}.
 
 JSON:{"saludo_personalizado":"msg motivador","receta":{"recetas":[{"id":1,"titulo":"nombre","tiempo":"XX min","dificultad":"Fácil|Media|Difícil","coincidencia":"ingrediente casa o Ninguno","ingredientes":["cantidad+ingrediente"],"pasos_preparacion":["paso 1","paso 2"],"macros_por_porcion":{"kcal":0,"proteinas_g":0,"carbohidratos_g":0,"grasas_g":0}}]}}`;
 

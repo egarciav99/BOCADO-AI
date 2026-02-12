@@ -32,7 +32,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   const [selectedBudget, setSelectedBudget] = useState('');
   const [cookingTime, setCookingTime] = useState(30);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [error, setError] = useState<string | null>(null); // ✅ Nuevo: estado de error local
+  const [error, setError] = useState<string | null>(null);
+  const [onlyPantryIngredients, setOnlyPantryIngredients] = useState(false);
   
   // Prevenir clicks múltiples
   const isProcessingRef = useRef(false);
@@ -103,6 +104,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
   // ✅ NUEVO: Resetear estados cuando cambia el tipo (evita quedar bloqueado)
   useEffect(() => {
     setError(null);
+    setOnlyPantryIngredients(false);
     isProcessingRef.current = false;
     setIsGenerating(false);
   }, [recommendationType]);
@@ -161,9 +163,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       mealType: recommendationType === 'En casa' ? stripEmoji(selectedMeal) : "Fuera de casa",
       cookingTime: recommendationType === 'En casa' ? cookingTime : 0,
       cravings: cravingsList,
-      budget: selectedBudget, 
-      currency: currencyConfig.code, 
+      budget: selectedBudget,
+      currency: currencyConfig.code,
       dislikedFoods: profile.dislikedFoods || [],
+      onlyPantryIngredients: recommendationType === 'En casa' && onlyPantryIngredients,
       createdAt: serverTimestamp(),
       procesado: false,
     };
@@ -181,7 +184,11 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       const token = await user.getIdToken();
       
       // Preparar datos con ubicación si está disponible (solo para "Fuera")
-      const requestBody: any = { ...interactionData, _id: newDoc.id };
+      const requestBody: any = {
+        ...interactionData,
+        _id: newDoc.id,
+        onlyPantryIngredients: recommendationType === 'En casa' && onlyPantryIngredients
+      };
       
       if (recommendationType === 'Fuera' && userPosition) {
         requestBody.userLocation = {
@@ -412,34 +419,62 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
               </div>
               
               {selectedMeal && (
-                <div className="bg-bocado-background p-4 rounded-2xl mt-2 animate-fade-in">
-                  <div className="flex justify-between items-center mb-4">
-                    <label className="text-2xs font-bold text-bocado-gray uppercase tracking-wide">⏱️ Tiempo de cocina</label>
-                    <span className="text-lg font-bold text-bocado-green bg-white px-3 py-1 rounded-full">{cookingTime >= 65 ? '60+' : cookingTime} min</span>
+                <div className="bg-bocado-background p-4 rounded-2xl mt-2 animate-fade-in space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-4">
+                      <label className="text-2xs font-bold text-bocado-gray uppercase tracking-wide">⏱️ Tiempo de cocina</label>
+                      <span className="text-lg font-bold text-bocado-green bg-white px-3 py-1 rounded-full">{cookingTime >= 65 ? '60+' : cookingTime} min</span>
+                    </div>
+
+                    {/* Slider con marcas visuales */}
+                    <div className="space-y-2">
+                      <input
+                        type="range"
+                        min="10"
+                        max="65"
+                        step="5"
+                        value={cookingTime}
+                        disabled={isGenerating}
+                        onChange={(e) => {
+                          setCookingTime(Number(e.target.value));
+                        }}
+                        onMouseUp={(e) => trackEvent('recommendation_time_adjusted', { time: Number((e.target as HTMLInputElement).value) })}
+                        className="w-full h-3 bg-bocado-border rounded-lg appearance-none cursor-pointer accent-bocado-green disabled:opacity-50 slider-with-ticks"
+                      />
+
+                      {/* Marcas de referencia */}
+                      <div className="flex justify-between text-2xs text-bocado-gray font-medium px-1">
+                        <span>🚀 10m</span>
+                        <span>⚡ 30m</span>
+                        <span>🍽️ 60m</span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Slider con marcas visuales */}
-                  <div className="space-y-2">
-                    <input
-                      type="range"
-                      min="10"
-                      max="65"
-                      step="5"
-                      value={cookingTime}
-                      disabled={isGenerating}
-                      onChange={(e) => {
-                        setCookingTime(Number(e.target.value));
-                      }}
-                      onMouseUp={(e) => trackEvent('recommendation_time_adjusted', { time: Number((e.target as HTMLInputElement).value) })}
-                      className="w-full h-3 bg-bocado-border rounded-lg appearance-none cursor-pointer accent-bocado-green disabled:opacity-50 slider-with-ticks"
-                    />
-
-                    {/* Marcas de referencia */}
-                    <div className="flex justify-between text-2xs text-bocado-gray font-medium px-1">
-                      <span>🚀 10m</span>
-                      <span>⚡ 30m</span>
-                      <span>🍽️ 60m</span>
-                    </div>
+                  {/* Toggle: Solo ingredientes de la despensa */}
+                  <div className="border-t border-bocado-border pt-4">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={onlyPantryIngredients}
+                        onChange={(e) => {
+                          setOnlyPantryIngredients(e.target.checked);
+                          trackEvent('pantry_only_toggle', { enabled: e.target.checked });
+                        }}
+                        disabled={isGenerating}
+                        className="w-5 h-5 rounded border-2 border-bocado-border bg-white cursor-pointer checked:bg-bocado-green checked:border-bocado-green accent-bocado-green disabled:opacity-50"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-bocado-dark-gray group-hover:text-bocado-green transition-colors">
+                          Solo ingredientes en mi cocina
+                        </p>
+                        <p className="text-2xs text-bocado-gray mt-0.5">
+                          {onlyPantryIngredients
+                            ? '✓ Usaremos solo lo que tienes'
+                            : 'Si no lo activas, recomendaremos también ingredientes a comprar'}
+                        </p>
+                      </div>
+                    </label>
                   </div>
                 </div>
               )}
