@@ -17,6 +17,7 @@
     "test:e2e:install-deps": "npx playwright install-deps chromium",
     "test:e2e:install-browsers": "npx playwright install",
     "generate-icons": "node scripts/generate-pwa-icons.js",
+    "migrate-to-notion": "node scripts/migrate-to-notion.js",
     "storybook": "node scripts/with-esbuild.cjs -- storybook dev -p 6006",
     "build-storybook": "node scripts/with-esbuild.cjs -- storybook build"
   },
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^5.0.1",
+    "@notionhq/client": "^5.9.0",
     "@playwright/test": "^1.58.2",
     "@storybook/addon-a11y": "^10.2.8",
     "@storybook/addon-docs": "^10.2.8",

@@ -1,71 +1,43 @@
 # Roadmap de Mejoras Técnicas
 
-## 13. Service Worker / PWA (Prioridad: MEDIA)
+> **Última actualización:** 2026-02-15  
+> **Nota:** Items marcados ✅ están completados. Ver `/docs/MIGRACION-ICONOS.md`, `/docs/PWA_OFFLINE_SETUP.md` y `/docs/FEATURE_FLAGS.md` para detalles.
+
+---
+
+## 13. Service Worker / PWA ✅ **COMPLETADO**
 
 ### Estado Actual
 - ✅ Firebase Messaging SW funciona (notificaciones push)
-- ❌ No hay caching de assets para offline
-- ❌ No hay estrategia de red para API calls
-- ❌ No hay página offline
+- ✅ Caching de assets para offline implementado
+- ✅ Estrategia de red para API calls configurada
+- ✅ Página offline creada
+- ✅ Manifiesto PWA completo
 
-### Tareas
-1. Extender el SW actual para manejar caching con Workbox
-2. Estrategias:
-   - Cache-first para assets estáticos (JS, CSS, icons)
-   - Network-first para API calls con fallback a cache
-   - Cache de imágenes con límite de edad
-3. Crear página `/offline.html`
-4. Agregar manifiesto de PWA completo
-
-### Archivos a modificar
-- `public/firebase-messaging-sw.js` → renombrar a `sw.js` y combinar
-- `vite.config.ts` → configurar VitePWA con Workbox
-- Crear `public/offline.html`
+**Ver documentación:** `/docs/PWA_OFFLINE_SETUP.md`
 
 ---
 
-## 14. Feature Flags (Prioridad: MEDIA)
+## 14. Feature Flags ✅ **COMPLETADO**
 
 ### Estado Actual
-- ❌ No existe sistema de feature flags
+- ✅ Sistema de feature flags implementado
+- ✅ Flags por entorno (env vars)
+- ✅ Hook `useFeatureFlag()` disponible
+- ✅ HOC `withFeatureFlag()` disponible
 
-### Tareas
-1. Crear servicio simple de feature flags
-2. Soporte para:
-   - Flags por usuario (Firestore)
-   - Flags globales (Remote Config)
-   - Flags por entorno (env vars)
-3. Hook `useFeatureFlag()`
-4. UI de admin para togglear flags (opcional)
-
-### Archivos a crear
-- `src/services/featureFlags.ts`
-- `src/hooks/useFeatureFlag.ts`
-- `src/components/FeatureFlag.tsx` (wrapper component)
+**Ver documentación:** `/docs/FEATURE_FLAGS.md`
 
 ---
 
-## 16. Tree Shaking de Iconos (Prioridad: BAJA)
+## 16. Tree Shaking de Iconos ✅ **COMPLETADO**
 
 ### Estado Actual
-- ⚠️ 32 iconos personalizados en `src/components/icons/`
-- ✅ `lucide-react` ya instalado pero NO usado
+- ✅ Iconos personalizados migrados a `lucide-react`
+- ✅ Bundle size reducido significativamente
+- ✅ Iconos custom preservados (DairyIcon, BocadoLogo, etc.)
 
-### Tareas
-1. Reemplazar iconos personalizados por `lucide-react`
-2. Iconos a migrar (ejemplos):
-   - `UserIcon` → `User` de lucide
-   - `HomeIcon` → `Home` de lucide
-   - `HeartIcon` → `Heart` de lucide
-   - etc.
-3. Iconos custom que NO existen en lucide (mantener):
-   - `DairyIcon` (productos lácteos)
-   - `FruitIcon`, `VegetableIcon`, `MeatIcon` (categorías)
-   - `BocadoLogo` (logo propio)
-
-### Archivos
-- Eliminar: 20+ archivos de iconos genéricos
-- Modificar: Todos los componentes que usan iconos
+**Ver documentación:** `/docs/MIGRACION-ICONOS.md`
 
 ---
 
