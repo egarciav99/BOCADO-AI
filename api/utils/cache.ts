@@ -163,10 +163,12 @@ export async function getCachedWithFallback<T>(
     }
 
     // Primary timeout: esperar fallback con timeout secundario
-    return await Promise.race([
+    const secondaryResult = await Promise.race([
       fallbackPromise as Promise<T>,
       createTimeoutPromise(secondaryTimeoutMs, 'Secondary timeout')
     ]);
+    cache.set(key, secondaryResult);
+    return secondaryResult;
   }
 }
 
