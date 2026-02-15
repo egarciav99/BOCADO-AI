@@ -6,6 +6,7 @@ import {
   persistentMultipleTabManager,
   serverTimestamp
 } from "firebase/firestore";
+import type { Firestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getAnalytics, isSupported, logEvent, setUserId, setUserProperties } from "firebase/analytics";
 import { getMessaging, getToken, onMessage, isSupported as isMessagingSupported } from "firebase/messaging";
@@ -17,7 +18,7 @@ const app = !getApps().length ? initializeApp(env.firebase) : getApp();
 // CONFIGURACIÓN OFFLINE (Firestore Persistence)
 // Nota: initializeFirestore puede lanzar si el entorno no soporta IndexedDB/BroadcastChannel
 // o si HMR re-ejecuta el módulo. En ese caso, fallback a getFirestore.
-let db;
+let db: Firestore;
 try {
   db = initializeFirestore(app, {
     localCache: persistentLocalCache({

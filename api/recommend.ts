@@ -3,7 +3,7 @@ import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import * as crypto from 'crypto';
-import { COUNTRY_TO_CURRENCY, CURRENCY_CONFIG, CurrencyService } from '../src/data/budgets.js';
+import { COUNTRY_TO_CURRENCY, CURRENCY_CONFIG } from '../src/data/budgets.js';
 import { profileCache, pantryCache, historyCache } from './utils/cache.js';
 
 // ============================================
@@ -119,9 +119,13 @@ async function getAirtableIngredientsWithCache(
 interface UserProfile {
   userId: string;
   eatingHabit?: string;
-  age?: number;
+  age?: number | string;
   sex?: string;
+  gender?: string;
+  weight?: string;
+  height?: string;
   activityLevel?: string;
+  activityFrequency?: string;
   nutritionalGoal?: string;
   diseases?: string[];
   allergies?: string[];
@@ -130,6 +134,7 @@ interface UserProfile {
   city?: string;
   country?: string;
   location?: { lat: number; lng: number };
+  locationEnabled?: boolean;
   [key: string]: any;
 }
 
@@ -537,29 +542,6 @@ const RestaurantResponseSchema = z.object({
   ubicacion_detectada: z.string().max(200).optional(),
   recomendaciones: z.array(RestaurantSchema).max(10),
 });
-
-interface UserProfile {
-  nutritionalGoal?: string;
-  allergies?: string[];
-  diseases?: string[];
-  dislikedFoods?: string[];
-  eatingHabit?: string;
-  cookingAffinity?: string;
-  city?: string;
-  country?: string; // Código ISO (MX, ES, US, etc)
-  gender?: string;
-  age?: string;
-  weight?: string;
-  height?: string;
-  activityLevel?: string;
-  activityFrequency?: string;
-  // Coordenadas guardadas del perfil (de la ciudad registrada)
-  location?: {
-    lat: number;
-    lng: number;
-  };
-  locationEnabled?: boolean;
-}
 
 interface AirtableIngredient {
   id: string;
@@ -1473,6 +1455,8 @@ ${RESTAURANT_JSON_TEMPLATE}
 Personaliza el saludo_personalizado${travelContext.isTraveling ? ' mencionando exploración de la zona' : (demographicPartsOut.length > 0 ? ' usando perfil' : ' con mensaje motivador')}.
 En por_que_es_bueno${medicalRestrictionsOut.length > 0 || demographicPartsOut.length > 0 ? ' explica cómo se ajusta al perfil' : ' explica por qué es buena opción'}.
 En hack_saludable${medicalRestrictionsOut.length > 0 ? ' personaliza para sus condiciones' : ' da consejo práctico'}.`;
+
+  }
 
     const result = await model.generateContent({
       contents: [{ role: 'user', parts: [{ text: finalPrompt }] }],

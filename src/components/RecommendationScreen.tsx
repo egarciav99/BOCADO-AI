@@ -457,7 +457,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                         onChange={(e) => {
                           // ✅ FIX: Validar NaN en conversión numérica
                           const newValue = Number(e.target.value);
-                          if (!isNaN(newValue) && newValue >= 10 && newValue <= 180) {
+                          if (!isNaN(newValue) && newValue >= 10 && newValue <= 65) {
                             setCookingTime(newValue);
                             trackEvent('recommendation_time_adjusted', { time: newValue });
                           }

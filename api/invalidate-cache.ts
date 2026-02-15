@@ -78,6 +78,15 @@ export async function POST(req: NextRequest) {
  */
 export async function GET(req: NextRequest) {
   try {
+    const isDev = process.env.NODE_ENV === 'development';
+    const providedKey = req.headers.get('x-api-key');
+    const expectedKey = process.env.CACHE_STATS_KEY;
+    const hasValidKey = Boolean(expectedKey && providedKey && providedKey === expectedKey);
+
+    if (!isDev && !hasValidKey) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     const stats = getCacheStats();
     
     return NextResponse.json({

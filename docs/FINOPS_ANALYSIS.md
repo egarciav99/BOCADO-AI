@@ -552,7 +552,7 @@ trackEvent('cache_performance', {
 | 3 | Comprimir Despensa | $67 | 1 semana | 🟡 Medio | Media |
 | 4 | Batch Processing | $0.36 | 1 semana | 🟡 Medio | Baja |
 | 5 | Redis Cache Global | $0.51 | 2 semanas | 🟠 Alto | Baja |
-| **TOTAL** | **$178.87** | **4 semanas** | - | - |
+| **TOTAL** | - | **$178.87** | **4 semanas** | - | - |
 
 ---
 
