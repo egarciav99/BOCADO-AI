@@ -12,6 +12,26 @@ const NOTION_TOKEN = process.env.NOTION_TOKEN;
 const PARENT_PAGE_ID = '303f9da95c18809c8c22c3ff972df25a';
 const DOCS_DIR = path.join(__dirname, '..', 'docs');
 
+// Emojis por categoría
+const CATEGORY_EMOJIS = {
+  '01-producto': '📊',
+  '02-disenio': '🎨',
+  '03-tecnico': '💻',
+  '04-features': '✨',
+  '05-ops': '⚙️',
+  '06-recursos': '📚',
+};
+
+// Mapeo de badges de estado
+const STATUS_BADGES = {
+  'ROADMAP-MEJORAS': '✅',
+  'FINOPS_ANALYSIS': '💰',
+  'FEATURE_FLAGS': '🚩',
+  'PWA_OFFLINE_SETUP': '📱',
+  'bugs': '🐛',
+  'deploy-checklist': '🚀',
+};
+
 if (!NOTION_TOKEN) {
   console.error('❌ Error: NOTION_TOKEN no está configurado');
   console.error('Usa: export NOTION_TOKEN="tu_token_aqui"');
@@ -153,18 +173,52 @@ function markdownToNotionBlocks(markdown) {
   return blocks.slice(0, 100);
 }
 
-// Crear página en Notion
-async function createNotionPage(title, blocks, parentId) {
+// Crear página en Notion con emoji y breadcrumb
+async function createNotionPage(title, blocks, parentId, options = {}) {
   try {
-    const response = await notion.pages.create({
+    const { emoji, breadcrumb, category } = options;
+    
+    // Agregar breadcrumb al inicio si existe
+    if (breadcrumb) {
+      blocks.unshift({
+        object: 'block',
+        type: 'paragraph',
+        paragraph: {
+          rich_text: [
+            { type: 'text', text: { content: breadcrumb }, annotations: { color: 'gray' } }
+          ],
+        },
+      });
+    }
+
+    // Agregar divider después del breadcrumb
+    if (breadcrumb) {
+      blocks.splice(1, 0, {
+        object: 'block',
+        type: 'divider',
+        divider: {},
+      });
+    }
+
+    const pageConfig = {
       parent: { page_id: parentId },
       properties: {
         title: {
           title: [{ type: 'text', text: { content: title } }],
         },
       },
-      children: blocks,
-    });
+      children: blocks.slice(0, 100), // Limitar a 100 bloques
+    };
+
+    // Agregar emoji si existe
+    if (emoji) {
+      pageConfig.icon = {
+        type: 'emoji',
+        emoji: emoji,
+      };
+    }
+
+    const response = await notion.pages.create(pageConfig);
     return response;
   } catch (error) {
     console.error(`❌ Error creando página "${title}":`, error.message);
@@ -173,7 +227,7 @@ async function createNotionPage(title, blocks, parentId) {
 }
 
 // Procesar archivo markdown
-async function processMarkdownFile(filePath, parentId) {
+async function processMarkdownFile(filePath, parentId, categoryPath = '') {
   const content = fs.readFileSync(filePath, 'utf-8');
   const fileName = path.basename(filePath, '.md');
   const relativePath = path.relative(DOCS_DIR, filePath);
