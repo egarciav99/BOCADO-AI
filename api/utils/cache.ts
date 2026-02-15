@@ -123,13 +123,15 @@ export function clearAllCaches(): void {
  * @param key - Cache key
  * @param fallbackFn - Función para obtener dato si cache falla
  * @param timeoutMs - Timeout en ms (default: 2000)
+ * @param secondaryTimeoutMs - Timeout secundario en ms para esperar el mismo fallback (default: timeoutMs)
  * @returns Promise con el dato
  */
 export async function getCachedWithFallback<T>(
   cache: NodeCache,
   key: string,
   fallbackFn: () => Promise<T>,
-  timeoutMs: number = 2000
+  timeoutMs: number = 2000,
+  secondaryTimeoutMs: number = timeoutMs
 ): Promise<T> {
   const createTimeoutPromise = (ms: number, message: string) =>
     new Promise<T>((_, reject) =>
@@ -161,15 +163,8 @@ export async function getCachedWithFallback<T>(
     }
 
     // Primary timeout: esperar fallback con timeout secundario
-    const secondaryTimeoutMs = timeoutMs;
-    if (fallbackPromise) {
-      return await Promise.race([
-        fallbackPromise,
-        createTimeoutPromise(secondaryTimeoutMs, 'Secondary timeout')
-      ]);
-    }
     return await Promise.race([
-      fallbackFn(),
+      fallbackPromise as Promise<T>,
       createTimeoutPromise(secondaryTimeoutMs, 'Secondary timeout')
     ]);
   }
