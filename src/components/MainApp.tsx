@@ -113,7 +113,7 @@ const MainApp: React.FC<MainAppProps> = ({
       )}
 
       {/* Contenido scrolleable - ocupa todo el espacio restante */}
-      <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth min-h-0">
+      <main className="flex-1 overflow-y-auto overflow-x-hidden scroll-smooth min-h-0 pb-20">
         <div className="max-w-md md:max-w-lg mx-auto">
           <ErrorBoundary>
             {activeTab === 'recommendation' && (
