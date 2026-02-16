@@ -31,7 +31,8 @@
     "startButton": "Empezar",
     "loginButton": "Iniciar sesión",
     "logoutButton": "Cerrar sesión",
-    "backToHome": "← Volver al inicio"
+    "backToHome": "← Volver al inicio",
+    "changeLanguage": "Cambiar idioma"
   },
   "profile": {
     "title": "Mi Perfil",
@@ -81,6 +82,33 @@
     "bmiTooltip": "Índice de masa corporal",
     "languageES": "🇪🇸 Español",
     "languageEN": "🇺🇸 English",
+    "edit": "Editar",
+    "update": "Actualizar",
+    "change": "Cambiar",
+    "suffixYears": " años",
+    "prefixCooking": "Cocina: ",
+    "errors": {
+      "allRequired": "Todos los campos son obligatorios.",
+      "passwordsMismatch": "Las contraseñas no coinciden.",
+      "minChars": "Mínimo 8 caracteres.",
+      "sessionExpired": "Sesión expirada. Vuelve a iniciar sesión.",
+      "sessionExpiredShort": "Sesión expirada.",
+      "wrongPassword": "Contraseña actual incorrecta.",
+      "updateError": "Error al actualizar.",
+      "wrongPasswordShort": "Contraseña incorrecta.",
+      "emailInUse": "Correo en uso.",
+      "sameEmail": "El correo es igual al actual.",
+      "exportError": "Error al exportar los datos. Intenta de nuevo.",
+      "mustTypeDelete": "Debes escribir ELIMINAR para confirmar.",
+      "saveError": "No se pudieron guardar los cambios."
+    },
+    "success": {
+      "profileUpdated": "¡Perfil actualizado!",
+      "changesSaved": "¡Cambios guardados!",
+      "passwordUpdated": "¡Contraseña actualizada!",
+      "emailUpdated": "¡Correo actualizado! Verifica tu email.",
+      "downloadComplete": "¡Archivo descargado!"
+    },
     "dataIncludes": {
       "profile": "Tu perfil y todas tus preferencias",
       "recipes": "Todas las recetas guardadas",
@@ -94,6 +122,24 @@
       "restaurants": "Restaurantes guardados",
       "feedback": "Historial de feedback",
       "accountInfo": "Información de cuenta"
+    },
+    "view": {
+      "personalInfo": "Información Personal",
+      "bodyData": "Datos Corporales",
+      "nutritionalGoal": "Objetivo Nutricional",
+      "physicalActivity": "Actividad Física",
+      "health": "Salud",
+      "allergies": "Alergias",
+      "dislikes": "No me gusta",
+      "noDisliked": "Sin ingredientes especificados",
+      "noDiseases": "Sin condiciones",
+      "noAllergies": "Ninguna",
+      "editProfile": "Editar perfil",
+      "imc": "IMC",
+      "bmiFull": "Índice de masa corporal",
+      "deleteInfo": "Eliminar información",
+      "deleteDataDesc": "Descarga una copia de todos tus datos",
+      "deleteAccountDesc": "Eliminar cuenta permanentemente"
     }
   },
   "tabs": {
@@ -102,23 +148,6 @@
     "recipes": "Recetas",
     "restaurants": "Restaurantes",
     "profile": "Perfil"
-  },
-  "permissions": {
-    "title": "Permisos de la aplicación",
-    "description": "Para ofrecerte la mejor experiencia, necesitamos tu permiso para:",
-    "notifications": "Notificaciones",
-    "notificationsDesc": "Para recordarte tus comidas planificadas",
-    "location": "Ubicación",
-    "locationDesc": "Para recomendarte restaurantes cercanos",
-    "accept": "Aceptar permisos",
-    "skip": "Omitir por ahora",
-    "privacy": {
-      "title": "Tu privacidad es importante",
-      "gdprCompliance": "Cumplimos con GDPR",
-      "dataControl": "Tú controlas tus datos",
-      "noSell": "Nunca vendemos tu información",
-      "secure": "Encriptación de extremo a extremo"
-    }
   },
   "registration": {
     "title": "Registro",
@@ -187,6 +216,7 @@
     "resetPassword": "Restablecer Contraseña",
     "resetSubtitle": "Te enviaremos un enlace",
     "sendLink": "Enviar enlace",
+    "sending": "Enviando...",
     "emailNotVerified": "Correo no verificado",
     "verificationRequired": "Para continuar usando Bocado, debes verificar tu correo electrónico.",
     "resendEmail": "Reenviar correo",
@@ -209,131 +239,8 @@
     },
     "success": {
       "emailResent": "Correo de verificación reenviado. Revisa tu bandeja de entrada.",
-      "resetEmailSent": "Se ha enviado un correo a {email} con instrucciones."
-    }
-  },
-  "recommendation": {
-    "title": "Recomendaciones",
-    "greeting": "¡Hola! ¿Qué te apetece hoy?",
-    "chooseMealType": "Elige el tipo de comida",
-    "cookOrOut": "¿Cocinar o salir?",
-    "cook": "Cocinar en casa",
-    "goOut": "Salir a comer",
-    "budget": "Presupuesto",
-    "budgetLow": "Económico",
-    "budgetMedium": "Moderado",
-    "budgetHigh": "Premium",
-    "location": "Ubicación",
-    "useMyLocation": "Usar mi ubicación",
-    "enterManually": "Introducir manualmente",
-    "searchArea": "Buscar área...",
-    "distance": "Distancia máxima",
-    "generatePlan": "Generar plan",
-    "loading": "Generando recomendaciones...",
-    "error": "Error al generar recomendaciones",
-    "tryAgain": "Intentar de nuevo",
-    "rateLimit": {
-      "title": "Límite alcanzado",
-      "message": "Has alcanzado el límite de recomendaciones por hoy. Intenta mañana.",
-      "timeLeft": "Tiempo restante: {time}"
-    },
-    "errors": {
-      "noLocation": "No se pudo obtener tu ubicación",
-      "locationPermission": "Necesitas activar los permisos de ubicación",
-      "noResults": "No se encontraron resultados",
-      "timeout": "La solicitud tardó demasiado. Intenta de nuevo."
-    }
-  },
-  "plan": {
-    "title": "Tu plan semanal",
-    "breakfast": "Desayuno",
-    "lunch": "Almuerzo",
-    "dinner": "Cena",
-    "snack": "Merienda",
-    "startNewPlan": "Crear nuevo plan",
-    "loading": "Cargando tu plan...",
-    "empty": "No tienes un plan activo",
-    "createFirst": "Crea tu primer plan personalizado",
-    "dayNames": {
-      "monday": "Lunes",
-      "tuesday": "Martes",
-      "wednesday": "Miércoles",
-      "thursday": "Jueves",
-      "friday": "Viernes",
-      "saturday": "Sábado",
-      "sunday": "Domingo"
-    },
-    "mealTypes": {
-      "breakfast": "Desayuno",
-      "lunch": "Comida",
-      "dinner": "Cena",
-      "snack": "Snack"
-    },
-    "options": {
-      "regenerate": "Regenerar este día",
-      "swap": "Cambiar esta comida",
-      "markAsDone": "Marcar como hecha"
-    },
-    "errors": {
-      "loadFailed": "Error al cargar el plan",
-      "generateFailed": "Error al generar el plan",
-      "saveFailed": "Error al guardar cambios"
-    }
-  },
-  "mainApp": {
-    "sync": {
-      "syncing": "Sincronizando...",
-      "success": "Sincronizado",
-      "failed": "Error al sincronizar"
-    },
-    "errors": {
-      "offline": "Sin conexión a internet",
-      "sessionExpired": "Sesión expirada. Vuelve a iniciar sesión.",
-      "unauthorized": "No tienes permiso para esta acción"
-    }
-  },
-  "pantry": {
-    "title": "Mi despensa",
-    "addItem": "Agregar ingrediente",
-    "addItemInCategory": "Agregar en {category}",
-    "empty": "Tu despensa está vacía",
-    "emptyCategory": "Esta categoría está vacía",
-    "searchPlaceholder": "Buscar en tu despensa...",
-    "zones": {
-      "fridge": "Refrigerador",
-      "freezer": "Congelador",
-      "pantry": "Alacena"
-    },
-    "categories": {
-      "vegetables": "Verduras",
-      "fruits": "Frutas",
-      "proteins": "Proteínas",
-      "dairy": "Lácteos",
-      "grains": "Granos",
-      "condiments": "Condimentos",
-      "other": "Otros"
-    },
-    "actions": {
-      "edit": "Editar",
-      "delete": "Eliminar",
-      "moveToZone": "Mover a otra zona"
-    },
-    "confirmDelete": "¿Eliminar {item} de tu despensa?"
-  },
-  "savedRecipes": {
-    "title": "Recetas guardadas",
-    "empty": "No tienes recetas guardadas",
-    "emptyDesc": "Guarda tus recetas favoritas aquí",
-    "viewRecipe": "Ver receta",
-    "unsave": "Quitar de guardados",
-    "confirmUnsave": "¿Quitar {recipe} de guardados?",
-    "searchPlaceholder": "Buscar en tus recetas...",
-    "filters": {
-      "all": "Todas",
-      "breakfast": "Desayuno",
-      "lunch": "Comida",
-      "dinner": "Cena",
-      "dessert": "Postre"
+      "resetEmailSent": "Se ha enviado un correo a {email} con instrucciones.",
+      "profileIncomplete": "Perfil incompleto. Por favor contacta soporte."
     }
   },
   "savedRestaurants": {
@@ -348,79 +255,6 @@
       "all": "Todos",
       "nearby": "Cercanos",
       "favorites": "Favoritos"
-    }
-  },
-  "mealCard": {
-    "actions": {
-      "save": "Guardar",
-      "saved": "Guardado",
-      "share": "Compartir",
-      "report": "Reportar"
-    },
-    "nutrition": {
-      "calories": "Calorías",
-      "protein": "Proteína",
-      "carbs": "Carbohidratos",
-      "fat": "Grasas",
-      "fiber": "Fibra"
-    },
-    "ingredients": "Ingredientes",
-    "instructions": "Preparación",
-    "cookingTime": "Tiempo de cocción",
-    "difficulty": "Dificultad",
-    "servings": "Porciones",
-    "location": {
-      "address": "Dirección",
-      "phone": "Teléfono",
-      "hours": "Horario",
-      "getDirections": "Cómo llegar"
-    },
-    "tips": {
-      "title": "Tips del chef",
-      "substitutions": "Sustituciones posibles"
-    }
-  },
-  "feedback": {
-    "title": "¿Cómo estuvo?",
-    "rateExperience": "Califica tu experiencia",
-    "rating": {
-      "excellent": "Excelente",
-      "good": "Bueno",
-      "okay": "Regular",
-      "bad": "Malo",
-      "terrible": "Terrible"
-    },
-    "comment": "¿Algún detalle extra? (opcional)",
-    "submit": "Enviar feedback",
-    "thanks": "¡Gracias por tu feedback!",
-    "error": "Error al enviar feedback"
-  },
-  "tutorial": {
-    "welcome": "¡Bienvenido a Bocado!",
-    "skip": "Saltar tutorial",
-    "next": "Siguiente",
-    "finish": "Comenzar",
-    "steps": {
-      "home": {
-        "title": "Tu asistente personal",
-        "description": "Bocado te ayuda a decidir qué comer según tus preferencias y objetivos"
-      },
-      "pantry": {
-        "title": "Organiza tu despensa",
-        "description": "Registra lo que tienes en casa para recibir mejores recomendaciones"
-      },
-      "recommendations": {
-        "title": "Recomendaciones inteligentes",
-        "description": "Recibe sugerencias personalizadas de recetas o restaurantes"
-      },
-      "plan": {
-        "title": "Planifica tu semana",
-        "description": "Crea planes semanales y nunca te quedes sin ideas"
-      },
-      "profile": {
-        "title": "Personaliza tu experiencia",
-        "description": "Ajusta tus preferencias para recomendaciones más precisas"
-      }
     }
   },
   "pwa": {
@@ -448,11 +282,78 @@
       "notNow": "Ahora no"
     },
     "settings": {
-      "title": "Configuración de notificaciones",
+      "title": "Recordatorios",
+      "subtitle": "Personaliza tus notificaciones",
       "mealReminders": "Recordatorios de comidas",
       "weeklyPlan": "Plan semanal",
       "newRecipes": "Nuevas recetas",
-      "promotions": "Promociones"
+      "promotions": "Promociones",
+      "notAvailable": "Notificaciones no disponibles",
+      "notSupportedMessage": "Tu navegador no soporta notificaciones. Prueba con Chrome o Edge en Android/PC.",
+      "understood": "Entendido",
+      "activateReminders": "Activa tus recordatorios",
+      "activateDescription": "Te enviaremos sugerencias de comidas en tus horarios preferidos y recordatorios inteligentes sobre tu despensa.",
+      "requesting": "Solicitando...",
+      "allowNotifications": "✓ Permitir notificaciones",
+      "notificationsActive": "Notificaciones activas",
+      "configuredReminders": "Recibirás {count} recordatorios configurados",
+      "sent": "✓ Enviada",
+      "test": "Probar",
+      "tabMeals": "🍽️ Comidas",
+      "tabSmart": "✨ Inteligentes",
+      "mealSuggestionsDesc": "Recibe sugerencias de comidas a tus horarios preferidos",
+      "smartRemindersDesc": "Recordatorios que se activan según tu actividad en la app",
+      "deactivate": "Desactivar recordatorio",
+      "activate": "Activar recordatorio",
+      "pantryEmpty": "🥑 Despensa vacía",
+      "pantryUpdated": "✅ Despensa actualizada",
+      "pendingRatings": "⭐ {count} por calificar",
+      "allRated": "✅ Todo calificado",
+      "inactiveUser": "😴 Inactivo {days} días",
+      "activeUser": "✅ Usuario activo",
+      "howItWorks": "💡 ¿Cómo funcionan?",
+      "smartConditionsDesc": "Estos recordatorios solo aparecen cuando se cumplen ciertas condiciones:",
+      "pantryCondition": "Despensa:",
+      "pantryConditionDesc": "Si no actualizas en 3+ días",
+      "ratingsCondition": "Calificaciones:",
+      "ratingsConditionDesc": "Si tienes recetas sin calificar",
+      "inactivityCondition": "Inactividad:",
+      "inactivityConditionDesc": "Si no usas la app en 3+ días",
+      "footerNote": "Las notificaciones funcionan incluso cuando la app está cerrada. Asegúrate de no tener el modo \"No molestar\" activado en tu dispositivo.",
+      "appName": "Bocado",
+      "breakfast": {
+        "title": "🌅 Buenos días",
+        "body": "¿Ya pensaste qué desayunar hoy? Descubre opciones nutritivas",
+        "titleSimple": "🌅 Buen día",
+        "bodySimple": "¿Qué te parece un desayuno nutritivo para empezar?"
+      },
+      "lunch": {
+        "title": "🍽️ Hora de comer",
+        "body": "Te sugerimos recetas deliciosas basadas en tu despensa",
+        "bodySimple": "Descubre recetas deliciosas para tu almuerzo"
+      },
+      "dinner": {
+        "title": "🌙 Cena saludable",
+        "body": "Termina el día con una cena ligera y nutritiva",
+        "titleSimple": "🌙 Cena ligera",
+        "bodySimple": "Te sugerimos opciones saludables para cenar"
+      },
+      "pantryUpdate": {
+        "title": "🥑 Actualiza tu despensa",
+        "body": "¿Tienes nuevos ingredientes? Actualiza \"Mi Cocina\" para mejores recomendaciones"
+      },
+      "rateRecipes": {
+        "title": "⭐ ¿Qué te pareció?",
+        "body": "Califica las recetas y restaurantes que probaste para mejorar tus recomendaciones"
+      },
+      "comeBack": {
+        "title": "🥗 Te extrañamos",
+        "body": "Descubre nuevas recetas perfectas para ti. ¡Abre Bocado!"
+      },
+      "testNotification": {
+        "title": "🧪 Notificación de prueba",
+        "body": "¡Las notificaciones están funcionando correctamente!"
+      }
     },
     "types": {
       "mealReady": "¡Es hora de {meal}!",
@@ -499,5 +400,681 @@
       "emailUpdated": "¡Correo actualizado! Verifica tu email.",
       "fileDownloaded": "¡Archivo descargado!"
     }
+  },
+  "mainApp": {
+    "loading": "Sincronizando Bocado...",
+    "sessionInvalid": "Sesión no válida. Redirigiendo...",
+    "reload": "Recargar",
+    "sync": {
+      "syncing": "Sincronizando...",
+      "success": "Sincronizado",
+      "failed": "Error al sincronizar"
+    },
+    "errors": {
+      "offline": "Sin conexión a internet",
+      "sessionExpired": "Sesión expirada. Vuelve a iniciar sesión.",
+      "unauthorized": "No tienes permiso para esta acción"
+    }
+  },
+  "recommendation": {
+    "welcome": "¡Hola, {userName}! 👋",
+    "subtitle": "¿Dónde y qué quieres comer hoy?",
+    "homeButton": "En casa",
+    "outButton": "Fuera",
+    "notificationBanner": {
+      "title": "🔔 No te pierdas tus comidas",
+      "description": "Recibe recordatorios para desayuno, comida y cena.",
+      "activate": "Activar",
+      "later": "Después"
+    },
+    "useIngredients": "Usa tus\ningredientes",
+    "findPlace": "Encuéntrame\nun lugar",
+    "whatToCook": "¿Qué vas a preparar?",
+    "cookingTime": "⏱️ Tiempo de cocina",
+    "onlyMyIngredients": "Solo ingredientes en mi cocina",
+    "onlyMyIngredientsHelp": "✓ Usaremos solo lo que tienes",
+    "onlyMyIngredientsHelpOff": "Si no lo activas, recomendaremos también ingredientes a comprar",
+    "whatCraving": "¿Qué se te antoja?",
+    "budget": "Presupuesto ({currency})",
+    "locationActive": "📍 Ubicación activa",
+    "locationDenied": "Ubicación denegada",
+    "gettingLocation": "Obteniendo ubicación...",
+    "useCurrentLocation": "Usar ubicación actual",
+    "activateLocation": "Activar",
+    "searchingIn": "Buscando restaurantes en...",
+    "yourLocation": "tu ubicación",
+    "yourCity": "tu ciudad",
+    "noLocationSearching": "Sin ubicación: buscaré en...",
+    "generating": "Cocinando...",
+    "generateRecommendation": "Generar recomendación",
+    "chooseCravingTip": "Elige un tipo de comida para continuar",
+    "chooseCravingAndBudgetTip": "Elige qué se te antoja y presupuesto"
+  },
+  "mealCard": {
+    "actions": {
+      "save": "Guardar",
+      "saved": "Guardado",
+      "share": "Compartir",
+      "report": "Reportar"
+    },
+    "nutrition": {
+      "calories": "Calorías",
+      "protein": "Proteína",
+      "carbs": "Carbohidratos",
+      "fat": "Grasas",
+      "fiber": "Fibra"
+    },
+    "cookingTime": "Tiempo de cocción",
+    "difficulty": "Dificultad",
+    "location": {
+      "address": "Dirección",
+      "phone": "Teléfono",
+      "hours": "Horario",
+      "getDirections": "Cómo llegar"
+    },
+    "tips": {
+      "title": "Tips del chef",
+      "substitutions": "Sustituciones posibles"
+    },
+    "viewOnMaps": "Ver ubicación en Google Maps",
+    "approximateLocation": "⚠️ Ubicación aproximada (guardado antes de la actualización)",
+    "searchMaps": "🔍 Buscar en Maps",
+    "copy": "📋 Copiar",
+    "copied": "✓ Copiado",
+    "locationTip": "Tip: Guarda el restaurante nuevamente desde \"Fuera\" para obtener la ubicación exacta",
+    "suggestedDish": "🍽️ Plato sugerido",
+    "whyGood": "✨ Por qué es bueno",
+    "healthyHack": "💡 Hack saludable",
+    "noDetailedInfo": "Información detallada no disponible para este lugar guardado anteriormente",
+    "usesYourIngredients": "✨ Usa ingredientes que ya tienes",
+    "nutritionalInfo": "📊 Información nutricional",
+    "proteins": "Proteínas",
+    "carbs": "Carbohidratos",
+    "fats": "Grasas",
+    "saved": "Guardado ❤️",
+    "saveForLater": "Guardar para después",
+    "servings": "({count} pers.)",
+    "ingredients": "Ingredientes",
+    "preparation": "Preparación",
+    "wentToPlace": "📍 Fui al lugar",
+    "cooked": "🍳 La preparé"
+  },
+  "plan": {
+    "title": "Tu plan semanal",
+    "breakfast": "Desayuno",
+    "lunch": "Almuerzo",
+    "dinner": "Cena",
+    "snack": "Merienda",
+    "startNewPlan": "Crear nuevo plan",
+    "loading": "Cargando tu plan...",
+    "empty": "No tienes un plan activo",
+    "createFirst": "Crea tu primer plan personalizado",
+    "dayNames": {
+      "monday": "Lunes",
+      "tuesday": "Martes",
+      "wednesday": "Miércoles",
+      "thursday": "Jueves",
+      "friday": "Viernes",
+      "saturday": "Sábado",
+      "sunday": "Domingo"
+    },
+    "mealTypes": {
+      "breakfast": "Desayuno",
+      "lunch": "Comida",
+      "dinner": "Cena",
+      "snack": "Snack"
+    },
+    "options": {
+      "regenerate": "Regenerar este día",
+      "swap": "Cambiar esta comida",
+      "markAsDone": "Marcar como hecha"
+    },
+    "errors": {
+      "loadFailed": "Error al cargar el plan",
+      "generateFailed": "Error al generar el plan",
+      "saveFailed": "Error al guardar cambios"
+    },
+    "loadingMessages": {
+      "chefs": "🧑‍🍳 Contactando a nuestros chefs...",
+      "places": "📍 Buscando los mejores lugares cercanos...",
+      "ingredients": "🥗 Revisando tu despensa...",
+      "nutrition": "📊 Calculando valores nutricionales...",
+      "magic": "✨ Añadiendo un toque de magia...",
+      "final": "🎉 ¡Casi listo!"
+    },
+    "preparingTable": "Preparando tu mesa... 🧑‍🍳",
+    "errorTitle": "Ocurrió un problema",
+    "errorMessage": "No se pudo cargar el plan",
+    "tryAgain": "Intentar de nuevo",
+    "ready": "¡Listo! 🥗",
+    "backToHome": "Volver al inicio"
+  },
+  "saved": {
+    "title": "Mis Lugares",
+    "count": "{count} lugar guardado",
+    "countPlural": "{count} lugares guardados",
+    "emptyState": "Aún no has guardado lugares",
+    "emptyStateSubtitle": "Dale ❤️ a los restaurantes para verlos aquí",
+    "loading": "Cargando...",
+    "loadMore": "Cargar más lugares",
+    "noMore": "No hay más lugares guardados",
+    "deleteTitle": "¿Eliminar lugar?",
+    "cancel": "Cancelar",
+    "delete": "Eliminar"
+  },
+  "registrationFlow": {
+    "verifyEmailTitle": "¡Verifica tu correo!",
+    "sentTo": "Enviado a",
+    "alreadyVerified": "Ya verifiqué mi correo",
+    "previous": "Anterior",
+    "creating": "...",
+    "createAccount": "Crear cuenta",
+    "next": "Siguiente",
+    "backToHome": "Volver al inicio"
+  },
+  "step1": {
+    "firstName": "Nombre *",
+    "firstNamePlaceholder": "Juan",
+    "lastName": "Apellido *",
+    "lastNamePlaceholder": "Pérez",
+    "gender": "Género *",
+    "genderFemale": "Mujer",
+    "genderMale": "Hombre",
+    "genderOther": "Otro",
+    "age": "Edad *",
+    "agePlaceholder": "25",
+    "bodyData": "Datos corporales (opcional)",
+    "weight": "Peso (kg)",
+    "weightPlaceholder": "70",
+    "weightUnit": "kg",
+    "height": "Estatura (cm)",
+    "heightPlaceholder": "175",
+    "heightUnit": "cm",
+    "country": "País *",
+    "selectCountry": "Selecciona...",
+    "city": "Ciudad *",
+    "cityPlaceholder": "Tu ciudad...",
+    "cityDisabled": "Elige país primero",
+    "email": "Email *",
+    "password": "Contraseña *",
+    "passwordPlaceholder": "8+ caracteres",
+    "confirmPassword": "Confirmar *",
+    "confirmPasswordPlaceholder": "Repite"
+  },
+  "step2": {
+    "diseases": "¿Enfermedades crónicas? (opcional)",
+    "allergies": "¿Alergias o intolerancias? (opcional)",
+    "specify": "Especifica:",
+    "specifyPlaceholder": "Mariscos, frutos secos...",
+    "goals": "Objetivo nutricional *",
+    "goalsHelp": "Puedes seleccionar varios (excepto subir/bajar peso juntos)"
+  },
+  "step3": {
+    "activityLevel": "Actividad física",
+    "activityPlaceholder": "Yoga, Crossfit...",
+    "frequency": "Frecuencia",
+    "dislikedFoods": "Ingredientes que NO te gustan",
+    "dislikedFoodsHelp": "Evitaremos estos alimentos en tus planes",
+    "searchFood": "Buscar alimento...",
+    "addedManually": "Añadidos manualmente:",
+    "ingredientPlaceholder": "Ingrediente...",
+    "add": "Añadir",
+    "addAnother": "+ Añadir otro ingrediente",
+    "close": "Cerrar"
+  },
+  "permissions": {
+    "title": "Protegemos tu privacidad",
+    "description": "Para ofrecerte la mejor experiencia, necesitamos tu permiso para:",
+    "subtitle": "Para darte recomendaciones personalizadas, necesitamos usar algunos datos tuyos.",
+    "notifications": "Notificaciones",
+    "notificationsDesc": "Para recordarte tus comidas planificadas",
+    "location": "Ubicación",
+    "locationDesc": "Para recomendarte restaurantes cercanos",
+    "accept": "Aceptar permisos",
+    "skip": "Omitir por ahora",
+    "whatWeUse": "¿Qué datos usamos?",
+    "dataTypes": {
+      "profile": {
+        "title": "Perfil nutricional",
+        "description": "Edad, peso, altura, objetivos"
+      },
+      "preferences": {
+        "title": "Preferencias",
+        "description": "Alergias, alimentos que no te gustan"
+      },
+      "location": {
+        "title": "Ubicación",
+        "description": "Solo tu país y ciudad para precios locales"
+      }
+    },
+    "control": "Tienes el control total",
+    "benefits": {
+      "noSell": "Tus datos nunca se venden a terceros",
+      "download": "Puedes ver y descargar tus datos cuando quieras",
+      "delete": "Puedes eliminar tu cuenta y datos en cualquier momento"
+    },
+    "privacy": {
+      "title": "Tu privacidad es importante",
+      "gdprCompliance": "Cumplimos con GDPR",
+      "dataControl": "Tú controlas tus datos",
+      "noSell": "Nunca vendemos tu información",
+      "secure": "Encriptación de extremo a extremo"
+    },
+    "showLess": "Ver menos",
+    "showMore": "Ver política de privacidad completa",
+    "details": {
+      "responsible": "Responsable: Bocado AI",
+      "purpose": "Finalidad: Personalizar recomendaciones nutricionales basadas en tus características.",
+      "legitimation": "Legitimación: Tu consentimiento explícito.",
+      "storage": "Conservación: Hasta que elimines tu cuenta.",
+      "rights": "Derechos: Acceder, rectificar, eliminar tus datos."
+    },
+    "consent": "Entiendo y acepto que Bocado use mis datos para personalizar mis recomendaciones.",
+    "continue": "Continuar",
+    "decline": "No acepto, volver al inicio",
+    "footer": "Tus datos están encriptados y protegidos"
+  },
+  "tutorial": {
+    "welcome": "¡Bienvenido{userName}!",
+    "subtitle": "Tu asistente inteligente de nutrición. Te mostramos lo que necesitas saber.",
+    "skip": "Saltar tutorial",
+    "next": "Siguiente",
+    "finish": "Comenzar",
+    "start": "¡Comenzar!",
+    "steps": {
+      "home": {
+        "title": "Tu asistente personal",
+        "description": "Bocado te ayuda a decidir qué comer según tus preferencias y objetivos"
+      },
+      "pantry": {
+        "title": "Organiza tu despensa",
+        "description": "Registra lo que tienes en casa para recibir mejores recomendaciones"
+      },
+      "recommendations": {
+        "title": "Recomendaciones inteligentes",
+        "description": "Recibe sugerencias personalizadas de recetas o restaurantes"
+      },
+      "plan": {
+        "title": "Planifica tu semana",
+        "description": "Crea planes semanales y nunca te quedes sin ideas"
+      },
+      "profile": {
+        "title": "Personaliza tu experiencia",
+        "description": "Ajusta tus preferencias para recomendaciones más precisas"
+      }
+    },
+    "slides": {
+      "rateLimit": {
+        "title": "⏱️ Rate Limiting",
+        "description": "Puedes generar 5 recomendaciones cada 10 minutos. Cuando se acaben, debes esperar."
+      },
+      "budget": {
+        "title": "💱 Presupuesto Dinámico",
+        "description": "Los rangos de presupuesto cambian según tu país. Mira siempre las opciones disponibles."
+      },
+      "favorites": {
+        "title": "❤️ Guardar Favoritos",
+        "description": "Toca el corazón en cualquier receta o restaurante para guardarlo y usarlo después."
+      }
+    }
+  },
+  "feedback": {
+    "title": "¿Cómo estuvo?",
+    "titleHome": "¿Qué tal quedó?",
+    "titleAway": "¿Qué tal la comida?",
+    "subtitle": "Califica tu experiencia con",
+    "rateExperience": "Califica tu experiencia",
+    "rating": {
+      "excellent": "Excelente",
+      "good": "Bueno",
+      "okay": "Regular",
+      "bad": "Malo",
+      "terrible": "Terrible"
+    },
+    "comment": "¿Algún detalle extra? (opcional)",
+    "commentsLabel": "¿Algún detalle extra? (opcional)",
+    "submit": "Enviar feedback",
+    "skip": "Omitir",
+    "saving": "Guardando...",
+    "confirm": "Confirmar",
+    "thanks": "¡Gracias por tu feedback!",
+    "successTitle": "¡Gracias!",
+    "successMessage": "Bocado aprenderá de esto para tus próximas sugerencias.",
+    "error": "Error al enviar feedback"
+  },
+  "network": {
+    "offline": "Sin conexión a internet",
+    "online": "Conexión restaurada"
+  },
+  "portions": {
+    "title": "¿Para cuántos?",
+    "baseRecipe": "Receta base: {baseServings}",
+    "moreOptions": "Más opciones:"
+  },
+  "pantry": {
+    "title": "Mi Cocina",
+    "subtitle": "Control de ingredientes",
+    "addItem": "Agregar ingrediente",
+    "addItemInCategory": "Agregar en {category}",
+    "addIngredient": "Agregar ingrediente...",
+    "addInCategory": "Agregar en {category}...",
+    "empty": "Está vacío",
+    "emptyCategory": "Esta categoría está vacía",
+    "searchPlaceholder": "Buscar en tu despensa...",
+    "urgentBadge": "🚨",
+    "urgentTitle": "Por caducar",
+    "saving": "Guardando...",
+    "states": "Estados",
+    "fresh": "Fresco",
+    "expiringSoon": "Por caducar",
+    "urgent": "Urgente",
+    "tapToChange": "👆 Toca un ingrediente para cambiar su estado",
+    "allCategories": "Todos",
+    "suggestions": "Sugerencias",
+    "expiry": "Caducidad",
+    "urgentCount": "{count} ítems",
+    "zones": {
+      "fridge": "Refrigerador",
+      "freezer": "Congelador",
+      "pantry": "Alacena"
+    },
+    "categories": {
+      "vegetables": "Verduras",
+      "fruits": "Frutas",
+      "proteins": "Proteínas",
+      "dairy": "Lácteos",
+      "grains": "Granos",
+      "condiments": "Condimentos",
+      "other": "Otros"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "moveToZone": "Mover a otra zona"
+    },
+    "confirmDelete": "¿Eliminar {item} de tu despensa?"
+  },
+  "savedRecipes": {
+    "title": "Mis Recetas",
+    "subtitle": "Tus platos favoritos guardados",
+    "empty": "No tienes recetas guardadas",
+    "emptyDesc": "Guarda tus recetas favoritas aquí",
+    "emptyState": "Aún no has guardado recetas",
+    "emptyStateSubtitle": "Dale ❤️ a las recetas para verlas aquí",
+    "syncing": "Sincronizando...",
+    "loading": "Cargando...",
+    "loadMore": "Cargar más recetas",
+    "noMore": "No hay más recetas guardadas",
+    "viewRecipe": "Ver receta",
+    "unsave": "Quitar de guardados",
+    "confirmUnsave": "¿Quitar {recipe} de guardados?",
+    "searchPlaceholder": "Buscar en tus recetas...",
+    "deleteTitle": "¿Eliminar receta?",
+    "deleteMessage": "Se eliminará <span class='font-bold'>\"{title}\"</span>",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "filters": {
+      "all": "Todas",
+      "breakfast": "Desayuno",
+      "lunch": "Comida",
+      "dinner": "Cena",
+      "dessert": "Postre"
+    }
+  },
+  "countries": {
+    "mexico": "México",
+    "usa": "Estados Unidos",
+    "canada": "Canadá",
+    "guatemala": "Guatemala",
+    "honduras": "Honduras",
+    "elsalvador": "El Salvador",
+    "nicaragua": "Nicaragua",
+    "costarica": "Costa Rica",
+    "panama": "Panamá",
+    "colombia": "Colombia",
+    "venezuela": "Venezuela",
+    "ecuador": "Ecuador",
+    "peru": "Perú",
+    "bolivia": "Bolivia",
+    "chile": "Chile",
+    "argentina": "Argentina",
+    "uruguay": "Uruguay",
+    "paraguay": "Paraguay",
+    "brazil": "Brasil",
+    "spain": "España",
+    "portugal": "Portugal",
+    "france": "Francia",
+    "italy": "Italia",
+    "germany": "Alemania",
+    "uk": "Reino Unido",
+    "netherlands": "Países Bajos",
+    "belgium": "Bélgica",
+    "switzerland": "Suiza",
+    "austria": "Austria",
+    "poland": "Polonia",
+    "czechrepublic": "República Checa",
+    "hungary": "Hungría",
+    "romania": "Rumania",
+    "greece": "Grecia",
+    "turkey": "Turquía",
+    "russia": "Rusia",
+    "ukraine": "Ucrania",
+    "japan": "Japón",
+    "china": "China",
+    "southkorea": "Corea del Sur",
+    "taiwan": "Taiwán",
+    "thailand": "Tailandia",
+    "vietnam": "Vietnam",
+    "philippines": "Filipinas",
+    "malaysia": "Malasia",
+    "singapore": "Singapur",
+    "indonesia": "Indonesia",
+    "india": "India",
+    "pakistan": "Pakistán",
+    "bangladesh": "Bangladesh",
+    "saudiarabia": "Arabia Saudita",
+    "uae": "Emiratos Árabes Unidos",
+    "israel": "Israel",
+    "egypt": "Egipto",
+    "southafrica": "Sudáfrica",
+    "nigeria": "Nigeria",
+    "kenya": "Kenia",
+    "morocco": "Marruecos",
+    "australia": "Australia",
+    "newzealand": "Nueva Zelanda",
+    "other": "Otro"
+  },
+  "meals": {
+    "desayuno": "Desayuno",
+    "comida": "Comida",
+    "cena": "Cena",
+    "snack": "Snack"
+  },
+  "cravings": {
+    "italiana": "Italiana / Pizza",
+    "japonesa": "Japonesa / Sushi",
+    "saludable": "Saludable o fit",
+    "asiatica": "Asiática / China",
+    "mexicana": "Mexicana",
+    "americana": "Americana / Fast food",
+    "mediterranea": "Mediterránea",
+    "otros": "Otros"
+  },
+  "pantryZones": {
+    "despensa": "Despensa",
+    "nevera": "Nevera",
+    "congelador": "Congelador"
+  },
+  "pantryCategories": {
+    "todos": "Todos",
+    "especias": "Especias",
+    "latas": "Latas",
+    "granos": "Granos",
+    "bebidas": "Bebidas",
+    "snacks": "Snacks",
+    "verduras": "Verduras",
+    "frutas": "Frutas",
+    "proteinas": "Proteínas",
+    "lacteos": "Lácteos"
+  },
+  "progressBar": {
+    "step": "Paso {current} de {total}"
+  },
+  "gender": {
+    "male": "Hombre",
+    "female": "Mujer"
+  },
+  "budget": {
+    "low": "Económico",
+    "medium": "Medio",
+    "high": "Premium"
+  },
+  "cookingAffinity": {
+    "nunca": "Nunca",
+    "aveces": "A veces",
+    "seguido": "Seguido",
+    "siempre": "Siempre"
+  },
+  "goals": {
+    "loseWeight": "Bajar de peso",
+    "gainWeight": "Subir de peso",
+    "buildMuscle": "Generar músculo",
+    "healthWellness": "Salud y bienestar"
+  },
+  "activityLevels": {
+    "sedentary": "Sedentario",
+    "lightlyActive": "Activo ligero",
+    "strength": "Fuerza",
+    "cardio": "Cardio",
+    "athletic": "Deportivo",
+    "athlete": "Atleta",
+    "other": "Otro"
+  },
+  "activityFrequencies": {
+    "daily": "Diario",
+    "frequent": "3-5 veces por semana",
+    "occasional": "1-2 veces",
+    "rarely": "Rara vez"
+  },
+  "diseases": {
+    "hypertension": "Hipertensión",
+    "diabetes": "Diabetes",
+    "hypothyroidism": "Hipotiroidismo",
+    "hyperthyroidism": "Hipertiroidismo",
+    "cholesterol": "Colesterol",
+    "ibs": "Intestino irritable"
+  },
+  "allergies": {
+    "lactoseIntolerant": "Intolerante a la lactosa",
+    "nutAllergy": "Alergia a frutos secos",
+    "celiac": "Celíaco",
+    "vegan": "Vegano",
+    "vegetarian": "Vegetariano",
+    "other": "Otro"
+  },
+  "rateLimit": {
+    "wait": "Espera {time}",
+    "available": "{count} recomendación disponible",
+    "availablePlural": "{count} recomendaciones disponibles",
+    "sessionInfo": "{count} recomendaciones en esta sesión",
+    "warning": "⚠️ {count} recomendación disponible",
+    "warningPlural": "⚠️ {count} recomendaciones disponibles"
+  },
+  "now": "Ahora",
+  "ingredients": {
+    "aceite": "Aceite",
+    "aceitunas": "Aceitunas",
+    "ajo": "Ajo",
+    "arroz": "Arroz",
+    "atun": "Atún",
+    "agua": "Agua",
+    "aguacate": "Aguacate",
+    "avena": "Avena",
+    "azucar": "Azúcar",
+    "brocoli": "Brócoli",
+    "cafe": "Café",
+    "calabacin": "Calabacín",
+    "camote": "Camote",
+    "carne": "Carne",
+    "carneMolida": "Carne Molida",
+    "cebolla": "Cebolla",
+    "cerveza": "Cerveza",
+    "chicharos": "Chícharos",
+    "chocolate": "Chocolate",
+    "comino": "Comino",
+    "crema": "Crema",
+    "espinaca": "Espinaca",
+    "fresas": "Fresas",
+    "frijoles": "Frijoles",
+    "frutosRojos": "Frutos Rojos",
+    "galletas": "Galletas",
+    "harina": "Harina",
+    "helado": "Helado",
+    "hielos": "Hielos",
+    "huevos": "Huevos",
+    "hummus": "Hummus",
+    "jamon": "Jamón",
+    "jugo": "Jugo",
+    "leche": "Leche",
+    "lechuga": "Lechuga",
+    "lentejas": "Lentejas",
+    "limon": "Limón",
+    "maiz": "Maíz",
+    "mango": "Mango",
+    "mangoCong": "Mango Cong.",
+    "mantequilla": "Mantequilla",
+    "manzana": "Manzana",
+    "mariscos": "Mariscos",
+    "naranja": "Naranja",
+    "nueces": "Nueces",
+    "oregano": "Orégano",
+    "pan": "Pan",
+    "panCong": "Pan Cong.",
+    "papa": "Papa",
+    "papasCong": "Papas Cong.",
+    "papasFritas": "Papas Fritas",
+    "pasta": "Pasta",
+    "pepino": "Pepino",
+    "pescado": "Pescado",
+    "pimienta": "Pimienta",
+    "pimiento": "Pimiento",
+    "platano": "Plátano",
+    "pollo": "Pollo",
+    "polloCong": "Pollo Cong.",
+    "queso": "Queso",
+    "refresco": "Refresco",
+    "sal": "Sal",
+    "salchichas": "Salchichas",
+    "sandia": "Sandía",
+    "sardinas": "Sardinas",
+    "te": "Té",
+    "tomate": "Tomate",
+    "tomateFrito": "Tomate Frito",
+    "uvas": "Uvas",
+    "verdurasCong": "Verduras Cong.",
+    "vinagre": "Vinagre",
+    "vino": "Vino",
+    "yogur": "Yogur",
+    "zanahoria": "Zanahoria"
+  },
+  "errorBoundary": {
+    "title": "¡Algo se nos quemó en la cocina!",
+    "message": "Hubo un error inesperado al cargar esta parte.",
+    "reload": "Recargar Bocado"
+  },
+  "sentryErrorBoundary": {
+    "title": "Algo salió mal",
+    "message": "Lo sentimos, ha ocurrido un error inesperado. Intenta recargar la página.",
+    "reload": "Recargar página"
+  },
+  "pwaBanner": {
+    "updateAvailable": "Nueva versión disponible",
+    "update": "Actualizar",
+    "install": "Instalar",
+    "installTitle": "Instalar Bocado",
+    "installManualIOS": "En iPhone/iPad: toca Compartir y luego \"Agregar a pantalla de inicio\"",
+    "installQuickAccess": "Acceso rápido desde tu pantalla de inicio",
+    "understood": "Entendido",
+    "offlineMessage": "Sin conexión. Algunas funciones pueden no estar disponibles."
   }
 }

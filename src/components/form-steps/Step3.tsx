@@ -4,6 +4,7 @@ import { ACTIVITY_LEVELS, ACTIVITY_FREQUENCIES, FOOD_CATEGORIES } from '../../co
 import { FormData } from '../../types';
 import { MeatIcon, FishIcon, DairyIcon, VegetableIcon, FruitIcon, GrainsIcon, NutsIcon, SpicesIcon } from '../icons';
 import { trackEvent } from '../../firebaseConfig'; // ✅ Importado trackEvent
+import { useTranslation } from '../../contexts/I18nContext';
 
 const categoryIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
   'Carnes y Aves': MeatIcon,
@@ -17,6 +18,7 @@ const categoryIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
 };
 
 const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
+  const { t } = useTranslation();
   const [modalCategory, setModalCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [customFoodInput, setCustomFoodInput] = useState('');
@@ -91,7 +93,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       {/* Actividad */}
       <div>
         <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
-          Actividad física
+          {t('step3.activityLevel')}
         </label>
         <div className="flex flex-wrap gap-2">
           {ACTIVITY_LEVELS.map(level => (
@@ -117,7 +119,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
               value={data.otherActivityLevel || ''}
               onChange={(e) => updateData('otherActivityLevel', e.target.value)}
               onBlur={() => trackEvent('registration_custom_activity_input')} // ✅ Analítica
-              placeholder="Yoga, Crossfit..."
+              placeholder={t('step3.activityPlaceholder')}
               className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
                 errors.otherActivityLevel ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
               }`}
@@ -131,7 +133,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
         <label className={`block text-2xs font-bold mb-2 uppercase tracking-wider transition-colors ${
           data.activityLevel === '🪑 Sedentario' ? 'text-bocado-gray' : 'text-bocado-dark-gray'
         }`}>
-          Frecuencia
+          {t('step3.frequency')}
         </label>
         <div className="flex flex-wrap gap-2">
           {ACTIVITY_FREQUENCIES.map(freq => (
@@ -155,15 +157,15 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       {/* Ingredientes que no le gustan */}
       <div>
         <label className="block text-2xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-1">
-          Ingredientes que NO te gustan
+          {t('step3.dislikedFoods')}
         </label>
-        <p className="text-2xs text-bocado-gray mb-3">Evitaremos estos alimentos en tus planes</p>
+        <p className="text-2xs text-bocado-gray mb-3">{t('step3.dislikedFoodsHelp')}</p>
         
         {/* Buscador */}
         <div className="relative mb-3">
           <input
             type="text"
-            placeholder="Buscar alimento..."
+            placeholder={t('step3.searchFood')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={() => trackEvent('registration_dislike_search_focus')} // ✅ Analítica
@@ -203,7 +205,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
         <div className="mt-3 space-y-2">
           {customDislikes.length > 0 && (
             <div className="p-3 bg-bocado-background rounded-xl">
-              <p className="text-2xs font-bold text-bocado-dark-gray mb-2 uppercase">Añadidos manualmente:</p>
+              <p className="text-2xs font-bold text-bocado-dark-gray mb-2 uppercase">{t('step3.addedManually')}</p>
               <div className="flex flex-wrap gap-2">
                 {customDislikes.map(food => (
                   <button 
@@ -225,7 +227,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
                 type="text"
                 value={customFoodInput}
                 onChange={(e) => setCustomFoodInput(e.target.value)}
-                placeholder="Ingrediente..."
+                placeholder={t('step3.ingredientPlaceholder')}
                 className="flex-1 px-3 py-2 rounded-xl border-2 border-bocado-border text-sm focus:outline-none focus:border-bocado-green"
               />
               <button 
@@ -233,7 +235,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
                 onClick={handleAddCustomFood} 
                 className="px-4 py-2 bg-bocado-green text-white font-bold text-sm rounded-xl hover:bg-bocado-dark-green active:scale-95 transition-all"
               >
-                Añadir
+                {t('step3.add')}
               </button>
             </div>
           ) : (
@@ -245,7 +247,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
               }} 
               className="text-xs text-bocado-green font-bold hover:text-bocado-dark-green transition-colors"
             >
-              + Añadir otro ingrediente
+              {t('step3.addAnother')}
             </button>
           )}
         </div>
@@ -280,7 +282,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
               onClick={() => setModalCategory(null)} 
               className="mt-4 w-full py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
             >
-              Cerrar
+              {t('step3.close')}
             </button>
           </div>
         </div>

@@ -54,6 +54,7 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
 
   const offlineStartTime = useRef<number | null>(null);
   const hasShownToast = useRef(false);
+  const hasInitialized = useRef(false);
 
   // Obtener información de conexión (Network Information API)
   const getConnectionInfo = useCallback(() => {
@@ -100,7 +101,7 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
 
     onOnline?.();
     offlineStartTime.current = null;
-  }, [onOnline, showReconnectionToast, minOfflineDuration, getConnectionInfo]);
+  }, [onOnline, showReconnectionToast, minOfflineDuration]);
 
   // Manejar evento offline
   const handleOffline = useCallback(() => {
@@ -141,12 +142,15 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
 
   // Efecto para escuchar cambios de conectividad
   useEffect(() => {
-    // Estado inicial
-    const connectionInfo = getConnectionInfo();
-    setState(prev => ({
-      ...prev,
-      ...connectionInfo,
-    }));
+    // Estado inicial - solo ejecutar una vez
+    if (!hasInitialized.current) {
+      const connectionInfo = getConnectionInfo();
+      setState(prev => ({
+        ...prev,
+        ...connectionInfo,
+      }));
+      hasInitialized.current = true;
+    }
 
     // Event listeners
     window.addEventListener('online', handleOnline);
@@ -175,7 +179,7 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [handleOnline, handleOffline, getConnectionInfo]);
+  }, [handleOnline, handleOffline]);
 
   // Sincronizar cuando la app vuelve a estar visible
   useEffect(() => {

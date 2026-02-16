@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { FormData } from '../../types';
 import { FormStepProps } from './FormStepProps';
+import { useTranslation } from '../../contexts/I18nContext';
 import { EMAIL_DOMAINS } from '../../constants';
 import { MaleIcon } from '../icons/MaleIcon';
 import { FemaleIcon } from '../icons/FemaleIcon';
@@ -142,6 +143,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
   cityOptions = [], isSearchingCity = false, onSearchCity, onClearCityOptions,
   onCountryChange
 }) => {
+  const { t } = useTranslation();
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const [localCityQuery, setLocalCityQuery] = useState(data.city || '');
@@ -229,7 +231,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       {/* Nombre y Apellido */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Nombre *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('step1.firstName')}</label>
           <input 
             type="text" 
             name="firstName"
@@ -237,7 +239,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             value={data.firstName} 
             onChange={handleNameChange} 
             onFocus={() => trackEvent('registration_input_focus', { field: 'firstName' })}
-            placeholder="Juan" 
+            placeholder={t('step1.firstNamePlaceholder')} 
             className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
               errors.firstName ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
             }`} 
@@ -245,7 +247,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           {errors.firstName && <p className="text-red-500 text-2xs mt-1">{errors.firstName}</p>}
         </div>
         <div>
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Apellido *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('step1.lastName')}</label>
           <input 
             type="text" 
             name="lastName"
@@ -253,7 +255,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             value={data.lastName} 
             onChange={handleNameChange} 
             onFocus={() => trackEvent('registration_input_focus', { field: 'lastName' })}
-            placeholder="Pérez" 
+            placeholder={t('step1.lastNamePlaceholder')} 
             className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
               errors.lastName ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
             }`} 
@@ -266,22 +268,22 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         {/* Género - Izquierda en desktop */}
         <div className="flex-1">
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">Género *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">{t('step1.gender')}</label>
           <div className="flex gap-2 max-w-[320px] mx-auto sm:mx-0">
             {[
-              { label: 'Mujer', testId: 'gender-female' },
-              { label: 'Hombre', testId: 'gender-male' },
-              { label: 'Otro', testId: 'gender-other' }
-            ].map(({ label, testId }) => (
+              { value: 'Mujer', label: t('step1.genderFemale'), testId: 'gender-female', icon: <FemaleIcon className="w-4 h-4"/> },
+              { value: 'Hombre', label: t('step1.genderMale'), testId: 'gender-male', icon: <MaleIcon className="w-4 h-4"/> },
+              { value: 'Otro', label: t('step1.genderOther'), testId: 'gender-other', icon: <OtherGenderIcon className="w-4 h-4"/> }
+            ].map(({ value, label, testId, icon }) => (
               <GenderButton 
-                key={label}
+                key={value}
                 label={label}
                 testId={testId}
-                icon={label === 'Mujer' ? <FemaleIcon className="w-4 h-4"/> : label === 'Hombre' ? <MaleIcon className="w-4 h-4"/> : <OtherGenderIcon className="w-4 h-4"/>}
-                isSelected={data.gender === label}
+                icon={icon}
+                isSelected={data.gender === value}
                 onClick={() => {
-                  trackEvent('registration_gender_select', { gender: label });
-                  updateData('gender', label);
+                  trackEvent('registration_gender_select', { gender: value });
+                  updateData('gender', value);
                 }}
               />
             ))}
@@ -291,14 +293,14 @@ const Step1: React.FC<ExtendedStep1Props> = ({
 
         {/* Edad - Derecha en desktop */}
         <div className="sm:w-28">
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider text-center sm:text-left">Edad *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider text-center sm:text-left">{t('step1.age')}</label>
           <input 
             type="text"
             inputMode="numeric"
             value={data.age} 
             onChange={handleAgeChange} 
             onFocus={() => trackEvent('registration_input_focus', { field: 'age' })}
-            placeholder="25" 
+            placeholder={t('step1.agePlaceholder')} 
             className={`w-full sm:w-24 px-3 py-2.5 rounded-xl border-2 text-sm text-center sm:text-left transition-all ${
               errors.age ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
             }`} 
@@ -309,10 +311,10 @@ const Step1: React.FC<ExtendedStep1Props> = ({
 
       {/* Datos corporales */}
       <div className="bg-bocado-background p-3 rounded-xl border border-bocado-border">
-        <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">Datos corporales (opcional)</p>
+        <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">{t('step1.bodyData')}</p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">Peso (kg)</label>
+            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">{t('step1.weight')}</label>
             <div className="relative">
               <Scale className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
@@ -320,25 +322,25 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 inputMode="decimal"
                 value={data.weight || ''} 
                 onChange={handleWeightChange} 
-                placeholder="70" 
+                placeholder={t('step1.weightPlaceholder')} 
                 className="w-full pl-8 pr-6 py-2 rounded-lg border border-bocado-border bg-white text-sm focus:outline-none focus:border-bocado-green"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-2xs text-bocado-gray font-medium">kg</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-2xs text-bocado-gray font-medium">{t('step1.weightUnit')}</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">Estatura (cm)</label>
+            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">{t('step1.height')}</label>
             <div className="relative">
               <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
                 type="text"
                 value={data.height || ''} 
                 onChange={handleHeightChange} 
-                placeholder="175" 
+                placeholder={t('step1.heightPlaceholder')} 
                 className="w-full pl-8 pr-6 py-2 rounded-lg border border-bocado-border bg-white text-sm focus:outline-none focus:border-bocado-green"
               />
-              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-2xs text-bocado-gray font-medium">cm</span>
+              <span className="absolute right-2 top-1/2 -translate-y-1/2 text-2xs text-bocado-gray font-medium">{t('step1.heightUnit')}</span>
             </div>
           </div>
         </div>
@@ -347,7 +349,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       {/* País y Ciudad */}
       <div className="space-y-3">
         <div>
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">País *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('step1.country')}</label>
           <div className="relative">
             <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
             <select 
@@ -357,7 +359,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 errors.country ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
               }`}
             >
-              <option value="">Selecciona...</option>
+              <option value="">{t('step1.selectCountry')}</option>
               {COUNTRIES_LIST.map(c => <option key={c.code} value={c.code}>{c.name}</option>)}
             </select>
           </div>
@@ -365,7 +367,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
         </div>
 
         <div className="relative">
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Ciudad *</label>
+          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('step1.city')}</label>
           <div className="relative">
             <input 
               type="text" 
@@ -373,7 +375,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               onChange={handleCitySearchChange}
               disabled={!data.country}
               onFocus={() => trackEvent('registration_city_input_focus')}
-              placeholder={data.country ? "Tu ciudad..." : "Elige país primero"}
+              placeholder={data.country ? t('step1.cityPlaceholder') : t('step1.cityDisabled')}
               className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
                 errors.city ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
               } ${!data.country ? 'bg-bocado-background' : 'bg-white'}`} 
@@ -406,7 +408,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       
       {/* Email */}
       <div className="relative">
-        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Email *</label>
+        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('step1.email')}</label>
         <input 
           type="email"
           name="email"
@@ -444,7 +446,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       {!hidePasswordFields && (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Contraseña *</label>
+            <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('step1.password')}</label>
             <div className="relative">
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input 
@@ -454,7 +456,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 value={data.password || ''} 
                 onChange={(e) => updateData('password', e.target.value)} 
                 onFocus={() => trackEvent('registration_input_focus', { field: 'password' })}
-                placeholder="8+ caracteres"
+                placeholder={t('step1.passwordPlaceholder')}
                 className={`w-full pl-9 pr-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
                   errors.password ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
                 }`} 
@@ -463,7 +465,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             {errors.password && <p className="text-red-500 text-2xs mt-1">{errors.password}</p>}
           </div>
           <div>
-            <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Confirmar *</label>
+            <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('step1.confirmPassword')}</label>
             <input 
               type="password" 
               name="confirmPassword"
@@ -471,7 +473,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               value={data.confirmPassword || ''} 
               onChange={(e) => updateData('confirmPassword', e.target.value)} 
               onFocus={() => trackEvent('registration_input_focus', { field: 'confirmPassword' })}
-              placeholder="Repite"
+              placeholder={t('step1.confirmPasswordPlaceholder')}
               className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
                 errors.confirmPassword ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
               }`} 

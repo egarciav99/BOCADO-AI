@@ -12,6 +12,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { sanitizeProfileData } from '../utils/profileSanitizer';
 import { UserProfile } from '../types';
 import { logger } from '../utils/logger';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -19,6 +20,7 @@ interface LoginScreenProps {
 }
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) => {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -38,7 +40,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
     setNeedsVerification(false);
 
     if (!email || !password) {
-      setError('Por favor, introduce tu correo y contraseña.');
+      setError(t('login.errors.missingFields'));
       return;
     }
 
@@ -81,7 +83,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
       } else {
         // ✅ ANALÍTICA: Login exitoso pero sin perfil en Firestore (error de datos)
         trackEvent('login_missing_profile', { userId: user.uid });
-        setError('Perfil incompleto. Por favor contacta soporte.');
+        setError(t('login.success.profileIncomplete'));
         auth.signOut();
       }
     } catch (err: any) {
@@ -94,11 +96,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
       });
 
       if (['auth/network-request-failed', 'auth/unavailable'].includes(err.code)) {
-        setError('Error de red. No pudimos conectar con el servidor.');
+        setError(t('login.errors.networkError'));
       } else if (['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-email'].includes(err.code)) {
-        setError('Correo electrónico o contraseña incorrectos.');
+        setError(t('login.errors.invalidCredentials'));
       } else {
-        setError('Hubo un problema al iniciar sesión. Por favor, inténtalo de nuevo.');
+        setError(t('login.errors.genericError'));
       }
     } finally {
       setIsLoading(false);
@@ -113,11 +115,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
       await sendEmailVerification(unverifiedUser);
       // ✅ ANALÍTICA: Reenvío de verificación
       trackEvent('login_resend_verification_success');
-      setSuccessMessage('Correo de verificación reenviado. Revisa tu bandeja de entrada.');
+      setSuccessMessage(t('login.success.emailResent'));
     } catch (err) {
       // ✅ ANALÍTICA: Error al reenviar
       trackEvent('login_resend_verification_error');
-      setError('No se pudo reenviar el correo. Inténtalo más tarde.');
+      setError(t('login.errors.resendFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -137,7 +139,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
     setSuccessMessage('');
 
     if (!email) {
-      setError('Por favor, introduce tu correo electrónico.');
+      setError(t('login.errors.emailRequired'));
       return;
     }
 
@@ -146,16 +148,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
       await sendPasswordResetEmail(auth, email);
       // ✅ ANALÍTICA: Solicitud de reset exitosa
       trackEvent('password_reset_requested', { success: true });
-      setSuccessMessage(`Se ha enviado un correo a ${email} con instrucciones.`);
+      setSuccessMessage(t('login.success.resetEmailSent', { email }));
     } catch (err: any) {
       logger.error("Error sending password reset email:", err.code);
       // ✅ ANALÍTICA: Error en solicitud de reset
       trackEvent('password_reset_requested', { success: false, error: err.code });
       
       if (err.code === 'auth/user-not-found') {
-        setError('No se encontró ningún usuario con este correo electrónico.');
+        setError(t('login.errors.userNotFound'));
       } else {
-        setError('Hubo un problema al enviar el correo. Por favor, inténtalo de nuevo.');
+        setError(t('login.errors.resetFailed'));
       }
     } finally {
       setIsLoading(false);
@@ -206,12 +208,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">Correo no verificado</h2>
+          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">{t('login.emailNotVerified')}</h2>
           <p className="text-base text-bocado-dark-gray mb-4">
-            Para continuar usando Bocado, debes verificar tu correo electrónico.
+            {t('login.verificationRequired')}
           </p>
           <p className="text-sm text-bocado-gray mb-6 break-all">
-            Hemos enviado un enlace a <strong>{unverifiedUser.email}</strong>
+            {t('login.linkSentTo')} <strong>{unverifiedUser.email}</strong>
           </p>
           
           {successMessage && (
@@ -227,13 +229,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
               disabled={isLoading}
               className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray"
             >
-              {isLoading ? 'Enviando...' : 'Reenviar correo'}
+              {isLoading ? t('common.sending') : t('login.resendEmail')}
             </button>
             <button
               onClick={handleLogoutUnverified}
               className="w-full text-bocado-gray font-medium py-2 text-sm hover:text-bocado-dark-gray transition-colors"
             >
-              Usar otra cuenta
+              {t('login.useOtherAccount')}
             </button>
           </div>
         </div>
@@ -247,14 +249,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
         <div className="w-32 h-32 mx-auto mb-2">
           <BocadoLogo className="w-full h-full" />
         </div>
-        <h1 className="text-xl font-bold text-bocado-dark-green">Iniciar Sesión</h1>
-        <p className="text-sm text-bocado-gray mt-1">Accede a tu perfil</p>
+        <h1 className="text-xl font-bold text-bocado-dark-green">{t('login.title')}</h1>
+        <p className="text-sm text-bocado-gray mt-1">{t('login.subtitle')}</p>
       </div>
       
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="relative">
           <label htmlFor="email" className="block text-xs font-medium text-bocado-dark-gray mb-1">
-            Correo Electrónico
+            {t('login.email')}
           </label>
           <input
             type="email"
@@ -266,7 +268,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
             onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 150)}
             autoComplete="email"
             className={`w-full px-4 py-3 bg-bocado-background border-2 ${error ? 'border-red-400' : 'border-transparent'} rounded-xl text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all`}
-            placeholder="tu@correo.com"
+            placeholder={t('login.placeholders.email')}
             disabled={isLoading}
           />
           {showEmailSuggestions && emailSuggestions.length > 0 && (
@@ -288,7 +290,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
 
         <div>
           <label htmlFor="password" className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
-            Contraseña
+            {t('login.password')}
           </label>
           <input
             type="password"
@@ -311,7 +313,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
           className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray mt-2"
           disabled={isLoading}
         >
-          {isLoading ? 'Cargando...' : 'Iniciar sesión'}
+          {isLoading ? t('common.loading') : t('login.loginButton')}
         </button>
         
         <div className="text-center">
@@ -323,7 +325,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
             }}
             className="text-xs text-bocado-green font-semibold hover:underline"
           >
-            Olvidé mi contraseña
+            {t('login.forgotPassword')}
           </button>
         </div>
       </form>
@@ -337,14 +339,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
           <BocadoLogo className="w-full h-auto" />
         </div>
 
-        <h1 className="text-xl font-bold text-bocado-dark-green">Restablecer Contraseña</h1>
-        <p className="text-sm text-bocado-gray mt-1">Te enviaremos un enlace</p>
+        <h1 className="text-xl font-bold text-bocado-dark-green">{t('login.resetPassword')}</h1>
+        <p className="text-sm text-bocado-gray mt-1">{t('login.resetSubtitle')}</p>
       </div>
       
       <form onSubmit={handlePasswordReset} className="space-y-4">
         <div>
           <label htmlFor="reset-email" className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
-            Correo Electrónico
+            {t('login.email')}
           </label>
           <input
             type="email"
@@ -365,7 +367,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
           className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray mt-2"
           disabled={isLoading}
         >
-          {isLoading ? 'Enviando...' : 'Enviar enlace'}
+          {isLoading ? t('login.sending') : t('login.sendLink')}
         </button>
         
         <div className="text-center">
@@ -374,7 +376,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
             onClick={() => setView('login')}
             className="text-xs text-bocado-green font-semibold hover:underline"
           >
-            Volver a Iniciar Sesión
+            {t('login.backToLogin')}
           </button>
         </div>
       </form>
@@ -391,7 +393,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onGoHome }) =
             className="text-xs text-bocado-gray hover:text-bocado-dark-gray transition-colors" 
             disabled={isLoading}
           >
-            ← Volver al inicio
+            {t('home.backToHome')}
           </button>
         </div>
       </div>

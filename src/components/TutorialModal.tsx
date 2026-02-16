@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { UtensilsCrossed, BookOpen, User, MapPin, Home } from './icons';
 import BocadoLogo from './BocadoLogo';
 import { trackEvent } from '../firebaseConfig'; // ✅ Importado trackEvent
+import { useTranslation } from '../contexts/I18nContext';
 
 interface TutorialModalProps {
   onClose: () => void;
@@ -9,36 +10,37 @@ interface TutorialModalProps {
 }
 
 const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
 
   const steps = [
     {
-      title: `¡Bienvenido${userName ? ', ' + userName : ''}!`,
-      description: "Tu asistente inteligente de nutrición. Te mostramos lo que necesitas saber.",
+      title: t('tutorial.welcome', { userName: userName ? `, ${userName}` : '' }),
+      description: t('tutorial.subtitle'),
       icon: <div className="w-32 h-20"><BocadoLogo className="w-full h-full" /></div>,
       color: "bg-white",
       textColor: "text-bocado-green",
       id: "welcome"
     },
     {
-      title: "⏱️ Rate Limiting",
-      description: "Puedes generar 5 recomendaciones cada 10 minutos. Cuando se acaben, debes esperar.",
+      title: t('tutorial.slides.rateLimit.title'),
+      description: t('tutorial.slides.rateLimit.description'),
       icon: <div className="text-5xl">⏱️</div>,
       color: "bg-amber-50",
       textColor: "text-amber-900",
       id: "ratelimit"
     },
     {
-      title: "💱 Presupuesto Dinámico",
-      description: "Los rangos de presupuesto cambian según tu país. Mira siempre las opciones disponibles.",
+      title: t('tutorial.slides.budget.title'),
+      description: t('tutorial.slides.budget.description'),
       icon: <div className="text-5xl">💱</div>,
       color: "bg-green-50",
       textColor: "text-green-900",
       id: "budget"
     },
     {
-      title: "❤️ Guardar Favoritos",
-      description: "Toca el corazón en cualquier receta o restaurante para guardarlo y usarlo después.",
+      title: t('tutorial.slides.favorites.title'),
+      description: t('tutorial.slides.favorites.description'),
       icon: <div className="text-5xl">❤️</div>,
       color: "bg-red-50",
       textColor: "text-red-900",
@@ -120,7 +122,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
               onClick={handleNext}
               className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
             >
-              {currentStep === steps.length - 1 ? '¡Comenzar!' : 'Siguiente'}
+              {currentStep === steps.length - 1 ? t('tutorial.start') : t('tutorial.next')}
             </button>
             
             {currentStep < steps.length - 1 && (
@@ -128,7 +130,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
                 onClick={handleSkip}
                 className="mt-3 text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray transition-colors"
               >
-                Saltar tutorial
+                {t('tutorial.skip')}
               </button>
             )}
           </div>

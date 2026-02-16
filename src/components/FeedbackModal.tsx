@@ -3,6 +3,7 @@ import { trackEvent } from '../firebaseConfig';
 import { useAuthStore } from '../stores/authStore';
 import { useFeedbackMutation } from '../hooks/useSavedItems';
 import type { Recipe } from '../types';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface FeedbackModalProps {
   isOpen: boolean;
@@ -87,6 +88,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   type,
   originalData,
 }) => {
+  const { t } = useTranslation();
   const modalInstanceId = useId();
   // Estado local del formulario
   const [rating, setRating] = useState(0);
@@ -312,10 +314,10 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
             {/* Header */}
             <div className="text-4xl mb-4">{type === 'home' ? '🍳' : '📍'}</div>
             <h3 className="text-lg sm:text-xl font-bold text-bocado-dark-green">
-              {type === 'home' ? '¿Qué tal quedó?' : '¿Qué tal la comida?'}
+              {type === 'home' ? t('feedback.titleHome') : t('feedback.titleAway')}
             </h3>
             <p className="text-sm text-bocado-gray mt-1 mb-6 line-clamp-2">
-              Califica tu experiencia con <br className="hidden sm:block"/>
+              {t('feedback.subtitle')} <br className="hidden sm:block"/>
               <strong className="text-bocado-dark-gray">{itemTitle}</strong>
             </p>
             
@@ -348,7 +350,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
                 value={comment}
                 onChange={handleCommentChange}
                 onClick={(e) => e.stopPropagation()}
-                placeholder="¿Algún detalle extra? (opcional)"
+                placeholder={t('feedback.commentsLabel')}
                 disabled={isPending}
                 className="w-full p-4 bg-bocado-background border-none rounded-2xl text-sm focus:ring-2 focus:ring-bocado-green/30 resize-none text-bocado-text placeholder-bocado-gray/50 disabled:opacity-50 disabled:cursor-not-allowed"
                 rows={3}
@@ -369,7 +371,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
                 disabled={isPending}
                 className="flex-1 py-3 rounded-2xl font-bold text-bocado-gray hover:bg-bocado-background transition-colors active:scale-95 disabled:opacity-50"
               >
-                Omitir
+                {t('feedback.skip')}
               </button>
               <button
                 onClick={(e) => {
@@ -382,10 +384,10 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
                 {isPending ? (
                   <>
                     <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Guardando...</span>
+                    <span>{t('feedback.saving')}</span>
                   </>
                 ) : (
-                  'Confirmar'
+                  t('feedback.confirm')
                 )}
               </button>
             </div>
@@ -398,9 +400,9 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl sm:text-2xl font-bold text-bocado-dark-green">¡Gracias!</h3>
+            <h3 className="text-xl sm:text-2xl font-bold text-bocado-dark-green">{t('feedback.successTitle')}</h3>
             <p className="text-bocado-gray mt-2 text-sm sm:text-base">
-              Bocado aprenderá de esto para tus próximas sugerencias.
+              {t('feedback.successMessage')}
             </p>
           </div>
         )}

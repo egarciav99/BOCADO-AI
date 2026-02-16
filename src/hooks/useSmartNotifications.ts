@@ -8,6 +8,7 @@ import {
 import { logger } from '../utils/logger';
 import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
 import { db, serverTimestamp } from '../firebaseConfig';
+import { useTranslation } from '../contexts/I18nContext';
 
 export interface SmartReminder {
   id: string;
@@ -38,13 +39,13 @@ interface UseSmartNotificationsReturn {
   daysSinceLastAppUse: number;
 }
 
-const DEFAULT_REMINDERS: SmartReminder[] = [
+const createDefaultReminders = (t: (key: string) => string): SmartReminder[] => [
   // Recordatorios de comidas
   {
     id: 'breakfast',
     type: 'meal',
-    title: '🌅 Buenos días',
-    body: '¿Ya pensaste qué desayunar hoy? Descubre opciones nutritivas',
+    title: t('notifications.breakfast.title'),
+    body: t('notifications.breakfast.body'),
     hour: 8,
     minute: 0,
     enabled: true,
@@ -54,8 +55,8 @@ const DEFAULT_REMINDERS: SmartReminder[] = [
   {
     id: 'lunch',
     type: 'meal',
-    title: '🍽️ Hora de comer',
-    body: 'Te sugerimos recetas deliciosas basadas en tu despensa',
+    title: t('notifications.lunch.title'),
+    body: t('notifications.lunch.body'),
     hour: 13,
     minute: 30,
     enabled: true,
@@ -65,8 +66,8 @@ const DEFAULT_REMINDERS: SmartReminder[] = [
   {
     id: 'dinner',
     type: 'meal',
-    title: '🌙 Cena saludable',
-    body: 'Termina el día con una cena ligera y nutritiva',
+    title: t('notifications.dinner.title'),
+    body: t('notifications.dinner.body'),
     hour: 19,
     minute: 30,
     enabled: true,
@@ -77,8 +78,8 @@ const DEFAULT_REMINDERS: SmartReminder[] = [
   {
     id: 'pantry_update',
     type: 'pantry',
-    title: '🥑 Actualiza tu despensa',
-    body: '¿Tienes nuevos ingredientes? Actualiza "Mi Cocina" para mejores recomendaciones',
+    title: t('notifications.pantryUpdate.title'),
+    body: t('notifications.pantryUpdate.body'),
     hour: 10,
     minute: 0,
     enabled: true,
@@ -88,8 +89,8 @@ const DEFAULT_REMINDERS: SmartReminder[] = [
   {
     id: 'rate_recipes',
     type: 'rating',
-    title: '⭐ ¿Qué te pareció?',
-    body: 'Califica las recetas y restaurantes que probaste para mejorar tus recomendaciones',
+    title: t('notifications.rateRecipes.title'),
+    body: t('notifications.rateRecipes.body'),
     hour: 15,
     minute: 0,
     enabled: true,
@@ -99,8 +100,8 @@ const DEFAULT_REMINDERS: SmartReminder[] = [
   {
     id: 'come_back',
     type: 'engagement',
-    title: '🥗 Te extrañamos',
-    body: 'Descubre nuevas recetas perfectas para ti. ¡Abre Bocado!',
+    title: t('notifications.comeBack.title'),
+    body: t('notifications.comeBack.body'),
     hour: 12,
     minute: 0,
     enabled: true,
@@ -114,10 +115,11 @@ const LAST_ACTIVE_KEY = 'bocado_last_active';
 const RATINGS_SHOWN_KEY = 'bocado_ratings_shown';
 
 export const useSmartNotifications = (userUid: string | undefined): UseSmartNotificationsReturn => {
+  const { t } = useTranslation();
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [reminders, setReminders] = useState<SmartReminder[]>(DEFAULT_REMINDERS);
+  const [reminders, setReminders] = useState<SmartReminder[]>(() => createDefaultReminders(t));
   const [isLoading, setIsLoading] = useState(false);
   const [pendingRatingsCount, setPendingRatingsCount] = useState(0);
   const [daysSinceLastPantryUpdate, setDaysSinceLastPantryUpdate] = useState<number | null>(null);
@@ -197,7 +199,8 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setReminders(DEFAULT_REMINDERS.map(defaultRem => {
+        const defaultReminders = createDefaultReminders(t);
+        setReminders(defaultReminders.map(defaultRem => {
           const savedItem = parsed.find((r: SmartReminder) => r.id === defaultRem.id);
           return savedItem ? { ...defaultRem, ...savedItem } : defaultRem;
         }));
@@ -205,7 +208,7 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
         logger.error('Error cargando recordatorios:', e);
       }
     }
-  }, []);
+  }, [t]);
 
   // Cargar settings desde Firestore (fuente primaria)
   useEffect(() => {
@@ -217,7 +220,8 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
         if (docSnap.exists()) {
           const data = docSnap.data() as { reminders?: SmartReminder[] };
           if (Array.isArray(data.reminders)) {
-            setReminders(DEFAULT_REMINDERS.map(defaultRem => {
+            const defaultReminders = createDefaultReminders(t);
+            setReminders(defaultReminders.map(defaultRem => {
               const savedItem = data.reminders?.find(r => r.id === defaultRem.id);
               return savedItem ? { ...defaultRem, ...savedItem } : defaultRem;
             }));
@@ -427,7 +431,7 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
     
     onForegroundMessage((payload) => {
       if (Notification.permission === 'granted') {
-        new Notification(payload.notification?.title || 'Bocado', {
+        new Notification(payload.notification?.title || t('notifications.appName'), {
           body: payload.notification?.body,
           icon: '/icons/icon-192x192.png',
           badge: '/icons/icon-72x72.png',
@@ -497,8 +501,8 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
     }
 
     try {
-      new Notification('🧪 Notificación de prueba', {
-        body: '¡Las notificaciones están funcionando correctamente!',
+      new Notification(t('notifications.testNotification.title'), {
+        body: t('notifications.testNotification.body'),
         icon: '/icons/icon-192x192.png',
         badge: '/icons/icon-72x72.png',
         tag: 'test',

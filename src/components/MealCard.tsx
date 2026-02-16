@@ -9,6 +9,7 @@ import { trackEvent } from '../firebaseConfig';
 import { logger } from '../utils/logger';
 import { scaleIngredientsSimple, detectBaseServings } from '../utils/portionScaler';
 import { Tooltip } from './ui/Tooltip';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface MealCardProps {
   meal: Meal;
@@ -68,8 +69,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
   onSearchMapsFallback,
   onCopyAddress,
   copiedAddress,
-}) => {
-  const hasPreciseLocation = !!recipe.link_maps;
+}) => {  const { t } = useTranslation();  const hasPreciseLocation = !!recipe.link_maps;
 
   return (
     <div className="space-y-3">
@@ -80,7 +80,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
             className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
           >
             <span>📍</span>
-            <span>Ver ubicación en Google Maps</span>
+            <span>{t('mealCard.viewOnMaps')}</span>
           </button>
           {recipe.direccion_aproximada && (
             <p className="text-xs text-bocado-gray text-center mt-2 px-2 flex items-center justify-center gap-1">
@@ -91,7 +91,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
       ) : (
         <div className="mb-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
           <p className="text-xs text-amber-700 mb-3 text-center font-medium">
-            ⚠️ Ubicación aproximada (guardado antes de la actualización)
+            {t('mealCard.approximateLocation')}
           </p>
           
           {recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}` && (
@@ -106,7 +106,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
               className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-1 font-medium"
             >
               <span>🔍</span>
-              <span>Buscar en Maps</span>
+              <span>{t('mealCard.searchMaps')}</span>
             </button>
             <button
               onClick={onCopyAddress}
@@ -117,11 +117,11 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
               }`}
             >
               <span>{copiedAddress ? '✓' : '📋'}</span>
-              <span>{copiedAddress ? 'Copiado' : 'Copiar'}</span>
+              <span>{copiedAddress ? t('mealCard.copied') : t('mealCard.copy')}</span>
             </button>
           </div>
           <p className="text-[10px] text-amber-600/70 text-center mt-2">
-            Tip: Guarda el restaurante nuevamente desde "Fuera" para obtener la ubicación exacta
+            {t('mealCard.locationTip')}
           </p>
         </div>
       )}
@@ -129,7 +129,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
       {recipe.plato_sugerido && (
         <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
           <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-1">
-            🍽️ Plato sugerido
+            {t('mealCard.suggestedDish')}
           </h4>
           <p className="text-sm text-bocado-text">{recipe.plato_sugerido}</p>
         </div>
@@ -138,7 +138,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
       {recipe.por_que_es_bueno && (
         <div className="bg-green-50 p-3 rounded-xl border border-green-100">
           <h4 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-1">
-            ✨ Por qué es bueno
+            {t('mealCard.whyGood')}
           </h4>
           <p className="text-sm text-bocado-text">{recipe.por_que_es_bueno}</p>
         </div>
@@ -147,7 +147,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
       {recipe.hack_saludable && (
         <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
           <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">
-            💡 Hack saludable
+            {t('mealCard.healthyHack')}
           </h4>
           <p className="text-sm text-bocado-text">{recipe.hack_saludable}</p>
         </div>
@@ -156,7 +156,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
       {!recipe.plato_sugerido && !recipe.por_que_es_bueno && !recipe.hack_saludable && (
         <div className="text-center py-4 px-4 bg-bocado-background rounded-xl">
           <p className="text-xs text-bocado-gray">
-            Información detallada no disponible para este lugar guardado anteriormente
+            {t('mealCard.noDetailedInfo')}
           </p>
         </div>
       )}
@@ -174,6 +174,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
   meal,
   onInteraction,
 }) => {
+  const { t } = useTranslation();
   const { recipe } = meal;
   
   // Estados locales
@@ -423,7 +424,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
 
               {showSavings && (
                 <span className="inline-block mt-2 text-xs font-medium text-bocado-green bg-bocado-green/10 px-2 py-1 rounded-lg">
-                  ✨ Usa ingredientes que ya tienes
+                  {t('mealCard.usesYourIngredients')}
                 </span>
               )}
 
@@ -442,7 +443,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
                     }}
                     className="flex items-center justify-between w-full text-left text-xs font-semibold text-bocado-dark-gray hover:text-bocado-green transition-colors"
                   >
-                    <span>📊 Información nutricional</span>
+                    <span>{t('mealCard.nutritionalInfo')}</span>
                     <ChevronDown className={`w-4 h-4 transition-transform ${showMacros ? 'rotate-180' : ''}`} />
                   </button>
                   
@@ -450,15 +451,15 @@ const MealCard: React.FC<MealCardProps> = memo(({
                     <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                       <div className="bg-blue-50 p-2 rounded-lg text-center">
                         <div className="font-bold text-blue-600">{recipe.protein_g}g</div>
-                        <div className="text-blue-500 text-[10px] mt-0.5">Proteínas</div>
+                        <div className="text-blue-500 text-[10px] mt-0.5">{t('mealCard.proteins')}</div>
                       </div>
                       <div className="bg-amber-50 p-2 rounded-lg text-center">
                         <div className="font-bold text-amber-600">{recipe.carbs_g}g</div>
-                        <div className="text-amber-500 text-[10px] mt-0.5">Carbohidratos</div>
+                        <div className="text-amber-500 text-[10px] mt-0.5">{t('mealCard.carbs')}</div>
                       </div>
                       <div className="bg-rose-50 p-2 rounded-lg text-center">
                         <div className="font-bold text-rose-600">{recipe.fat_g}g</div>
-                        <div className="text-rose-500 text-[10px] mt-0.5">Grasas</div>
+                        <div className="text-rose-500 text-[10px] mt-0.5">{t('mealCard.fats')}</div>
                       </div>
                     </div>
                   )}
@@ -468,7 +469,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
           </div>
 
           <div className="flex flex-col items-center gap-1 shrink-0">
-            <Tooltip text={saved ? "Guardado ❤️" : "Guardar para después"} position="left">
+            <Tooltip text={saved ? t('mealCard.saved') : t('mealCard.saveForLater')} position="left">
               <button
                 onClick={handleSaveClick}
                 disabled={toggleMutation.isPending}
@@ -525,7 +526,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
           {!isRestaurant && recipe.ingredients && recipe.ingredients.length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
-                Ingredientes {servings !== baseServings && `(${servings} pers.)`}
+                {t('mealCard.ingredients')} {servings !== baseServings && t('mealCard.servings', { count: servings })}
               </h4>
               <ul className="space-y-1.5">
                 {scaledIngredients.map((ing, index) => (
@@ -542,7 +543,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
           {!isRestaurant && recipe.instructions && recipe.instructions.length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
-                Preparación
+                {t('mealCard.preparation')}
               </h4>
               <div className="space-y-2">
                 {recipe.instructions.map((step, i) => (
@@ -563,7 +564,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
             className="w-full py-3 rounded-xl bg-bocado-dark-green text-white font-semibold text-sm shadow-bocado hover:bg-bocado-green active:scale-[0.98] transition-all"
             type="button"
           >
-            {isRestaurant ? '📍 Fui al lugar' : '🍳 La preparé'}
+            {isRestaurant ? t('mealCard.wentToPlace') : t('mealCard.cooked')}
           </button>
         </div>
       )}

@@ -268,7 +268,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
 
       setInitialFormData(formData);
       setViewMode('view');
-      setSuccessMessage('¡Perfil actualizado!');
+      setSuccessMessage(t('profile.success.profileUpdated'));
       onProfileUpdate(authData.firstName);
       
       setTimeout(() => setSuccessMessage(''), 3000);
@@ -276,7 +276,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
       safeLog('error', "Error updating profile:", err);
       // ✅ ANALÍTICA: Error en actualización
       trackEvent('profile_update_error');
-      setError("No se pudieron guardar los cambios.");
+      setError(t('profile.errors.saveError'));
     }
   };
 
@@ -300,21 +300,21 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     setSuccessMessage('');
 
     if (!currentPassword || !newPassword || !confirmNewPassword) {
-        setError('Todos los campos son obligatorios.');
+        setError(t('profile.errors.allRequired'));
         return;
     }
     if (newPassword !== confirmNewPassword) {
-        setError('Las contraseñas no coinciden.');
+        setError(t('profile.errors.passwordsMismatch'));
         return;
     }
     if (newPassword.length < 8) {
-        setError('Mínimo 8 caracteres.');
+        setError(t('profile.errors.minChars'));
         return;
     }
 
     const currentUser = auth.currentUser;
     if (!currentUser || !currentUser.email) {
-        setError('Sesión expirada. Vuelve a iniciar sesión.');
+        setError(t('profile.errors.sessionExpired'));
         return;
     }
 
@@ -326,15 +326,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         // ✅ ANALÍTICA: Password cambiado
         trackEvent('profile_security_password_changed');
 
-        setSuccessMessage('¡Contraseña actualizada!');
+        setSuccessMessage(t('profile.success.passwordUpdated'));
         setCurrentPassword('');
         setNewPassword('');
         setConfirmNewPassword('');
         setTimeout(() => setViewMode('view'), 2000);
     } catch (err: any) {
         trackEvent('profile_security_password_error', { code: err.code });
-        if (err.code === 'auth/wrong-password') setError('Contraseña actual incorrecta.');
-        else setError('Error al actualizar.');
+        if (err.code === 'auth/wrong-password') setError(t('profile.errors.wrongPassword'));
+        else setError(t('profile.errors.updateError'));
     }
   };
   
@@ -344,19 +344,19 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     setSuccessMessage('');
 
     if (!emailPassword || !newEmail) {
-        setError('Todos los campos son obligatorios.');
+        setError(t('profile.errors.allRequired'));
         return;
     }
     
     const currentUser = auth.currentUser;
     if (!currentUser || !currentUser.email) {
-        setError('Sesión expirada.');
+        setError(t('profile.errors.sessionExpiredShort'));
         return;
     }
 
     const normalizedNewEmail = newEmail.toLowerCase().trim();
     if (currentUser.email.toLowerCase() === normalizedNewEmail) {
-        setError('El correo es igual al actual.');
+        setError(t('profile.errors.sameEmail'));
         return;
     }
 
@@ -372,16 +372,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         setFormData(updatedFormData);
         
         await sendEmailVerification(currentUser);
-        setSuccessMessage('¡Correo actualizado! Verifica tu email.');
+        setSuccessMessage(t('profile.success.emailUpdated'));
         
         setEmailPassword('');
         setNewEmail('');
         setTimeout(() => setViewMode('view'), 4000);
     } catch (err: any) {
         trackEvent('profile_security_email_error', { code: err.code });
-        if (err.code === 'auth/wrong-password') setError('Contraseña incorrecta.');
-        else if (err.code === 'auth/email-already-in-use') setError('Correo en uso.');
-        else setError('Error al actualizar.');
+        if (err.code === 'auth/wrong-password') setError(t('profile.errors.wrongPasswordShort'));
+        else if (err.code === 'auth/email-already-in-use') setError(t('profile.errors.emailInUse'));
+        else setError(t('profile.errors.updateError'));
     }
   };
 
@@ -451,7 +451,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     } catch (err) {
       safeLog('error', 'Error exporting data:', err);
       trackEvent('profile_export_data_error');
-      setError('Error al exportar los datos. Intenta de nuevo.');
+      setError(t('profile.errors.exportError'));
     }
   };
   
@@ -470,7 +470,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     URL.revokeObjectURL(url);
     
     trackEvent('profile_export_data_download');
-    setSuccessMessage('¡Archivo descargado!');
+    setSuccessMessage(t('profile.success.downloadComplete'));
     setTimeout(() => setSuccessMessage(''), 3000);
   };
   
@@ -484,13 +484,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     setSuccessMessage('');
     
     if (deleteConfirmText !== 'ELIMINAR') {
-      setError('Debes escribir ELIMINAR para confirmar.');
+      setError(t('profile.errors.mustTypeDelete'));
       return;
     }
     
     const currentUser = auth.currentUser;
     if (!currentUser || !currentUser.email) {
-      setError('Sesión expirada. Vuelve a iniciar sesión.');
+      setError(t('profile.errors.sessionExpired'));
       return;
     }
     
@@ -559,6 +559,87 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     }
   };
 
+  const translateGender = (gender: string): string => {
+    if (gender === 'Hombre') return t('gender.male');
+    if (gender === 'Mujer') return t('gender.female');
+    return gender;
+  };
+
+  const translateCookingAffinity = (affinity: string): string => {
+    const map: Record<string, string> = {
+      'Nunca': 'nunca',
+      'A veces': 'aveces',
+      'Seguido': 'seguido',
+      'Siempre': 'siempre'
+    };
+    const key = map[affinity];
+    return key ? t(`cookingAffinity.${key}`) : affinity;
+  };
+
+  const translateGoal = (goal: string): string => {
+    const map: Record<string, string> = {
+      'Bajar de peso': 'loseWeight',
+      'Subir de peso': 'gainWeight',
+      'Generar músculo': 'buildMuscle',
+      'Salud y bienestar': 'healthWellness'
+    };
+    const key = map[goal];
+    return key ? t(`goals.${key}`) : goal;
+  };
+
+  const translateActivityLevel = (level: string): string => {
+    const map: Record<string, string> = {
+      'Sedentario': 'sedentary',
+      'Activo ligero': 'lightlyActive',
+      'Fuerza': 'strength',
+      'Cardio': 'cardio',
+      'Deportivo': 'athletic',
+      'Atleta': 'athlete',
+      'Otro': 'other'
+    };
+    // Remover emoji primero
+    const textOnly = stripEmoji(level);
+    const key = map[textOnly];
+    return key ? t(`activityLevels.${key}`) : level;
+  };
+
+  const translateActivityFrequency = (freq: string): string => {
+    const map: Record<string, string> = {
+      'Diario': 'daily',
+      '3-5 veces por semana': 'frequent',
+      '1-2 veces': 'occasional',
+      'Rara vez': 'rarely'
+    };
+    const key = map[freq];
+    return key ? t(`activityFrequencies.${key}`) : freq;
+  };
+
+  const translateDisease = (disease: string): string => {
+    const map: Record<string, string> = {
+      'Hipertensión': 'hypertension',
+      'Diabetes': 'diabetes',
+      'Hipotiroidismo': 'hypothyroidism',
+      'Hipertiroidismo': 'hyperthyroidism',
+      'Colesterol': 'cholesterol',
+      'Intestino irritable': 'ibs'
+    };
+    const key = map[disease];
+    return key ? t(`diseases.${key}`) : disease;
+  };
+
+  const translateAllergy = (allergy: string): string => {
+    const map: Record<string, string> = {
+      'Intolerante a la lactosa': 'lactoseIntolerant',
+      'Alergia a frutos secos': 'nutAllergy',
+      'Celíaco': 'celiac',
+      'Vegano': 'vegan',
+      'Vegetariano': 'vegetarian',
+      'Otro': 'other'
+    };
+    const key = map[allergy];
+    return key ? t(`allergies.${key}`) : allergy;
+  };
+
   const renderPhysicalData = () => {
     const parts: string[] = [];
     if (formData.weight) parts.push(`${formData.weight} kg`);
@@ -578,7 +659,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
     }
     
     return (
-      <InfoSection title="Datos Corporales">
+      <InfoSection title={t('profile.view.bodyData')}>
         <Badge text={parts.join(' / ')} color="yellow" />
         {bmi && (
           <Badge 
@@ -627,14 +708,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                   className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                   disabled={updateProfileMutation.isPending}
                 >
-                    Cancelar
+                    {t('common.cancel')}
                 </button>
                 <button 
                   onClick={handleSaveProfile} 
                   className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
                   disabled={updateProfileMutation.isPending}
                 >
-                    {updateProfileMutation.isPending ? 'Guardando...' : 'Guardar'}
+                    {updateProfileMutation.isPending ? t('common.saving') : t('profile.saveChanges')}
                 </button>
             </div>
           </div>
@@ -643,10 +724,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
       case 'changePassword':
          return (
             <div className="animate-fade-in">
-                 <h2 className="text-lg font-bold text-bocado-dark-green mb-4">Cambiar Contraseña</h2>
+                 <h2 className="text-lg font-bold text-bocado-dark-green mb-4">{t('profile.changePassword')}</h2>
                  <form onSubmit={handleChangePassword} className="space-y-4">
                     <div>
-                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Contraseña Actual</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('profile.currentPassword')}</label>
                         <input 
                           type="password" 
                           value={currentPassword} 
@@ -656,17 +737,17 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         />
                     </div>
                     <div>
-                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Nueva Contraseña</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('profile.newPassword')}</label>
                         <input 
                           type="password" 
                           value={newPassword} 
                           onChange={(e) => setNewPassword(e.target.value)} 
                           className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20" 
-                          placeholder="Mínimo 8 caracteres" 
+                          placeholder={t('registration.placeholders.password')} 
                         />
                     </div>
                     <div>
-                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Confirmar</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('profile.confirmPassword')}</label>
                         <input 
                           type="password" 
                           value={confirmNewPassword} 
@@ -689,13 +770,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           }} 
                           className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                         >
-                            Cancelar
+                            {t('common.cancel')}
                         </button>
                         <button 
                           type="submit" 
                           className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
                         >
-                            Actualizar
+                            {t('profile.update')}
                         </button>
                     </div>
                  </form>
@@ -705,11 +786,11 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
       case 'changeEmail':
           return (
             <div className="animate-fade-in">
-                 <h2 className="text-xl font-bold text-bocado-dark-green mb-2">Cambiar Correo</h2>
-                 <p className="text-sm text-bocado-gray mb-4">Se enviará un link de verificación.</p>
+                 <h2 className="text-xl font-bold text-bocado-dark-green mb-2">{t('profile.changeEmail')}</h2>
+                 <p className="text-sm text-bocado-gray mb-4">{t('profile.emailVerificationNote')}</p>
                  <form onSubmit={handleChangeEmail} className="space-y-4">
                     <div>
-                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Contraseña</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('profile.currentPassword')}</label>
                         <input 
                           type="password" 
                           value={emailPassword} 
@@ -719,13 +800,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         />
                     </div>
                     <div>
-                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">Nuevo Correo</label>
+                        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">{t('profile.newEmail')}</label>
                         <input 
                           type="email" 
                           value={newEmail} 
                           onChange={(e) => setNewEmail(e.target.value)} 
                           className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20" 
-                          placeholder="nuevo@correo.com" 
+                          placeholder={t('registration.placeholders.email')} 
                         />
                     </div>
                     {error && <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">{error}</p>}
@@ -741,13 +822,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           }} 
                           className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                         >
-                            Cancelar
+                            {t('common.cancel')}
                         </button>
                         <button 
                           type="submit" 
                           className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
                         >
-                            Cambiar
+                            {t('profile.change')}
                         </button>
                     </div>
                  </form>
@@ -766,9 +847,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
       case 'exportData':
         return (
           <div className="animate-fade-in">
-            <h2 className="text-xl font-bold text-bocado-dark-green mb-2">Exportar mis datos</h2>
+            <h2 className="text-xl font-bold text-bocado-dark-green mb-2">{t('profile.downloadData')}</h2>
             <p className="text-sm text-bocado-gray mb-6">
-              Descarga una copia de todos tus datos personales guardados en Bocado.
+              {t('profile.deleteDataDesc')}
             </p>
             
             {!exportedData ? (
@@ -777,13 +858,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                   <div className="flex items-start gap-3">
                     <FileText className="w-5 h-5 text-bocado-green mt-0.5 flex-shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-bocado-text">¿Qué incluye?</p>
+                      <p className="text-sm font-medium text-bocado-text">{t('profile.whatIncluded')}</p>
                       <ul className="text-xs text-bocado-gray mt-1 space-y-1">
-                        <li>• Tu perfil y preferencias</li>
-                        <li>• Recetas guardadas</li>
-                        <li>• Restaurantes guardados</li>
-                        <li>• Historial de feedback</li>
-                        <li>• Información de cuenta</li>
+                        <li>• {t('profile.dataIncludes.profile')}</li>
+                        <li>• {t('profile.dataIncludes.recipes')}</li>
+                        <li>• {t('profile.dataIncludes.restaurants')}</li>
+                        <li>• {t('profile.dataIncludes.history')}</li>
                       </ul>
                     </div>
                   </div>
@@ -800,14 +880,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                     }} 
                     className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                   >
-                    Volver
+                    {t('common.back')}
                   </button>
                   <button 
                     onClick={handleExportData}
                     className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                     <Download className="w-4 h-4" />
-                    Preparar datos
+                    {t('profile.prepareData')}
                   </button>
                 </div>
               </div>
@@ -818,7 +898,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                     <svg className="w-5 h-5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    <p className="text-sm font-semibold text-green-800">¡Datos listos!</p>
+                    <p className="text-sm font-semibold text-green-800">{t('profile.dataReady')}</p>
                   </div>
                   <p className="text-xs text-green-700">
                     Tu archivo incluye {Object.keys(exportedData).length} secciones de datos.
@@ -839,14 +919,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                     }} 
                     className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                   >
-                    Cerrar
+                    {t('common.close')}
                   </button>
                   <button 
                     onClick={handleDownloadJSON}
                     className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all flex items-center justify-center gap-2"
                   >
                     <Download className="w-4 h-4" />
-                    Descargar JSON
+                    {t('profile.downloadJSON')}
                   </button>
                 </div>
               </div>
@@ -861,27 +941,27 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
-              <h2 className="text-xl font-bold text-red-600">Eliminar cuenta</h2>
+              <h2 className="text-xl font-bold text-red-600">{t('profile.deleteAccount')}</h2>
             </div>
             
             <div className="bg-red-50 border border-red-200 p-4 rounded-xl mb-6">
-              <p className="text-sm font-semibold text-red-800 mb-2">⚠️ Esta acción no se puede deshacer</p>
+              <p className="text-sm font-semibold text-red-800 mb-2">{t('profile.deleteWarning')}</p>
               <p className="text-xs text-red-700">
-                Se eliminarán permanentemente:
+                {t('common.deleting')}:
               </p>
               <ul className="text-xs text-red-700 mt-2 space-y-1 ml-4">
-                <li>• Tu perfil y todas tus preferencias</li>
-                <li>• Todas las recetas guardadas</li>
-                <li>• Todos los restaurantes guardados</li>
-                <li>• Tu historial de recomendaciones</li>
-                <li>• Tu cuenta de acceso</li>
+                <li>• {t('profile.deleteIncludes.account')}</li>
+                <li>• {t('profile.deleteIncludes.profile')}</li>
+                <li>• {t('profile.deleteIncludes.recipes')}</li>
+                <li>• {t('profile.deleteIncludes.restaurants')}</li>
+                <li>• {t('profile.deleteIncludes.feedback')}</li>
               </ul>
             </div>
             
             <form onSubmit={handleDeleteAccount} className="space-y-4">
               <div>
                 <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
-                  Escribe ELIMINAR para confirmar
+                  {t('profile.deleteConfirmText')}
                 </label>
                 <input 
                   type="text" 
@@ -894,7 +974,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
               
               <div>
                 <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
-                  Tu contraseña
+                  {t('profile.currentPassword')}
                 </label>
                 <input 
                   type="password" 
@@ -919,7 +999,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                   className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                   disabled={isDeleting}
                 >
-                  Cancelar
+                  {t('common.cancel')}
                 </button>
                 <button 
                   type="submit" 
@@ -929,12 +1009,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                   {isDeleting ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Eliminando...
+                      {t('common.deleting')}
                     </>
                   ) : (
                     <>
                       <Trash2 className="w-4 h-4" />
-                      Eliminar todo
+                      {t('profile.deleteAll')}
                     </>
                   )}
                 </button>
@@ -949,66 +1029,66 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
              <div className="space-y-4">
                  {successMessage && <p className="text-green-600 text-xs text-center bg-green-50 p-3 rounded-xl animate-fade-in font-medium">{successMessage}</p>}
                  
-                 <InfoSection title="Información Personal">
-                    {formData.gender && <Badge text={formData.gender} color="gray" />}
-                    {formData.age && <Badge text={`${formData.age} años`} color="gray" />}
+                 <InfoSection title={t('profile.personalInfo')}>
+                    {formData.gender && <Badge text={translateGender(formData.gender)} color="gray" />}
+                    {formData.age && <Badge text={`${formData.age}${t('profile.suffixYears')}`} color="gray" />}
                     {formData.city && formData.country && (
                       <Badge text={`${formData.city}, ${formData.country}`} color="gray" />
                     )}
                     {formData.cookingAffinity && (
-                      <Badge text={`Cocina: ${formData.cookingAffinity}`} color="gray" />
+                      <Badge text={`${t('profile.prefixCooking')}${translateCookingAffinity(formData.cookingAffinity)}`} color="gray" />
                     )}
                  </InfoSection>
 
                  {renderPhysicalData()}
 
-                 <InfoSection title="Objetivo Nutricional">
+                 <InfoSection title={t('profile.nutritionalGoal')}>
                     {formData.nutritionalGoal.length > 0 && formData.nutritionalGoal[0] !== 'Sin especificar' 
-                      ? formData.nutritionalGoal.map(g => <Badge key={g} text={g} color="green" />) 
-                      : <span className="text-xs text-bocado-gray">No especificado</span>
+                      ? formData.nutritionalGoal.map(g => <Badge key={g} text={translateGoal(g)} color="green" />) 
+                      : <span className="text-xs text-bocado-gray">{t('profile.noSpecified')}</span>
                     }
                  </InfoSection>
 
-                 <InfoSection title="Actividad Física">
+                 <InfoSection title={t('profile.physicalActivity')}>
                     {formData.activityLevel ? (
                       <Badge 
-                        text={`${stripEmoji(formData.activityLevel)}${formData.activityFrequency ? ` (${formData.activityFrequency})` : ''}`} 
+                        text={`${translateActivityLevel(formData.activityLevel)}${formData.activityFrequency ? ` (${translateActivityFrequency(formData.activityFrequency)})` : ''}`} 
                         color="gray" 
                       />
                     ) : (
-                      <span className="text-xs text-bocado-gray">No especificado</span>
+                      <span className="text-xs text-bocado-gray">{t('profile.noSpecified')}</span>
                     )}
                  </InfoSection>
 
-                 <InfoSection title="Salud">
+                 <InfoSection title={t('profile.health')}>
                     {formData.diseases.length > 0 && formData.diseases[0] !== 'Ninguna' 
-                      ? formData.diseases.map(d => <Badge key={d} text={d} color="red" />) 
-                      : <span className="text-xs text-bocado-gray">Sin condiciones</span>
+                      ? formData.diseases.map(d => <Badge key={d} text={translateDisease(d)} color="red" />) 
+                      : <span className="text-xs text-bocado-gray">{t('profile.noConditions')}</span>
                     }
                  </InfoSection>
 
-                 <InfoSection title="Alergias">
+                 <InfoSection title={t('profile.allergies')}>
                     {formData.allergies.length > 0 && formData.allergies[0] !== 'Ninguna' ? (
                         <>
-                            {formData.allergies.map(a => <Badge key={a} text={a} color="blue" />)}
+                            {formData.allergies.map(a => <Badge key={a} text={translateAllergy(a)} color="blue" />)}
                             {formData.otherAllergies && <Badge text={formData.otherAllergies} color="blue" />}
                         </>
                     ) : (
-                        <span className="text-xs text-bocado-gray">Ninguna</span>
+                        <span className="text-xs text-bocado-gray">{t('profile.none')}</span>
                     )}
                  </InfoSection>
 
-                 <InfoSection title="No me gusta">
+                 <InfoSection title={t('profile.dislikes')}>
                     {formData.dislikedFoods.length > 0 && formData.dislikedFoods[0] !== 'Ninguno' 
                       ? formData.dislikedFoods.map(f => <Badge key={f} text={f} color="red" />) 
-                      : <span className="text-xs text-bocado-gray">Ninguno</span>
+                      : <span className="text-xs text-bocado-gray">{t('profile.noneM')}</span>
                     }
                  </InfoSection>
 
                  <div className="mt-6 pt-6 border-t border-bocado-border">
                     <div className="flex items-center gap-2 mb-3">
                         <Lock className="w-4 h-4 text-bocado-gray" />
-                        <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">Seguridad</h3>
+                        <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">{t('profile.security')}</h3>
                     </div>
                     <div className="space-y-2">
                         <button 
@@ -1018,7 +1098,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           }} 
                           className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
                         >
-                            <span>Cambiar Contraseña</span>
+                            <span>{t('profile.changePassword')}</span>
                             <span className="text-bocado-gray">›</span>
                         </button>
                         <button 
@@ -1028,7 +1108,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           }} 
                           className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
                         >
-                            <span>Cambiar Correo</span>
+                            <span>{t('profile.changeEmail')}</span>
                             <span className="text-bocado-gray">›</span>
                         </button>
                     </div>
@@ -1038,13 +1118,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                  <div className="mt-6 pt-6 border-t border-bocado-border">
                     <div className="flex items-center gap-2 mb-3">
                         <Bell className="w-4 h-4 text-bocado-gray" />
-                        <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">Preferencias</h3>
+                        <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">{t('profile.preferences')}</h3>
                     </div>
                     <div className="space-y-2">
                         {/* Selector de Idioma */}
                         <div className="px-4 py-3 bg-bocado-background rounded-xl">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-bocado-text">Idioma</span>
+                                <span className="text-sm font-medium text-bocado-text">{t('profile.language')}</span>
                             </div>
                             <div className="flex gap-2">
                                 <button
@@ -1058,7 +1138,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                                       : 'bg-white text-bocado-gray hover:bg-bocado-border'
                                   }`}
                                 >
-                                  🇪🇸 Español
+                                  {t('profile.languageES')}
                                 </button>
                                 <button
                                   onClick={() => {
@@ -1071,7 +1151,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                                       : 'bg-white text-bocado-gray hover:bg-bocado-border'
                                   }`}
                                 >
-                                  🇺🇸 English
+                                  {t('profile.languageEN')}
                                 </button>
                             </div>
                         </div>
@@ -1079,7 +1159,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         {/* Selector de Tema */}
                         <div className="px-4 py-3 bg-bocado-background rounded-xl">
                             <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-bocado-text">Tema</span>
+                                <span className="text-sm font-medium text-bocado-text">{t('profile.theme')}</span>
                             </div>
                             <div className="flex gap-2">
                                 <button
@@ -1093,7 +1173,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                                       : 'bg-white text-bocado-gray hover:bg-bocado-border'
                                   }`}
                                 >
-                                  ☀️ Claro
+                                  {t('profile.themeLight')}
                                 </button>
                                 <button
                                   onClick={() => {
@@ -1106,7 +1186,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                                       : 'bg-white text-bocado-gray hover:bg-bocado-border'
                                   }`}
                                 >
-                                  🌙 Oscuro
+                                  {t('profile.themeDark')}
                                 </button>
                                 <button
                                   onClick={() => {
@@ -1119,7 +1199,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                                       : 'bg-white text-bocado-gray hover:bg-bocado-border'
                                   }`}
                                 >
-                                  💻 Sistema
+                                  {t('profile.themeSystem')}
                                 </button>
                             </div>
                         </div>
@@ -1133,7 +1213,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         >
                             <div className="flex items-center gap-2">
                                 <Bell className="w-4 h-4 text-bocado-green" />
-                                <span>Recordatorios y notificaciones</span>
+                                <span>{t('profile.notificationsDesc')}</span>
                             </div>
                             <span className="text-bocado-gray">›</span>
                         </button>
@@ -1147,7 +1227,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           >
                               <div className="flex items-center gap-2">
                                   <Bell className="w-4 h-4 text-bocado-green" />
-                                  <span>Admin: Tokens FCM</span>
+                                  <span>{t('profile.adminTokens')}</span>
                               </div>
                               <span className="text-bocado-gray">›</span>
                           </button>
@@ -1159,7 +1239,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                  <div className="mt-6 pt-6 border-t border-bocado-border">
                     <div className="flex items-center gap-2 mb-3">
                         <FileText className="w-4 h-4 text-bocado-gray" />
-                        <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">Privacidad y Datos</h3>
+                        <h3 className="font-bold text-bocado-dark-green text-2xs uppercase tracking-wider">{t('profile.privacy')}</h3>
                     </div>
                     <div className="space-y-2">
                         <button 
@@ -1171,7 +1251,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         >
                             <div className="flex items-center gap-2">
                                 <Download className="w-4 h-4 text-bocado-green" />
-                                <span>Descargar mis datos</span>
+                                <span>{t('profile.downloadData')}</span>
                             </div>
                             <span className="text-bocado-gray">›</span>
                         </button>
@@ -1184,7 +1264,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                         >
                             <div className="flex items-center gap-2">
                                 <Trash2 className="w-4 h-4" />
-                                <span>Eliminar mi cuenta</span>
+                                <span>{t('profile.deleteAccount')}</span>
                             </div>
                             <span className="text-red-400">›</span>
                         </button>
@@ -1201,7 +1281,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                           }} 
                           className="w-full py-3 text-red-500 font-bold text-sm hover:bg-red-50 rounded-xl transition-colors active:scale-95"
                         >
-                            Cerrar Sesión
+                            {t('profile.logout')}
                         </button>
                     </div>
                  )}
@@ -1224,7 +1304,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                     <User className="w-5 h-5 text-bocado-green"/>
                 </div>
                 <div>
-                    <h1 className="text-lg font-bold text-bocado-dark-green">Mi Perfil</h1>
+                    <h1 className="text-lg font-bold text-bocado-dark-green">{t('profile.title')}</h1>
                     <p className="text-xs text-bocado-gray truncate max-w-[150px]">{formData.email}</p>
                 </div>
             </div>
@@ -1236,7 +1316,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                   }} 
                   className="text-xs bg-bocado-green/10 text-bocado-green font-bold px-3 py-1.5 rounded-full hover:bg-bocado-green/20 active:scale-95 transition-all"
                 >
-                    Editar
+                    {t('profile.edit')}
                 </button>
             )}
         </div>

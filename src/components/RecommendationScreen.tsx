@@ -12,6 +12,7 @@ import { logger } from '../utils/logger';
 import { MapPin, Bell } from './icons';
 import { ProfileSkeleton } from './skeleton';
 import { Tooltip } from './ui/Tooltip';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface RecommendationScreenProps {
   userName: string;
@@ -25,7 +26,53 @@ const stripEmoji = (str: string) => {
   return str.replace(/(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff]|\s)+/g, ' ').trim();
 };
 
+// Helper para traducir comidas manteniendo el emoji original
+const translateMealWithEmoji = (meal: string, t: (key: string) => string): string => {
+  const mealMap: Record<string, string> = {
+    'Desayuno': 'desayuno',
+    'Comida': 'comida', 
+    'Cena': 'cena',
+    'Snack': 'snack'
+  };
+  const text = stripEmoji(meal);
+  const emoji = meal.replace(text, '').trim();
+  const key = mealMap[text];
+  return key ? `${emoji} ${t(`meals.${key}`)}` : meal;
+};
+
+// Helper para traducir cravings manteniendo el emoji original
+const translateCravingWithEmoji = (craving: string, t: (key: string) => string): string => {
+  const cravingMap: Record<string, string> = {
+    'Italiana / Pizza': 'italiana',
+    'Japonesa / Sushi': 'japonesa',
+    'Saludable o fit': 'saludable',
+    'Asiática / China': 'asiatica',
+    'Mexicana': 'mexicana',
+    'Americana / Fast food': 'americana',
+    'Mediterránea': 'mediterranea',
+    'Otros': 'otros'
+  };
+  const text = stripEmoji(craving);
+  const emoji = craving.replace(text, '').trim();
+  const key = cravingMap[text];
+  return key ? `${emoji} ${t(`cravings.${key}`)}` : craving;
+};
+
+// Helper para traducir budget labels
+const translateBudgetLabel = (label: string, value: 'low' | 'medium' | 'high', t: (key: string) => string): string => {
+  // Extraer la parte del rango de precios (lo que está entre paréntesis)
+  const rangeMatch = label.match(/\((.*)\)/);
+  const range = rangeMatch ? `(${rangeMatch[1]})` : '';
+  
+  // Traducir el nombre del budget
+  const translatedName = t(`budget.${value}`);
+  
+  // Retornar nombre traducido + rango original
+  return `${translatedName} ${range}`.trim();
+};
+
 const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, onPlanGenerated, isNewUser = false }) => {
+  const { t, locale } = useTranslation();
   const [recommendationType, setRecommendationType] = useState<'En casa' | 'Fuera' | null>(null); 
   const [selectedMeal, setSelectedMeal] = useState('');
   const [selectedCravings, setSelectedCravings] = useState<string[]>([]);
@@ -192,6 +239,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       const requestBody: any = {
         ...interactionData,
         _id: newDoc.id,
+        language: locale, // Agregar idioma actual
         onlyPantryIngredients: recommendationType === 'En casa' && onlyPantryIngredients
       };
       
@@ -335,8 +383,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         <div className="w-32 h-20 mx-auto mb-2">
           <BocadoLogo className="w-full h-full" />
         </div>
-        <h1 className="text-xl font-bold text-bocado-dark-green">¡Hola, {userName || 'Comensal'}! 👋</h1>
-        <p className="text-sm text-bocado-gray mt-1">¿Dónde y qué quieres comer hoy?</p>
+        <h1 className="text-xl font-bold text-bocado-dark-green">{t('recommendation.welcome', { userName: userName || 'Comensal' })}</h1>
+        <p className="text-sm text-bocado-gray mt-1">{t('recommendation.subtitle')}</p>
       </div>
 
       {/* ✅ NUEVO: Mensaje de error */}
@@ -361,10 +409,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-amber-900">
-                🔔 No te pierdas tus comidas
+                {t('recommendation.notificationBanner.title')}
               </p>
               <p className="text-xs text-amber-800 mt-0.5">
-                Recibe recordatorios para desayuno, comida y cena.
+                {t('recommendation.notificationBanner.description')}
               </p>
             </div>
             <div className="flex flex-col gap-1.5 flex-shrink-0">
@@ -378,7 +426,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                 }}
                 className="text-xs bg-amber-600 text-white font-bold px-3 py-1.5 rounded-full hover:bg-amber-700 active:scale-95 transition-all whitespace-nowrap"
               >
-                Activar
+                {t('recommendation.notificationBanner.activate')}
               </button>
               <button
                 onClick={() => {
@@ -387,7 +435,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                 }}
                 className="text-xs text-amber-700 hover:text-amber-900 transition-colors"
               >
-                Después
+                {t('recommendation.notificationBanner.later')}
               </button>
             </div>
           </div>
@@ -408,13 +456,15 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
             }`}
           >
             <span className="text-3xl mb-2">{habit === 'En casa' ? '🏡' : '🍽️'}</span>
-            <span className="font-bold text-sm text-center">{habit}</span>
+            <span className="font-bold text-sm text-center">
+              {habit === 'En casa' ? t('recommendation.homeButton') : t('recommendation.outButton')}
+            </span>
             <span className={`text-2xs mt-1 text-center leading-tight ${
               recommendationType === habit
                 ? 'text-white/80'
                 : 'text-bocado-gray'
             }`}>
-              {habit === 'En casa' ? 'Usa tus\ningredientes' : 'Encuéntrame\nun lugar'}
+              {habit === 'En casa' ? t('recommendation.useIngredients') : t('recommendation.findPlace')}
             </span>
           </button>
         ))}
@@ -425,7 +475,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         <div className="flex-1 animate-fade-in">
           {recommendationType === 'En casa' ? (
             <div className="space-y-4">
-              <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider">¿Qué vas a preparar?</p>
+              <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider">{t('recommendation.whatToCook')}</p>
               <div className="grid grid-cols-2 gap-2">
                 {MEALS.map(meal => (
                   <button 
@@ -438,7 +488,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                         : 'bg-white text-bocado-dark-gray border-bocado-border'
                     }`}
                   >
-                    {meal}
+                    {translateMealWithEmoji(meal, t)}
                   </button>
                 ))}
               </div>
@@ -447,7 +497,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                 <div className="bg-bocado-background p-4 rounded-2xl mt-2 animate-fade-in space-y-4">
                   <div>
                     <div className="flex justify-between items-center mb-4">
-                      <label className="text-2xs font-bold text-bocado-gray uppercase tracking-wide">⏱️ Tiempo de cocina</label>
+                      <label className="text-2xs font-bold text-bocado-gray uppercase tracking-wide">{t('recommendation.cookingTime')}</label>
                       <span className="text-lg font-bold text-bocado-green bg-white px-3 py-1 rounded-full">{cookingTime >= 65 ? '60+' : cookingTime} min</span>
                     </div>
 
@@ -495,12 +545,12 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                       />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-bocado-dark-gray group-hover:text-bocado-green transition-colors">
-                          Solo ingredientes en mi cocina
+                          {t('recommendation.onlyMyIngredients')}
                         </p>
                         <p className="text-2xs text-bocado-gray mt-0.5">
                           {onlyPantryIngredients
-                            ? '✓ Usaremos solo lo que tienes'
-                            : 'Si no lo activas, recomendaremos también ingredientes a comprar'}
+                            ? t('recommendation.onlyMyIngredientsHelp')
+                            : t('recommendation.onlyMyIngredientsHelpOff')}
                         </p>
                       </div>
                     </label>
@@ -511,7 +561,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
           ) : (
             <div className="space-y-4">
               <div>
-                <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-3">¿Qué se te antoja?</p>
+                <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-3">{t('recommendation.whatCraving')}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {CRAVINGS.map(craving => (
                     <button 
@@ -524,7 +574,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                           : 'bg-white text-bocado-dark-gray border-bocado-border'
                       }`}
                     >
-                      {craving}
+                      {translateCravingWithEmoji(craving, t)}
                     </button>
                   ))}
                 </div>
@@ -532,7 +582,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
 
               <div>
                 <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-3">
-                  Presupuesto ({currencyConfig.name})
+                  {t('recommendation.budget', { currency: currencyConfig.name })}
                 </p>
                 <div className="space-y-2">
                   {budgetOptions.map(option => (
@@ -549,7 +599,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                           : 'bg-white text-bocado-dark-gray border-bocado-border'
                       }`}
                     >
-                      <span>{option.label}</span>
+                      <span>{translateBudgetLabel(option.label, option.value, t)}</span>
                       {selectedBudget === option.value && <span>✓</span>}
                     </button>
                   ))}
@@ -569,13 +619,13 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                     </Tooltip>
                     <span className="text-xs text-bocado-dark-gray">
                       {userPosition ? (
-                        <span className="text-bocado-green font-medium">📍 Ubicación activa</span>
+                        <span className="text-bocado-green font-medium">{t('recommendation.locationActive')}</span>
                       ) : locationPermission === 'denied' ? (
-                        <span className="text-red-600">Ubicación denegada</span>
+                        <span className="text-red-600">{t('recommendation.locationDenied')}</span>
                       ) : locationLoading ? (
-                        <span className="text-bocado-gray">Obteniendo ubicación...</span>
+                        <span className="text-bocado-gray">{t('recommendation.gettingLocation')}</span>
                       ) : (
-                        <span className="text-bocado-gray">Usar ubicación actual</span>
+                        <span className="text-bocado-gray">{t('recommendation.useCurrentLocation')}</span>
                       )}
                     </span>
                   </div>
@@ -585,14 +635,14 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                       disabled={locationLoading || isGenerating}
                       className="text-xs font-bold text-white bg-bocado-green px-3 py-1.5 rounded-full hover:bg-bocado-dark-green active:scale-95 disabled:bg-bocado-gray disabled:cursor-not-allowed transition-all flex-shrink-0 ml-2 whitespace-nowrap"
                     >
-                      {locationLoading ? '...' : 'Activar'}
+                      {locationLoading ? '...' : t('recommendation.activateLocation')}
                     </button>
                   )}
                 </div>
                 <p className="text-2xs text-bocado-gray mt-2 ml-6">
                   {userPosition
-                    ? `Buscando restaurantes en ${SEARCH_RADIUS.label} de ${detectedLocation?.city || 'tu ubicación'}`
-                    : `Sin ubicación: buscaré en ${profile?.city || 'tu ciudad'}`
+                    ? `${t('recommendation.searchingIn')} ${SEARCH_RADIUS.label} ${detectedLocation?.city || t('recommendation.yourLocation')}`
+                    : `${t('recommendation.noLocationSearching')} ${profile?.city || t('recommendation.yourCity')}`
                   }
                 </p>
               </div>
@@ -609,7 +659,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
               {isGenerating ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Cocinando...</span>
+                  <span>{t('recommendation.generating')}</span>
                 </>
               ) : isRateLimited ? (
                 <>
@@ -617,7 +667,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
                   <span>Espera {formattedTimeLeft}s</span>
                 </>
               ) : (
-                "Generar recomendación"
+                t('recommendation.generateRecommendation')
               )}
             </button>
 
@@ -625,8 +675,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
             {!isSelectionMade && (
               <p className="text-center text-2xs text-bocado-gray mt-2">
                 {recommendationType === 'En casa'
-                  ? 'Elige un tipo de comida para continuar'
-                  : 'Elige qué se te antoja y presupuesto'}
+                  ? t('recommendation.chooseCravingTip')
+                  : t('recommendation.chooseCravingAndBudgetTip')}
               </p>
             )}
 

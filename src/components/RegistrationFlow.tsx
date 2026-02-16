@@ -23,6 +23,7 @@ import {
 import { separateUserData } from '../utils/profileSanitizer';
 import { logger } from '../utils/logger';
 import { searchCities, getPlaceDetails, PlacePrediction } from '../services/mapsService';
+import { useTranslation } from '../contexts/I18nContext';
 
 // Helper para convertir undefined a null antes de guardar en Firestore
 // Firestore no acepta undefined pero sí acepta null
@@ -60,6 +61,7 @@ interface RegistrationFlowProps {
 }
 
 const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationComplete, onGoHome }) => {
+  const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -324,9 +326,9 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">¡Verifica tu correo!</h2>
-          <p className="text-sm text-bocado-gray mb-4">Enviado a <strong className="text-bocado-text break-all">{registeredEmail}</strong></p>
-          <button onClick={handleVerificationComplete} className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all">Ya verifiqué mi correo</button>
+          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">{t('registrationFlow.verifyEmailTitle')}</h2>
+          <p className="text-sm text-bocado-gray mb-4">{t('registrationFlow.sentTo')} <strong className="text-bocado-text break-all">{registeredEmail}</strong></p>
+          <button onClick={handleVerificationComplete} className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all">{t('registrationFlow.alreadyVerified')}</button>
         </div>
       </div>
     );
@@ -351,17 +353,17 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
 
         <div className="mt-4 space-y-3 pb-safe">
           <div className="flex justify-between gap-3">
-            <button onClick={prevStep} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${currentStep === 1 ? 'invisible' : 'bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95'}`} disabled={isLoading}>Anterior</button>
+            <button onClick={prevStep} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${currentStep === 1 ? 'invisible' : 'bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95'}`} disabled={isLoading}>{t('registrationFlow.previous')}</button>
             <button 
               data-testid={currentStep === TOTAL_STEPS ? 'submit-button' : 'next-button'}
               onClick={nextStep} 
               className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
               disabled={isLoading}
             >
-              {isLoading ? '...' : (currentStep === TOTAL_STEPS ? 'Crear cuenta' : 'Siguiente')}
+              {isLoading ? t('registrationFlow.creating') : (currentStep === TOTAL_STEPS ? t('registrationFlow.createAccount') : t('registrationFlow.next'))}
             </button>
           </div>
-          <button onClick={onGoHome} className="w-full text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray transition-colors py-2" disabled={isLoading}>Volver al inicio</button>
+          <button onClick={onGoHome} className="w-full text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray transition-colors py-2" disabled={isLoading}>{t('registrationFlow.backToHome')}</button>
         </div>
       </div>
     </div>

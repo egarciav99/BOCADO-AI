@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { logger } from '../utils/logger';
+import { useTranslation } from '../contexts/I18nContext';
 
 /**
  * Componente Toast para mostrar notificaciones de estado de red
  * Se muestra automáticamente cuando se pierde o recupera la conexión
  */
 export const NetworkStatusToast: React.FC = () => {
+  const { t } = useTranslation();
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'online' | 'offline'>('online');
@@ -15,7 +17,7 @@ export const NetworkStatusToast: React.FC = () => {
   const { isOnline, isOffline, wasOffline } = useNetworkStatus({
     showReconnectionToast: true,
     onOffline: () => {
-      setToastMessage('Sin conexión a internet');
+      setToastMessage(t('network.offline'));
       setToastType('offline');
       setShowToast(true);
       
@@ -30,7 +32,7 @@ export const NetworkStatusToast: React.FC = () => {
     },
     onOnline: () => {
       if (wasOffline) {
-        setToastMessage('Conexión restaurada');
+        setToastMessage(t('network.online'));
         setToastType('online');
         setShowToast(true);
         

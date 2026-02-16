@@ -6,8 +6,10 @@ import { MapPin } from './icons';
 import MealCard from './MealCard';
 import { Meal } from '../types';
 import { RecipeListSkeleton } from './skeleton';
+import { useTranslation } from '../contexts/I18nContext';
 
 const SavedRestaurantsScreen: React.FC = () => {
+  const { t } = useTranslation();
   const [mealToConfirmDelete, setMealToConfirmDelete] = useState<Meal | null>(null);
   
   const { user } = useAuthStore();
@@ -88,17 +90,17 @@ const SavedRestaurantsScreen: React.FC = () => {
     <div className="flex-1 flex flex-col animate-fade-in relative">
       <div className="text-center mb-6 px-4 pt-2">
         <MapPin className="w-6 h-6 text-bocado-green mx-auto mb-2" />
-        <h2 className="text-xl font-bold text-bocado-dark-green">Mis Lugares</h2>
+        <h2 className="text-xl font-bold text-bocado-dark-green">{t('saved.title')}</h2>
         <p className="text-xs text-bocado-gray">
-          {totalLoaded} {totalLoaded === 1 ? 'lugar guardado' : 'lugares guardados'}
+          {totalLoaded === 1 ? t('saved.count', { count: totalLoaded }) : t('saved.countPlural', { count: totalLoaded })}
         </p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 pb-4 no-scrollbar">
         {savedRestaurants.length === 0 ? (
           <div className="text-center py-12 px-6 bg-bocado-background rounded-2xl border-2 border-dashed border-bocado-border">
-            <p className="text-bocado-gray text-base mb-2">Aún no has guardado lugares</p>
-            <p className="text-xs text-bocado-gray/70">Dale ❤️ a los restaurantes para verlos aquí</p>
+            <p className="text-bocado-gray text-base mb-2">{t('saved.emptyState')}</p>
+            <p className="text-xs text-bocado-gray/70">{t('saved.emptyStateSubtitle')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -121,10 +123,10 @@ const SavedRestaurantsScreen: React.FC = () => {
                   {isFetchingNextPage ? (
                     <>
                       <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-sm">Cargando...</span>
+                      <span className="text-sm">{t('saved.loading')}</span>
                     </>
                   ) : (
-                    <span className="text-sm">Cargar más lugares</span>
+                    <span className="text-sm">{t('saved.loadMore')}</span>
                   )}
                 </button>
               </div>
@@ -133,7 +135,7 @@ const SavedRestaurantsScreen: React.FC = () => {
             {/* Mensaje de fin */}
             {!hasNextPage && savedRestaurants.length > 0 && (
               <p className="text-center text-xs text-bocado-gray/60 py-4">
-                No hay más lugares guardados
+                {t('saved.noMore')}
               </p>
             )}
           </div>
@@ -147,7 +149,7 @@ const SavedRestaurantsScreen: React.FC = () => {
             <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-xl">🗑️</span>
             </div>
-            <h3 className="text-lg font-bold text-bocado-text mb-2">¿Eliminar lugar?</h3>
+            <h3 className="text-lg font-bold text-bocado-text mb-2">{t('saved.deleteTitle')}</h3>
             <p className="text-sm text-bocado-gray mb-2">
               "{mealToConfirmDelete.recipe.title}"
             </p>
@@ -162,14 +164,14 @@ const SavedRestaurantsScreen: React.FC = () => {
                 onClick={() => setMealToConfirmDelete(null)}
                 className="flex-1 bg-bocado-background text-bocado-dark-gray font-bold py-3 rounded-full text-sm"
               >
-                Cancelar
+                {t('saved.cancel')}
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={toggleMutation.isPending}
                 className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm disabled:opacity-50"
               >
-                {toggleMutation.isPending ? '...' : 'Eliminar'}
+                {toggleMutation.isPending ? '...' : t('saved.delete')}
               </button>
             </div>
           </div>

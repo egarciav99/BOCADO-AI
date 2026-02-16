@@ -2,6 +2,7 @@ import React from 'react';
 import { FormStepProps } from './FormStepProps';
 import { DISEASES, ALLERGIES, GOALS } from '../../constants';
 import { trackEvent } from '../../firebaseConfig'; // ✅ Importado trackEvent
+import { useTranslation } from '../../contexts/I18nContext';
 
 const MultiSelectButton: React.FC<{
   option: string;
@@ -22,6 +23,7 @@ const MultiSelectButton: React.FC<{
 );
 
 const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
+  const { t } = useTranslation();
   // Asegurar que los arrays existan (fallback a array vacío)
   const diseases = data.diseases || [];
   const allergies = data.allergies || [];
@@ -76,7 +78,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       {/* Enfermedades */}
       <div>
         <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
-          ¿Enfermedades crónicas? <span className="text-bocado-gray font-normal normal-case">(opcional)</span>
+          {t('step2.diseases')}
         </label>
         <div className="flex flex-wrap gap-2">
           {DISEASES.map(disease => (
@@ -93,7 +95,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       {/* Alergias */}
       <div>
         <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
-          ¿Alergias o intolerancias? <span className="text-bocado-gray font-normal normal-case">(opcional)</span>
+          {t('step2.allergies')}
         </label>
         <div className="flex flex-wrap gap-2">
           {ALLERGIES.map(allergy => (
@@ -109,14 +111,14 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
         {allergies.includes('Otro') && (
           <div className="mt-3">
             <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">
-              Especifica:
+              {t('step2.specify')}
             </label>
             <input
               type="text"
               value={data.otherAllergies || ''}
               onChange={(e) => updateData('otherAllergies', e.target.value)}
               onBlur={() => trackEvent('registration_other_allergies_input')} // ✅ Analítica
-              placeholder="Mariscos, frutos secos..."
+              placeholder={t('step2.specifyPlaceholder')}
               className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
                 errors.otherAllergies ? 'border-red-300 bg-red-50' : 'border-bocado-border focus:border-bocado-green focus:outline-none'
               }`}
@@ -129,7 +131,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       {/* Objetivos */}
       <div>
         <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
-          Objetivo nutricional *
+          {t('step2.goals')}
         </label>
         <div className="flex flex-wrap gap-2">
           {GOALS.map(goal => (
@@ -142,7 +144,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
           ))}
         </div>
         {errors.nutritionalGoal && <p className="text-red-500 text-2xs mt-2">{errors.nutritionalGoal}</p>}
-        <p className="text-2xs text-bocado-gray mt-2">Puedes seleccionar varios (excepto subir/bajar peso juntos)</p>
+        <p className="text-2xs text-bocado-gray mt-2">{t('step2.goalsHelp')}</p>
       </div>
     </div>
   );

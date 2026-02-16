@@ -12,6 +12,7 @@ import { updateProfile } from 'firebase/auth';
 import { useAuthStore } from '../stores/authStore';
 import { useUserProfile } from '../hooks/useUser';
 import { logger } from '../utils/logger';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface MainAppProps {
   onPlanGenerated: (id: string) => void;
@@ -28,6 +29,7 @@ const MainApp: React.FC<MainAppProps> = ({
   onLogoutComplete,
   initialTab = 'recommendation'
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const [isTutorialOpen, setIsTutorialOpen] = useState(showTutorial);
   
@@ -82,7 +84,7 @@ const MainApp: React.FC<MainAppProps> = ({
       <div className="h-screen w-full flex items-center justify-center bg-bocado-background">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-bocado-green font-bold animate-pulse">Sincronizando Bocado...</p>
+          <p className="text-bocado-green font-bold animate-pulse">{t('mainApp.loading')}</p>
         </div>
       </div>
     );
@@ -92,12 +94,12 @@ const MainApp: React.FC<MainAppProps> = ({
     return (
       <div className="h-screen w-full flex items-center justify-center bg-bocado-background p-4">
         <div className="text-center">
-          <p className="text-bocado-gray mb-4">Sesión no válida. Redirigiendo...</p>
+          <p className="text-bocado-gray mb-4">{t('mainApp.sessionInvalid')}</p>
           <button 
             onClick={() => window.location.reload()}
             className="bg-bocado-green text-white px-6 py-3 rounded-full font-bold"
           >
-            Recargar
+            {t('mainApp.reload')}
           </button>
         </div>
       </div>

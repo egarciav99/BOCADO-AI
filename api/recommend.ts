@@ -492,6 +492,8 @@ const RequestBodySchema = z.object({
   dislikedFoods: z.array(z.string().max(100)).max(50).optional().default([]),
   onlyPantryIngredients: z.boolean().optional().default(false),
   _id: z.string().max(128).optional(),
+  // Idioma para las recomendaciones
+  language: z.enum(['es', 'en']).optional().default('es'),
   // Ubicación del usuario (opcional - geolocalización del navegador)
   userLocation: z.object({
     lat: z.number().min(-90).max(90),
@@ -1351,6 +1353,7 @@ ${marketList && !request.onlyPantryIngredients ? `\nDISPONIBLE: ${marketList.sli
 
 REGLAS: 3 recetas creativas, tiempo ≤${request.cookingTime || '30'}min, ${pantryRule}${difficultyHint}.
 
+Resp onde EXCLUSIVAMENTE en ${request.language === 'en' ? 'INGLÉS.' : 'ESPAÑOL.'}
 Responde en formato JSON usando esta estructura exacta:
 ${RECIPE_JSON_TEMPLATE}
 
@@ -1436,6 +1439,7 @@ REGLAS CRÍTICAS:
 ${user.eatingHabit && (user.eatingHabit.includes('Vegano') || user.eatingHabit.includes('Vegetariano')) ? `\n6. CRÍTICO: SOLO restaurantes con opciones ${user.eatingHabit.toLowerCase()} certificadas` : ''}
 ${travelContext.isTraveling ? `\n7. Menciona precios aproximados en ${travelContext.activeCurrency} (moneda local)` : ''}
 
+Responde EXCLUSIVAMENTE en ${request.language === 'en' ? 'INGLÉS.' : 'ESPAÑOL.'}
 Responde en formato JSON usando esta estructura exacta:
 ${RESTAURANT_JSON_TEMPLATE}
 

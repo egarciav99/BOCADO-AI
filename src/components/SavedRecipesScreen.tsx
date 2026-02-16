@@ -5,8 +5,10 @@ import { BookOpen } from './icons';
 import MealCard from './MealCard';
 import { Meal } from '../types';
 import { RecipeListSkeleton } from './skeleton';
+import { useTranslation } from '../contexts/I18nContext';
 
 const SavedRecipesScreen: React.FC = () => {
+  const { t } = useTranslation();
   const [mealToConfirmDelete, setMealToConfirmDelete] = useState<Meal | null>(null);
   
   const { user } = useAuthStore();
@@ -55,23 +57,23 @@ const SavedRecipesScreen: React.FC = () => {
       <div className="text-center mb-6 px-4 pt-2">
         <div className="flex items-center justify-center gap-2 mb-1">
           <BookOpen className="w-6 h-6 text-bocado-green" />
-          <h2 className="text-xl font-bold text-bocado-dark-green">Mis Recetas</h2>
+          <h2 className="text-xl font-bold text-bocado-dark-green">{t('savedRecipes.title')}</h2>
         </div>
         <p className="text-xs text-bocado-gray">
-          Tus platos favoritos guardados
+          {t('savedRecipes.subtitle')}
           {totalLoaded > 0 && (
             <span className="ml-1 text-bocado-green font-medium">({totalLoaded})</span>
           )}
         </p>
-        {toggleMutation.isPending && <p className="text-[10px] text-bocado-green mt-1">Sincronizando...</p>}
+        {toggleMutation.isPending && <p className="text-[10px] text-bocado-green mt-1">{t('savedRecipes.syncing')}</p>}
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pb-4 no-scrollbar">
         {savedMeals.length === 0 ? (
           <div className="text-center py-12 px-6 bg-bocado-background rounded-2xl border-2 border-dashed border-bocado-border">
-            <p className="text-bocado-gray text-base mb-2">Aún no has guardado recetas</p>
-            <p className="text-xs text-bocado-gray/70">Dale ❤️ a las recetas para verlas aquí</p>
+            <p className="text-bocado-gray text-base mb-2">{t('savedRecipes.emptyState')}</p>
+            <p className="text-xs text-bocado-gray/70">{t('savedRecipes.emptyStateSubtitle')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -96,10 +98,10 @@ const SavedRecipesScreen: React.FC = () => {
                   {isFetchingNextPage ? (
                     <>
                       <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-sm">Cargando...</span>
+                      <span className="text-sm">{t('savedRecipes.loading')}</span>
                     </>
                   ) : (
-                    <span className="text-sm">Cargar más recetas</span>
+                    <span className="text-sm">{t('savedRecipes.loadMore')}</span>
                   )}
                 </button>
               </div>
@@ -108,7 +110,7 @@ const SavedRecipesScreen: React.FC = () => {
             {/* Mensaje de fin */}
             {!hasNextPage && savedMeals.length > 0 && (
               <p className="text-center text-xs text-bocado-gray/60 py-4">
-                No hay más recetas guardadas
+                {t('savedRecipes.noMore')}
               </p>
             )}
           </div>
@@ -122,23 +124,21 @@ const SavedRecipesScreen: React.FC = () => {
             <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-xl">🗑️</span>
             </div>
-            <h3 className="text-lg font-bold text-bocado-text mb-2">¿Eliminar receta?</h3>
-            <p className="text-sm text-bocado-gray mb-6">
-              Se eliminará <span className="font-semibold text-bocado-text">"{mealToConfirmDelete.recipe.title}"</span>
-            </p>
+            <h3 className="text-lg font-bold text-bocado-text mb-2">{t('savedRecipes.deleteTitle')}</h3>
+            <p className="text-sm text-bocado-gray mb-6" dangerouslySetInnerHTML={{ __html: t('savedRecipes.deleteMessage', { title: mealToConfirmDelete.recipe.title }) }} />
             <div className="flex gap-3">
               <button
                 onClick={() => setMealToConfirmDelete(null)}
                 className="flex-1 bg-bocado-background text-bocado-dark-gray font-bold py-3 rounded-full text-sm hover:bg-bocado-border transition-colors active:scale-95"
               >
-                Cancelar
+                {t('savedRecipes.cancel')}
               </button>
               <button
                 onClick={confirmDelete}
                 disabled={toggleMutation.isPending}
                 className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm hover:bg-red-600 active:scale-95 transition-colors disabled:opacity-50"
               >
-                {toggleMutation.isPending ? '...' : 'Eliminar'}
+                {toggleMutation.isPending ? '...' : t('savedRecipes.delete')}
               </button>
             </div>
           </div>

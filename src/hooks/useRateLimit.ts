@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
 import { env } from '../environment/env';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface RateLimitStatus {
   requestsInWindow: number;
@@ -24,6 +25,7 @@ const DEFAULT_STATUS: RateLimitStatus = {
  */
 export const useRateLimit = (userId: string | undefined) => {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   const { data: status = DEFAULT_STATUS, isLoading } = useQuery({
     queryKey: ['rateLimit', userId],
@@ -63,12 +65,12 @@ export const useRateLimit = (userId: string | undefined) => {
    * Formatea el tiempo restante para mostrar al usuario
    */
   const formatTimeLeft = useCallback((seconds: number): string => {
-    if (seconds <= 0) return 'Ahora';
+    if (seconds <= 0) return t('now') || 'Now';
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes}m ${remainingSeconds}s`;
-  }, []);
+  }, [t]);
 
   // Memoizar el tiempo formateado para evitar cálculos innecesarios
   const formattedTimeLeft = useMemo(() => 
@@ -79,14 +81,17 @@ export const useRateLimit = (userId: string | undefined) => {
   // Memoizar el mensaje
   const message = useMemo(() => {
     if (!status.canRequest) {
-      return `Espera ${formatTimeLeft(status.nextAvailableIn)}`;
+      return t('rateLimit.wait', { time: formatTimeLeft(status.nextAvailableIn) });
     }
     // Cuando puede hacer requests, mostrar info util
     const remaining = status.remainingRequests ?? 5;
-    return remaining <= 2
-      ? `⚠️ ${remaining} recomendación${remaining === 1 ? '' : 'es'} disponible${remaining === 1 ? '' : 's'}`
-      : `${remaining} recomendaciones en esta sesión`;
-  }, [formatTimeLeft, status.canRequest, status.nextAvailableIn, status.remainingRequests]);
+    if (remaining <= 2) {
+      return remaining === 1
+        ? t('rateLimit.warning', { count: remaining })
+        : t('rateLimit.warningPlural', { count: remaining });
+    }
+    return t('rateLimit.sessionInfo', { count: remaining });
+  }, [t, formatTimeLeft, status.canRequest, status.nextAvailableIn, status.remainingRequests]);
 
   return {
     ...status,

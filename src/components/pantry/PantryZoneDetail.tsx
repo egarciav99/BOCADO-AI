@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { KitchenItem, Zone, Freshness } from '../../types';
 import { ZONES, ZONE_CATEGORIES, COMMON_INGREDIENTS_DB, getEmoji } from './constants';
 import { trackEvent } from '../../firebaseConfig';
+import { useTranslation } from '../../contexts/I18nContext';
 
 interface PantryZoneDetailProps {
   zone: Zone;
@@ -45,8 +46,77 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
   onDeleteItem,
   onToggleFreshness,
 }) => {
+  const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState('Todos');
   const [newItemName, setNewItemName] = useState('');
+
+  // Helper para traducir nombres de zona
+  const translateZone = (zone: Zone): string => {
+    const zoneMap: Record<Zone, string> = {
+      'Despensa': t('pantryZones.despensa'),
+      'Nevera': t('pantryZones.nevera'),
+      'Congelador': t('pantryZones.congelador')
+    };
+    return zoneMap[zone] || zone;
+  };
+
+  // Helper para traducir categorías (manteniendo emoji)
+  const translateCategory = (cat: string): string => {
+    const categoryMap: Record<string, string> = {
+      'Todos': 'todos',
+      'Especias': 'especias',
+      'Latas': 'latas',
+      'Granos': 'granos',
+      'Bebidas': 'bebidas',
+      'Snacks': 'snacks',
+      'Verduras': 'verduras',
+      'Frutas': 'frutas',
+      'Proteínas': 'proteinas',
+      'Lácteos': 'lacteos'
+    };
+    
+    // Separar texto del emoji
+    const parts = cat.split(' ');
+    const text = parts[0];
+    const emoji = parts[1] || '';
+    const key = categoryMap[text];
+    
+    return key ? `${t(`pantryCategories.${key}`)} ${emoji}`.trim() : cat;
+  };
+
+  // Helper para traducir ingredientes
+  const translateIngredient = (name: string): string => {
+    const ingredientMap: Record<string, string> = {
+      'Aceite': 'aceite', 'Aceitunas': 'aceitunas', 'Ajo': 'ajo',
+      'Arroz': 'arroz', 'Atún': 'atun', 'Agua': 'agua',
+      'Aguacate': 'aguacate', 'Avena': 'avena', 'Azúcar': 'azucar',
+      'Brocoli': 'brocoli', 'Café': 'cafe', 'Calabacín': 'calabacin',
+      'Camote': 'camote', 'Carne': 'carne', 'Carne Molida': 'carneMolida',
+      'Cebolla': 'cebolla', 'Cerveza': 'cerveza', 'Chícharos': 'chicharos',
+      'Chocolate': 'chocolate', 'Comino': 'comino', 'Crema': 'crema',
+      'Espinaca': 'espinaca', 'Fresas': 'fresas', 'Frijoles': 'frijoles',
+      'Frutos Rojos': 'frutosRojos', 'Galletas': 'galletas', 'Harina': 'harina',
+      'Helado': 'helado', 'Hielos': 'hielos', 'Huevos': 'huevos',
+      'Hummus': 'hummus', 'Jamón': 'jamon', 'Jugo': 'jugo',
+      'Leche': 'leche', 'Lechuga': 'lechuga', 'Lentejas': 'lentejas',
+      'Limón': 'limon', 'Maíz': 'maiz', 'Mango': 'mango',
+      'Mango Cong.': 'mangoCong', 'Mantequilla': 'mantequilla', 'Manzana': 'manzana',
+      'Mariscos': 'mariscos', 'Naranja': 'naranja', 'Nueces': 'nueces',
+      'Orégano': 'oregano', 'Pan': 'pan', 'Pan Cong.': 'panCong',
+      'Papa': 'papa', 'Papas Cong.': 'papasCong', 'Papas Fritas': 'papasFritas',
+      'Pasta': 'pasta', 'Pepino': 'pepino', 'Pescado': 'pescado',
+      'Pimienta': 'pimienta', 'Pimiento': 'pimiento', 'Plátano': 'platano',
+      'Pollo': 'pollo', 'Pollo Cong.': 'polloCong', 'Queso': 'queso',
+      'Refresco': 'refresco', 'Sal': 'sal', 'Salchichas': 'salchichas',
+      'Sandía': 'sandia', 'Sardinas': 'sardinas', 'Té': 'te',
+      'Tomate': 'tomate', 'Tomate Frito': 'tomateFrito', 'Uvas': 'uvas',
+      'Verduras Cong.': 'verdurasCong', 'Vinagre': 'vinagre', 'Vino': 'vino',
+      'Yogur': 'yogur', 'Zanahoria': 'zanahoria'
+    };
+    
+    const key = ingredientMap[name];
+    return key ? t(`ingredients.${key}`) : name;
+  };
 
   const zoneItems = useMemo(() => {
     let filtered = inventory.filter(i => i.zone === zone);
@@ -134,29 +204,29 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
             ←
           </button>
           <h1 className="text-lg font-bold text-bocado-dark-green flex items-center gap-2">
-            {ZONES[zone].emoji} {ZONES[zone].label}
+            {ZONES[zone].emoji} {translateZone(zone)}
           </h1>
-          {isSaving && <span className="text-xs text-bocado-gray animate-pulse">Guardando...</span>}
+          {isSaving && <span className="text-xs text-bocado-gray animate-pulse">{t('pantry.saving')}</span>}
         </div>
 
         {/* Leyenda de frescura */}
         <div className="bg-bocado-background/50 rounded-lg p-3 mb-3 border border-bocado-border/30">
-          <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">Estados</p>
+          <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">{t('pantry.states')}</p>
           <div className="flex gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-2xs">
               <div className="w-3 h-3 rounded-full bg-green-400"></div>
-              <span className="font-medium text-bocado-text">Fresco</span>
+              <span className="font-medium text-bocado-text">{t('pantry.fresh')}</span>
             </div>
             <div className="flex items-center gap-2 text-2xs">
               <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-              <span className="font-medium text-bocado-text">Por caducar</span>
+              <span className="font-medium text-bocado-text">{t('pantry.expiringSoon')}</span>
             </div>
             <div className="flex items-center gap-2 text-2xs">
               <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span className="font-medium text-bocado-text">Urgente</span>
+              <span className="font-medium text-bocado-text">{t('pantry.urgent')}</span>
             </div>
           </div>
-          <p className="text-2xs text-bocado-gray mt-2">👆 Toca un ingrediente para cambiar su estado</p>
+          <p className="text-2xs text-bocado-gray mt-2">{t('pantry.tapToChange')}</p>
         </div>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -170,7 +240,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
                   : 'bg-bocado-background text-bocado-dark-gray'
               }`}
             >
-              {cat}
+              {translateCategory(cat)}
             </button>
           ))}
         </div>
@@ -179,7 +249,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
       <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
         {suggestedItems.length > 0 && (
           <div className="mb-4">
-            <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">Sugerencias</p>
+            <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">{t('pantry.suggestions')}</p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               {suggestedItems.map(item => (
                 <button
@@ -188,7 +258,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
                   className="flex items-center gap-1.5 bg-white border border-bocado-border hover:border-bocado-green hover:bg-bocado-green/5 rounded-full px-3 py-1.5 shadow-sm transition-all active:scale-95 whitespace-nowrap"
                 >
                   <span className="text-base">{item.emoji}</span>
-                  <span className="text-sm font-medium text-bocado-text">{item.name}</span>
+                  <span className="text-sm font-medium text-bocado-text">{translateIngredient(item.name)}</span>
                   <span className="text-bocado-green font-bold text-sm">+</span>
                 </button>
               ))}
@@ -202,7 +272,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
               type="text"
               value={newItemName}
               onChange={(e) => setNewItemName(e.target.value)}
-              placeholder={activeCategory === 'Todos' ? `Agregar ingrediente...` : `Agregar en ${activeCategory}...`}
+              placeholder={activeCategory === 'Todos' ? t('pantry.addIngredient') : t('pantry.addInCategory', { category: activeCategory })}
               className="w-full pl-4 pr-10 py-3 rounded-xl border border-bocado-border bg-bocado-background text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all"
             />
             <button 
@@ -218,7 +288,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
         {zoneItems.length === 0 ? (
           <div className="text-center py-12 text-bocado-gray flex flex-col items-center">
             <span className="text-3xl mb-2 opacity-30">🕸️</span>
-            <p className="text-sm">Está vacío</p>
+            <p className="text-sm">{t('pantry.empty')}</p>
           </div>
         ) : (
           <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -235,7 +305,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
                   <span className="text-xs">×</span>
                 </button>
                 <span className="text-2xl select-none leading-none mt-1">{item.emoji}</span>
-                <span className="font-medium text-bocado-text text-2xs text-center leading-tight line-clamp-2 w-full px-1">{item.name}</span>
+                <span className="font-medium text-bocado-text text-2xs text-center leading-tight line-clamp-2 w-full px-1">{translateIngredient(item.name)}</span>
                 <div className={`w-1.5 h-1.5 rounded-full mt-0.5 ${getFreshnessRing(item.freshness)}`} />
               </div>
             ))}
@@ -246,8 +316,8 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
       {urgentItems.length > 0 && (
         <div className="absolute bottom-20 left-4 right-4 bg-white border-t-2 border-red-400 rounded-xl p-3 shadow-bocado-lg z-30 flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-2xs font-bold text-red-500 uppercase tracking-wider">Caducidad</span>
-            <span className="text-xs font-bold text-bocado-text">{urgentItems.length} ítems</span>
+            <span className="text-2xs font-bold text-red-500 uppercase tracking-wider">{t('pantry.expiry')}</span>
+            <span className="text-xs font-bold text-bocado-text">{t('pantry.urgentCount', { count: urgentItems.length })}</span>
           </div>
           <div className="flex -space-x-2">
             {urgentItems.slice(0,4).map(i => (

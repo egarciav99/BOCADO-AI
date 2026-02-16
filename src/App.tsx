@@ -237,13 +237,13 @@ function AppContent() {
 function App() {
   return (
     <ThemeProvider>
-      <I18nProvider>
-        <QueryClientProvider client={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <I18nProvider>
           <ErrorBoundary>
             <AppContent />
           </ErrorBoundary>
-        </QueryClientProvider>
-      </I18nProvider>
+        </I18nProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

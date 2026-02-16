@@ -1,6 +1,7 @@
 import React from 'react';
 import { usePWA } from '../hooks/usePWA';
 import { Download, RefreshCw, WifiOff, X } from 'lucide-react';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface PWABannerProps {
   showInstall?: boolean;
@@ -13,6 +14,7 @@ interface PWABannerProps {
  * - Estado offline
  */
 const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
+  const { t } = useTranslation();
   const { 
     isInstallable, 
     isOffline, 
@@ -43,7 +45,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
           <div className="flex items-center gap-3">
             <RefreshCw className="w-5 h-5" />
             <span className="text-sm font-medium">
-              Nueva versión disponible
+              {t('pwaBanner.updateAvailable')}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -51,7 +53,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
               onClick={updateApp}
               className="px-3 py-1.5 bg-white text-blue-500 text-sm font-semibold rounded-lg hover:bg-blue-50 transition-colors"
             >
-              Actualizar
+              {t('pwaBanner.update')}
             </button>
             <button
               onClick={() => setDismissed(true)}
@@ -77,13 +79,13 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
               <Download className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold">Instalar Bocado</p>
+              <p className="text-sm font-bold">{t('pwaBanner.installTitle')}</p>
               {isManualInstall ? (
                 <p className="text-xs text-white/80">
-                  En iPhone/iPad: toca Compartir y luego "Agregar a pantalla de inicio"
+                  {t('pwaBanner.installManualIOS')}
                 </p>
               ) : (
-                <p className="text-xs text-white/80">Acceso rápido desde tu pantalla de inicio</p>
+                <p className="text-xs text-white/80">{t('pwaBanner.installQuickAccess')}</p>
               )}
             </div>
           </div>
@@ -93,14 +95,14 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
                 onClick={() => setDismissed(true)}
                 className="px-3 py-2 bg-white/10 text-white text-sm font-bold rounded-xl hover:bg-white/20 transition-colors"
               >
-                Entendido
+                {t('pwaBanner.understood')}
               </button>
             ) : (
               <button
                 onClick={install}
                 className="px-4 py-2 bg-white text-bocado-green text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
               >
-                Instalar
+                {t('pwaBanner.install')}
               </button>
             )}
             <button
@@ -122,7 +124,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
         <div className="flex items-center justify-center gap-2">
           <WifiOff className="w-4 h-4" />
           <span className="text-xs font-medium">
-            Sin conexión. Algunas funciones pueden no estar disponibles.
+            {t('pwaBanner.offlineMessage')}
           </span>
         </div>
       </div>

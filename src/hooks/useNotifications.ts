@@ -6,6 +6,7 @@ import {
   trackEvent 
 } from '../firebaseConfig';
 import { logger } from '../utils/logger';
+import { useTranslation } from '../contexts/I18nContext';
 
 export interface NotificationSchedule {
   id: string;
@@ -31,11 +32,11 @@ interface UseNotificationsReturn {
   lastMessage: any | null;
 }
 
-const DEFAULT_SCHEDULES: NotificationSchedule[] = [
+const createDefaultSchedules = (t: (key: string) => string): NotificationSchedule[] => [
   {
     id: 'breakfast',
-    title: '🌅 Buen día',
-    body: '¿Qué te parece un desayuno nutritivo para empezar?',
+    title: t('notifications.breakfast.titleSimple'),
+    body: t('notifications.breakfast.bodySimple'),
     hour: 8,
     minute: 0,
     enabled: false,
@@ -43,8 +44,8 @@ const DEFAULT_SCHEDULES: NotificationSchedule[] = [
   },
   {
     id: 'lunch',
-    title: '🍽️ Hora de comer',
-    body: 'Descubre recetas deliciosas para tu almuerzo',
+    title: t('notifications.lunch.title'),
+    body: t('notifications.lunch.bodySimple'),
     hour: 13,
     minute: 30,
     enabled: false,
@@ -52,8 +53,8 @@ const DEFAULT_SCHEDULES: NotificationSchedule[] = [
   },
   {
     id: 'dinner',
-    title: '🌙 Cena ligera',
-    body: 'Te sugerimos opciones saludables para cenar',
+    title: t('notifications.dinner.titleSimple'),
+    body: t('notifications.dinner.bodySimple'),
     hour: 19,
     minute: 30,
     enabled: false,
@@ -64,10 +65,11 @@ const DEFAULT_SCHEDULES: NotificationSchedule[] = [
 const STORAGE_KEY = 'bocado_notification_schedules';
 
 export const useNotifications = (): UseNotificationsReturn => {
+  const { t } = useTranslation();
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [schedules, setSchedules] = useState<NotificationSchedule[]>(DEFAULT_SCHEDULES);
+  const [schedules, setSchedules] = useState<NotificationSchedule[]>(() => createDefaultSchedules(t));
   const [isLoading, setIsLoading] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -90,8 +92,9 @@ export const useNotifications = (): UseNotificationsReturn => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
+        const defaultSchedules = createDefaultSchedules(t);
         // Merge con defaults para asegurar nuevos campos
-        setSchedules(DEFAULT_SCHEDULES.map(defaultSchedule => {
+        setSchedules(defaultSchedules.map(defaultSchedule => {
           const saved = parsed.find((s: NotificationSchedule) => s.id === defaultSchedule.id);
           return saved ? { ...defaultSchedule, ...saved } : defaultSchedule;
         }));
@@ -99,7 +102,7 @@ export const useNotifications = (): UseNotificationsReturn => {
         logger.error('Error cargando horarios de notificaciones:', e);
       }
     }
-  }, []);
+  }, [t]);
 
   // Guardar horarios cuando cambien
   useEffect(() => {
@@ -114,7 +117,7 @@ export const useNotifications = (): UseNotificationsReturn => {
       setLastMessage(payload);
       // Mostrar notificación local si la app está abierta
       if (Notification.permission === 'granted') {
-        new Notification(payload.notification?.title || 'Bocado', {
+        new Notification(payload.notification?.title || t('notifications.appName'), {
           body: payload.notification?.body,
           icon: '/icons/icon-192x192.png',
           badge: '/icons/icon-72x72.png',

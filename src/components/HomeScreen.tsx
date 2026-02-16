@@ -16,7 +16,7 @@ interface HomeScreenProps {
 const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp, onGoToLogin }) => {
   const { isAuthenticated, user } = useAuthStore();
   const { data: profile } = useUserProfile(user?.uid);
-  const { t } = useTranslation();
+  const { t, locale, setLocale } = useTranslation();
 
   const hasSession = isAuthenticated || !!profile;
 
@@ -46,8 +46,28 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
     }
   };
 
+  const toggleLanguage = () => {
+    const newLocale = locale === 'es' ? 'en' : 'es';
+    setLocale(newLocale);
+    trackEvent('home_change_language', { from: locale, to: newLocale });
+  };
+
   return (
     <div className="min-h-full flex flex-col items-center justify-center px-6 py-12 pt-safe">
+      {/* Selector de idioma en la esquina superior derecha */}
+      <div className="fixed top-4 right-4 z-10">
+        <button
+          onClick={toggleLanguage}
+          className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-bocado-green/20"
+          aria-label={t('home.changeLanguage')}
+        >
+          <span className="text-lg">{locale === 'es' ? '🇪🇸' : '🇺🇸'}</span>
+          <span className="text-sm font-medium text-bocado-dark-gray dark:text-gray-200">
+            {locale === 'es' ? 'ES' : 'EN'}
+          </span>
+        </button>
+      </div>
+
       {/* Logo */}
       <div className="w-64 sm:w-72 md:w-80 mb-8">
         <BocadoLogo className="w-full h-auto" />

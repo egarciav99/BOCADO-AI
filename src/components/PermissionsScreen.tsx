@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { trackEvent } from '../firebaseConfig';
 import { Lock, ShieldCheck, Eye, Trash2 } from './icons';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface PermissionsScreenProps {
   onAccept: () => void;
@@ -8,6 +9,7 @@ interface PermissionsScreenProps {
 }
 
 const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHome }) => {
+  const { t } = useTranslation();
   const [agreed, setAgreed] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -28,15 +30,15 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
   };
 
   const dataItems = [
-    { icon: '📊', label: 'Perfil nutricional', desc: 'Edad, peso, altura, objetivos' },
-    { icon: '🍎', label: 'Preferencias', desc: 'Alergias, alimentos que no te gustan' },
-    { icon: '📍', label: 'Ubicación', desc: 'Solo tu país y ciudad para precios locales' },
+    { icon: '📊', label: t('permissions.dataTypes.profile.title'), desc: t('permissions.dataTypes.profile.description') },
+    { icon: '🍎', label: t('permissions.dataTypes.preferences.title'), desc: t('permissions.dataTypes.preferences.description') },
+    { icon: '📍', label: t('permissions.dataTypes.location.title'), desc: t('permissions.dataTypes.location.description') },
   ];
 
   const benefits = [
-    { icon: <ShieldCheck className="w-5 h-5" />, text: 'Tus datos nunca se venden a terceros' },
-    { icon: <Eye className="w-5 h-5" />, text: 'Puedes ver y descargar tus datos cuando quieras' },
-    { icon: <Trash2 className="w-5 h-5" />, text: 'Puedes eliminar tu cuenta y datos en cualquier momento' },
+    { icon: <ShieldCheck className="w-5 h-5" />, text: t('permissions.benefits.noSell') },
+    { icon: <Eye className="w-5 h-5" />, text: t('permissions.benefits.download') },
+    { icon: <Trash2 className="w-5 h-5" />, text: t('permissions.benefits.delete') },
   ];
 
   return (
@@ -48,17 +50,17 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
             <Lock className="w-8 h-8 text-bocado-green" />
           </div>
           <h1 className="text-2xl font-bold text-bocado-dark-green mb-2">
-            Protegemos tu privacidad
+            {t('permissions.title')}
           </h1>
           <p className="text-sm text-bocado-gray">
-            Para darte recomendaciones personalizadas, necesitamos usar algunos datos tuyos.
+            {t('permissions.subtitle')}
           </p>
         </div>
 
         {/* Qué datos usamos */}
         <div className="mb-5">
           <h2 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-3">
-            ¿Qué datos usamos?
+            {t('permissions.whatWeUse')}
           </h2>
           <div className="space-y-2">
             {dataItems.map((item, idx) => (
@@ -79,7 +81,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
         {/* Tus derechos */}
         <div className="mb-5">
           <h2 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-3">
-            Tienes el control total
+            {t('permissions.control')}
           </h2>
           <div className="space-y-2">
             {benefits.map((benefit, idx) => (
@@ -96,27 +98,17 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
           onClick={() => setShowDetails(!showDetails)}
           className="w-full text-xs text-bocado-green font-medium mb-5 hover:underline flex items-center justify-center gap-1"
         >
-          {showDetails ? 'Ver menos' : 'Ver política de privacidad completa'}
+          {showDetails ? t('permissions.showLess') : t('permissions.showMore')}
           <span className={`transform transition-transform ${showDetails ? 'rotate-180' : ''}`}>▼</span>
         </button>
 
         {showDetails && (
           <div className="mb-5 p-4 bg-gray-50 rounded-xl text-xs text-bocado-gray space-y-2 animate-fade-in">
-            <p>
-              <strong>Responsable:</strong> Bocado AI
-            </p>
-            <p>
-              <strong>Finalidad:</strong> Personalizar recomendaciones de recetas y restaurantes según tu perfil nutricional.
-            </p>
-            <p>
-              <strong>Legitimación:</strong> Tu consentimiento explícito.
-            </p>
-            <p>
-              <strong>Conservación:</strong> Hasta que elimines tu cuenta.
-            </p>
-            <p>
-              <strong>Derechos:</strong> Acceder, rectificar, eliminar tus datos.
-            </p>
+            <p>{t('permissions.details.responsible')}</p>
+            <p>{t('permissions.details.purpose')}</p>
+            <p>{t('permissions.details.legitimation')}</p>
+            <p>{t('permissions.details.storage')}</p>
+            <p>{t('permissions.details.rights')}</p>
           </div>
         )}
 
@@ -142,16 +134,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
               )}
             </div>
             <span className="text-sm text-bocado-text leading-relaxed select-none">
-              Entiendo y acepto que Bocado use mis datos para crear recomendaciones personalizadas. He leído y acepto la{' '}
-              <a 
-                href="/privacy" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-bocado-green hover:underline font-medium"
-              >
-                política de privacidad
-              </a>.
+              {t('permissions.consent')}
             </span>
           </label>
         </div>
@@ -163,7 +146,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
             disabled={!agreed}
             className="w-full bg-bocado-green text-white font-bold py-3.5 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray/50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
           >
-            <span>Continuar</span>
+            <span>{t('permissions.continue')}</span>
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
             </svg>
@@ -172,14 +155,14 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
             onClick={handleGoHome}
             className="w-full bg-white border-2 border-bocado-border text-bocado-gray font-semibold py-3 px-6 rounded-full text-sm hover:border-bocado-dark-gray hover:text-bocado-dark-gray transition-all"
           >
-            No acepto, volver al inicio
+            {t('permissions.decline')}
           </button>
         </div>
 
         {/* Footer de confianza */}
         <div className="mt-6 flex items-center justify-center gap-1 text-xs text-bocado-gray">
           <ShieldCheck className="w-4 h-4 text-bocado-green" />
-          <span>Tus datos están encriptados y protegidos</span>
+          <span>{t('permissions.footer')}</span>
         </div>
       </div>
     </div>

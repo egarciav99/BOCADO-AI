@@ -3,6 +3,7 @@ import { useSmartNotifications, SmartReminder } from '../hooks/useSmartNotificat
 import { Bell, BellOff, Clock, CheckCircle } from './icons';
 import { trackEvent } from '../firebaseConfig';
 import { logger } from '../utils/logger';
+import { useTranslation } from '../contexts/I18nContext';
 
 interface NotificationSettingsProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface NotificationSettingsProps {
 }
 
 export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOpen, onClose, userUid }) => {
+  const { t } = useTranslation();
   const {
     isSupported,
     permission,
@@ -42,15 +44,15 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <BellOff className="w-8 h-8 text-gray-400" />
             </div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Notificaciones no disponibles</h2>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">{t('notifications.settings.notAvailable')}</h2>
             <p className="text-sm text-gray-500 mb-6">
-              Tu navegador no soporta notificaciones. Prueba con Chrome o Edge en Android/PC.
+              {t('notifications.settings.notSupportedMessage')}
             </p>
             <button
               onClick={onClose}
               className="w-full bg-bocado-green text-white font-bold py-3 rounded-full"
             >
-              Entendido
+              {t('notifications.settings.understood')}
             </button>
           </div>
         </div>
@@ -120,19 +122,19 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
         const isEmpty = days === null || days >= 3;
         return (
           <span className={`text-xs px-2 py-0.5 rounded-full ${isEmpty ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
-            {isEmpty ? '🥑 Despensa vacía' : '✅ Despensa actualizada'}
+            {isEmpty ? t('notifications.settings.pantryEmpty') : t('notifications.settings.pantryUpdated')}
           </span>
         );
       case 'pending_ratings':
         return (
           <span className={`text-xs px-2 py-0.5 rounded-full ${pendingRatingsCount > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
-            {pendingRatingsCount > 0 ? `⭐ ${pendingRatingsCount} por calificar` : '✅ Todo calificado'}
+            {pendingRatingsCount > 0 ? t('notifications.settings.pendingRatings', { count: pendingRatingsCount }) : t('notifications.settings.allRated')}
           </span>
         );
       case 'inactive_user':
         return (
           <span className={`text-xs px-2 py-0.5 rounded-full ${daysSinceLastAppUse >= 3 ? 'bg-purple-100 text-purple-700' : 'bg-green-100 text-green-700'}`}>
-            {daysSinceLastAppUse >= 3 ? `😴 Inactivo ${daysSinceLastAppUse} días` : '✅ Usuario activo'}
+            {daysSinceLastAppUse >= 3 ? t('notifications.settings.inactiveUser', { days: daysSinceLastAppUse }) : t('notifications.settings.activeUser')}
           </span>
         );
       default:
@@ -163,8 +165,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                 <Bell className="w-6 h-6 text-bocado-green" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-bocado-dark-green">Recordatorios</h2>
-                <p className="text-xs text-bocado-gray">Personaliza tus notificaciones</p>
+                <h2 className="text-xl font-bold text-bocado-dark-green">{t('notifications.settings.title')}</h2>
+                <p className="text-xs text-bocado-gray">{t('notifications.settings.subtitle')}</p>
               </div>
             </div>
             <button
@@ -187,17 +189,17 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-bold text-blue-800 mb-1">
-                    Activa tus recordatorios
+                    {t('notifications.settings.activateReminders')}
                   </p>
                   <p className="text-xs text-blue-600 mb-3 leading-relaxed">
-                    Te enviaremos sugerencias de comidas en tus horarios preferidos y recordatorios inteligentes sobre tu despensa.
+                    {t('notifications.settings.activateDescription')}
                   </p>
                   <button
                     onClick={handleRequestPermission}
                     disabled={isLoading}
                     className="w-full text-xs bg-blue-600 text-white font-bold px-4 py-2.5 rounded-full hover:bg-blue-700 disabled:bg-blue-300 transition-colors shadow-sm"
                   >
-                    {isLoading ? 'Solicitando...' : '✓ Permitir notificaciones'}
+                    {isLoading ? t('notifications.settings.requesting') : t('notifications.settings.allowNotifications')}
                   </button>
                 </div>
               </div>
@@ -211,10 +213,10 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                   </div>
                   <div>
                     <p className="text-sm font-bold text-green-800">
-                      Notificaciones activas
+                      {t('notifications.settings.notificationsActive')}
                     </p>
                     <p className="text-xs text-green-600">
-                      Recibirás {reminders.filter(r => r.enabled).length} recordatorios configurados
+                      {t('notifications.settings.configuredReminders', { count: reminders.filter(r => r.enabled).length })}
                     </p>
                   </div>
                 </div>
@@ -223,7 +225,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                   disabled={testSent}
                   className="text-xs bg-white text-green-700 font-semibold px-3 py-2 rounded-lg border border-green-200 hover:bg-green-50 disabled:opacity-50 transition-colors"
                 >
-                  {testSent ? '✓ Enviada' : 'Probar'}
+                  {testSent ? t('notifications.settings.sent') : t('notifications.settings.test')}
                 </button>
               </div>
             </div>
@@ -239,7 +241,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                   : 'text-bocado-gray'
               }`}
             >
-              🍽️ Comidas
+              {t('notifications.settings.tabMeals')}
             </button>
             <button
               onClick={() => setActiveTab('smart')}
@@ -249,7 +251,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                   : 'text-bocado-gray'
               }`}
             >
-              ✨ Inteligentes
+              {t('notifications.settings.tabSmart')}
             </button>
           </div>
 
@@ -258,7 +260,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
             {activeTab === 'meals' ? (
               <>
                 <p className="text-xs text-bocado-gray mb-4">
-                  Recibe sugerencias de comidas a tus horarios preferidos
+                  {t('notifications.settings.mealSuggestionsDesc')}
                 </p>
                 {mealReminders.map((reminder) => (
                   <div
@@ -314,7 +316,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                           className={`w-12 h-6 rounded-full transition-colors relative flex items-center flex-shrink-0 ${
                             reminder.enabled ? 'bg-bocado-green' : 'bg-gray-300'
                           }`}
-                          aria-label={reminder.enabled ? 'Desactivar recordatorio' : 'Activar recordatorio'}
+                          aria-label={reminder.enabled ? t('notifications.settings.deactivate') : t('notifications.settings.activate')}
                         >
                           <span
                             className={`absolute left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-out ${
@@ -330,7 +332,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
             ) : (
               <>
                 <p className="text-xs text-bocado-gray mb-4">
-                  Recordatorios que se activan según tu actividad en la app
+                  {t('notifications.settings.smartRemindersDesc')}
                 </p>
                 {smartReminders.map((reminder) => (
                   <div
@@ -364,7 +366,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                         className={`w-12 h-6 rounded-full transition-colors relative flex items-center flex-shrink-0 ml-2 ${
                           reminder.enabled ? 'bg-bocado-green' : 'bg-gray-300'
                         }`}
-                        aria-label={reminder.enabled ? 'Desactivar recordatorio' : 'Activar recordatorio'}
+                        aria-label={reminder.enabled ? t('notifications.settings.deactivate') : t('notifications.settings.activate')}
                       >
                         <span
                           className={`absolute left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-out ${
@@ -379,13 +381,13 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                 {/* Info sobre cómo funcionan */}
                 <div className="mt-4 p-4 bg-bocado-background rounded-xl">
                   <p className="text-xs text-bocado-gray leading-relaxed">
-                    <strong>💡 ¿Cómo funcionan?</strong><br />
-                    Estos recordatorios solo aparecen cuando se cumplen ciertas condiciones:
+                    <strong>{t('notifications.settings.howItWorks')}</strong><br />
+                    {t('notifications.settings.smartConditionsDesc')}
                   </p>
                   <ul className="text-xs text-bocado-gray mt-2 space-y-1 ml-4">
-                    <li>• <strong>Despensa:</strong> Si no actualizas en 3+ días</li>
-                    <li>• <strong>Calificaciones:</strong> Si tienes recetas sin calificar</li>
-                    <li>• <strong>Inactividad:</strong> Si no usas la app en 3+ días</li>
+                    <li>• <strong>{t('notifications.settings.pantryCondition')}</strong> {t('notifications.settings.pantryConditionDesc')}</li>
+                    <li>• <strong>{t('notifications.settings.ratingsCondition')}</strong> {t('notifications.settings.ratingsConditionDesc')}</li>
+                    <li>• <strong>{t('notifications.settings.inactivityCondition')}</strong> {t('notifications.settings.inactivityConditionDesc')}</li>
                   </ul>
                 </div>
               </>
@@ -398,8 +400,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
           <div className="flex items-start gap-2 text-xs text-bocado-gray">
             <span className="flex-shrink-0">💡</span>
             <p className="leading-relaxed">
-              Las notificaciones funcionan incluso cuando la app está cerrada. 
-              Asegúrate de no tener el modo "No molestar" activado en tu dispositivo.
+              {t('notifications.settings.footerNote')}
             </p>
           </div>
         </div>

@@ -40,6 +40,7 @@ export interface UserProfile {
   nutritionalGoal: string[];
   cookingAffinity: string;
   dislikedFoods: string[];
+  language?: 'es' | 'en';         // Preferencia de idioma del usuario
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
 }
