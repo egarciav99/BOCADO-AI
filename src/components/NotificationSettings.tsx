@@ -311,7 +311,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
                         {/* Toggle */}
                         <button
                           onClick={() => handleToggleReminder(reminder.id)}
-                          className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${
+                          className={`w-12 h-6 rounded-full transition-colors relative flex items-center flex-shrink-0 ${
                             reminder.enabled ? 'bg-bocado-green' : 'bg-gray-300'
                           }`}
                           aria-label={reminder.enabled ? 'Desactivar recordatorio' : 'Activar recordatorio'}
