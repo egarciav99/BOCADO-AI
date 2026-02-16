@@ -25,6 +25,7 @@ if (!getApps().length) {
 }
 
 const db = getFirestore();
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 // ============================================
 // 💰 FINOPS: JSON TEMPLATES (AHORRO DE TOKENS)
@@ -863,30 +864,33 @@ async function getCountryCodeFromCoords(coords: Coordinates): Promise<string | n
   const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos
   
   try {
-    const MAPS_PROXY_URL = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}/api/maps-proxy`
-      : 'http://localhost:5001/api/maps-proxy';
-    
-    const response = await fetch(MAPS_PROXY_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'reverseGeocode',
-        lat: coords.lat,
-        lng: coords.lng
-      }),
-      signal: controller.signal
-    });
+    if (!GOOGLE_MAPS_API_KEY) {
+      safeLog('warn', '⚠️ GOOGLE_MAPS_API_KEY no configurada para reverse geocode');
+      return null;
+    }
+
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&language=es&key=${GOOGLE_MAPS_API_KEY}`;
+    const response = await fetch(url, { signal: controller.signal });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      safeLog('warn', '⚠️ Reverse geocode falló:', response.status);
+      safeLog('warn', `⚠️ Reverse geocode HTTP ${response.status}`);
       return null;
     }
 
     const data = await response.json();
-    return data.countryCode || null;
+    if (data.status !== 'OK' || !data.results?.[0]) {
+      safeLog('warn', `⚠️ Reverse geocode sin resultados: ${data.status || 'unknown'}`);
+      return null;
+    }
+
+    const result = data.results[0];
+    const components = result.address_components || [];
+    const countryComponent = components.find((component: any) =>
+      Array.isArray(component.types) && component.types.includes('country')
+    );
+    return countryComponent?.short_name || null;
   } catch (error: any) {
     clearTimeout(timeoutId);
     if (error.name === 'AbortError') {
@@ -1151,13 +1155,13 @@ export default async function handler(req: any, res: any) {
     const request: RequestBody = parseResult.data;
     
     // ✅ FIX: Log de requests exitosos (solo campos clave)
-    safeLog('log', '📥 Request received:', {
+    safeLog('log', `📥 Request received: ${JSON.stringify({
       userId: authUserId,
       type: request.type,
       hasGPS: !!request.userLocation,
       budget: request.budget,
       cookingTime: request.cookingTime
-    });
+    })}`);
     
     userId = authUserId;
     if (request.userId && request.userId !== authUserId) {
@@ -1372,7 +1376,7 @@ Personaliza el saludo_personalizado usando${demographicParts.length > 0 ? ' el p
       const travelContext = await detectTravelContext(searchCoords, request, user);
       
       // Logging detallado para debugging de ubicación
-      safeLog('log', `📍 Búsqueda de restaurantes:`, {
+      safeLog('log', `📍 Búsqueda de restaurantes: ${JSON.stringify({
         userLocationFromRequest: request.userLocation ? `${request.userLocation.lat},${request.userLocation.lng}` : 'no proporcionada',
         userLocationFromProfile: user.location ? `${user.location.lat},${user.location.lng}` : 'no guardada',
         profileCity: user.city,
@@ -1381,7 +1385,7 @@ Personaliza el saludo_personalizado usando${demographicParts.length > 0 ? ' el p
         isTraveling: travelContext.isTraveling,
         homeCurrency: travelContext.homeCurrency,
         activeCurrency: travelContext.activeCurrency
-      });
+      })}`);
       
       const locationContext = searchCoords 
         ? `Coordenadas de referencia: ${formatCoordinates(searchCoords)}`
