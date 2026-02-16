@@ -161,7 +161,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       userId: user.uid,
       type: recommendationType,
       mealType: recommendationType === 'En casa' ? stripEmoji(selectedMeal) : "Fuera de casa",
-      cookingTime: recommendationType === 'En casa' ? cookingTime : 0,
+      cookingTime: recommendationType === 'En casa' ? cookingTime : null,
       cravings: cravingsList,
       budget: selectedBudget,
       currency: currencyConfig.code,
