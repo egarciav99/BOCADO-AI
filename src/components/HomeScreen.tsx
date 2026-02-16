@@ -53,7 +53,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
   };
 
   return (
-    <div className="h-full flex flex-col items-center px-6 pt-safe">
+    <div className="h-full flex flex-col items-center justify-center px-6 pt-safe pb-safe">
       {/* Selector de idioma en la esquina superior derecha */}
       <div className="fixed top-4 right-4 z-10">
         <button
@@ -68,13 +68,10 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
         </button>
       </div>
 
-      {/* Spacer superior — empuja el contenido hacia el centro-bajo */}
-      <div className="flex-[2]" />
-
       {/* Card con contenido principal */}
-      <div className="w-full max-w-sm rounded-3xl bg-white/5 dark:bg-white/[0.04] border border-white/10 dark:border-white/[0.08] backdrop-blur-sm p-8 flex flex-col items-center">
+      <div className="w-full max-w-sm rounded-3xl bg-white/5 dark:bg-white/[0.04] border border-white/10 dark:border-white/[0.08] backdrop-blur-sm px-8 py-10 flex flex-col items-center">
         {/* Logo */}
-        <div className="w-56 sm:w-64 md:w-72 mb-6">
+        <div className="w-64 sm:w-72 md:w-80 mb-6">
           <BocadoLogo className="w-full h-auto" />
         </div>
 
@@ -86,13 +83,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
               {t('home.titleHighlight')}
             </span>
           </h1>
-          <p className="text-sm text-bocado-gray dark:text-gray-400">
+          <p className="text-base text-bocado-gray dark:text-gray-400">
             {t('home.subtitle')}
           </p>
         </div>
 
         {/* Botones */}
-        <div className="flex flex-col w-full gap-3">
+        <div className="flex flex-col w-full gap-4">
           {hasSession ? (
             <>
               <button
@@ -130,9 +127,6 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
           )}
         </div>
       </div>
-
-      {/* Spacer inferior — más pequeño para que el card quede ligeramente arriba del centro */}
-      <div className="flex-[3]" />
     </div>
   );
 };
