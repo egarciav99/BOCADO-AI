@@ -1,3 +1,10 @@
+// ⚠️ IMPORTANTE - INTERNACIONALIZACIÓN:
+// Este componente GUARDA datos en Firebase. Los datos SIEMPRE deben estar en ESPAÑOL.
+// - formData contiene valores en español de constants.ts
+// - NO uses t() para traducir valores que se guardan
+// - Solo traduce la UI (títulos, botones, mensajes)
+// Ver: docs/i18n-architecture.md
+
 import React, { useState, useCallback, useEffect } from 'react';
 import { useProfileDraftStore } from '../stores/profileDraftStore';
 import { FormData, UserProfile } from '../types';

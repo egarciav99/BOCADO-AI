@@ -1,3 +1,8 @@
+// ⚠️ IMPORTANTE: Estas constantes están en ESPAÑOL y se guardan así en Firebase.
+// NUNCA traduzcas estos valores al guardarlos en la base de datos.
+// Solo la UI debe traducirse, los datos siempre en español.
+// Ver: docs/i18n-architecture.md
+
 export const EATING_HABITS = ['En casa', 'Fuera'];
 export const CRAVINGS = [
   '🍕 Italiana / Pizza',

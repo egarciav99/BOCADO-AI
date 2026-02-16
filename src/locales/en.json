@@ -10,7 +10,18 @@
     "next": "Next",
     "finish": "Finish",
     "yes": "Yes",
-    "no": "No"
+    "no": "No",
+    "saving": "Saving...",
+    "sending": "Sending...",
+    "deleting": "Deleting...",
+    "previous": "Previous",
+    "update": "Update",
+    "change": "Change",
+    "add": "Add",
+    "remove": "Remove",
+    "confirm": "Confirm",
+    "optional": "optional",
+    "required": "required"
   },
   "home": {
     "title": "What to eat today?",
@@ -19,20 +30,71 @@
     "enterButton": "Enter",
     "startButton": "Get Started",
     "loginButton": "Sign In",
-    "logoutButton": "Sign Out"
+    "logoutButton": "Sign Out",
+    "backToHome": "← Back to home"
   },
   "profile": {
-    "title": "Profile",
+    "title": "My Profile",
     "settings": "Settings",
     "language": "Language",
     "theme": "Theme",
-    "themeLight": "Light",
-    "themeDark": "Dark",
-    "themeSystem": "System",
+    "themeLight": "☀️ Light",
+    "themeDark": "🌙 Dark",
+    "themeSystem": "💻 System",
     "notifications": "Notifications",
+    "notificationsDesc": "Reminders and notifications",
     "feedback": "Send Feedback",
     "logout": "Sign Out",
-    "version": "Version"
+    "version": "Version",
+    "personalInfo": "Personal Information",
+    "bodyData": "Body Data",
+    "nutritionalGoal": "Nutritional Goal",
+    "physicalActivity": "Physical Activity",
+    "health": "Health",
+    "allergies": "Allergies",
+    "dislikes": "Dislikes",
+    "security": "Security",
+    "preferences": "Preferences",
+    "privacy": "Privacy & Data",
+    "changePassword": "Change Password",
+    "changeEmail": "Change Email",
+    "downloadData": "Download my data",
+    "deleteAccount": "Delete my account",
+    "currentPassword": "Current Password",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm",
+    "newEmail": "New Email",
+    "saveChanges": "Save changes",
+    "emailVerificationNote": "We'll send you a verification link.",
+    "whatIncluded": "What's included?",
+    "dataReady": "Data ready!",
+    "prepareData": "Prepare data",
+    "downloadJSON": "Download JSON",
+    "deleteWarning": "⚠️ This action cannot be undone",
+    "deleteConfirmText": "Type DELETE to confirm",
+    "deleteAll": "Delete everything",
+    "adminTokens": "Admin: FCM Tokens",
+    "noSpecified": "Not specified",
+    "noConditions": "No conditions",
+    "none": "None",
+    "noneM": "None",
+    "bmiTooltip": "Body mass index",
+    "languageES": "🇪🇸 Español",
+    "languageEN": "🇺🇸 English",
+    "dataIncludes": {
+      "profile": "Your profile and all preferences",
+      "recipes": "All saved recipes",
+      "restaurants": "All saved restaurants",
+      "history": "Your recommendation history"
+    },
+    "deleteIncludes": {
+      "account": "Your access account",
+      "profile": "Your profile and preferences",
+      "recipes": "Saved recipes",
+      "restaurants": "Saved restaurants",
+      "feedback": "Feedback history",
+      "accountInfo": "Account information"
+    }
   },
   "tabs": {
     "home": "Home",
@@ -49,65 +111,393 @@
     "location": "Location",
     "locationDesc": "To recommend nearby restaurants",
     "accept": "Accept Permissions",
-    "skip": "Skip for Now"
+    "skip": "Skip for Now",
+    "privacy": {
+      "title": "Your privacy matters",
+      "gdprCompliance": "We comply with GDPR",
+      "dataControl": "You control your data",
+      "noSell": "We never sell your information",
+      "secure": "End-to-end encryption"
+    }
   },
   "registration": {
     "title": "Sign Up",
     "email": "Email",
     "password": "Password",
-    "confirmPassword": "Confirm Password",
-    "name": "Name",
-    "createAccount": "Create Account",
+    "confirmPassword": "Confirm password",
+    "name": "First name",
+    "lastName": "Last name",
+    "gender": "Gender",
+    "age": "Age",
+    "weight": "Weight (kg)",
+    "height": "Height (cm)",
+    "country": "Country",
+    "city": "City",
+    "createAccount": "Create account",
     "alreadyHaveAccount": "Already have an account?",
-    "goToLogin": "Sign In"
+    "goToLogin": "Sign in",
+    "backToHome": "Back to home",
+    "verifyEmail": "Verify your email!",
+    "emailSentTo": "Sent to",
+    "alreadyVerified": "I already verified my email",
+    "useOtherAccount": "Use another account",
+    "bodyDataOptional": "Body data (optional)",
+    "chronicDiseases": "Chronic diseases? (optional)",
+    "allergiesIntolerances": "Allergies or intolerances? (optional)",
+    "specify": "Specify:",
+    "nutritionalGoal": "Nutritional goal",
+    "multipleGoalsNote": "You can select multiple (except gain/lose weight together)",
+    "physicalActivity": "Physical activity",
+    "frequency": "Frequency",
+    "dislikedIngredients": "Ingredients you DON'T like",
+    "dislikedNote": "We'll avoid these foods in your plans",
+    "addedManually": "Added manually:",
+    "addAnotherIngredient": "+ Add another ingredient",
+    "placeholders": {
+      "name": "John",
+      "lastName": "Doe",
+      "age": "25",
+      "weight": "70",
+      "height": "175",
+      "city": "Your city...",
+      "cityNeedCountry": "Choose country first",
+      "password": "8+ characters",
+      "confirmPassword": "Repeat",
+      "allergies": "Seafood, nuts...",
+      "activities": "Yoga, Crossfit...",
+      "searchFood": "Search food...",
+      "ingredient": "Ingredient..."
+    },
+    "errors": {
+      "emailInUse": "This email is already registered",
+      "createFailed": "Error creating account. Try again.",
+      "profileIncomplete": "Incomplete profile. Please contact support."
+    }
   },
   "login": {
     "title": "Sign In",
+    "subtitle": "Access your profile",
     "email": "Email",
     "password": "Password",
-    "loginButton": "Sign In",
-    "forgotPassword": "Forgot your password?",
+    "loginButton": "Sign in",
+    "forgotPassword": "Forgot my password",
     "noAccount": "Don't have an account?",
-    "register": "Sign Up"
+    "register": "Sign up",
+    "backToLogin": "Back to Sign In",
+    "resetPassword": "Reset Password",
+    "resetSubtitle": "We'll send you a link",
+    "sendLink": "Send link",
+    "emailNotVerified": "Email not verified",
+    "verificationRequired": "To continue using Bocado, you must verify your email address.",
+    "resendEmail": "Resend email",
+    "useOtherAccount": "Use another account",
+    "linkSentTo": "We've sent a link to",
+    "placeholders": {
+      "email": "your@email.com",
+      "password": "••••••••"
+    },
+    "errors": {
+      "missingFields": "Please enter your email and password.",
+      "networkError": "Network error. Couldn't connect to server.",
+      "invalidCredentials": "Incorrect email or password.",
+      "genericError": "There was a problem signing in. Please try again.",
+      "sessionVerificationFailed": "Could not verify session.",
+      "resendFailed": "Could not resend email. Try again later.",
+      "emailRequired": "Please enter your email address.",
+      "userNotFound": "No user found with this email address.",
+      "resetFailed": "There was a problem sending the email. Please try again."
+    },
+    "success": {
+      "emailResent": "Verification email resent. Check your inbox.",
+      "resetEmailSent": "An email has been sent to {email} with instructions."
+    }
   },
   "recommendation": {
     "title": "Recommendations",
-    "generatePlan": "Generate Plan",
+    "greeting": "Hi! What do you feel like today?",
+    "chooseMealType": "Choose meal type",
+    "cookOrOut": "Cook or eat out?",
+    "cook": "Cook at home",
+    "goOut": "Eat out",
+    "budget": "Budget",
+    "budgetLow": "Budget-friendly",
+    "budgetMedium": "Moderate",
+    "budgetHigh": "Premium",
+    "location": "Location",
+    "useMyLocation": "Use my location",
+    "enterManually": "Enter manually",
+    "searchArea": "Search area...",
+    "distance": "Maximum distance",
+    "generatePlan": "Generate plan",
     "loading": "Generating recommendations...",
     "error": "Error generating recommendations",
-    "tryAgain": "Try Again"
+    "tryAgain": "Try again",
+    "rateLimit": {
+      "title": "Limit reached",
+      "message": "You've reached today's recommendation limit. Try again tomorrow.",
+      "timeLeft": "Time remaining: {time}"
+    },
+    "errors": {
+      "noLocation": "Could not get your location",
+      "locationPermission": "You need to enable location permissions",
+      "noResults": "No results found",
+      "timeout": "Request took too long. Try again."
+    }
   },
   "plan": {
     "title": "Your Weekly Plan",
     "breakfast": "Breakfast",
     "lunch": "Lunch",
     "dinner": "Dinner",
-    "startNewPlan": "Create New Plan"
+    "snack": "Snack",
+    "startNewPlan": "Create new plan",
+    "loading": "Loading your plan...",
+    "empty": "You don't have an active plan",
+    "createFirst": "Create your first personalized plan",
+    "dayNames": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "mealTypes": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "snack": "Snack"
+    },
+    "options": {
+      "regenerate": "Regenerate this day",
+      "swap": "Swap this meal",
+      "markAsDone": "Mark as done"
+    },
+    "errors": {
+      "loadFailed": "Error loading plan",
+      "generateFailed": "Error generating plan",
+      "saveFailed": "Error saving changes"
+    }
+  },
+  "mainApp": {
+    "sync": {
+      "syncing": "Syncing...",
+      "success": "Synced",
+      "failed": "Sync failed"
+    },
+    "errors": {
+      "offline": "No internet connection",
+      "sessionExpired": "Session expired. Please sign in again.",
+      "unauthorized": "You don't have permission for this action"
+    }
   },
   "pantry": {
     "title": "My Pantry",
-    "addItem": "Add Item",
+    "addItem": "Add ingredient",
+    "addItemInCategory": "Add to {category}",
     "empty": "Your pantry is empty",
+    "emptyCategory": "This category is empty",
+    "searchPlaceholder": "Search in your pantry...",
     "zones": {
       "fridge": "Fridge",
       "freezer": "Freezer",
       "pantry": "Pantry"
+    },
+    "categories": {
+      "vegetables": "Vegetables",
+      "fruits": "Fruits",
+      "proteins": "Proteins",
+      "dairy": "Dairy",
+      "grains": "Grains",
+      "condiments": "Condiments",
+      "other": "Other"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "moveToZone": "Move to another zone"
+    },
+    "confirmDelete": "Remove {item} from your pantry?"
+  },
+  "savedRecipes": {
+    "title": "Saved Recipes",
+    "empty": "You have no saved recipes",
+    "emptyDesc": "Save your favorite recipes here",
+    "viewRecipe": "View recipe",
+    "unsave": "Remove from saved",
+    "confirmUnsave": "Remove {recipe} from saved?",
+    "searchPlaceholder": "Search in your recipes...",
+    "filters": {
+      "all": "All",
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "dessert": "Dessert"
     }
   },
-  "recipes": {
-    "title": "Saved Recipes",
-    "empty": "No saved recipes",
-    "viewRecipe": "View Recipe"
-  },
-  "restaurants": {
+  "savedRestaurants": {
     "title": "Saved Restaurants",
-    "empty": "No saved restaurants",
-    "viewRestaurant": "View Restaurant"
+    "empty": "You have no saved restaurants",
+    "emptyDesc": "Save your favorite restaurants here",
+    "viewRestaurant": "View restaurant",
+    "unsave": "Remove from saved",
+    "confirmUnsave": "Remove {restaurant} from saved?",
+    "searchPlaceholder": "Search in your restaurants...",
+    "filters": {
+      "all": "All",
+      "nearby": "Nearby",
+      "favorites": "Favorites"
+    }
+  },
+  "mealCard": {
+    "actions": {
+      "save": "Save",
+      "saved": "Saved",
+      "share": "Share",
+      "report": "Report"
+    },
+    "nutrition": {
+      "calories": "Calories",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "fiber": "Fiber"
+    },
+    "ingredients": "Ingredients",
+    "instructions": "Instructions",
+    "cookingTime": "Cooking time",
+    "difficulty": "Difficulty",
+    "servings": "Servings",
+    "location": {
+      "address": "Address",
+      "phone": "Phone",
+      "hours": "Hours",
+      "getDirections": "Get directions"
+    },
+    "tips": {
+      "title": "Chef's tips",
+      "substitutions": "Possible substitutions"
+    }
+  },
+  "feedback": {
+    "title": "How was it?",
+    "rateExperience": "Rate your experience",
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "okay": "Okay",
+      "bad": "Bad",
+      "terrible": "Terrible"
+    },
+    "comment": "Any extra details? (optional)",
+    "submit": "Send feedback",
+    "thanks": "Thanks for your feedback!",
+    "error": "Error sending feedback"
+  },
+  "tutorial": {
+    "welcome": "Welcome to Bocado!",
+    "skip": "Skip tutorial",
+    "next": "Next",
+    "finish": "Get started",
+    "steps": {
+      "home": {
+        "title": "Your personal assistant",
+        "description": "Bocado helps you decide what to eat based on your preferences and goals"
+      },
+      "pantry": {
+        "title": "Organize your pantry",
+        "description": "Register what you have at home for better recommendations"
+      },
+      "recommendations": {
+        "title": "Smart recommendations",
+        "description": "Get personalized recipe or restaurant suggestions"
+      },
+      "plan": {
+        "title": "Plan your week",
+        "description": "Create weekly plans and never run out of ideas"
+      },
+      "profile": {
+        "title": "Personalize your experience",
+        "description": "Adjust your preferences for more accurate recommendations"
+      }
+    }
+  },
+  "pwa": {
+    "install": {
+      "title": "Install Bocado",
+      "message": "Install Bocado on your device for faster access",
+      "install": "Install",
+      "later": "Later"
+    },
+    "update": {
+      "available": "New version available",
+      "reload": "Update now",
+      "dismiss": "Later"
+    },
+    "offline": {
+      "message": "You're offline",
+      "description": "Some features may not be available"
+    }
+  },
+  "notifications": {
+    "permission": {
+      "title": "Enable notifications",
+      "message": "We'll notify you about your planned meals",
+      "allow": "Allow",
+      "notNow": "Not now"
+    },
+    "settings": {
+      "title": "Notification settings",
+      "mealReminders": "Meal reminders",
+      "weeklyPlan": "Weekly plan",
+      "newRecipes": "New recipes",
+      "promotions": "Promotions"
+    },
+    "types": {
+      "mealReady": "It's time for {meal}!",
+      "planExpiring": "Your weekly plan expires tomorrow",
+      "newRecipe": "New recipe you might like"
+    }
+  },
+  "validation": {
+    "required": "This field is required",
+    "email": "Invalid email",
+    "passwordMin": "Minimum 8 characters",
+    "passwordMatch": "Passwords don't match",
+    "ageMin": "You must be at least 13 years old",
+    "ageMax": "Invalid age",
+    "weightMin": "Minimum weight: 30 kg",
+    "weightMax": "Maximum weight: 300 kg",
+    "heightMin": "Minimum height: 100 cm",
+    "heightMax": "Maximum height: 250 cm"
   },
   "errors": {
     "configError": "Configuration Error",
     "configErrorDesc": "Could not load Firebase credentials. Please verify that environment variables are configured in Vercel.",
     "renderError": "Render Error",
-    "reload": "Reload"
+    "reload": "Reload",
+    "generic": "Something went wrong",
+    "tryAgainLater": "Please try again later",
+    "profileUpdate": {
+      "allFieldsRequired": "All fields are required.",
+      "passwordMismatch": "Passwords don't match.",
+      "minLength": "Minimum 8 characters.",
+      "sessionExpired": "Session expired.",
+      "incorrectPassword": "Current password is incorrect.",
+      "updateFailed": "Update failed.",
+      "emailInUse": "Email already in use.",
+      "sameEmail": "Email is the same as current.",
+      "exportFailed": "Error exporting data. Try again.",
+      "deleteFailed": "Error deleting account. Contact support.",
+      "confirmationRequired": "You must type DELETE to confirm.",
+      "reauthRequired": "For security, sign out and sign back in before deleting your account."
+    },
+    "success": {
+      "profileUpdated": "Profile updated!",
+      "passwordUpdated": "Password updated!",
+      "emailUpdated": "Email updated! Verify your email.",
+      "fileDownloaded": "File downloaded!"
+    }
   }
 }
