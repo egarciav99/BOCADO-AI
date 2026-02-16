@@ -326,7 +326,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   }
 
   return (
-    <div className="h-full min-h-0 flex flex-col px-4 py-8 pt-safe pb-safe overflow-y-auto no-scrollbar">
+    <div className="h-full min-h-0 flex flex-col px-4 pt-safe pb-4 overflow-y-auto no-scrollbar">
       <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
         <div className="mt-4 mb-6">
           <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
@@ -342,7 +342,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
           )}
         </div>
 
-        <div className="mt-6 space-y-3 sticky bottom-0 bg-bocado-cream pt-4 pb-safe">
+        <div className="mt-4 space-y-3 pb-safe">
           <div className="flex justify-between gap-3">
             <button onClick={prevStep} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${currentStep === 1 ? 'invisible' : 'bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95'}`} disabled={isLoading}>Anterior</button>
             <button 
