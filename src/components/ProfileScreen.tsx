@@ -5,6 +5,7 @@ import Step1 from './form-steps/Step1';
 import Step2 from './form-steps/Step2';
 import Step3 from './form-steps/Step3';
 import NotificationSettings from './NotificationSettings';
+import NotificationTokensAdmin from './NotificationTokensAdmin';
 import { db, auth, trackEvent } from '../firebaseConfig';
 import { doc, setDoc, serverTimestamp, deleteDoc, collection, query, where, getDocs, getDoc } from 'firebase/firestore';
 import { 
@@ -21,6 +22,7 @@ import { useUserProfile, useUpdateUserProfile } from '../hooks/useUser';
 import { useAuthStore } from '../stores/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { env } from '../environment/env';
+import { ADMIN_UIDS } from '../config/featureFlags';
 import { searchCities, getPlaceDetails, PlacePrediction } from '../services/mapsService';
 import { ProfileSkeleton } from './skeleton';
 
@@ -89,7 +91,8 @@ const Badge: React.FC<{ text: string; color: 'green' | 'blue' | 'red' | 'gray' |
 };
 
 const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate, userUid }) => {
-  const [viewMode, setViewMode] = useState<'view' | 'edit' | 'changePassword' | 'changeEmail' | 'exportData' | 'deleteAccount'>('view');
+  const isAdmin = ADMIN_UIDS.includes(userUid);
+  const [viewMode, setViewMode] = useState<'view' | 'edit' | 'changePassword' | 'changeEmail' | 'exportData' | 'deleteAccount' | 'adminNotifications'>('view');
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
   const { user } = useAuthStore();
@@ -740,6 +743,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                  </form>
             </div>
           );
+
+      case 'adminNotifications':
+        if (!isAdmin) {
+          setViewMode('view');
+          return null;
+        }
+        return (
+          <NotificationTokensAdmin
+            userUid={userUid}
+            onBack={() => setViewMode('view')}
+          />
+        );
           
       case 'exportData':
         return (
@@ -1032,6 +1047,21 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
                             </div>
                             <span className="text-bocado-gray">›</span>
                         </button>
+                        {isAdmin && (
+                          <button 
+                            onClick={() => {
+                              trackEvent('profile_notifications_admin_open');
+                              setViewMode('adminNotifications');
+                            }} 
+                            className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
+                          >
+                              <div className="flex items-center gap-2">
+                                  <Bell className="w-4 h-4 text-bocado-green" />
+                                  <span>Admin: Tokens FCM</span>
+                              </div>
+                              <span className="text-bocado-gray">›</span>
+                          </button>
+                        )}
                     </div>
                  </div>
                  

@@ -2,25 +2,36 @@ import React from 'react';
 import { usePWA } from '../hooks/usePWA';
 import { Download, RefreshCw, WifiOff, X } from 'lucide-react';
 
+interface PWABannerProps {
+  showInstall?: boolean;
+}
+
 /**
  * Banner para mostrar notificaciones PWA:
  * - Instalación disponible
  * - Actualización disponible
  * - Estado offline
  */
-const PWABanner: React.FC = () => {
+const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
   const { 
     isInstallable, 
     isOffline, 
     updateAvailable, 
     install, 
-    updateApp 
+    updateApp,
+    installPrompt,
+    isInstalled,
+    isIOS,
+    isAndroid,
   } = usePWA();
 
   const [dismissed, setDismissed] = React.useState(false);
 
   // No mostrar si no hay nada que notificar o si fue descartado
-  if (dismissed || (!isInstallable && !isOffline && !updateAvailable)) {
+  const isMobile = isIOS || isAndroid;
+  const showInstallBanner = showInstall && isInstallable && !isInstalled && isMobile;
+
+  if (dismissed || (!showInstallBanner && !isOffline && !updateAvailable)) {
     return null;
   }
 
@@ -55,7 +66,9 @@ const PWABanner: React.FC = () => {
   }
 
   // Banner de instalación
-  if (isInstallable) {
+  if (showInstallBanner) {
+    const isManualInstall = isIOS && !installPrompt;
+
     return (
       <div className="absolute bottom-4 left-0 right-0 z-50 bg-bocado-green text-white px-safe py-4 rounded-2xl shadow-xl max-w-sm md:max-w-md mx-auto">
         <div className="flex items-center justify-between">
@@ -65,16 +78,31 @@ const PWABanner: React.FC = () => {
             </div>
             <div>
               <p className="text-sm font-bold">Instalar Bocado</p>
-              <p className="text-xs text-white/80">Acceso rápido desde tu pantalla de inicio</p>
+              {isManualInstall ? (
+                <p className="text-xs text-white/80">
+                  En iPhone/iPad: toca Compartir y luego "Agregar a pantalla de inicio"
+                </p>
+              ) : (
+                <p className="text-xs text-white/80">Acceso rápido desde tu pantalla de inicio</p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={install}
-              className="px-4 py-2 bg-white text-bocado-green text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              Instalar
-            </button>
+            {isManualInstall ? (
+              <button
+                onClick={() => setDismissed(true)}
+                className="px-3 py-2 bg-white/10 text-white text-sm font-bold rounded-xl hover:bg-white/20 transition-colors"
+              >
+                Entendido
+              </button>
+            ) : (
+              <button
+                onClick={install}
+                className="px-4 py-2 bg-white text-bocado-green text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Instalar
+              </button>
+            )}
             <button
               onClick={() => setDismissed(true)}
               className="p-2 hover:bg-white/10 rounded-xl transition-colors"

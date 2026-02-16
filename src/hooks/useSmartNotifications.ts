@@ -6,8 +6,8 @@ import {
   trackEvent 
 } from '../firebaseConfig';
 import { logger } from '../utils/logger';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
+import { doc, getDoc, setDoc, collection } from 'firebase/firestore';
+import { db, serverTimestamp } from '../firebaseConfig';
 
 export interface SmartReminder {
   id: string;
@@ -123,6 +123,7 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
   const [daysSinceLastPantryUpdate, setDaysSinceLastPantryUpdate] = useState<number | null>(null);
   const [daysSinceLastAppUse, setDaysSinceLastAppUse] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasLoadedSettingsRef = useRef(false);
 
   // Verificar soporte
   useEffect(() => {
@@ -136,6 +137,45 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
     checkSupport();
   }, []);
 
+  const getTimeZone = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    } catch {
+      return 'UTC';
+    }
+  };
+
+  const saveSettings = useCallback(async (updates: Partial<Record<string, any>>) => {
+    if (!userUid) return;
+    try {
+      await setDoc(doc(db, 'notification_settings', userUid), {
+        userId: userUid,
+        timezone: getTimeZone(),
+        updatedAt: serverTimestamp(),
+        ...updates,
+      }, { merge: true });
+    } catch (error) {
+      logger.warn('Error guardando settings de notificaciones:', error);
+    }
+  }, [userUid]);
+
+  const saveToken = useCallback(async (tokenValue: string) => {
+    if (!userUid) return;
+    try {
+      const tokenRef = doc(collection(db, 'notification_settings', userUid, 'tokens'), tokenValue);
+      await setDoc(tokenRef, {
+        token: tokenValue,
+        userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+        timezone: getTimeZone(),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      }, { merge: true });
+      await saveSettings({ hasToken: true, tokenUpdatedAt: serverTimestamp() });
+    } catch (error) {
+      logger.warn('Error guardando token FCM:', error);
+    }
+  }, [userUid, saveSettings]);
+
   // Cargar recordatorios guardados
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -143,8 +183,8 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
       try {
         const parsed = JSON.parse(saved);
         setReminders(DEFAULT_REMINDERS.map(defaultRem => {
-          const saved = parsed.find((r: SmartReminder) => r.id === defaultRem.id);
-          return saved ? { ...defaultRem, ...saved } : defaultRem;
+          const savedItem = parsed.find((r: SmartReminder) => r.id === defaultRem.id);
+          return savedItem ? { ...defaultRem, ...savedItem } : defaultRem;
         }));
       } catch (e) {
         logger.error('Error cargando recordatorios:', e);
@@ -152,10 +192,42 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
     }
   }, []);
 
+  // Cargar settings desde Firestore (fuente primaria)
+  useEffect(() => {
+    if (!userUid) return;
+
+    const loadSettings = async () => {
+      try {
+        const docSnap = await getDoc(doc(db, 'notification_settings', userUid));
+        if (docSnap.exists()) {
+          const data = docSnap.data() as { reminders?: SmartReminder[] };
+          if (Array.isArray(data.reminders)) {
+            setReminders(DEFAULT_REMINDERS.map(defaultRem => {
+              const savedItem = data.reminders?.find(r => r.id === defaultRem.id);
+              return savedItem ? { ...defaultRem, ...savedItem } : defaultRem;
+            }));
+          }
+        }
+      } catch (error) {
+        logger.warn('Error cargando settings de notificaciones:', error);
+      } finally {
+        hasLoadedSettingsRef.current = true;
+      }
+    };
+
+    loadSettings();
+  }, [userUid]);
+
   // Guardar recordatorios
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
   }, [reminders]);
+
+  // Persistir recordatorios en Firestore
+  useEffect(() => {
+    if (!userUid || !hasLoadedSettingsRef.current) return;
+    saveSettings({ reminders });
+  }, [reminders, userUid, saveSettings]);
 
   // Actualizar última actividad
   useEffect(() => {
@@ -168,7 +240,10 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
       const days = Math.floor((Date.now() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24));
       setDaysSinceLastAppUse(days);
     }
-  }, []);
+    if (userUid) {
+      saveSettings({ lastActiveAt: serverTimestamp() });
+    }
+  }, [userUid, saveSettings]);
 
   // Consultar datos para condiciones inteligentes
   useEffect(() => {
@@ -207,7 +282,11 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
         const savedRatings = localStorage.getItem(RATINGS_SHOWN_KEY);
         const ratingsCount = savedRatings ? JSON.parse(savedRatings).length : 0;
         // Estimar pendientes (esto debería venir de Firestore en producción)
-        setPendingRatingsCount(Math.max(0, 3 - ratingsCount));
+          const pending = Math.max(0, 3 - ratingsCount);
+          setPendingRatingsCount(pending);
+          if (userUid) {
+            saveSettings({ pendingRatingsCount: pending });
+          }
 
       } catch (error) {
         logger.error('Error consultando condiciones inteligentes:', error);
@@ -283,7 +362,11 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
         }
 
         if (shouldShow) {
-          // Mostrar notificación
+          const isVisible = typeof document !== 'undefined' && document.visibilityState === 'visible';
+          const suppressLocal = isVisible && !!token;
+          if (suppressLocal) return;
+
+          // Mostrar notificación local solo si no hay push activo en foreground
           new Notification(reminder.title, {
             body: reminder.body,
             icon: '/icons/icon-192x192.png',
@@ -307,7 +390,7 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
         }
       }
     });
-  }, [isSupported, permission, reminders, daysSinceLastPantryUpdate, pendingRatingsCount, daysSinceLastAppUse]);
+  }, [isSupported, permission, reminders, daysSinceLastPantryUpdate, pendingRatingsCount, daysSinceLastAppUse, token]);
 
   // Loop de verificación cada minuto
   useEffect(() => {
@@ -350,6 +433,7 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
       if (fcmToken) {
         setToken(fcmToken);
         setPermission('granted');
+        await saveToken(fcmToken);
         logger.info('Permiso de notificaciones concedido');
         return true;
       } else {
@@ -362,7 +446,7 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported]);
+  }, [isSupported, saveToken]);
 
   const updateReminder = useCallback((id: string, updates: Partial<SmartReminder>) => {
     setReminders(prev => prev.map(r => 

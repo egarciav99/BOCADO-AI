@@ -213,7 +213,7 @@ function AppContent() {
                         md:border-8 md:border-white
                         overflow-hidden relative flex flex-col">
           {/* PWA Banner dentro del contenedor del teléfono */}
-          <PWABanner />
+          <PWABanner showInstall={currentScreen === 'home'} />
           
           {/* Notificaciones de estado de red */}
           <NetworkStatusToast />

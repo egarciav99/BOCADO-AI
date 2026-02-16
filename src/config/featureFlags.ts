@@ -48,6 +48,9 @@ export const FEATURE_FLAGS_CONFIG = {
   retryDelay: 1000,
 } as const;
 
+// Admin allowlist (UIDs) for internal panels
+export const ADMIN_UIDS = ['2kHglJK7HuZ4YxsZCgJps3hnNLF2'];
+
 /**
  * Colecciones y documentos de Firestore para feature flags.
  */

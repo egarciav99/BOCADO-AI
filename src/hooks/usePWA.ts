@@ -7,6 +7,8 @@ interface PWAState {
   isInstalled: boolean;
   installPrompt: Event | null;
   updateAvailable: boolean;
+  isIOS: boolean;
+  isAndroid: boolean;
 }
 
 /**
@@ -23,7 +25,17 @@ export const usePWA = () => {
     isInstalled: false,
     installPrompt: null,
     updateAvailable: false,
+    isIOS: false,
+    isAndroid: false,
   });
+
+  useEffect(() => {
+    const ua = navigator.userAgent || '';
+    const isIOS = /iPad|iPhone|iPod/i.test(ua);
+    const isAndroid = /Android/i.test(ua);
+
+    setState(prev => ({ ...prev, isIOS, isAndroid }));
+  }, []);
 
   // Detectar si está instalado
   useEffect(() => {
@@ -65,6 +77,15 @@ export const usePWA = () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
     };
   }, []);
+
+  useEffect(() => {
+    if (!state.isIOS) return;
+
+    setState(prev => ({
+      ...prev,
+      isInstallable: !prev.isInstalled,
+    }));
+  }, [state.isIOS, state.isInstalled]);
 
   // Detectar online/offline
   useEffect(() => {

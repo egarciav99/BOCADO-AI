@@ -92,6 +92,15 @@ service cloud.firestore {
       allow read, write: if false; // Solo Admin SDK puede escribir
     }
 
+    // Notification settings + tokens
+    match /notification_settings/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /tokens/{tokenId} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;
