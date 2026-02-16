@@ -127,6 +127,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
   }, [userUid]);
 
   useEffect(() => {
+    if (viewMode === 'adminNotifications' && !isAdmin) {
+      setViewMode('view');
+    }
+  }, [viewMode, isAdmin]);
+
+  useEffect(() => {
     const data = buildFormData(user, profile);
     setFormData(data);
     setInitialFormData(data);
@@ -745,10 +751,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
           );
 
       case 'adminNotifications':
-        if (!isAdmin) {
-          setViewMode('view');
-          return null;
-        }
+        if (!isAdmin) return null;
         return (
           <NotificationTokensAdmin
             userUid={userUid}

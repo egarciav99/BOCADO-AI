@@ -31,7 +31,9 @@ export const usePWA = () => {
 
   useEffect(() => {
     const ua = navigator.userAgent || '';
-    const isIOS = /iPad|iPhone|iPod/i.test(ua);
+    const platform = navigator.platform || '';
+    const isIOS = /iPad|iPhone|iPod/i.test(ua)
+      || ((platform.includes('Mac') || platform.includes('MacIntel')) && navigator.maxTouchPoints > 1);
     const isAndroid = /Android/i.test(ua);
 
     setState(prev => ({ ...prev, isIOS, isAndroid }));

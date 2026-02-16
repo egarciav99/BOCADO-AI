@@ -159,10 +159,25 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
     }
   }, [userUid]);
 
+  const hashToken = async (value: string) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(value);
+
+    if (typeof crypto !== 'undefined' && crypto.subtle?.digest) {
+      const digest = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(digest))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    return value.replace(/[^a-zA-Z0-9_-]/g, '_');
+  };
+
   const saveToken = useCallback(async (tokenValue: string) => {
     if (!userUid) return;
     try {
-      const tokenRef = doc(collection(db, 'notification_settings', userUid, 'tokens'), tokenValue);
+      const tokenId = await hashToken(tokenValue);
+      const tokenRef = doc(collection(db, 'notification_settings', userUid, 'tokens'), tokenId);
       await setDoc(tokenRef, {
         token: tokenValue,
         userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
