@@ -48,11 +48,20 @@ export async function register(page: Page, user: TestUser): Promise<void> {
   // Usar timeout más largo (15s) para CI/headless environments
   // Usar selector específico data-testid en lugar de múltiples alternativas
   try {
+    // Esperar a que el DOM esté listo y el botón exista
+    await page.waitForFunction(
+      () => !!document.querySelector('[data-testid="start-button"]'),
+      { timeout: 15000 }
+    );
+    
+    // Luego esperar a que sea visible
     await page.waitForSelector('[data-testid="start-button"]', { state: 'visible', timeout: 15000 });
   } catch (error) {
-    // Si falla, tomar screenshot para debugging
-    await page.screenshot({ path: 'test-failure-start-button.png' });
-    throw new Error(`Start button not found. Screenshot saved. Error: ${error}`);
+    // Si falla, tomar screenshot y guardar HTML para debugging
+    await page.screenshot({ path: 'test-failure-start-button.png', fullPage: true });
+    const html = await page.content();
+    require('fs').writeFileSync('test-failure-start-button.html', html);
+    throw new Error(`Start button not found. Screenshot and HTML saved. Error: ${error}`);
   }
 
   await page.click('[data-testid="start-button"]');
@@ -130,10 +139,19 @@ export async function registerBasic(page: Page, user: TestUser): Promise<void> {
 
   // Usar timeout más largo y selector específico
   try {
+    // Esperar a que el DOM esté listo y el botón exista
+    await page.waitForFunction(
+      () => !!document.querySelector('[data-testid="start-button"]'),
+      { timeout: 15000 }
+    );
+    
+    // Luego esperar a que sea visible
     await page.waitForSelector('[data-testid="start-button"]', { state: 'visible', timeout: 15000 });
   } catch (error) {
-    await page.screenshot({ path: 'test-failure-start-button-basic.png' });
-    throw new Error(`Start button not found in registerBasic. Screenshot saved. Error: ${error}`);
+    await page.screenshot({ path: 'test-failure-start-button-basic.png', fullPage: true });
+    const html = await page.content();
+    require('fs').writeFileSync('test-failure-start-button-basic.html', html);
+    throw new Error(`Start button not found in registerBasic. Screenshot and HTML saved. Error: ${error}`);
   }
 
   await page.click('[data-testid="start-button"]');
@@ -194,12 +212,25 @@ export async function waitForAuthInit(page: Page): Promise<void> {
 }
 
 /**
- * Limpia el estado de autenticación (localStorage)
+ * Limpia el estado de autenticación (localStorage, sessionStorage, IndexedDB)
  */
 export async function clearAuthState(page: Page): Promise<void> {
   await page.goto('/');
-  await page.evaluate(() => {
+  
+  // Limpiar todos los storages
+  await page.evaluate(async () => {
     localStorage.clear();
     sessionStorage.clear();
+    
+    // Limpiar IndexedDB (donde Firebase guarda el auth state)
+    const databases = await indexedDB.databases();
+    databases.forEach(db => {
+      if (db.name) {
+        indexedDB.deleteDatabase(db.name);
+      }
+    });
   });
+  
+  // Recargar para asegurar que todo el estado se limpia
+  await page.reload({ waitUntil: 'networkidle' });
 }

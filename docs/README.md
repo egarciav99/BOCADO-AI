@@ -1,4 +1,4 @@
-# 📚 Documentación BOCADO AI
+hara # 📚 Documentación BOCADO AI
 
 > **Última actualización:** 2026-02-15  
 > **Estado:** Documentación activa y sincronizada con Notion
