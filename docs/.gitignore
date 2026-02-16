@@ -1,0 +1,13 @@
+# Documentación manejada en Notion
+01-producto/
+02-disenio/
+04-features/
+05-ops/
+06-recursos/
+
+# Mantener solo docs técnicos críticos
+!03-tecnico/
+!03-tecnico/arquitectura.md
+!03-tecnico/modelo-datos.md
+!03-tecnico/schema-validation.md
+!README.md
