@@ -17,6 +17,7 @@ const admin = require('firebase-admin');
 
 admin.initializeApp();
 const db = admin.firestore();
+const messaging = admin.messaging();
 
 /**
  * Cleanup old user_interactions documents
@@ -205,6 +206,149 @@ exports.cleanupOldHistorialRecetas = functions.pubsub
       console.error('Error cleaning up historial_recetas:', error);
       throw error;
     }
+  });
+
+/**
+ * Enviar recordatorios push (comidas + inteligentes)
+ * Corre cada minuto y respeta zona horaria del usuario
+ */
+exports.sendNotificationReminders = functions.pubsub
+  .schedule('*/1 * * * *')
+  .timeZone('UTC')
+  .onRun(async () => {
+    const settingsSnap = await db.collection('notification_settings').get();
+    if (settingsSnap.empty) {
+      console.log('No notification settings to process');
+      return null;
+    }
+
+    const now = new Date();
+
+    const getLocalTimeParts = (date, timeZone) => {
+      const formatter = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        hour12: false,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const parts = formatter.formatToParts(date);
+      const getPart = (type) => parts.find(p => p.type === type)?.value || '00';
+      const year = getPart('year');
+      const month = getPart('month');
+      const day = getPart('day');
+      const hour = parseInt(getPart('hour'), 10);
+      const minute = parseInt(getPart('minute'), 10);
+      return { hour, minute, dateKey: `${year}-${month}-${day}` };
+    };
+
+    const daysSince = (timestamp) => {
+      if (!timestamp) return null;
+      const last = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+      const diffMs = Date.now() - last.getTime();
+      return Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    };
+
+    for (const docSnap of settingsSnap.docs) {
+      const settings = docSnap.data();
+      const reminders = Array.isArray(settings.reminders) ? settings.reminders : [];
+      const timeZone = settings.timezone || 'UTC';
+      const { hour, minute, dateKey } = getLocalTimeParts(now, timeZone);
+
+      if (reminders.length === 0) continue;
+
+      const pantryDoc = await db.collection('user_pantry').doc(docSnap.id).get();
+      const pantryData = pantryDoc.exists ? pantryDoc.data() : null;
+      const pantryItems = pantryData?.items || [];
+      const pantryLastUpdated = pantryData?.lastUpdated || null;
+      const pantryDays = daysSince(pantryLastUpdated);
+      const pantryEmpty = pantryItems.length < 3 || (pantryDays !== null && pantryDays >= 7);
+
+      const pendingRatingsCount = settings.pendingRatingsCount || 0;
+      const inactiveDays = daysSince(settings.lastActiveAt);
+
+      const tokensSnap = await db.collection('notification_settings').doc(docSnap.id).collection('tokens').get();
+      const tokens = tokensSnap.docs.map(d => d.id).filter(Boolean);
+      if (tokens.length === 0) continue;
+
+      const remindersToSend = reminders.filter((reminder) => {
+        if (!reminder?.enabled) return false;
+        if (reminder.hour !== hour || reminder.minute !== minute) return false;
+
+        if (reminder.lastShown) {
+          const lastDate = getLocalTimeParts(new Date(reminder.lastShown), timeZone).dateKey;
+          if (lastDate === dateKey) return false;
+        }
+
+        if (reminder.minDaysBetween && reminder.lastShown) {
+          const lastDays = daysSince(reminder.lastShown);
+          if (lastDays !== null && lastDays < reminder.minDaysBetween) return false;
+        }
+
+        switch (reminder.condition) {
+          case 'pantry_empty':
+            return pantryEmpty;
+          case 'pending_ratings':
+            return pendingRatingsCount > 0;
+          case 'inactive_user':
+            return inactiveDays !== null && inactiveDays >= 3;
+          case 'always':
+          default:
+            return true;
+        }
+      });
+
+      if (remindersToSend.length === 0) continue;
+
+      for (const reminder of remindersToSend) {
+        const response = await messaging.sendMulticast({
+          tokens,
+          notification: {
+            title: reminder.title || 'Bocado',
+            body: reminder.body || 'Tienes un nuevo recordatorio',
+          },
+          data: {
+            type: reminder.type || 'custom',
+            id: reminder.id || 'reminder',
+          },
+        });
+
+        const invalidTokens = [];
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success) {
+            const code = resp.error?.code || '';
+            if (code.includes('invalid-registration-token') || code.includes('registration-token-not-registered')) {
+              invalidTokens.push(tokens[idx]);
+            }
+          }
+        });
+
+        if (invalidTokens.length > 0) {
+          const batch = db.batch();
+          invalidTokens.forEach((token) => {
+            const tokenRef = db.collection('notification_settings').doc(docSnap.id).collection('tokens').doc(token);
+            batch.delete(tokenRef);
+          });
+          await batch.commit();
+        }
+      }
+
+      const updatedReminders = reminders.map((reminder) => {
+        if (!reminder?.enabled) return reminder;
+        const matched = remindersToSend.find(r => r.id === reminder.id);
+        if (!matched) return reminder;
+        return { ...reminder, lastShown: new Date().toISOString() };
+      });
+
+      await db.collection('notification_settings').doc(docSnap.id).set({
+        reminders: updatedReminders,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+    }
+
+    return null;
   });
 
 /**
