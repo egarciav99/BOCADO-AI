@@ -268,109 +268,114 @@ exports.sendNotificationReminders = functions.pubsub
       };
 
       for (const docSnap of settingsSnap.docs) {
-        const settings = docSnap.data();
-        const reminders = Array.isArray(settings.reminders) ? settings.reminders : [];
-        const timeZone = settings.timezone || 'UTC';
-        const { hour, minute, dateKey, usedFallback } = getLocalTimeParts(now, timeZone);
-        if (usedFallback) {
-          console.warn(`Invalid timezone for ${docSnap.id}: ${timeZone}, using UTC`);
-        }
-
-        if (reminders.length === 0) continue;
-
-        const pantryDoc = await db.collection('user_pantry').doc(docSnap.id).get();
-        const pantryData = pantryDoc.exists ? pantryDoc.data() : null;
-        const pantryItems = pantryData?.items || [];
-        const pantryLastUpdated = pantryData?.lastUpdated || null;
-        const pantryDays = daysSince(pantryLastUpdated);
-        const pantryEmpty = pantryItems.length < 3 || (pantryDays !== null && pantryDays >= 7);
-
-        const pendingRatingsCount = settings.pendingRatingsCount || 0;
-        const inactiveDays = daysSince(settings.lastActiveAt);
-
-        const tokensSnap = await db.collection('notification_settings').doc(docSnap.id).collection('tokens').get();
-        const tokens = tokensSnap.docs.map(d => d.id).filter(Boolean);
-        if (tokens.length === 0) continue;
-
-        const remindersToSend = reminders.filter((reminder) => {
-          if (!reminder?.enabled) return false;
-          if (reminder.hour !== hour || reminder.minute !== minute) return false;
-
-          if (reminder.lastShown) {
-            const lastDate = getLocalTimeParts(new Date(reminder.lastShown), timeZone).dateKey;
-            if (lastDate === dateKey) return false;
+        try {
+          const settings = docSnap.data();
+          const reminders = Array.isArray(settings.reminders) ? settings.reminders : [];
+          const timeZone = settings.timezone || 'UTC';
+          const { hour, minute, dateKey, usedFallback } = getLocalTimeParts(now, timeZone);
+          if (usedFallback) {
+            console.warn(`Invalid timezone for ${docSnap.id}: ${timeZone}, using UTC`);
           }
 
-          if (reminder.minDaysBetween && reminder.lastShown) {
-            const lastDays = daysSince(reminder.lastShown);
-            if (lastDays !== null && lastDays < reminder.minDaysBetween) return false;
-          }
+          if (reminders.length === 0) continue;
 
-          switch (reminder.condition) {
-            case 'pantry_empty':
-              return pantryEmpty;
-            case 'pending_ratings':
-              return pendingRatingsCount > 0;
-            case 'inactive_user':
-              return inactiveDays !== null && inactiveDays >= 3;
-            case 'always':
-            default:
-              return true;
-          }
-        });
+          const pantryDoc = await db.collection('user_pantry').doc(docSnap.id).get();
+          const pantryData = pantryDoc.exists ? pantryDoc.data() : null;
+          const pantryItems = pantryData?.items || [];
+          const pantryLastUpdated = pantryData?.lastUpdated || null;
+          const pantryDays = daysSince(pantryLastUpdated);
+          const pantryEmpty = pantryItems.length < 3 || (pantryDays !== null && pantryDays >= 7);
 
-        if (remindersToSend.length === 0) continue;
+          const pendingRatingsCount = settings.pendingRatingsCount || 0;
+          const inactiveDays = daysSince(settings.lastActiveAt);
 
-        let remindersState = reminders.slice();
+          const tokensSnap = await db.collection('notification_settings').doc(docSnap.id).collection('tokens').get();
+          let tokens = tokensSnap.docs.map(d => d.id).filter(Boolean);
+          if (tokens.length === 0) continue;
 
-        for (const reminder of remindersToSend) {
-          const response = await messaging.sendEachForMulticast({
-            tokens,
-            notification: {
-              title: reminder.title || 'Bocado',
-              body: reminder.body || 'Tienes un nuevo recordatorio',
-            },
-            data: {
-              type: reminder.type || 'custom',
-              id: reminder.id || 'reminder',
-            },
-          });
+          const remindersToSend = reminders.filter((reminder) => {
+            if (!reminder?.enabled) return false;
+            if (reminder.hour !== hour || reminder.minute !== minute) return false;
 
-          const invalidTokens = [];
-          response.responses.forEach((resp, idx) => {
-            if (!resp.success) {
-              const code = resp.error?.code || '';
-              if (code.includes('invalid-registration-token') || code.includes('registration-token-not-registered')) {
-                invalidTokens.push(tokens[idx]);
-              }
+            if (reminder.lastShown) {
+              const lastDate = getLocalTimeParts(new Date(reminder.lastShown), timeZone).dateKey;
+              if (lastDate === dateKey) return false;
+            }
+
+            if (reminder.minDaysBetween && reminder.lastShown) {
+              const lastDays = daysSince(reminder.lastShown);
+              if (lastDays !== null && lastDays < reminder.minDaysBetween) return false;
+            }
+
+            switch (reminder.condition) {
+              case 'pantry_empty':
+                return pantryEmpty;
+              case 'pending_ratings':
+                return pendingRatingsCount > 0;
+              case 'inactive_user':
+                return inactiveDays !== null && inactiveDays >= 3;
+              case 'always':
+              default:
+                return true;
             }
           });
 
-          if (invalidTokens.length > 0) {
-            const batch = db.batch();
-            invalidTokens.forEach((token) => {
-              const tokenRef = db.collection('notification_settings').doc(docSnap.id).collection('tokens').doc(token);
-              batch.delete(tokenRef);
-            });
-            await batch.commit();
-          }
+          if (remindersToSend.length === 0) continue;
 
-          remindersState = remindersState.map((item) => {
-            if (!item?.enabled || item.id !== reminder.id) return item;
-            return { ...item, lastShown: new Date().toISOString() };
-          });
+          let remindersState = reminders.slice();
+
+          for (const reminder of remindersToSend) {
+            const response = await messaging.sendEachForMulticast({
+              tokens,
+              notification: {
+                title: reminder.title || 'Bocado',
+                body: reminder.body || 'Tienes un nuevo recordatorio',
+              },
+              data: {
+                type: reminder.type || 'custom',
+                id: reminder.id || 'reminder',
+              },
+            });
+
+            const invalidTokens = [];
+            response.responses.forEach((resp, idx) => {
+              if (!resp.success) {
+                const code = resp.error?.code || '';
+                if (code.includes('invalid-registration-token') || code.includes('registration-token-not-registered')) {
+                  invalidTokens.push(tokens[idx]);
+                }
+              }
+            });
+
+            if (invalidTokens.length > 0) {
+              const batch = db.batch();
+              invalidTokens.forEach((token) => {
+                const tokenRef = db.collection('notification_settings').doc(docSnap.id).collection('tokens').doc(token);
+                batch.delete(tokenRef);
+              });
+              await batch.commit();
+              tokens = tokens.filter(token => !invalidTokens.includes(token));
+            }
+
+            remindersState = remindersState.map((item) => {
+              if (!item?.enabled || item.id !== reminder.id) return item;
+              return { ...item, lastShown: new Date().toISOString() };
+            });
+          }
 
           await db.collection('notification_settings').doc(docSnap.id).set({
             reminders: remindersState,
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
           }, { merge: true });
+        } catch (error) {
+          console.error(`Error processing notifications for ${docSnap.id}:`, error);
         }
       }
 
       return null;
     } catch (err) {
       console.error('Error in sendNotificationReminders:', err);
-      return null;
+      throw err;
     }
   });
 
