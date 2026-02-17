@@ -290,7 +290,15 @@ exports.sendNotificationReminders = functions.pubsub
           const inactiveDays = daysSince(settings.lastActiveAt);
 
           const tokensSnap = await db.collection('notification_settings').doc(docSnap.id).collection('tokens').get();
-          let tokens = tokensSnap.docs.map(d => d.id).filter(Boolean);
+          // Build map: real FCM token → document ID (hash) for proper cleanup
+          const tokenMap = {};
+          tokensSnap.docs.forEach(d => {
+            const data = d.data();
+            if (data.token) {
+              tokenMap[data.token] = d.id;
+            }
+          });
+          let tokens = Object.keys(tokenMap);
           if (tokens.length === 0) continue;
 
           const remindersToSend = reminders.filter((reminder) => {
@@ -354,11 +362,16 @@ exports.sendNotificationReminders = functions.pubsub
             if (invalidTokens.length > 0) {
               const batch = db.batch();
               invalidTokens.forEach((token) => {
-                const tokenRef = db.collection('notification_settings').doc(docSnap.id).collection('tokens').doc(token);
-                batch.delete(tokenRef);
+                const docId = tokenMap[token];
+                if (docId) {
+                  const tokenRef = db.collection('notification_settings').doc(docSnap.id).collection('tokens').doc(docId);
+                  batch.delete(tokenRef);
+                }
               });
               await batch.commit();
               tokens = tokens.filter(token => !invalidTokens.includes(token));
+              // Also remove from tokenMap
+              invalidTokens.forEach(token => delete tokenMap[token]);
             }
 
             remindersState = remindersState.map((item) => {
