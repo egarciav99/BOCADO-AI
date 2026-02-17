@@ -114,6 +114,11 @@ const STORAGE_KEY = 'bocado_smart_reminders';
 const LAST_ACTIVE_KEY = 'bocado_last_active';
 const RATINGS_SHOWN_KEY = 'bocado_ratings_shown';
 
+// Constantes de umbrales (evitar magic numbers)
+const MIN_PANTRY_ITEMS = 3;
+const PANTRY_STALE_DAYS = 7;
+const EXPECTED_RATINGS = 3;
+
 export const useSmartNotifications = (userUid: string | undefined): UseSmartNotificationsReturn => {
   const { t } = useTranslation();
   const [isSupported, setIsSupported] = useState(false);
@@ -298,15 +303,17 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
 
   // Actualizar última actividad
   useEffect(() => {
-    const now = new Date().toISOString();
-    localStorage.setItem(LAST_ACTIVE_KEY, now);
-    
-    // Calcular días desde última actividad
+    // Leer ANTES de escribir para calcular los días de inactividad
     const lastActive = localStorage.getItem(LAST_ACTIVE_KEY);
     if (lastActive) {
       const days = Math.floor((Date.now() - new Date(lastActive).getTime()) / (1000 * 60 * 60 * 24));
       setDaysSinceLastAppUse(days);
     }
+    
+    // Ahora sí escribir el timestamp actual
+    const now = new Date().toISOString();
+    localStorage.setItem(LAST_ACTIVE_KEY, now);
+    
     if (userUid) {
       saveSettings({ lastActiveAt: serverTimestamp() });
     }
@@ -330,10 +337,10 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
             setDaysSinceLastPantryUpdate(null);
           }
           
-          // Considerar "vacía" si tiene menos de 3 items o no se actualiza en 7 días
+          // Considerar "vacía" si tiene menos de MIN_PANTRY_ITEMS items o no se actualiza en PANTRY_STALE_DAYS días
           const items = data.items || [];
-          const isEffectivelyEmpty = items.length < 3 || (lastUpdated && 
-            (Date.now() - new Date(lastUpdated).getTime()) > 7 * 24 * 60 * 60 * 1000);
+          const isEffectivelyEmpty = items.length < MIN_PANTRY_ITEMS || (lastUpdated && 
+            (Date.now() - new Date(lastUpdated).getTime()) > PANTRY_STALE_DAYS * 24 * 60 * 60 * 1000);
           
           if (!isEffectivelyEmpty) {
             // Si la despensa no está vacía, no mostrar recordatorio de despensa
@@ -349,7 +356,7 @@ export const useSmartNotifications = (userUid: string | undefined): UseSmartNoti
         const savedRatings = localStorage.getItem(RATINGS_SHOWN_KEY);
         const ratingsCount = savedRatings ? JSON.parse(savedRatings).length : 0;
         // Estimar pendientes (esto debería venir de Firestore en producción)
-          const pending = Math.max(0, 3 - ratingsCount);
+          const pending = Math.max(0, EXPECTED_RATINGS - ratingsCount);
           setPendingRatingsCount(pending);
           if (userUid) {
             saveSettings({ pendingRatingsCount: pending });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 interface UseSkeletonOptions {
   /** Tiempo mínimo que el skeleton debe mostrarse en ms (default: 500) */
@@ -110,7 +110,3 @@ export function useSkeleton(options: UseSkeletonOptions = {}): UseSkeletonReturn
   };
 }
 
-// Importar React para useRef
-import React from 'react';
-
-export default useSkeleton;

@@ -123,7 +123,7 @@ exports.archiveOldUserHistory = functions.pubsub
     try {
       const snapshot = await db.collection('user_history')
         .where('createdAt', '<', cutoffDate)
-        .limit(500)
+        .limit(250) // Each doc = 2 ops (set+delete), Firestore batch limit = 500
         .get();
 
       if (snapshot.empty) {
@@ -211,15 +211,22 @@ exports.cleanupOldHistorialRecetas = functions.pubsub
 /**
  * Enviar recordatorios push (comidas + inteligentes)
  * Corre cada minuto y respeta zona horaria del usuario
+ * 
+ * Optimización: Solo carga usuarios que tienen tokens activos y
+ * al menos un recordatorio habilitado (filtro server-side).
+ * Los reads secundarios (pantry, tokens) se ejecutan en paralelo por batch.
  */
 exports.sendNotificationReminders = functions.pubsub
   .schedule('*/1 * * * *')
   .timeZone('UTC')
   .onRun(async () => {
     try {
-      const settingsSnap = await db.collection('notification_settings').get();
+      // Solo cargar usuarios que tienen al menos un token FCM registrado
+      const settingsSnap = await db.collection('notification_settings')
+        .where('hasToken', '==', true)
+        .get();
       if (settingsSnap.empty) {
-        console.log('No notification settings to process');
+        console.log('No users with active tokens to process');
         return null;
       }
 
@@ -267,126 +274,29 @@ exports.sendNotificationReminders = functions.pubsub
         return Math.floor(diffMs / (1000 * 60 * 60 * 24));
       };
 
-      for (const docSnap of settingsSnap.docs) {
-        try {
-          const settings = docSnap.data();
-          const reminders = Array.isArray(settings.reminders) ? settings.reminders : [];
-          const timeZone = settings.timezone || 'UTC';
-          const { hour, minute, dateKey, usedFallback } = getLocalTimeParts(now, timeZone);
-          if (usedFallback) {
-            console.warn(`Invalid timezone for ${docSnap.id}: ${timeZone}, using UTC`);
+      // Pre-filtrar usuarios: descartar los que no tienen reminders habilitados
+      const eligibleDocs = settingsSnap.docs.filter(docSnap => {
+        const settings = docSnap.data();
+        const reminders = Array.isArray(settings.reminders) ? settings.reminders : [];
+        return reminders.some(r => r?.enabled);
+      });
+
+      if (eligibleDocs.length === 0) {
+        console.log('No users with enabled reminders');
+        return null;
+      }
+
+      // Procesar en batches de 10 para evitar demasiadas reads concurrentes
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < eligibleDocs.length; i += BATCH_SIZE) {
+        const batch = eligibleDocs.slice(i, i + BATCH_SIZE);
+        await Promise.all(batch.map(async (docSnap) => {
+          try {
+            await processUserReminders(docSnap, now, getLocalTimeParts, daysSince);
+          } catch (error) {
+            console.error(`Error processing notifications for ${docSnap.id}:`, error);
           }
-
-          if (reminders.length === 0) continue;
-
-          const pantryDoc = await db.collection('user_pantry').doc(docSnap.id).get();
-          const pantryData = pantryDoc.exists ? pantryDoc.data() : null;
-          const pantryItems = pantryData?.items || [];
-          const pantryLastUpdated = pantryData?.lastUpdated || null;
-          const pantryDays = daysSince(pantryLastUpdated);
-          const pantryEmpty = pantryItems.length < 3 || (pantryDays !== null && pantryDays >= 7);
-
-          const pendingRatingsCount = settings.pendingRatingsCount || 0;
-          const inactiveDays = daysSince(settings.lastActiveAt);
-
-          const tokensSnap = await db.collection('notification_settings').doc(docSnap.id).collection('tokens').get();
-          // Build map: real FCM token → document ID (hash) for proper cleanup
-          const tokenMap = {};
-          tokensSnap.docs.forEach(d => {
-            const data = d.data();
-            if (data.token) {
-              tokenMap[data.token] = d.id;
-            }
-          });
-          let tokens = Object.keys(tokenMap);
-          if (tokens.length === 0) continue;
-
-          const remindersToSend = reminders.filter((reminder) => {
-            if (!reminder?.enabled) return false;
-            if (reminder.hour !== hour || reminder.minute !== minute) return false;
-
-            if (reminder.lastShown) {
-              const lastDate = getLocalTimeParts(new Date(reminder.lastShown), timeZone).dateKey;
-              if (lastDate === dateKey) return false;
-            }
-
-            if (reminder.minDaysBetween && reminder.lastShown) {
-              const lastDays = daysSince(reminder.lastShown);
-              if (lastDays !== null && lastDays < reminder.minDaysBetween) return false;
-            }
-
-            switch (reminder.condition) {
-              case 'pantry_empty':
-                return pantryEmpty;
-              case 'pending_ratings':
-                return pendingRatingsCount > 0;
-              case 'inactive_user':
-                return inactiveDays !== null && inactiveDays >= 3;
-              case 'always':
-              default:
-                return true;
-            }
-          });
-
-          if (remindersToSend.length === 0) continue;
-
-          let remindersState = reminders.slice();
-
-          for (const reminder of remindersToSend) {
-            if (tokens.length === 0) {
-              break;
-            }
-
-            const response = await messaging.sendEachForMulticast({
-              tokens,
-              notification: {
-                title: reminder.title || 'Bocado',
-                body: reminder.body || 'Tienes un nuevo recordatorio',
-              },
-              data: {
-                type: reminder.type || 'custom',
-                id: reminder.id || 'reminder',
-              },
-            });
-
-            const invalidTokens = [];
-            response.responses.forEach((resp, idx) => {
-              if (!resp.success) {
-                const code = resp.error?.code || '';
-                if (code.includes('invalid-registration-token') || code.includes('registration-token-not-registered')) {
-                  invalidTokens.push(tokens[idx]);
-                }
-              }
-            });
-
-            if (invalidTokens.length > 0) {
-              const batch = db.batch();
-              invalidTokens.forEach((token) => {
-                const docId = tokenMap[token];
-                if (docId) {
-                  const tokenRef = db.collection('notification_settings').doc(docSnap.id).collection('tokens').doc(docId);
-                  batch.delete(tokenRef);
-                }
-              });
-              await batch.commit();
-              tokens = tokens.filter(token => !invalidTokens.includes(token));
-              // Also remove from tokenMap
-              invalidTokens.forEach(token => delete tokenMap[token]);
-            }
-
-            remindersState = remindersState.map((item) => {
-              if (!item?.enabled || item.id !== reminder.id) return item;
-              return { ...item, lastShown: new Date().toISOString() };
-            });
-          }
-
-          await db.collection('notification_settings').doc(docSnap.id).set({
-            reminders: remindersState,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-          }, { merge: true });
-        } catch (error) {
-          console.error(`Error processing notifications for ${docSnap.id}:`, error);
-        }
+        }));
       }
 
       return null;
@@ -395,6 +305,145 @@ exports.sendNotificationReminders = functions.pubsub
       throw err;
     }
   });
+
+/**
+ * Procesar recordatorios para un usuario individual.
+ * Extrae la lógica del loop para claridad y manejo de errores.
+ */
+async function processUserReminders(docSnap, now, getLocalTimeParts, daysSince) {
+  const settings = docSnap.data();
+  const reminders = Array.isArray(settings.reminders) ? settings.reminders : [];
+  const timeZone = settings.timezone || 'UTC';
+  const { hour, minute, dateKey, usedFallback } = getLocalTimeParts(now, timeZone);
+  if (usedFallback) {
+    console.warn(`Invalid timezone for ${docSnap.id}: ${timeZone}, using UTC`);
+  }
+
+  // Filtrar solo reminders que coinciden con hora:minuto actual del usuario
+  const candidateReminders = reminders.filter((reminder) => {
+    if (!reminder?.enabled) return false;
+    if (reminder.hour !== hour || reminder.minute !== minute) return false;
+
+    if (reminder.lastShown) {
+      const lastDate = getLocalTimeParts(new Date(reminder.lastShown), timeZone).dateKey;
+      if (lastDate === dateKey) return false;
+    }
+
+    if (reminder.minDaysBetween && reminder.lastShown) {
+      const lastDays = daysSince(reminder.lastShown);
+      if (lastDays !== null && lastDays < reminder.minDaysBetween) return false;
+    }
+
+    return true;
+  });
+
+  if (candidateReminders.length === 0) return;
+
+  // Cargar pantry y tokens en paralelo (reduce latencia vs serial)
+  const [pantryDoc, tokensSnap] = await Promise.all([
+    db.collection('user_pantry').doc(docSnap.id).get(),
+    db.collection('notification_settings').doc(docSnap.id).collection('tokens').get(),
+  ]);
+
+  // Build token map
+  const tokenMap = {};
+  tokensSnap.docs.forEach(d => {
+    const data = d.data();
+    if (data.token) {
+      tokenMap[data.token] = d.id;
+    }
+  });
+  let tokens = Object.keys(tokenMap);
+  if (tokens.length === 0) {
+    // No tokens: mark hasToken false to skip next time
+    await db.collection('notification_settings').doc(docSnap.id).update({ hasToken: false });
+    return;
+  }
+
+  // Evaluar condiciones de pantry
+  const pantryData = pantryDoc.exists ? pantryDoc.data() : null;
+  const pantryItems = pantryData?.items || [];
+  const pantryLastUpdated = pantryData?.lastUpdated || null;
+  const pantryDays = daysSince(pantryLastUpdated);
+  const pantryEmpty = pantryItems.length < 3 || (pantryDays !== null && pantryDays >= 7);
+
+  const pendingRatingsCount = settings.pendingRatingsCount || 0;
+  const inactiveDays = daysSince(settings.lastActiveAt);
+
+  // Filtrar por condiciones inteligentes
+  const remindersToSend = candidateReminders.filter((reminder) => {
+    switch (reminder.condition) {
+      case 'pantry_empty':
+        return pantryEmpty;
+      case 'pending_ratings':
+        return pendingRatingsCount > 0;
+      case 'inactive_user':
+        return inactiveDays !== null && inactiveDays >= 3;
+      case 'always':
+      default:
+        return true;
+    }
+  });
+
+  if (remindersToSend.length === 0) return;
+
+  let remindersState = reminders.slice();
+
+  for (const reminder of remindersToSend) {
+    if (tokens.length === 0) break;
+
+    const response = await messaging.sendEachForMulticast({
+      tokens,
+      notification: {
+        title: reminder.title || 'Bocado',
+        body: reminder.body || 'Tienes un nuevo recordatorio',
+      },
+      data: {
+        type: reminder.type || 'custom',
+        id: reminder.id || 'reminder',
+      },
+    });
+
+    const invalidTokens = [];
+    response.responses.forEach((resp, idx) => {
+      if (!resp.success) {
+        const code = resp.error?.code || '';
+        if (code.includes('invalid-registration-token') || code.includes('registration-token-not-registered')) {
+          invalidTokens.push(tokens[idx]);
+        }
+      }
+    });
+
+    if (invalidTokens.length > 0) {
+      const deleteBatch = db.batch();
+      invalidTokens.forEach((token) => {
+        const docId = tokenMap[token];
+        if (docId) {
+          const tokenRef = db.collection('notification_settings').doc(docSnap.id).collection('tokens').doc(docId);
+          deleteBatch.delete(tokenRef);
+        }
+      });
+      await deleteBatch.commit();
+      tokens = tokens.filter(token => !invalidTokens.includes(token));
+      invalidTokens.forEach(token => delete tokenMap[token]);
+
+      // Si no quedan tokens, marcar hasToken false
+      if (tokens.length === 0) {
+        await db.collection('notification_settings').doc(docSnap.id).update({ hasToken: false });
+      }
+    }
+
+    remindersState = remindersState.map((item) => {
+      if (!item?.enabled || item.id !== reminder.id) return item;
+      return { ...item, lastShown: new Date().toISOString() };
+    });
+  }
+
+  await db.collection('notification_settings').doc(docSnap.id).set({
+    reminders: remindersState,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, { merge: true });
+}
 
 /**
  * Cleanup old historial_recomendaciones documents
@@ -534,10 +583,24 @@ exports.manualCleanup = functions.https.onCall(async (data, context) => {
     new Date(Date.now() - daysNumber * 24 * 60 * 60 * 1000)
   );
 
+  // Cada colección usa un campo de timestamp diferente
+  const timestampFieldMap = {
+    'user_interactions': 'createdAt',
+    'ip_rate_limits': 'updatedAt',
+    'user_history': 'createdAt',
+    'user_history_archive': 'archivedAt',
+    'historial_recetas': 'fecha_creacion',
+    'historial_recomendaciones': 'fecha_creacion',
+    'maps_proxy_cache': 'expiresAt',
+    'maps_proxy_rate_limits': 'updatedAt',
+    'airtable_cache': 'expiresAt',
+  };
+  const timestampField = timestampFieldMap[collection] || 'createdAt';
+
   try {
     const snapshot = await db.collection(collection)
-      .where('createdAt', '<', cutoffDate)
-      .limit(1000)
+      .where(timestampField, '<', cutoffDate)
+      .limit(500) // Firestore batch limit is 500 operations
       .get();
 
     const batch = db.batch();

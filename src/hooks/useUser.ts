@@ -9,28 +9,8 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { UserProfile } from '../types';
 import { useEffect } from 'react';
-
-// Helper para convertir undefined a null antes de guardar en Firestore
-const cleanForFirestore = (obj: Record<string, any>): Record<string, any> => {
-  const cleanValue = (value: any): any => {
-    if (value === undefined) return null;
-    if (value === null) return null;
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      const cleanedObj: Record<string, any> = {};
-      Object.keys(value).forEach(k => {
-        cleanedObj[k] = cleanValue(value[k]);
-      });
-      return cleanedObj;
-    }
-    return value;
-  };
-
-  const cleaned: Record<string, any> = { ...obj };
-  Object.keys(cleaned).forEach(key => {
-    cleaned[key] = cleanValue(cleaned[key]);
-  });
-  return cleaned;
-};
+import { logger } from '../utils/logger';
+import { cleanForFirestore } from '../utils/cleanForFirestore';
 
 // ============================================
 // KEYS DE QUERY (centralizadas para consistencia)
@@ -46,17 +26,17 @@ export const USER_PREFERENCES_KEY = 'userPreferences';
 const fetchUserProfile = async (userId: string): Promise<UserProfile | null> => {
   if (!userId) return null;
   
-  console.log('🔍 Fetching profile for:', userId);
+  logger.info('Fetching profile');
   
   const docRef = doc(db, 'users', userId);
   const docSnap = await getDoc(docRef);
   
   if (!docSnap.exists()) {
-    console.warn('⚠️ Profile not found for:', userId);
+    logger.warn('Profile not found');
     return null;
   }
   
-  console.log('✅ Profile found');
+  logger.info('Profile found');
   
   return { 
     uid: userId, 
@@ -98,7 +78,9 @@ export const useUserProfile = (
     gcTime: 1000 * 60 * 5,
     // Reintentar si no se encuentra el perfil (eventual consistency)
     retry: (failureCount, error) => {
-      // Reintentar hasta 5 veces con delay exponencial
+      // No reintentar errores permanentes (permisos, no encontrado)
+      const msg = error?.message || '';
+      if (msg.includes('permission-denied') || msg.includes('not-found')) return false;
       return failureCount < 5;
     },
     retryDelay: (attemptIndex) => Math.min(1000 * Math.pow(2, attemptIndex), 5000),

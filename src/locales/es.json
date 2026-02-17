@@ -414,7 +414,9 @@
     "generating": "Cocinando...",
     "generateRecommendation": "Generar recomendación",
     "chooseCravingTip": "Elige un tipo de comida para continuar",
-    "chooseCravingAndBudgetTip": "Elige qué se te antoja y presupuesto"
+    "chooseCravingAndBudgetTip": "Elige qué se te antoja y presupuesto",
+    "waitForLocation": "Espera a que se detecte tu ubicación antes de continuar.",
+    "connectionError": "Error de conexión. Intenta de nuevo."
   },
   "mealCard": {
     "actions": {

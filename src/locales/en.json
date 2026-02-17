@@ -404,7 +404,9 @@
     "generating": "Cooking...",
     "generateRecommendation": "Generate recommendation",
     "chooseCravingTip": "Choose a food type to continue",
-    "chooseCravingAndBudgetTip": "Choose what you're craving and budget"
+    "chooseCravingAndBudgetTip": "Choose what you're craving and budget",
+    "waitForLocation": "Wait for your location to be detected before continuing.",
+    "connectionError": "Connection error. Try again."
   },
   "mealCard": {
     "actions": {

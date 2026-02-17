@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, useRef, useId } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useId, createContext, useContext } from 'react';
 import { createPortal } from 'react-dom';
 import { trackEvent } from '../firebaseConfig';
 import { useAuthStore } from '../stores/authStore';
@@ -17,8 +17,25 @@ interface FeedbackModalProps {
 const MAX_COMMENT_LENGTH = 500;
 const SUCCESS_CLOSE_DELAY = 2000;
 
-// Track global modal ownership to prevent multiple instances
-let activeModalId: string | null = null;
+// ✅ FIX #2: Use Context instead of global variable to prevent race conditions
+interface ModalContextType {
+  activeModalId: string | null;
+  setActiveModalId: (id: string | null) => void;
+}
+
+const ModalContext = createContext<ModalContextType>({
+  activeModalId: null,
+  setActiveModalId: () => {},
+});
+
+export const FeedbackModalProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [activeModalId, setActiveModalId] = useState<string | null>(null);
+  return (
+    <ModalContext.Provider value={{ activeModalId, setActiveModalId }}>
+      {children}
+    </ModalContext.Provider>
+  );
+};
 
 const sanitizeComment = (text: string): string => {
   return text
@@ -91,6 +108,8 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
 }) => {
   const { t } = useTranslation();
   const modalInstanceId = useId();
+  const { activeModalId, setActiveModalId } = useContext(ModalContext);
+  
   // Estado local del formulario
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -128,11 +147,11 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     };
   }, [isSuccess]);
 
-  // Resetear estado cuando se abre el modal y manejar estado global
+  // ✅ FIX #2: Use context to manage modal state properly
   useEffect(() => {
     if (isOpen) {
       if (activeModalId === null) {
-        activeModalId = modalInstanceId;
+        setActiveModalId(modalInstanceId);
       }
 
       if (activeModalId !== modalInstanceId) {
@@ -155,18 +174,18 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     }
 
     if (activeModalId === modalInstanceId) {
-      activeModalId = null;
+      setActiveModalId(null);
     }
-  }, [isOpen, reset, modalInstanceId]);
+  }, [isOpen, reset, modalInstanceId, activeModalId, setActiveModalId]);
   
   // Cleanup al desmontar
   useEffect(() => {
     return () => {
       if (activeModalId === modalInstanceId) {
-        activeModalId = null;
+        setActiveModalId(null);
       }
     };
-  }, [modalInstanceId]);
+  }, [modalInstanceId, activeModalId, setActiveModalId]);
 
   // Handler de calificación - memoizado para prevenir re-renders
   const handleRatingClick = useCallback((selectedRating: number) => {
@@ -242,7 +261,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     onClose();
   }, [onClose, rating, isSuccess, itemTitle, type]);
 
-  // Handlers para absorber todos los eventos del backdrop
+  // ✅ FIX #4: Ensure backdrop click works on both desktop and mobile
   const handleBackdropPointerDown = useCallback((e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -260,13 +279,9 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   // No renderizar si no está abierto o si ya hay otro modal abierto globalmente
   if (!isOpen) return null;
 
-  // Claim ownership early to prevent multiple instances rendering in the same frame.
-  if (activeModalId === null) {
-    activeModalId = modalInstanceId;
-  }
-
+  // ✅ FIX #2: Claim ownership using context instead of global variable
   // Validación para evitar múltiples instancias del modal
-  if (activeModalId !== modalInstanceId) {
+  if (activeModalId !== null && activeModalId !== modalInstanceId) {
     return null;
   }
 
@@ -288,6 +303,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         onTouchEndCapture={handleBackdropPointerDown}
         onPointerDown={handleBackdropPointerDown}
         onClick={handleBackdropClick}
+        onTouchEnd={handleBackdropClick}
         aria-hidden="true"
       />
       

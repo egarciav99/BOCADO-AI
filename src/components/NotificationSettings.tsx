@@ -39,7 +39,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
   // Si el navegador no soporta notificaciones
   if (!isSupported) {
     return createPortal(
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 pt-safe pb-safe">
         <div className="bg-white rounded-3xl p-6 w-full max-w-sm animate-fade-in">
           <div className="text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -158,7 +158,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
 
   return createPortal(
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-hidden"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 pt-safe pb-safe overflow-hidden"
       style={{ touchAction: 'none', overscrollBehavior: 'none' }}
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
       onTouchMove={(e) => { if (e.target === e.currentTarget) e.preventDefault(); }}

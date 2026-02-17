@@ -165,8 +165,9 @@ export function searchCitiesDebounced(
       
       // Limpiar caché si crece demasiado (>1000 entradas)
       if (localCache.size > 1000) {
-        const firstKey = localCache.keys().next().value;
-        if (firstKey) localCache.delete(firstKey);
+        // Evict oldest 100 entries (LRU-like)
+        const keysToDelete = Array.from(localCache.keys()).slice(0, 100);
+        keysToDelete.forEach(k => localCache.delete(k));
       }
       
       callbacks.onResults(results);

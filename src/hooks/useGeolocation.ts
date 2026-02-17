@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { logger } from '../utils/logger';
 import { trackEvent } from '../firebaseConfig';
 import { reverseGeocode, detectLocationByIP } from '../services/mapsService';
@@ -28,6 +28,7 @@ export interface GeolocationState {
 /**
  * Hook para obtener la geolocalización del usuario
  * Solo funciona en HTTPS o localhost
+ * ✅ FIX #9: Better Safari iOS detection and permission handling
  */
 export function useGeolocation() {
   const [state, setState] = useState<GeolocationState>({
@@ -46,10 +47,21 @@ export function useGeolocation() {
     detectedLocationRef.current = state.detectedLocation;
   }, [state.detectedLocation]);
 
+  // ✅ FIX #9: Detect Safari iOS for proper permission handling
+  const isSafariIOS = useMemo(() => {
+    const ua = navigator.userAgent;
+    const iOS = /iPad|iPhone|iPod/.test(ua);
+    const webkit = /WebKit/.test(ua);
+    const chrome = /CriOS|Chrome/.test(ua);
+    return iOS && webkit && !chrome;
+  }, []);
+
   // Verificar el estado del permiso
   const checkPermission = useCallback(async () => {
-    if (!('permissions' in navigator)) {
-      return 'unknown' as const;
+    // ✅ FIX #9: Safari iOS doesn't support permissions API for geolocation
+    if (isSafariIOS || !('permissions' in navigator)) {
+      logger.info('[useGeolocation] Safari iOS or no permissions API, returning prompt');
+      return 'prompt' as const;
     }
 
     try {
@@ -59,7 +71,7 @@ export function useGeolocation() {
       logger.warn('Error checking geolocation permission:', error);
       return 'unknown' as const;
     }
-  }, []);
+  }, [isSafariIOS]);
 
   // Solicitar ubicación
   const requestLocation = useCallback(async () => {

@@ -4,7 +4,6 @@ import { db, auth, trackEvent } from '../firebaseConfig';
 import { collection, query, where, getDocs, limit, doc, getDoc, DocumentSnapshot } from 'firebase/firestore';
 import { Plan, Meal } from '../types';
 import MealCard from './MealCard';
-import { useToggleSavedItem } from '../hooks/useSavedItems';
 import BottomTabBar, { Tab } from './BottomTabBar';
 import { useTranslation } from '../contexts/I18nContext';
 
@@ -154,7 +153,7 @@ const usePlanQuery = (planId: string | undefined, userId: string | undefined) =>
   });
 };
 
-const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
+const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavigateTab }) => {
   const { t } = useTranslation();
   
   const loadingMessages = [
@@ -169,7 +168,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
   const [currentLoadingMessage, setCurrentLoadingMessage] = useState(loadingMessages[0]);
   const user = auth.currentUser;
   const { data: selectedPlan, isLoading, isError, error, refetch } = usePlanQuery(planId, user?.uid);
-  const toggleMutation = useToggleSavedItem();
 
   useEffect(() => {
     if (selectedPlan) {
@@ -203,6 +201,9 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
     return () => clearInterval(intervalId);
   }, [isLoading]);
 
+  // NOTA: MealCard ya ejecuta toggleMutation internamente en handleSaveClick.
+  // Este handler solo registra el evento de analytics desde PlanScreen.
+  // NO debe hacer una segunda mutación para evitar doble guardado/borrado.
   const handleToggleSave = (meal: Meal) => {
     if (!user) return;
     const isRestaurant = meal.recipe.difficulty === 'Restaurante';
@@ -210,14 +211,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan }) => {
     trackEvent('plan_item_saved', {
         item_title: meal.recipe.title,
         type: isRestaurant ? 'restaurant' : 'recipe'
-    });
-
-    toggleMutation.mutate({
-      userId: user.uid,
-      type: isRestaurant ? 'restaurant' : 'recipe',
-      recipe: meal.recipe,
-      mealType: meal.mealType,
-      isSaved: false, 
     });
   };
 

@@ -253,6 +253,9 @@ export const setAnalyticsUser = (userId: string | null, properties?: Record<stri
  * @deprecated Usa setAnalyticsUser(userId, properties) en su lugar.
  */
 export const setAnalyticsProperties = (properties: Record<string, any>) => {
+  if (import.meta.env.DEV) {
+    console.warn('[Firebase] setAnalyticsProperties is deprecated. Use setAnalyticsUser() instead.');
+  }
   if (analytics) {
     try {
       setUserProperties(analytics, properties);

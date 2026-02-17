@@ -18,11 +18,11 @@ export {
 // ============================================
 // DRAFT: Estado transitorio de formularios
 // ============================================
-export { 
-  useProfileDraftStore,
-  useProfileDraftWithData,
-  useEditableProfile,
-} from './profileDraftStore';
+export { useProfileDraftStore } from './profileDraftStore';
+
+// NOTA: useProfileDraftWithData y useEditableProfile se exportan
+// desde hooks/useProfileDraft.ts para evitar dependencias circulares.
+// Importar desde allí: import { useProfileDraftWithData } from '../hooks/useProfileDraft';
 
 // ============================================
 // PANTRY: Estado UI de la despensa

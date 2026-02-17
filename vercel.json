@@ -3,6 +3,7 @@
   "rewrites": [
     { "source": "/api/recommend", "destination": "/api/recommend" },
     { "source": "/api/maps-proxy", "destination": "/api/maps-proxy" },
+    { "source": "/api/invalidate-cache", "destination": "/api/invalidate-cache" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

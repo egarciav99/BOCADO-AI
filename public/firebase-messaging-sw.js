@@ -23,23 +23,62 @@ const messaging = firebase.messaging();
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Mensaje recibido en segundo plano:', payload);
 
-  const notificationTitle = payload.notification?.title || 'Bocado';
-  const notificationOptions = {
-    body: payload.notification?.body || 'Tienes una nueva notificación',
-    icon: '/icons/icon-192x192.png',
-    badge: '/icons/icon-72x72.png',
-    tag: payload.data?.type || 'default',
-    requireInteraction: false,
-    data: payload.data,
-    actions: [
-      {
-        action: 'open',
-        title: 'Abrir app',
-      },
-    ],
-  };
+  // Si el payload ya trae 'notification', el navegador lo muestra automáticamente.
+  // Solo mostramos manualmente si es data-only o queremos personalizar.
+  if (payload.notification) {
+    // Respuesta explícita para garantizar que se muestre la notificación
+    const notificationTitle = payload.notification.title || 'Bocado';
+    const notificationOptions = {
+      body: payload.notification.body || 'Tienes una nueva notificación',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: payload.data?.type || 'default',
+      requireInteraction: false,
+      data: payload.data,
+      actions: [
+        {
+          action: 'open',
+          title: 'Abrir app',
+        },
+      ],
+    };
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  } else if (payload.data) {
+    // Data-only message: construir notificación desde data
+    const notificationTitle = payload.data.title || 'Bocado';
+    const notificationOptions = {
+      body: payload.data.body || 'Tienes una nueva notificación',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: payload.data.type || 'default',
+      requireInteraction: false,
+      data: payload.data,
+    };
+    self.registration.showNotification(notificationTitle, notificationOptions);
+  }
+});
 
-  self.registration.showNotification(notificationTitle, notificationOptions);
+// Fallback: escuchar evento push directamente por si onBackgroundMessage no lo captura
+self.addEventListener('push', (event) => {
+  // Si Firebase SDK ya manejó este evento, no duplicar
+  if (event.__handled) return;
+
+  const data = event.data ? event.data.json() : {};
+  console.log('[firebase-messaging-sw.js] Push event recibido:', data);
+
+  // Solo mostrar si Firebase SDK no lo manejó (payload sin notification key de FCM)
+  if (!data.notification && data.data) {
+    const title = data.data.title || 'Bocado';
+    const options = {
+      body: data.data.body || 'Tienes una nueva notificación',
+      icon: '/icons/icon-192x192.png',
+      badge: '/icons/icon-72x72.png',
+      tag: data.data.type || 'push-fallback',
+      data: data.data,
+    };
+
+    event.waitUntil(self.registration.showNotification(title, options));
+  }
 });
 
 // Manejar clic en notificación

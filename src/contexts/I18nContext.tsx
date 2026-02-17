@@ -101,7 +101,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     [user?.uid, updateProfileMutation]
   );
 
-  const t = (key: string, variables?: Record<string, any>): string => {
+  const t = useCallback((key: string, variables?: Record<string, any>): string => {
     const keys = key.split('.');
     let value: any = translations[locale];
 
@@ -109,7 +109,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        console.warn(`Translation key not found: ${key}`);
+        if (import.meta.env.DEV) console.warn(`Translation key not found: ${key}`);
         return key;
       }
     }
@@ -126,7 +126,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     }
 
     return value;
-  };
+  }, [locale]);
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t, isLoadingLocale }}>

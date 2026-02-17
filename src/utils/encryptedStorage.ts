@@ -7,6 +7,21 @@ import { logger } from './logger';
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined';
 
+// ✅ FIX #10: Check if localStorage is actually available (can be disabled in iOS private mode)
+const isLocalStorageAvailable = (() => {
+  if (!isBrowser) return false;
+  
+  try {
+    const test = '__localStorage_test__';
+    window.localStorage.setItem(test, test);
+    window.localStorage.removeItem(test);
+    return true;
+  } catch (e) {
+    logger.warn('[encryptedStorage] localStorage not available (private mode or disabled):', e);
+    return false;
+  }
+})();
+
 // Generate a key from the user's browser fingerprint + a salt
 // This makes it harder (but not impossible) to read the data from another browser
 const getEncryptionKey = (): string => {
@@ -115,6 +130,11 @@ const xorDecrypt = (encoded: string, key: string): string | null => {
 
 export const encryptedStorage = {
   getItem: (key: string): string | null => {
+    if (!isLocalStorageAvailable) {
+      logger.warn('[encryptedStorage] localStorage not available, returning null');
+      return null;
+    }
+    
     try {
       const encrypted = localStorage.getItem(key);
       if (!encrypted) return null;
@@ -135,6 +155,11 @@ export const encryptedStorage = {
   },
   
   setItem: (key: string, value: string): void => {
+    if (!isLocalStorageAvailable) {
+      logger.warn('[encryptedStorage] localStorage not available, skipping write');
+      return;
+    }
+    
     try {
       const key_str = getEncryptionKey();
       const encrypted = 'enc:' + xorEncrypt(value, key_str);
@@ -145,6 +170,11 @@ export const encryptedStorage = {
   },
   
   removeItem: (key: string): void => {
+    if (!isLocalStorageAvailable) {
+      logger.warn('[encryptedStorage] localStorage not available, skipping remove');
+      return;
+    }
+    
     try {
       localStorage.removeItem(key);
     } catch (e) {
@@ -154,32 +184,45 @@ export const encryptedStorage = {
 };
 
 // Storage wrapper that falls back to regular localStorage if encryption fails
+// ✅ FIX #10: Also checks if localStorage is available
 export const safeStorage = {
   getItem: (key: string): string | null => {
-    if (!isBrowser) return null;
+    if (!isBrowser || !isLocalStorageAvailable) return null;
     
     try {
       return encryptedStorage.getItem(key);
     } catch {
-      return localStorage.getItem(key);
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
     }
   },
   setItem: (key: string, value: string): void => {
-    if (!isBrowser) return;
+    if (!isBrowser || !isLocalStorageAvailable) return;
     
     try {
       encryptedStorage.setItem(key, value);
     } catch {
-      localStorage.setItem(key, value);
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+        logger.warn('[safeStorage] Failed to write to storage');
+      }
     }
   },
   removeItem: (key: string): void => {
-    if (!isBrowser) return;
+    if (!isBrowser || !isLocalStorageAvailable) return;
     
     try {
       encryptedStorage.removeItem(key);
     } catch {
-      localStorage.removeItem(key);
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        logger.warn('[safeStorage] Failed to remove from storage');
+      }
     }
   },
 };

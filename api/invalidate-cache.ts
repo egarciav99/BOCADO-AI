@@ -6,99 +6,145 @@
  * - Pantry modificada → invalidar pantryCache
  * - Historial borrado → invalidar historyCache
  * 
- * POST /api/invalidate-cache
- * Body: { userId: string, type?: 'profile' | 'pantry' | 'history' | 'all' }
+ * POST /api/invalidate-cache  (requiere auth Bearer token)
+ * Body: { type?: 'profile' | 'pantry' | 'history' | 'all' }
+ * 
+ * GET /api/invalidate-cache   (requiere x-api-key o dev mode)
+ * Retorna estadísticas del cache
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { getApps, cert, initializeApp } from 'firebase-admin/app';
+import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { profileCache, pantryCache, historyCache, getCacheStats } from './utils/cache.js';
 
-export const runtime = 'nodejs';
-export const dynamic = 'force-dynamic';
-
-export async function POST(req: NextRequest) {
+// ============================================
+// FIREBASE ADMIN INIT (reutiliza si ya está inicializado)
+// ============================================
+if (!getApps().length) {
   try {
-    const { userId, type = 'all' } = await req.json();
-
-    if (!userId || typeof userId !== 'string') {
-      return NextResponse.json(
-        { error: 'userId is required and must be a string' },
-        { status: 400 }
-      );
+    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+    if (serviceAccountKey) {
+      const serviceAccount = JSON.parse(serviceAccountKey.trim());
+      initializeApp({ credential: cert(serviceAccount) });
     }
-
-    let invalidated: string[] = [];
-
-    switch (type) {
-      case 'profile':
-        profileCache.del(userId);
-        invalidated.push('profile');
-        break;
-
-      case 'pantry':
-        pantryCache.del(userId);
-        invalidated.push('pantry');
-        break;
-
-      case 'history':
-        historyCache.del(userId);
-        invalidated.push('history');
-        break;
-
-      case 'all':
-      default:
-        profileCache.del(userId);
-        pantryCache.del(userId);
-        historyCache.del(userId);
-        invalidated.push('profile', 'pantry', 'history');
-        break;
-    }
-
-    console.log(`[Cache] Invalidated ${invalidated.join(', ')} for user ${userId.substring(0, 8)}...`);
-
-    return NextResponse.json({
-      success: true,
-      userId: userId.substring(0, 8) + '...',
-      invalidated,
-      timestamp: new Date().toISOString()
-    });
-
-  } catch (error: any) {
-    console.error('[Cache] Invalidation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to invalidate cache', details: error.message },
-      { status: 500 }
-    );
+  } catch (error) {
+    console.error('[invalidate-cache] Firebase init error:', error);
   }
 }
 
-/**
- * GET /api/invalidate-cache
- * Retorna estadísticas del cache (para debugging)
- */
-export async function GET(req: NextRequest) {
-  try {
-    const isDev = process.env.NODE_ENV === 'development';
-    const providedKey = req.headers.get('x-api-key');
-    const expectedKey = process.env.CACHE_STATS_KEY;
-    const hasValidKey = Boolean(expectedKey && providedKey && providedKey === expectedKey);
+// ============================================
+// CORS
+// ============================================
+const ALLOWED_ORIGINS = [
+  'https://bocado-ai.vercel.app',
+  'https://www.bocado-ai.vercel.app',
+];
 
-    if (!isDev && !hasValidKey) {
-      return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+const isOriginAllowed = (origin: string | undefined): boolean => {
+  if (!origin) return true; // same-origin requests
+  if (origin.startsWith('http://localhost:')) return true;
+  return ALLOWED_ORIGINS.includes(origin);
+};
+
+// ============================================
+// HANDLER (Vercel Serverless)
+// ============================================
+export default async function handler(req: any, res: any) {
+  const origin = req.headers.origin;
+
+  if (!isOriginAllowed(origin)) {
+    return res.status(403).json({ error: 'Origin not allowed' });
+  }
+
+  res.setHeader('Access-Control-Allow-Origin', origin || ALLOWED_ORIGINS[0]);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // ============================================
+  // GET: Cache stats (dev or api-key protected)
+  // ============================================
+  if (req.method === 'GET') {
+    try {
+      const isDev = process.env.NODE_ENV === 'development';
+      const providedKey = req.headers['x-api-key'];
+      const expectedKey = process.env.CACHE_STATS_KEY;
+      const hasValidKey = Boolean(expectedKey && providedKey && providedKey === expectedKey);
+
+      if (!isDev && !hasValidKey) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+
+      const stats = getCacheStats();
+      return res.status(200).json({ stats, timestamp: new Date().toISOString() });
+    } catch (error: any) {
+      console.error('[Cache] Stats error:', error);
+      return res.status(500).json({ error: 'Failed to get cache stats' });
+    }
+  }
+
+  // ============================================
+  // POST: Invalidate cache (requires Firebase auth)
+  // ============================================
+  if (req.method === 'POST') {
+    // Autenticar con Firebase Auth token
+    const authHeader = req.headers?.authorization || req.headers?.Authorization || '';
+    const tokenMatch = typeof authHeader === 'string' ? authHeader.match(/^Bearer\s+(.+)$/i) : null;
+    const idToken = tokenMatch?.[1];
+
+    if (!idToken) {
+      return res.status(401).json({ error: 'Auth token required' });
     }
 
-    const stats = getCacheStats();
-    
-    return NextResponse.json({
-      stats,
-      timestamp: new Date().toISOString()
-    });
+    let userId: string;
+    try {
+      const decoded = await getAdminAuth().verifyIdToken(idToken);
+      userId = decoded.uid;
+    } catch (err) {
+      return res.status(401).json({ error: 'Invalid auth token' });
+    }
 
-  } catch (error: any) {
-    console.error('[Cache] Stats error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get cache stats', details: error.message },
-      { status: 500 }
-    );
+    try {
+      const { type = 'all' } = req.body || {};
+      const invalidated: string[] = [];
+
+      switch (type) {
+        case 'profile':
+          profileCache.del(userId);
+          invalidated.push('profile');
+          break;
+        case 'pantry':
+          pantryCache.del(userId);
+          invalidated.push('pantry');
+          break;
+        case 'history':
+          historyCache.del(userId);
+          invalidated.push('history');
+          break;
+        case 'all':
+        default:
+          profileCache.del(userId);
+          pantryCache.del(userId);
+          historyCache.del(userId);
+          invalidated.push('profile', 'pantry', 'history');
+          break;
+      }
+
+      console.log(`[Cache] Invalidated ${invalidated.join(', ')} for user ${userId.substring(0, 8)}...`);
+
+      return res.status(200).json({
+        success: true,
+        userId: userId.substring(0, 8) + '...',
+        invalidated,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error: any) {
+      console.error('[Cache] Invalidation error:', error);
+      return res.status(500).json({ error: 'Failed to invalidate cache' });
+    }
   }
+
+  return res.status(405).json({ error: 'Method not allowed' });
 }

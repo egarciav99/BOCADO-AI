@@ -32,13 +32,14 @@ export const useProfileDraftWithData = (options: UseProfileDraftWithDataOptions)
   
   const { data: profile, isLoading: isProfileLoading } = useUserProfile(userId);
   const draft = useProfileDraftStore();
+  const resetForm = useProfileDraftStore(s => s.resetForm);
   
   // Resetear borrador al montar (opcional)
   useEffect(() => {
     if (resetOnMount && userId) {
-      draft.resetForm();
+      resetForm();
     }
-  }, [userId, resetOnMount, draft]);
+  }, [userId, resetOnMount, resetForm]);
   
   // Merge: Perfil real + cambios del borrador
   const mergedData = useMemo(() => {

@@ -14,7 +14,18 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
   const { t } = useTranslation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 px-safe pb-safe bg-bocado-background dark:bg-gray-800 border-t border-bocado-border/30 dark:border-gray-700">
+    <nav 
+      className="fixed bottom-0 left-0 right-0 z-50 px-safe pb-safe bg-bocado-background dark:bg-gray-800 border-t border-bocado-border/30 dark:border-gray-700"
+      style={{
+        // ✅ FIX #8: Better iOS keyboard handling
+        position: 'fixed',
+        bottom: 0,
+        // On iOS, fixed bottom elements can shift when keyboard appears
+        // This keeps navbar stable
+        transform: 'translateZ(0)',
+        WebkitTransform: 'translateZ(0)',
+      }}
+    >
       <div className="mx-auto max-w-md md:max-w-lg bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-t-3xl shadow-[0_-4px_20px_rgba(0,0,0,0.1)] overflow-visible">
         
         {/* Contenedor flex simple: 5 elementos, mismo tamaño, centrados verticalmente */}
@@ -24,7 +35,11 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
           <button
             data-testid="nav-saved"
             onClick={() => onTabChange('saved')}
-            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('saved') ? 'text-bocado-green' : 'text-bocado-gray dark:text-gray-400'}`}
+            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 min-h-[48px] touch-manipulation ${isActive('saved') ? 'text-bocado-green' : 'text-bocado-gray dark:text-gray-400'}`}
+            style={{ 
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
           >
             <BookOpen className="w-5 h-5" strokeWidth={isActive('saved') ? 2.5 : 1.5} />
             <span className="text-2xs font-medium whitespace-nowrap">{t('tabs.recipes')}</span>
@@ -34,7 +49,11 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
           <button
             data-testid="nav-restaurants"
             onClick={() => onTabChange('restaurants')}
-            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('restaurants') ? 'text-bocado-green' : 'text-bocado-gray dark:text-gray-400'}`}
+            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 min-h-[48px] touch-manipulation ${isActive('restaurants') ? 'text-bocado-green' : 'text-bocado-gray dark:text-gray-400'}`}
+            style={{ 
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
           >
             <MapPin className="w-5 h-5" strokeWidth={isActive('restaurants') ? 2.5 : 1.5} />
             <span className="text-2xs font-medium whitespace-nowrap">{t('tabs.restaurants')}</span>
@@ -45,7 +64,13 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
             <button
               data-testid="nav-recommendation"
               onClick={() => onTabChange('recommendation')}
-              className={`w-12 h-12 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-700 shadow-md -mt-4 transition-transform ${isActive('recommendation') ? 'bg-bocado-green text-white scale-110' : 'bg-bocado-dark-green text-white'}`}
+              className={`w-14 h-14 rounded-full flex items-center justify-center border-2 border-white dark:border-gray-700 shadow-md -mt-4 transition-transform touch-manipulation ${isActive('recommendation') ? 'bg-bocado-green text-white scale-110' : 'bg-bocado-dark-green text-white'}`}
+              style={{ 
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                minWidth: '56px',
+                minHeight: '56px',
+              }}
             >
               <Home className="w-6 h-6" strokeWidth={2.5} />
             </button>
@@ -58,7 +83,11 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
           <button
             data-testid="nav-pantry"
             onClick={() => onTabChange('pantry')}
-            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('pantry') ? 'text-bocado-green' : 'text-bocado-gray dark:text-gray-400'}`}
+            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 min-h-[48px] touch-manipulation ${isActive('pantry') ? 'text-bocado-green' : 'text-bocado-gray dark:text-gray-400'}`}
+            style={{ 
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
           >
             <UtensilsCrossed className="w-5 h-5" strokeWidth={isActive('pantry') ? 2.5 : 1.5} />
             <span className="text-2xs font-medium whitespace-nowrap">{t('tabs.pantry')}</span>
@@ -68,7 +97,11 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, onTabChange }) =
           <button
             data-testid="nav-profile"
             onClick={() => onTabChange('profile')}
-            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 ${isActive('profile') ? 'text-bocado-green' : 'text-bocado-gray dark:text-gray-400'}`}
+            className={`flex flex-col items-center justify-center flex-1 h-full space-y-1 min-h-[48px] touch-manipulation ${isActive('profile') ? 'text-bocado-green' : 'text-bocado-gray dark:text-gray-400'}`}
+            style={{ 
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+            }}
           >
             <User className="w-5 h-5" strokeWidth={isActive('profile') ? 2.5 : 1.5} />
             <span className="text-2xs font-medium whitespace-nowrap">{t('tabs.profile')}</span>

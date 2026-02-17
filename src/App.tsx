@@ -11,6 +11,8 @@ import NetworkStatusToast from './components/NetworkStatusToast';
 import { captureError, setUserContext, addBreadcrumb } from './utils/sentry';
 import { I18nProvider, useTranslation } from './contexts/I18nContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastContainer } from './components/ui/Toast';
+import { FeedbackModalProvider } from './components/FeedbackModal';
 
 // ✅ IMPORTACIÓN ESTÁTICA (sin lazy loading)
 import HomeScreen from './components/HomeScreen';
@@ -234,6 +236,9 @@ function AppContent() {
           {/* Notificaciones de estado de red */}
           <NetworkStatusToast />
           
+          {/* ✅ FIX: Toast notifications for better mobile UX */}
+          <ToastContainer />
+          
           {/* Renderizado con Error Boundary - ocupa todo el espacio disponible */}
           <div className="flex-1 min-h-0">
             <ErrorBoundary>
@@ -252,9 +257,11 @@ function App() {
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
-          <ErrorBoundary>
-            <AppContent />
-          </ErrorBoundary>
+          <FeedbackModalProvider>
+            <ErrorBoundary>
+              <AppContent />
+            </ErrorBoundary>
+          </FeedbackModalProvider>
         </I18nProvider>
       </QueryClientProvider>
     </ThemeProvider>

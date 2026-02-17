@@ -69,7 +69,7 @@ export const useProfileDraftStore = create<ProfileDraftState>()(
       
       saveDraft: () => set({ 
         lastSavedAt: Date.now(),
-        isDirty: true,
+        isDirty: false,
       }),
       
       clearDraft: () => set({

@@ -137,9 +137,6 @@ export const useNotifications = (): UseNotificationsReturn => {
       return prev.map(schedule => {
         const defaultSch = defaultSchedules.find(ds => ds.id === schedule.id);
         if (defaultSch) {
-          // Detectar si el título es una clave de traducción (contiene "notifications.")
-          const isTranslationKey = schedule.title.includes('notifications.') || schedule.title.includes('notificacions.');
-          
           // Mantener configuraciones del usuario pero actualizar traducciones
           return {
             ...schedule,
@@ -306,4 +303,3 @@ export const useNotifications = (): UseNotificationsReturn => {
   };
 };
 
-export default useNotifications;

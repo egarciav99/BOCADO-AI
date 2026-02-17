@@ -1074,8 +1074,10 @@ export default async function handler(req: any, res: any) {
     return res.status(403).json({ error: 'Origin not allowed' });
   }
   
-  // Si no hay origin (same-origin), usar el primer origen permitido o wildcard
-  res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  // Si no hay origin (same-origin), usar el primer origen de producción
+  // NOTA: wildcard '*' es incompatible con credentials: true según spec CORS
+  const allowedOrigin = origin || ALLOWED_ORIGINS[0];
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');

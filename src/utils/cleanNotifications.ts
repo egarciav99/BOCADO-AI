@@ -26,10 +26,10 @@ export function cleanCorruptedNotifications(): { cleaned: boolean; keys: string[
         if (hasCorruptedData) {
           localStorage.removeItem(key);
           cleanedKeys.push(key);
-          console.log(`✓ Limpiado: ${key}`);
+          if (import.meta.env.DEV) console.log(`✓ Limpiado: ${key}`);
         }
       } catch (e) {
-        console.error(`Error limpiando ${key}:`, e);
+        if (import.meta.env.DEV) console.error(`Error limpiando ${key}:`, e);
       }
     }
   });
@@ -51,7 +51,7 @@ export function resetNotificationHistory(): void {
   );
   
   keys.forEach(key => localStorage.removeItem(key));
-  console.log(`✓ Limpiado historial de ${keys.length} notificaciones`);
+  if (import.meta.env.DEV) console.log(`✓ Limpiado historial de ${keys.length} notificaciones`);
 }
 
 /**
@@ -100,9 +100,11 @@ if (typeof window !== 'undefined') {
     reset: resetNotificationHistory,
     diagnose: diagnoseNotifications,
   };
-  
-  console.log('💡 Utilidades de notificaciones disponibles:');
-  console.log('   - window.bocadoNotifications.diagnose() - Verificar estado');
-  console.log('   - window.bocadoNotifications.clean() - Limpiar datos corruptos');
-  console.log('   - window.bocadoNotifications.reset() - Resetear historial');
+
+  if (import.meta.env.DEV) {
+    console.log('💡 Utilidades de notificaciones disponibles:');
+    console.log('   - window.bocadoNotifications.diagnose() - Verificar estado');
+    console.log('   - window.bocadoNotifications.clean() - Limpiar datos corruptos');
+    console.log('   - window.bocadoNotifications.reset() - Resetear historial');
+  }
 }

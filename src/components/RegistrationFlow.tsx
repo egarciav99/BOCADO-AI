@@ -24,30 +24,7 @@ import { separateUserData } from '../utils/profileSanitizer';
 import { logger } from '../utils/logger';
 import { searchCities, getPlaceDetails, PlacePrediction } from '../services/mapsService';
 import { useTranslation } from '../contexts/I18nContext';
-
-// Helper para convertir undefined a null antes de guardar en Firestore
-// Firestore no acepta undefined pero sí acepta null
-const cleanForFirestore = (obj: Record<string, any>): Record<string, any> => {
-  const cleanValue = (value: any): any => {
-    if (value === undefined) return null;
-    if (value === null) return null;
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      // Recursivamente limpiar objetos anidados
-      const cleanedObj: Record<string, any> = {};
-      Object.keys(value).forEach(k => {
-        cleanedObj[k] = cleanValue(value[k]);
-      });
-      return cleanedObj;
-    }
-    return value;
-  };
-
-  const cleaned: Record<string, any> = { ...obj };
-  Object.keys(cleaned).forEach(key => {
-    cleaned[key] = cleanValue(cleaned[key]);
-  });
-  return cleaned;
-};
+import { cleanForFirestore } from '../utils/cleanForFirestore';
 
 // ✅ CORRECCIÓN ERRORES 2305: Asegúrate que en userSchema.ts 
 // los nombres coincidan exactamente (ej. userStep1Schema o step1Schema)

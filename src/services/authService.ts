@@ -12,28 +12,7 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { FormData, UserProfile } from '../types';
 import { separateUserData } from '../utils/profileSanitizer';
-
-// Helper para convertir undefined a null antes de guardar en Firestore
-const cleanForFirestore = (obj: Record<string, any>): Record<string, any> => {
-  const cleanValue = (value: any): any => {
-    if (value === undefined) return null;
-    if (value === null) return null;
-    if (typeof value === 'object' && !Array.isArray(value)) {
-      const cleanedObj: Record<string, any> = {};
-      Object.keys(value).forEach(k => {
-        cleanedObj[k] = cleanValue(value[k]);
-      });
-      return cleanedObj;
-    }
-    return value;
-  };
-
-  const cleaned: Record<string, any> = { ...obj };
-  Object.keys(cleaned).forEach(key => {
-    cleaned[key] = cleanValue(cleaned[key]);
-  });
-  return cleaned;
-};
+import { cleanForFirestore } from '../utils/cleanForFirestore';
 
 export const registerUser = async (formData: FormData): Promise<{ uid: string }> => {
   const { auth: authData, profile } = separateUserData(formData);

@@ -13,6 +13,7 @@ export {
   MapPin,
   Download,
   AlertTriangle,
+  AlertCircle,
   FileText,
   ChevronDown,
   ShieldCheck,
@@ -22,6 +23,8 @@ export {
   Ruler,
   ChefHat,
   CheckCircle,
+  Info,
+  X,
 } from 'lucide-react';
 
 // Iconos personalizados específicos de Bocado (no existen en Lucide)

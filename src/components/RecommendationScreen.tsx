@@ -189,7 +189,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
     
     if (!profile || (!isHomeSelectionComplete && !isAwaySelectionComplete)) return;
     if (recommendationType === 'Fuera' && !userPosition && locationLoading) {
-      setError('Espera a que se detecte tu ubicación antes de continuar.');
+      setError(t('recommendation.waitForLocation'));
       resetProcessingState();
       return;
     }
@@ -203,7 +203,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
     setIsGenerating(true);
     setError(null);
     
-    abortControllerRef.current = new AbortController();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
 
     const cravingsList = recommendationType === 'Fuera' && selectedCravings.length > 0
       ? selectedCravings.map(stripEmoji)
@@ -254,8 +255,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
         });
       }
       
-      // ✅ FIX: Agregar timeout de 30s para evitar esperas indefinidas
-      const controller = new AbortController();
+      // Timeout de 30s para evitar esperas indefinidas
       const timeoutId = setTimeout(() => {
         controller.abort();
         setError('La solicitud tardó demasiado. Por favor intenta de nuevo.');
@@ -326,7 +326,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({ userName, o
       });
       
       // ✅ NUEVO: Mostrar error en UI en lugar de alert()
-      setError(error.message || 'Error de conexión. Intenta de nuevo.');
+      setError(error.message || t('recommendation.connectionError'));
       resetProcessingState();
     }
   };

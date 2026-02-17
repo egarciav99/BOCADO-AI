@@ -10,6 +10,7 @@ import { logger } from '../utils/logger';
 import { scaleIngredientsSimple, detectBaseServings } from '../utils/portionScaler';
 import { Tooltip } from './ui/Tooltip';
 import { useTranslation } from '../contexts/I18nContext';
+import { showToast } from './ui/Toast';
 
 interface MealCardProps {
   meal: Meal;
@@ -300,10 +301,11 @@ const MealCard: React.FC<MealCardProps> = memo(({
         restaurant: recipe.title,
         url: recipe.link_maps
       });
-      // 🟡 FIX #6: Validar que window.open no retorne null (popup blocker)
+      // ✅ FIX #3: Validate window.open() return value (popup blocker)
       const newWindow = window.open(recipe.link_maps, '_blank', 'noopener,noreferrer');
-      if (!newWindow) {
-        alert('Por favor permite ventanas emergentes para abrir Google Maps');
+      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+        showToast('Por favor permite ventanas emergentes para abrir Google Maps', 'warning', 4000);
+        logger.warn('[MealCard] window.open blocked by popup blocker');
       }
     }
   }, [recipe.link_maps, recipe.title]);
@@ -326,7 +328,12 @@ const MealCard: React.FC<MealCardProps> = memo(({
       has_address: !!recipe.direccion_aproximada
     });
     
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
+    // ✅ FIX #3: Validate window.open() here too
+    const newWindow = window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
+    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+      showToast('Por favor permite ventanas emergentes para abrir Google Maps', 'warning', 4000);
+      logger.warn('[MealCard] Maps search blocked by popup blocker');
+    }
   }, [recipe.title, recipe.direccion_aproximada]);
 
   const handleCopyAddress = useCallback(async (e: React.MouseEvent) => {
@@ -376,8 +383,8 @@ const MealCard: React.FC<MealCardProps> = memo(({
         }
       } catch (fallbackError) {
         logger.error('All copy methods failed:', fallbackError);
-        // Mostrar mensaje al usuario
-        alert('No se pudo copiar automáticamente. Por favor copia manualmente:\n' + textToCopy);
+        // ✅ FIX #1: Use toast instead of alert() for better UX on mobile
+        showToast(`No se pudo copiar. Dirección: ${textToCopy}`, 'error', 5000);
       }
     }
   }, [recipe.title, recipe.direccion_aproximada]);

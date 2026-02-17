@@ -342,9 +342,7 @@ export default async function handler(req: any, res: any) {
         return await handleReverseGeocode(res, validated);
       }
       case 'detectLocation': {
-        // Detectar ubicación por IP
-        const clientIP = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown')
-          .toString().split(',')[0].trim();
+        // Reusar clientIP ya declarado arriba
         const location = await detectLocationByIP(clientIP);
         
         if (!location) {

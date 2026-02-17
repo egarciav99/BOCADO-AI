@@ -173,8 +173,10 @@ export async function getEffectiveFeatureFlags(
   globalFlags: GlobalFeatureFlags;
   userFlags: UserFeatureFlags;
 }> {
-  const globalFlags = await getGlobalFeatureFlags();
-  const userFlags = userId ? await getUserFeatureFlags(userId) : {};
+  const [globalFlags, userFlags] = await Promise.all([
+    getGlobalFeatureFlags(),
+    userId ? getUserFeatureFlags(userId) : Promise.resolve({} as UserFeatureFlags),
+  ]);
   
   const flags: FeatureFlags = {
     ...DEFAULT_FEATURE_FLAGS,
