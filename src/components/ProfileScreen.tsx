@@ -683,7 +683,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
       case 'edit':
         return (
           <div className="flex flex-col h-full animate-fade-in">
-            <div className="flex-1 overflow-y-auto space-y-6 pb-4">
+            <div className="flex-1 overflow-y-auto space-y-6 pb-24">
               {error && <p className="text-red-500 text-xs text-center bg-red-50 p-3 rounded-xl">{error}</p>}
               
               <Step1 
@@ -1328,7 +1328,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         </div>
         
         {/* Content */}
-        <div className="flex-1 px-4 pb-4 min-h-0">
+        <div className="flex-1 px-4 pb-24 min-h-0">
             {renderContent()}
         </div>
         

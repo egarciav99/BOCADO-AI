@@ -187,24 +187,57 @@ export const usePWA = () => {
       navigator.serviceWorker.ready.then((registration) => {
         // Si hay un service worker esperando, activarlo
         if (registration.waiting) {
+          logger.info('PWA: Sending SKIP_WAITING message to service worker');
+          
           // Enviar mensaje al SW para que haga skipWaiting
           registration.waiting.postMessage({ type: 'SKIP_WAITING' });
           
           // Recargar cuando el nuevo SW tome control
           let refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
+          const handleControllerChange = () => {
             if (!refreshing) {
+              logger.info('PWA: Controller changed, reloading page');
               refreshing = true;
               window.location.reload();
             }
-          });
+          };
+          
+          navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+          
+          // Fallback: Si no hay controllerchange en 2 segundos, recargar de todos modos
+          setTimeout(() => {
+            if (!refreshing) {
+              logger.info('PWA: Fallback reload after timeout');
+              window.location.reload();
+            }
+          }, 2000);
         } else {
+          logger.info('PWA: No waiting service worker, forcing update check');
           // Si no hay uno esperando, intentar buscar actualización
           registration.update().then(() => {
+            // Dar tiempo para que se instale el nuevo SW
+            setTimeout(() => {
+              if (registration.waiting) {
+                logger.info('PWA: New service worker found after update');
+                registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                setTimeout(() => window.location.reload(), 500);
+              } else {
+                logger.info('PWA: No new version found, reloading anyway');
+                window.location.reload();
+              }
+            }, 1000);
+          }).catch((error) => {
+            logger.error('PWA: Error checking for updates', error);
             window.location.reload();
           });
         }
+      }).catch((error) => {
+        logger.error('PWA: Error getting service worker registration', error);
+        window.location.reload();
       });
+    } else {
+      logger.warn('PWA: Service worker not supported, just reloading');
+      window.location.reload();
     }
   }, []);
 
