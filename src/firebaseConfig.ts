@@ -285,7 +285,8 @@ const initMessaging = async () => {
 };
 
 /**
- * Solicitar permiso para notificaciones y obtener token FCM
+ * Solicitar permiso para notificaciones y obtener token FCM.
+ * Usa el Service Worker ya registrado por VitePWA en lugar de crear uno separado.
  */
 export const requestNotificationPermission = async (): Promise<string | null> => {
   try {
@@ -298,9 +299,21 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
       return null;
     }
     
+    // Obtener el SW ya registrado (por VitePWA/Workbox) para que Firebase lo reutilice
+    // en lugar de intentar registrar su propio /firebase-messaging-sw.js
+    let swRegistration: ServiceWorkerRegistration | undefined;
+    if ('serviceWorker' in navigator) {
+      try {
+        swRegistration = await navigator.serviceWorker.ready;
+      } catch (err) {
+        logger.warn('No se pudo obtener el SW registrado, Firebase usará el default:', err);
+      }
+    }
+    
     // Obtener token FCM
     const token = await getToken(msg, {
       vapidKey: env.firebase.vapidKey,
+      serviceWorkerRegistration: swRegistration,
     });
     
     if (token) {
