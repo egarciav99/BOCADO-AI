@@ -45,3 +45,6 @@ e2e/.env
 storybook-static
 .nyc_output
 *storybook.log
+
+# Firebase service account key
+serviceAccountKey.json

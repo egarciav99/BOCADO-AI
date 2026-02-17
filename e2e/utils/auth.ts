@@ -57,11 +57,12 @@ export async function register(page: Page, user: TestUser): Promise<void> {
     // Luego esperar a que sea visible
     await page.waitForSelector('[data-testid="start-button"]', { state: 'visible', timeout: 15000 });
   } catch (error) {
-    // Si falla, tomar screenshot y guardar HTML para debugging
+    // Si falla, tomar screenshot para debugging
     await page.screenshot({ path: 'test-failure-start-button.png', fullPage: true });
+    // Guardar HTML en consola para debugging si es necesario
     const html = await page.content();
-    require('fs').writeFileSync('test-failure-start-button.html', html);
-    throw new Error(`Start button not found. Screenshot and HTML saved. Error: ${error}`);
+    console.error('Start button not found. HTML content:', html);
+    throw new Error(`Start button not found. Screenshot saved. Error: ${error}`);
   }
 
   await page.click('[data-testid="start-button"]');

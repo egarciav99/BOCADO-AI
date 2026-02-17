@@ -37,80 +37,91 @@ const RECIPE_JSON_TEMPLATE = `{"saludo_personalizado":"msg motivador","receta":{
 const RESTAURANT_JSON_TEMPLATE = `{"saludo_personalizado":"msg motivador","recomendaciones":[{"id":1,"nombre_restaurante":"nombre real","tipo_comida":"ej: Italiana","direccion_aproximada":"Calle Número, Colonia","plato_sugerido":"nombre plato","por_que_es_bueno":"explicar por qué","hack_saludable":"consejo práctico"}]}`;
 
 // ============================================
-// AIRTABLE CACHE (24 horas TTL) - Evita rate limits de Airtable
+// INGREDIENTS FROM FIRESTORE (replaces Airtable)
 // ============================================
 
-const AIRTABLE_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 horas (aumentado de 6h)
+interface FirestoreIngredient {
+  name: string;
+  regional: { mx: string; es: string; us: string };
+  diet: {
+    vegan: boolean;
+    vegetarian: boolean;
+    glutenFree: boolean;
+    lactoseFree: boolean;
+    nutFree: boolean;
+  };
+  nutrition: {
+    glycemicIndex: number;
+    sodium: number;
+    cholesterol: number;
+    iodine: number;
+    fiber: number;
+    sugars: number;
+    saturatedFat: number;
+  };
+}
 
-interface AirtableCacheEntry {
-  items: any[];
-  formula: string;
-  cachedAt: FirebaseFirestore.Timestamp;
-  expiresAt: FirebaseFirestore.Timestamp;
+// In-memory cache for ingredients (they rarely change)
+let ingredientsCache: FirestoreIngredient[] | null = null;
+let ingredientsCacheTime = 0;
+const INGREDIENTS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour in-memory
+
+/**
+ * Fetches all ingredients from Firestore with in-memory cache.
+ * Much faster than Airtable: ~50ms vs ~500ms, no rate limits.
+ */
+async function getAllIngredients(): Promise<FirestoreIngredient[]> {
+  const now = Date.now();
+  if (ingredientsCache && (now - ingredientsCacheTime) < INGREDIENTS_CACHE_TTL_MS) {
+    safeLog('log', `[Ingredients] Memory cache HIT (${ingredientsCache.length} items)`);
+    return ingredientsCache;
+  }
+
+  const snapshot = await db.collection('ingredients').get();
+  ingredientsCache = snapshot.docs.map(doc => doc.data() as FirestoreIngredient);
+  ingredientsCacheTime = now;
+  safeLog('log', `[Ingredients] Loaded ${ingredientsCache.length} from Firestore`);
+  return ingredientsCache;
 }
 
 /**
- * Obtiene ingredientes de Airtable con caché de 6 horas.
- * Reduce drásticamente las llamadas a la API de Airtable.
+ * Filters ingredients based on user dietary restrictions and health conditions.
+ * Replaces buildAirtableFormula — same logic, but runs in JS instead of Airtable formulas.
  */
-async function getAirtableIngredientsWithCache(
-  formula: string, 
-  baseId: string, 
-  tableName: string, 
-  apiKey: string
-): Promise<any[]> {
-  // Cache key basado en el hash de la fórmula (no del userId)
-  const cacheKey = `airtable_${crypto.createHash('md5').update(formula).digest('hex').substring(0, 16)}`;
-  const cacheRef = db.collection('airtable_cache').doc(cacheKey);
-  
-  try {
-    // 1. Intentar leer caché
-    const cached = await cacheRef.get();
-    if (cached.exists) {
-      const data = cached.data() as AirtableCacheEntry;
-      const age = Date.now() - (data?.cachedAt?.toMillis?.() || 0);
-      
-      if (age < AIRTABLE_CACHE_TTL_MS) {
-        safeLog('log', `[Airtable] Cache HIT: ${cacheKey.substring(0, 20)}... (${Math.round(age / 1000 / 60)}m old)`);
-        return data.items || [];
+function filterIngredients(ingredients: FirestoreIngredient[], user: UserProfile): FirestoreIngredient[] {
+  const prefs = ensureArray(user.allergies);
+  const eatingHabit = user.eatingHabit || '';
+  const illnesses = ensureArray(user.diseases);
+  const dislikes = ensureArray(user.dislikedFoods);
+
+  return ingredients.filter(item => {
+    // Diet filters
+    if ((prefs.includes('Vegano') || eatingHabit.includes('Vegano')) && !item.diet.vegan) return false;
+    if ((prefs.includes('Vegetariano') || eatingHabit.includes('Vegetariano')) && !item.diet.vegetarian) return false;
+    if (prefs.includes('Celíaco') && !item.diet.glutenFree) return false;
+    if (prefs.includes('Intolerante a la lactosa') && !item.diet.lactoseFree) return false;
+    if (prefs.includes('Alergia a frutos secos') && !item.diet.nutFree) return false;
+
+    // Health condition filters (same thresholds as old Airtable formula)
+    const n = item.nutrition;
+    if (illnesses.includes('Diabetes') && (n.glycemicIndex >= 55 || n.sugars >= 10)) return false;
+    if (illnesses.includes('Hipertensión') && n.sodium >= 140) return false;
+    if (illnesses.includes('Colesterol') && (n.cholesterol >= 20 || n.saturatedFat >= 1.5)) return false;
+    if (illnesses.includes('Hipotiroidismo') && n.iodine <= 10) return false;
+    if (illnesses.includes('Hipertiroidismo') && n.iodine >= 50) return false;
+    if (illnesses.includes('Intestino irritable') && (n.fiber <= 1 || n.fiber >= 10)) return false;
+
+    // Disliked foods filter
+    if (dislikes.length > 0) {
+      const allNames = `${item.name} ${item.regional.mx} ${item.regional.es} ${item.regional.us}`.toLowerCase();
+      for (const foodItem of dislikes) {
+        const pattern = createRegexPattern(foodItem);
+        if (new RegExp(pattern, 'i').test(allNames)) return false;
       }
     }
-  } catch (cacheError) {
-    safeLog('warn', '[Airtable] Error leyendo caché, continuando con fetch', cacheError);
-  }
-  
-  // 2. Fetch de Airtable
-  const airtableUrl = `https://api.airtable.com/v0/${encodeURIComponent(baseId)}/${encodeURIComponent(tableName)}?filterByFormula=${encodeURIComponent(formula)}&maxRecords=100`;
-  
-  const airtableRes = await fetch(airtableUrl, {
-    headers: { 
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    }
+
+    return true;
   });
-  
-  if (!airtableRes.ok) {
-    const errorText = await airtableRes.text();
-    throw new Error(`Airtable HTTP ${airtableRes.status}: ${errorText}`);
-  }
-  
-  const airtableData = await airtableRes.json();
-  const items = airtableData.records || [];
-  
-  // 3. Guardar en caché (con expiresAt para el cleanup job)
-  try {
-    await cacheRef.set({
-      items,
-      formula, // Guardar fórmula para debugging
-      cachedAt: FieldValue.serverTimestamp(),
-      expiresAt: new Date(Date.now() + AIRTABLE_CACHE_TTL_MS + 24 * 60 * 60 * 1000), // 30h total (6h útil + 24h buffer)
-    });
-    safeLog('log', `[Airtable] Cache MISS: guardados ${items.length} items`);
-  } catch (cacheError) {
-    safeLog('warn', '[Airtable] Error guardando caché', cacheError);
-  }
-  
-  return items;
 }
 
 // ============================================
@@ -546,28 +557,7 @@ const RestaurantResponseSchema = z.object({
   recomendaciones: z.array(RestaurantSchema).max(10),
 });
 
-interface AirtableIngredient {
-  id: string;
-  fields: {
-    México?: string;
-    España?: string;
-    EUA?: string;
-    Nombre?: string;
-    Ingrediente?: string;
-    Vegano?: boolean;
-    Vegetariano?: boolean;
-    Celíaco?: boolean;
-    Intolerancia_lactosa?: boolean;
-    Alergia_frutos_secos?: boolean;
-    Índice_glucémico?: number;
-    Sodio_mg?: number;
-    Colesterol_mg?: number;
-    Yodo_µg?: number;
-    Fibra_dietética_g?: number;
-    Azúcares_totales_g?: number;
-    Grasas_saturadas_g?: number;
-  };
-}
+// (AirtableIngredient removed — replaced by FirestoreIngredient above)
 
 // ============================================
 // 3. FUNCIONES DE UTILIDAD
@@ -585,7 +575,6 @@ const sanitizeError = (error: any): { message: string; code?: string; safeToLog:
     /secret/i,
     /credential/i,
     /firebase/i,
-    /airtable.*v0\/.*\//i, // URLs de Airtable con API key
   ];
   
   const hasSensitiveData = sensitivePatterns.some(pattern => pattern.test(errorMessage));
@@ -659,56 +648,14 @@ const formatList = (data: any): string => {
 // ============================================
 // 4. FILTROS DE SEGURIDAD ALIMENTARIA
 // ============================================
-
-const buildAirtableFormula = (user: UserProfile): string => {
-  const conditions: string[] = [];
-  
-  const prefs = ensureArray(user.allergies);
-  const eatingHabit = user.eatingHabit || '';
-  
-  // Verificar AMBOS: allergies Y eatingHabit (fix crítico)
-  if (prefs.includes("Vegano") || eatingHabit.includes("Vegano")) {
-    conditions.push("{Vegano} = TRUE()");
-  }
-  if (prefs.includes("Vegetariano") || eatingHabit.includes("Vegetariano")) {
-    conditions.push("{Vegetariano} = TRUE()");
-  }
-  if (prefs.includes("Celíaco")) conditions.push("{Celíaco} = TRUE()");
-  if (prefs.includes("Intolerante a la lactosa")) conditions.push("{Intolerancia_lactosa} = TRUE()");
-  if (prefs.includes("Alergia a frutos secos")) conditions.push("{Alergia_frutos_secos} = TRUE()");
-  
-  const illnesses = ensureArray(user.diseases);
-  if (illnesses.includes("Diabetes")) {
-    conditions.push("AND({Índice_glucémico} < 55, {Azúcares_totales_g} < 10)");
-  }
-  if (illnesses.includes("Hipertensión")) conditions.push("{Sodio_mg} < 140");
-  if (illnesses.includes("Colesterol")) {
-    conditions.push("AND({Colesterol_mg} < 20, {Grasas_saturadas_g} < 1.5)");
-  }
-  if (illnesses.includes("Hipotiroidismo")) conditions.push("{Yodo_µg} > 10");
-  if (illnesses.includes("Hipertiroidismo")) conditions.push("{Yodo_µg} < 50");
-  if (illnesses.includes("Intestino irritable")) {
-    conditions.push("AND({Fibra_dietética_g} > 1, {Fibra_dietética_g} < 10)");
-  }
-  
-  const dislikes = ensureArray(user.dislikedFoods);
-  if (dislikes.length > 0) {
-    const searchTarget = 'CONCATENATE({Ingrediente}, " ", {México}, " ", {España}, " ", {EUA})';
-    dislikes.forEach(foodItem => {
-      const pattern = createRegexPattern(foodItem);
-      conditions.push(`NOT(REGEX_MATCH(${searchTarget}, '(?i)${pattern}'))`);
-    });
-  }
-  
-  return conditions.length > 0 ? `AND(${conditions.join(", ")})` : "TRUE()";
-};
+// (Moved to filterIngredients() above — JS-based filtering replaces Airtable formulas)
 
 // ============================================
 // 5. SISTEMA DE SCORING
 // ============================================
 
 const scoreIngredients = (
-  airtableItems: AirtableIngredient[],
+  filteredItems: FirestoreIngredient[],
   pantryItems: string[]
 ): { priorityList: string; marketList: string; hasPantryItems: boolean } => {
   
@@ -718,8 +665,8 @@ const scoreIngredients = (
   
   const genericWords = ["aceite", "sal", "leche", "pan", "harina", "agua", "mantequilla", "crema", "salsa"];
   
-  const scoredItems = airtableItems.map(atItem => {
-    const rawName = atItem.fields.México || atItem.fields.Ingrediente || atItem.fields.Nombre || atItem.fields.España || "";
+  const scoredItems = filteredItems.map(item => {
+    const rawName = item.regional.mx || item.name || item.regional.es || "";
     if (!rawName) return { name: "", score: 0 };
     
     const norm = normalizeText(rawName);
@@ -1497,29 +1444,21 @@ export default async function handler(req: any, res: any) {
     let parsedData: any;
 
     if (type === 'En casa') {
-      const formula = buildAirtableFormula(user);
-      
-      const baseId = process.env.AIRTABLE_BASE_ID?.trim();
-      const tableName = process.env.AIRTABLE_TABLE_NAME?.trim();
-      const apiKey = process.env.AIRTABLE_API_KEY?.trim();
-      
-      if (!baseId || !tableName || !apiKey) {
-        throw new Error(`Missing Airtable config: BASE_ID=${!!baseId}, TABLE_NAME=${!!tableName}, API_KEY=${!!apiKey ? 'SET' : 'MISSING'}`);
-      }
-      
-      // ✅ USAR CACHÉ: Obtener ingredientes con caché de 6 horas
-      let airtableItems: AirtableIngredient[] = [];
+      // ✅ Fetch from Firestore (replaces Airtable)
+      let filteredItems: FirestoreIngredient[] = [];
       try {
-        airtableItems = await getAirtableIngredientsWithCache(formula, baseId, tableName, apiKey);
-      } catch (airtableError: any) {
-        safeLog('error', "❌ Airtable Fetch Failed", airtableError);
-        airtableItems = [];
+        const allIngredients = await getAllIngredients();
+        filteredItems = filterIngredients(allIngredients, user);
+        safeLog('log', `[Ingredients] ${filteredItems.length}/${allIngredients.length} passed filters`);
+      } catch (ingredientError: any) {
+        safeLog('error', '❌ Ingredients Fetch Failed', ingredientError);
+        filteredItems = [];
       }
 
       // 💰 FINOPS: Usar cache de pantry en lugar de lectura directa
       const pantryItems = await getPantryItemsCached(userId);
       
-      const { priorityList, marketList, hasPantryItems } = scoreIngredients(airtableItems, pantryItems);
+      const { priorityList, marketList, hasPantryItems } = scoreIngredients(filteredItems, pantryItems);
       
       // ✅ OPTIMIZACIÓN: Prompt conciso para reducir tokens (~30% menos)
       const pantryRule = request.onlyPantryIngredients
