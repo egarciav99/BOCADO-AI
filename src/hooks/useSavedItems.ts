@@ -295,9 +295,15 @@ export const useToggleSavedItem = () => {
     
     onMutate: async ({ userId, type, recipe, isSaved }) => {
       const key = type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+      const docId = `${userId}_${recipe.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
       
       // Cancelar queries pendientes
       await queryClient.cancelQueries({ queryKey: [key, userId], exact: false });
+      await queryClient.cancelQueries({ queryKey: ['isSaved', key, userId, docId] });
+      
+      // Optimistic update del estado isSaved (para que el corazón cambie inmediatamente)
+      const previousIsSaved = queryClient.getQueryData<boolean>(['isSaved', key, userId, docId]);
+      queryClient.setQueryData<boolean>(['isSaved', key, userId, docId], !isSaved);
       
       const previousPage = queryClient.getQueryData<FetchSavedItemsResult>([key, userId, 'page', 1]);
       const previousAll = queryClient.getQueryData<SavedItem[]>([key, userId, 'all']) || [];
@@ -342,23 +348,30 @@ export const useToggleSavedItem = () => {
         );
       }
       
-      return { previousPage, previousAll };
+      return { previousPage, previousAll, previousIsSaved };
     },
     
     onError: (err, variables, context) => {
       const key = variables.type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+      const docId = `${variables.userId}_${variables.recipe.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
       if (context?.previousPage) {
         queryClient.setQueryData([key, variables.userId, 'page', 1], context.previousPage);
       }
       if (context?.previousAll) {
         queryClient.setQueryData([key, variables.userId, 'all'], context.previousAll);
       }
+      // Revertir el estado del corazón si hubo error
+      if (context?.previousIsSaved !== undefined) {
+        queryClient.setQueryData(['isSaved', key, variables.userId, docId], context.previousIsSaved);
+      }
     },
     
     onSettled: (data, error, variables) => {
       const key = variables.type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
-      // Invalidar para refetch con datos frescos (pero sin onSnapshot)
+      const docId = `${variables.userId}_${variables.recipe.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+      // Invalidar para refetch con datos frescos
       queryClient.invalidateQueries({ queryKey: [key, variables.userId], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['isSaved', key, variables.userId, docId] });
     },
   });
 };
