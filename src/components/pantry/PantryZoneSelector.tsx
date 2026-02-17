@@ -74,7 +74,7 @@ export const PantryZoneSelector: React.FC<PantryZoneSelectorProps> = ({
   };
 
   return (
-    <div className="flex-1 px-4 pt-4 pb-24 overflow-y-auto min-h-0">
+    <div className="flex-1 px-4 pt-4 pb-24 min-h-0">
       <div className="flex items-center justify-center gap-2 mb-1">
         <UtensilsCrossed className="w-7 h-7 text-bocado-dark-green" />
         <h1 className="text-xl font-bold text-bocado-dark-green">{t('pantry.title')}</h1>

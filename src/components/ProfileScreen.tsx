@@ -1328,7 +1328,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({ onLogout, onProfileUpdate
         </div>
         
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-4 pb-4 no-scrollbar min-h-0">
+        <div className="flex-1 px-4 pb-4 min-h-0">
             {renderContent()}
         </div>
         
