@@ -335,13 +335,13 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   }
 
   return (
-    <div className="h-full min-h-0 flex flex-col px-4 pt-safe pb-4 overflow-y-auto no-scrollbar">
+    <div className="h-full min-h-0 flex flex-col px-4 pt-safe pb-4">
       <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
         <div className="mt-4 mb-6">
           <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
         </div>
         
-        <div className="flex-1 relative">
+        <div className="flex-1 relative overflow-y-auto no-scrollbar">
           {/* ✅ CORRECCIÓN ERROR 2304: Cambiado 'renderScreen' por 'renderStep' */}
           {renderStep()}
           {submissionError && (

@@ -246,7 +246,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24">
+      <div className="flex-1 overflow-y-auto px-4 py-4 pb-24 min-h-0">
         {suggestedItems.length > 0 && (
           <div className="mb-4">
             <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">{t('pantry.suggestions')}</p>
