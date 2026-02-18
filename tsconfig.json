@@ -20,11 +20,7 @@
       "@/*": ["src/*"]
     }
   },
-  "include": [
-    "src/**/*",
-    "api/**/*",
-    "vite-env.d.ts"
-  ],
+  "include": ["src/**/*", "api/**/*", "vite-env.d.ts"],
   "exclude": [
     "node_modules",
     "dist",

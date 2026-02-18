@@ -37,13 +37,13 @@ Bocado AI es una app web que adapta recomendaciones nutricionales al perfil de c
 
 ## 🚀 Highlights
 
-| Feature | Descripción |
-|---|---|
-| Recomendaciones IA | Motor de recomendaciones con Gemini |
-| Seguridad de APIs | `GOOGLE_MAPS_API_KEY` protegida con `/api/maps-proxy` |
-| UX móvil | PWA instalable con fallback offline |
-| Calidad de código | Unit tests (Vitest), E2E (Playwright), Storybook |
-| Escalabilidad | Backend serverless con Vercel Functions |
+| Feature            | Descripción                                           |
+| ------------------ | ----------------------------------------------------- |
+| Recomendaciones IA | Motor de recomendaciones con Gemini                   |
+| Seguridad de APIs  | `GOOGLE_MAPS_API_KEY` protegida con `/api/maps-proxy` |
+| UX móvil           | PWA instalable con fallback offline                   |
+| Calidad de código  | Unit tests (Vitest), E2E (Playwright), Storybook      |
+| Escalabilidad      | Backend serverless con Vercel Functions               |
 
 ## 🛠️ Stack actual
 
@@ -101,6 +101,7 @@ GEMINI_API_KEY=
 ```
 
 Notas:
+
 - `FIREBASE_SERVICE_ACCOUNT_KEY` debe contener el JSON completo de service account.
 - No expongas `GOOGLE_MAPS_API_KEY` en frontend. Usa siempre `/api/maps-proxy`.
 
@@ -162,6 +163,7 @@ npm run deploy
 ```
 
 Config raíz Firebase:
+
 - reglas: `firestore.rules`
 - índices: `firestore.indexes.json`
 

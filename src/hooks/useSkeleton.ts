@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 
 interface UseSkeletonOptions {
   /** Tiempo mínimo que el skeleton debe mostrarse en ms (default: 500) */
@@ -20,33 +20,35 @@ interface UseSkeletonReturn {
 
 /**
  * Hook para controlar la visualización de Skeleton Screens
- * 
+ *
  * Características:
  * - Tiempo mínimo de visualización (evita flash)
  * - Delay antes de mostrar (para carga rápida)
  * - Control manual del estado
- * 
+ *
  * @example
  * ```tsx
- * const { showSkeleton, startLoading, stopLoading } = useSkeleton({ 
- *   minDuration: 500, 
- *   delay: 200 
+ * const { showSkeleton, startLoading, stopLoading } = useSkeleton({
+ *   minDuration: 500,
+ *   delay: 200
  * });
- * 
+ *
  * useEffect(() => {
  *   startLoading();
  *   fetchData().finally(stopLoading);
  * }, []);
- * 
+ *
  * if (showSkeleton) return <MySkeleton />;
  * ```
  */
-export function useSkeleton(options: UseSkeletonOptions = {}): UseSkeletonReturn {
+export function useSkeleton(
+  options: UseSkeletonOptions = {},
+): UseSkeletonReturn {
   const { minDuration = 500, delay = 0 } = options;
-  
+
   const [isLoading, setIsLoading] = useState(false);
   const [showSkeleton, setShowSkeleton] = useState(false);
-  
+
   // Refs para manejar los timeouts
   const delayTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const minDurationTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -67,12 +69,12 @@ export function useSkeleton(options: UseSkeletonOptions = {}): UseSkeletonReturn
   const startLoading = useCallback(() => {
     setIsLoading(true);
     startTimeRef.current = Date.now();
-    
+
     // Limpiar timeout anterior si existe
     if (delayTimeoutRef.current) {
       clearTimeout(delayTimeoutRef.current);
     }
-    
+
     // Mostrar skeleton después del delay
     delayTimeoutRef.current = setTimeout(() => {
       setShowSkeleton(true);
@@ -82,13 +84,13 @@ export function useSkeleton(options: UseSkeletonOptions = {}): UseSkeletonReturn
   const stopLoading = useCallback(() => {
     const elapsed = Date.now() - startTimeRef.current;
     const remaining = Math.max(0, minDuration - elapsed);
-    
+
     // Limpiar timeout de delay si aún no se mostró
     if (delayTimeoutRef.current) {
       clearTimeout(delayTimeoutRef.current);
       delayTimeoutRef.current = null;
     }
-    
+
     // Si ya pasó el tiempo mínimo, ocultar inmediatamente
     // Si no, esperar el tiempo restante
     if (elapsed >= minDuration) {
@@ -109,4 +111,3 @@ export function useSkeleton(options: UseSkeletonOptions = {}): UseSkeletonReturn
     isLoading,
   };
 }
-

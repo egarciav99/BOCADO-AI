@@ -2,15 +2,15 @@
 // Estos helpers aseguran que los valores guardados en Firebase siempre sean en español,
 // pero la UI se muestre en el idioma seleccionado.
 
-import { 
-  DISEASES, 
-  ALLERGIES, 
-  GOALS, 
-  ACTIVITY_LEVELS, 
+import {
+  DISEASES,
+  ALLERGIES,
+  GOALS,
+  ACTIVITY_LEVELS,
   ACTIVITY_FREQUENCIES,
   CRAVINGS,
-  MEALS 
-} from '../constants';
+  MEALS,
+} from "../constants";
 
 /**
  * Mapeo de valores en español a claves de traducción
@@ -19,69 +19,69 @@ import {
 
 // Enfermedades
 export const diseaseKeys: Record<string, string> = {
-  'Hipertensión': 'options.diseases.hypertension',
-  'Diabetes': 'options.diseases.diabetes',
-  'Hipotiroidismo': 'options.diseases.hypothyroidism',
-  'Hipertiroidismo': 'options.diseases.hyperthyroidism',
-  'Colesterol': 'options.diseases.cholesterol',
-  'Intestino irritable': 'options.diseases.ibs',
+  Hipertensión: "options.diseases.hypertension",
+  Diabetes: "options.diseases.diabetes",
+  Hipotiroidismo: "options.diseases.hypothyroidism",
+  Hipertiroidismo: "options.diseases.hyperthyroidism",
+  Colesterol: "options.diseases.cholesterol",
+  "Intestino irritable": "options.diseases.ibs",
 };
 
 // Alergias
 export const allergyKeys: Record<string, string> = {
-  'Intolerante a la lactosa': 'options.allergies.lactose',
-  'Alergia a frutos secos': 'options.allergies.nuts',
-  'Celíaco': 'options.allergies.celiac',
-  'Vegano': 'options.allergies.vegan',
-  'Vegetariano': 'options.allergies.vegetarian',
-  'Otro': 'common.other',
+  "Intolerante a la lactosa": "options.allergies.lactose",
+  "Alergia a frutos secos": "options.allergies.nuts",
+  Celíaco: "options.allergies.celiac",
+  Vegano: "options.allergies.vegan",
+  Vegetariano: "options.allergies.vegetarian",
+  Otro: "common.other",
 };
 
 // Objetivos nutricionales
 export const goalKeys: Record<string, string> = {
-  'Bajar de peso': 'options.goals.loseWeight',
-  'Subir de peso': 'options.goals.gainWeight',
-  'Generar músculo': 'options.goals.buildMuscle',
-  'Salud y bienestar': 'options.goals.wellness',
+  "Bajar de peso": "options.goals.loseWeight",
+  "Subir de peso": "options.goals.gainWeight",
+  "Generar músculo": "options.goals.buildMuscle",
+  "Salud y bienestar": "options.goals.wellness",
 };
 
 // Niveles de actividad
 export const activityKeys: Record<string, string> = {
-  '🪑 Sedentario': 'options.activity.sedentary',
-  '🚶‍♂️ Activo ligero': 'options.activity.light',
-  '🏋️‍♀️ Fuerza': 'options.activity.strength',
-  '🏃‍♂️ Cardio': 'options.activity.cardio',
-  '⚽ Deportivo': 'options.activity.sports',
-  '🥇 Atleta': 'options.activity.athlete',
-  'Otro': 'common.other',
+  "🪑 Sedentario": "options.activity.sedentary",
+  "🚶‍♂️ Activo ligero": "options.activity.light",
+  "🏋️‍♀️ Fuerza": "options.activity.strength",
+  "🏃‍♂️ Cardio": "options.activity.cardio",
+  "⚽ Deportivo": "options.activity.sports",
+  "🥇 Atleta": "options.activity.athlete",
+  Otro: "common.other",
 };
 
 // Frecuencias de actividad
 export const frequencyKeys: Record<string, string> = {
-  'Diario': 'options.frequency.daily',
-  '3-5 veces por semana': 'options.frequency.frequent',
-  '1-2 veces': 'options.frequency.occasional',
-  'Rara vez': 'options.frequency.rarely',
+  Diario: "options.frequency.daily",
+  "3-5 veces por semana": "options.frequency.frequent",
+  "1-2 veces": "options.frequency.occasional",
+  "Rara vez": "options.frequency.rarely",
 };
 
 // Antojos/tipos de comida
 export const cravingKeys: Record<string, string> = {
-  '🍕 Italiana / Pizza': 'options.cravings.italian',
-  '🍣 Japonesa / Sushi': 'options.cravings.japanese',
-  '🥗 Saludable o fit': 'options.cravings.healthy',
-  '🍜 Asiática / China': 'options.cravings.asian',
-  '🌮 Mexicana': 'options.cravings.mexican',
-  '🍔 Americana / Fast food': 'options.cravings.american',
-  '🥘 Mediterránea': 'options.cravings.mediterranean',
-  '🥡 Otros': 'common.other',
+  "🍕 Italiana / Pizza": "options.cravings.italian",
+  "🍣 Japonesa / Sushi": "options.cravings.japanese",
+  "🥗 Saludable o fit": "options.cravings.healthy",
+  "🍜 Asiática / China": "options.cravings.asian",
+  "🌮 Mexicana": "options.cravings.mexican",
+  "🍔 Americana / Fast food": "options.cravings.american",
+  "🥘 Mediterránea": "options.cravings.mediterranean",
+  "🥡 Otros": "common.other",
 };
 
 // Comidas del día
 export const mealKeys: Record<string, string> = {
-  '🥞 Desayuno': 'options.meals.breakfast',
-  '🥗 Comida': 'options.meals.lunch',
-  '🥙 Cena': 'options.meals.dinner',
-  '🍎 Snack': 'options.meals.snack',
+  "🥞 Desayuno": "options.meals.breakfast",
+  "🥗 Comida": "options.meals.lunch",
+  "🥙 Cena": "options.meals.dinner",
+  "🍎 Snack": "options.meals.snack",
 };
 
 /**
@@ -94,7 +94,7 @@ export const mealKeys: Record<string, string> = {
 export function translateOption(
   valueInSpanish: string,
   mapping: Record<string, string>,
-  t: (key: string) => string
+  t: (key: string) => string,
 ): string {
   const key = mapping[valueInSpanish];
   if (!key) {
@@ -110,9 +110,9 @@ export function translateOption(
 export function translateOptions(
   valuesInSpanish: string[],
   mapping: Record<string, string>,
-  t: (key: string) => string
+  t: (key: string) => string,
 ): string[] {
-  return valuesInSpanish.map(value => translateOption(value, mapping, t));
+  return valuesInSpanish.map((value) => translateOption(value, mapping, t));
 }
 
 /**
@@ -120,22 +120,23 @@ export function translateOptions(
  */
 export function stripEmoji(str: string): string {
   if (!str) return str;
-  const emojiRegex = /^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-udfff]|\ud83e[\ud000-\udfff])\s*/;
-  return str.replace(emojiRegex, '').trim();
+  const emojiRegex =
+    /^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-udfff]|\ud83e[\ud000-\udfff])\s*/;
+  return str.replace(emojiRegex, "").trim();
 }
 
 /**
  * Ejemplo de uso en componentes:
- * 
+ *
  * import { useTranslation } from '../contexts/I18nContext';
  * import { diseaseKeys, translateOption } from '../utils/translationHelpers';
- * 
+ *
  * const MyComponent = () => {
  *   const { t } = useTranslation();
  *   const profile = useUserProfile(uid);
- *   
+ *
  *   // profile.diseases contiene: ["Diabetes", "Hipertensión"]
- *   
+ *
  *   return (
  *     <div>
  *       {profile.diseases.map(disease => (

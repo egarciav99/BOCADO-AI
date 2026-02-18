@@ -1,24 +1,25 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import ProgressBar from './ProgressBar';
+import type { Meta, StoryObj } from "@storybook/react";
+import ProgressBar from "./ProgressBar";
 
 const meta: Meta<typeof ProgressBar> = {
-  title: 'Bocado/ProgressBar',
+  title: "Bocado/ProgressBar",
   component: ProgressBar,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     currentStep: {
-      control: { type: 'number', min: 1 },
-      description: 'Paso actual del progreso',
+      control: { type: "number", min: 1 },
+      description: "Paso actual del progreso",
     },
     totalSteps: {
-      control: { type: 'number', min: 2 },
-      description: 'Número total de pasos',
+      control: { type: "number", min: 2 },
+      description: "Número total de pasos",
     },
   },
   parameters: {
     docs: {
       description: {
-        component: 'Barra de progreso utilizada en formularios multi-paso. Muestra el paso actual, el porcentaje completado y una barra visual de progreso con los colores de marca de Bocado.',
+        component:
+          "Barra de progreso utilizada en formularios multi-paso. Muestra el paso actual, el porcentaje completado y una barra visual de progreso con los colores de marca de Bocado.",
       },
     },
   },
@@ -35,7 +36,7 @@ export const Step1Of4: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Progreso al inicio del formulario (25% completado).',
+        story: "Progreso al inicio del formulario (25% completado).",
       },
     },
   },
@@ -49,7 +50,7 @@ export const Step2Of4: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Progreso intermedio (50% completado).',
+        story: "Progreso intermedio (50% completado).",
       },
     },
   },
@@ -63,7 +64,7 @@ export const Step3Of4: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Progreso avanzado (75% completado).',
+        story: "Progreso avanzado (75% completado).",
       },
     },
   },
@@ -77,7 +78,7 @@ export const Step4Of4: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Progreso completo (100% completado).',
+        story: "Progreso completo (100% completado).",
       },
     },
   },
@@ -91,7 +92,7 @@ export const ThreeSteps: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Formulario de 3 pasos en el paso intermedio (50% completado).',
+        story: "Formulario de 3 pasos en el paso intermedio (50% completado).",
       },
     },
   },
@@ -105,7 +106,7 @@ export const FiveSteps: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Formulario de 5 pasos en el paso 3 (50% completado).',
+        story: "Formulario de 5 pasos en el paso 3 (50% completado).",
       },
     },
   },
@@ -135,7 +136,8 @@ export const AllStepsProgression: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Progresión completa de todos los pasos en un formulario de 4 pasos.',
+        story:
+          "Progresión completa de todos los pasos en un formulario de 4 pasos.",
       },
     },
   },
@@ -165,7 +167,8 @@ export const DifferentLengths: Story = {
   parameters: {
     docs: {
       description: {
-        story: 'Comparación de barras de progreso con diferente número de pasos.',
+        story:
+          "Comparación de barras de progreso con diferente número de pasos.",
       },
     },
   },

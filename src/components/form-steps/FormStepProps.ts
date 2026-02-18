@@ -1,4 +1,4 @@
-import { FormData } from '../../types';
+import { FormData } from "../../types";
 
 export interface FormStepProps {
   data: FormData;

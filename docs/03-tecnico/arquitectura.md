@@ -67,12 +67,12 @@ src/
 
 ## Performance Targets
 
-| Métrica | Objetivo |
-|---------|----------|
-| First Contentful Paint | < 1.5s |
-| Time to Interactive | < 3s |
-| Lighthouse Score | > 90 |
-| Bundle size inicial | < 200KB |
+| Métrica                | Objetivo |
+| ---------------------- | -------- |
+| First Contentful Paint | < 1.5s   |
+| Time to Interactive    | < 3s     |
+| Lighthouse Score       | > 90     |
+| Bundle size inicial    | < 200KB  |
 
 ## Monitoreo
 
@@ -84,9 +84,9 @@ src/
 
 ## Decisiones Técnicas Clave
 
-| Decisión | Alternativa | Razón |
-|----------|-------------|-------|
-| Vercel Functions | Firebase Functions | Edge network, menor latencia |
-| Zustand | Redux | Más simple, menos boilerplate |
-| TanStack Query | SWR | Mejor integración React 19 |
-| Gemini Flash | GPT-4 | Más rápido, costo eficiente |
+| Decisión         | Alternativa        | Razón                         |
+| ---------------- | ------------------ | ----------------------------- |
+| Vercel Functions | Firebase Functions | Edge network, menor latencia  |
+| Zustand          | Redux              | Más simple, menos boilerplate |
+| TanStack Query   | SWR                | Mejor integración React 19    |
+| Gemini Flash     | GPT-4              | Más rápido, costo eficiente   |

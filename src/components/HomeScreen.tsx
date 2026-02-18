@@ -1,11 +1,11 @@
-import React from 'react';
-import BocadoLogo from './BocadoLogo';
-import { signOut } from 'firebase/auth';
-import { auth, trackEvent } from '../firebaseConfig'; // ✅ Importado trackEvent
-import { useAuthStore } from '../stores/authStore';
-import { useUserProfile } from '../hooks/useUser';
-import { logger } from '../utils/logger';
-import { useTranslation } from '../contexts/I18nContext';
+import React from "react";
+import BocadoLogo from "./BocadoLogo";
+import { signOut } from "firebase/auth";
+import { auth, trackEvent } from "../firebaseConfig"; // ✅ Importado trackEvent
+import { useAuthStore } from "../stores/authStore";
+import { useUserProfile } from "../hooks/useUser";
+import { logger } from "../utils/logger";
+import { useTranslation } from "../contexts/I18nContext";
 
 interface HomeScreenProps {
   onStartRegistration: () => void;
@@ -13,7 +13,11 @@ interface HomeScreenProps {
   onGoToLogin: () => void;
 }
 
-const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp, onGoToLogin }) => {
+const HomeScreen: React.FC<HomeScreenProps> = ({
+  onStartRegistration,
+  onGoToApp,
+  onGoToLogin,
+}) => {
   const { isAuthenticated, user } = useAuthStore();
   const { data: profile } = useUserProfile(user?.uid);
   const { t, locale, setLocale } = useTranslation();
@@ -23,23 +27,23 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
   // --- HANDLERS CON ANALÍTICA ---
 
   const handleEnterApp = () => {
-    trackEvent('home_enter_app', { userId: user?.uid }); // ✅ Analítica
+    trackEvent("home_enter_app", { userId: user?.uid }); // ✅ Analítica
     onGoToApp();
   };
 
   const handleStartRegistration = () => {
-    trackEvent('home_start_registration'); // ✅ Analítica
+    trackEvent("home_start_registration"); // ✅ Analítica
     onStartRegistration();
   };
 
   const handleGoToLogin = () => {
-    trackEvent('home_go_to_login'); // ✅ Analítica
+    trackEvent("home_go_to_login"); // ✅ Analítica
     onGoToLogin();
   };
 
   const handleLogout = async () => {
     try {
-      trackEvent('home_logout', { userId: user?.uid }); // ✅ Analítica
+      trackEvent("home_logout", { userId: user?.uid }); // ✅ Analítica
       await signOut(auth);
     } catch (error) {
       logger.error("Error signing out: ", error);
@@ -47,9 +51,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
   };
 
   const toggleLanguage = () => {
-    const newLocale = locale === 'es' ? 'en' : 'es';
+    const newLocale = locale === "es" ? "en" : "es";
     setLocale(newLocale);
-    trackEvent('home_change_language', { from: locale, to: newLocale });
+    trackEvent("home_change_language", { from: locale, to: newLocale });
   };
 
   return (
@@ -59,11 +63,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
         <button
           onClick={toggleLanguage}
           className="flex items-center gap-2 px-3 py-2 rounded-full bg-white dark:bg-gray-800 shadow-md hover:shadow-lg transition-shadow border border-bocado-green/20"
-          aria-label={t('home.changeLanguage')}
+          aria-label={t("home.changeLanguage")}
         >
-          <span className="text-lg">{locale === 'es' ? '🇪🇸' : '🇺🇸'}</span>
+          <span className="text-lg">{locale === "es" ? "🇪🇸" : "🇺🇸"}</span>
           <span className="text-sm font-medium text-bocado-dark-gray dark:text-gray-200">
-            {locale === 'es' ? 'ES' : 'EN'}
+            {locale === "es" ? "ES" : "EN"}
           </span>
         </button>
       </div>
@@ -78,13 +82,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
         {/* Texto */}
         <div className="text-center mb-8">
           <h1 className="text-xl font-bold text-bocado-dark-gray dark:text-gray-200 mb-2">
-            {t('home.title')}{' '}
+            {t("home.title")}{" "}
             <span className="underline decoration-bocado-green decoration-4 underline-offset-4">
-              {t('home.titleHighlight')}
+              {t("home.titleHighlight")}
             </span>
           </h1>
           <p className="text-base text-bocado-gray dark:text-gray-400">
-            {t('home.subtitle')}
+            {t("home.subtitle")}
           </p>
         </div>
 
@@ -97,14 +101,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
                 onClick={handleEnterApp}
                 className="w-full bg-bocado-green text-white font-bold py-3.5 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
               >
-                {t('home.enterButton')}
+                {t("home.enterButton")}
               </button>
               <button
                 data-testid="logout-button"
                 onClick={handleLogout}
                 className="w-full bg-white dark:bg-gray-800 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3.5 px-8 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-700 active:scale-95 transition-all"
               >
-                {t('home.logoutButton')}
+                {t("home.logoutButton")}
               </button>
             </>
           ) : (
@@ -114,14 +118,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ onStartRegistration, onGoToApp,
                 onClick={handleStartRegistration}
                 className="w-full bg-bocado-green text-white font-bold py-3.5 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
               >
-                {t('home.startButton')}
+                {t("home.startButton")}
               </button>
               <button
                 data-testid="login-button"
                 onClick={handleGoToLogin}
                 className="w-full bg-white dark:bg-gray-800 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3.5 px-8 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-700 active:scale-95 transition-all"
               >
-                {t('home.loginButton')}
+                {t("home.loginButton")}
               </button>
             </>
           )}

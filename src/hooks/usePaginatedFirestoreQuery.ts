@@ -1,6 +1,10 @@
-import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { useCallback, useRef, useState, useEffect } from 'react';
-import { logger } from '../utils/logger';
+import {
+  useQuery,
+  useQueryClient,
+  UseQueryResult,
+} from "@tanstack/react-query";
+import { useCallback, useRef, useState, useEffect } from "react";
+import { logger } from "../utils/logger";
 
 // ============================================
 // PAGINACIÓN INTELIGENTE PARA FIRESTORE
@@ -37,7 +41,7 @@ interface UsePaginatedFirestoreQueryOptions<T> {
 
 /**
  * Hook para paginación de Firestore con polling en lugar de realtime
- * 
+ *
  * Características:
  * - Paginación con cursor (eficiente en Firestore)
  * - Polling configurable en lugar de onSnapshot
@@ -60,23 +64,23 @@ export function usePaginatedFirestoreQuery<T>({
     hasMore: true,
     isFetchingNextPage: false,
   });
-  
+
   // Cache de cursores para navegación
   const cursorsRef = useRef<Map<number, any>>(new Map([[0, undefined]]));
   const allItemsRef = useRef<T[]>([]);
 
   // Query para la página actual
   const query = useQuery({
-    queryKey: [...queryKey, 'page', pagination.currentPage],
+    queryKey: [...queryKey, "page", pagination.currentPage],
     queryFn: async () => {
       const cursor = cursorsRef.current.get(pagination.currentPage - 1);
       const result = await fetchPage(cursor, pageSize);
-      
+
       // Guardar cursor para siguiente página
       if (result.nextCursor) {
         cursorsRef.current.set(pagination.currentPage, result.nextCursor);
       }
-      
+
       return result;
     },
     enabled,
@@ -92,18 +96,18 @@ export function usePaginatedFirestoreQuery<T>({
       // Reconstruir lista desde todas las páginas cargadas
       const currentPage = pagination.currentPage;
       const newItems = query.data.items;
-      
+
       // Reemplazar items de la página actual
       const startIndex = (currentPage - 1) * pageSize;
       const endIndex = startIndex + newItems.length;
-      
+
       allItemsRef.current = [
         ...allItemsRef.current.slice(0, startIndex),
         ...newItems,
         ...allItemsRef.current.slice(endIndex),
       ].slice(0, MAX_ITEMS); // Prevenir memory leaks
-      
-      setPagination(prev => ({
+
+      setPagination((prev) => ({
         ...prev,
         hasMore: query.data.hasMore,
       }));
@@ -113,34 +117,34 @@ export function usePaginatedFirestoreQuery<T>({
   // Cargar siguiente página
   const fetchNextPage = useCallback(async () => {
     if (!pagination.hasMore || pagination.isFetchingNextPage) return;
-    
-    setPagination(prev => ({ ...prev, isFetchingNextPage: true }));
-    
+
+    setPagination((prev) => ({ ...prev, isFetchingNextPage: true }));
+
     try {
       const nextPage = pagination.currentPage + 1;
       const cursor = cursorsRef.current.get(pagination.currentPage);
-      
+
       const result = await fetchPage(cursor, pageSize);
-      
+
       // Agregar a cache de React Query
-      queryClient.setQueryData(
-        [...queryKey, 'page', nextPage],
-        result
-      );
-      
+      queryClient.setQueryData([...queryKey, "page", nextPage], result);
+
       if (result.nextCursor) {
         cursorsRef.current.set(nextPage, result.nextCursor);
       }
-      
-      allItemsRef.current = [...allItemsRef.current, ...result.items].slice(0, MAX_ITEMS);
-      
+
+      allItemsRef.current = [...allItemsRef.current, ...result.items].slice(
+        0,
+        MAX_ITEMS,
+      );
+
       setPagination({
         currentPage: nextPage,
         hasMore: result.hasMore,
         isFetchingNextPage: false,
       });
     } catch (error) {
-      setPagination(prev => ({ ...prev, isFetchingNextPage: false }));
+      setPagination((prev) => ({ ...prev, isFetchingNextPage: false }));
       throw error;
     }
   }, [pagination, fetchPage, pageSize, queryClient, queryKey]);
@@ -202,23 +206,26 @@ export function useVisibilityAwarePolling({
     const handleVisibilityChange = () => {
       const visible = !document.hidden;
       setIsVisible(visible);
-      setEffectiveInterval(visible ? refetchInterval : refetchIntervalInBackground);
+      setEffectiveInterval(
+        visible ? refetchInterval : refetchIntervalInBackground,
+      );
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [refetchInterval, refetchIntervalInBackground]);
 
-  const result: { 
-    isVisible: boolean; 
-    refetchInterval: number | false; 
+  const result: {
+    isVisible: boolean;
+    refetchInterval: number | false;
     isPollingInBackground: boolean;
   } = {
     isVisible,
     refetchInterval: enabled ? effectiveInterval : false,
     isPollingInBackground: !isVisible && enabled,
   };
-  
+
   return result;
 }
 
@@ -239,7 +246,7 @@ interface UseChangeDetectionOptions {
  */
 export function useChangeDetection<T extends { [key: string]: any }>({
   queryKey,
-  lastModifiedField = 'updatedAt',
+  lastModifiedField = "updatedAt",
   checkInterval = 60000, // 1 minuto
   enabled = true,
 }: UseChangeDetectionOptions) {
@@ -257,18 +264,22 @@ export function useChangeDetection<T extends { [key: string]: any }>({
 
       // Extraer timestamp más reciente
       let currentTimestamp = 0;
-      
+
       if (Array.isArray(currentData)) {
         currentTimestamp = currentData.reduce((max, item) => {
-          const itemTime = item[lastModifiedField]?.toMillis?.() || 
-                          item[lastModifiedField]?.getTime?.() || 
-                          item[lastModifiedField] || 0;
+          const itemTime =
+            item[lastModifiedField]?.toMillis?.() ||
+            item[lastModifiedField]?.getTime?.() ||
+            item[lastModifiedField] ||
+            0;
           return Math.max(max, itemTime);
         }, 0);
       } else {
-        currentTimestamp = currentData[lastModifiedField]?.toMillis?.() || 
-                          currentData[lastModifiedField]?.getTime?.() || 
-                          currentData[lastModifiedField] || 0;
+        currentTimestamp =
+          currentData[lastModifiedField]?.toMillis?.() ||
+          currentData[lastModifiedField]?.getTime?.() ||
+          currentData[lastModifiedField] ||
+          0;
       }
 
       // Comparar con último conocido
@@ -278,10 +289,10 @@ export function useChangeDetection<T extends { [key: string]: any }>({
 
       lastKnownTimestampRef.current = Math.max(
         lastKnownTimestampRef.current,
-        currentTimestamp
+        currentTimestamp,
       );
     } catch (error) {
-      logger.error('Error checking for changes:', error);
+      logger.error("Error checking for changes:", error);
     }
   }, [queryClient, queryKey, lastModifiedField, enabled]);
 

@@ -1,0 +1,15 @@
+# Ignore generated and vendor files
+node_modules/
+dev-dist/
+public/
+storybook-static/
+workbox-*.js
+registerSW.js
+firebase-messaging-sw.js
+playwright-report/
+test-results/
+dist/
+build/
+
+# Ignore specific injected or compiled bundles
+**/vite-inject-mocker-entry.js

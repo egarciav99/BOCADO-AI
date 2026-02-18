@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { createPortal } from 'react-dom';
-import { X, CheckCircle, AlertCircle, Info } from '../icons';
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
+import { X, CheckCircle, AlertCircle, Info } from "../icons";
 
-export type ToastType = 'success' | 'error' | 'info' | 'warning';
+export type ToastType = "success" | "error" | "info" | "warning";
 
 interface ToastProps {
   message: string;
@@ -19,21 +19,21 @@ const ICON_MAP: Record<ToastType, React.ReactNode> = {
 };
 
 const STYLE_MAP: Record<ToastType, string> = {
-  success: 'bg-green-50 border-green-200 text-green-800',
-  error: 'bg-red-50 border-red-200 text-red-800',
-  warning: 'bg-amber-50 border-amber-200 text-amber-800',
-  info: 'bg-blue-50 border-blue-200 text-blue-800',
+  success: "bg-green-50 border-green-200 text-green-800",
+  error: "bg-red-50 border-red-200 text-red-800",
+  warning: "bg-amber-50 border-amber-200 text-amber-800",
+  info: "bg-blue-50 border-blue-200 text-blue-800",
 };
 
 /**
  * Toast component - Mobile-friendly notification
  * ✅ Fixes #1: Replace alert() with proper toast notifications
  */
-export const Toast: React.FC<ToastProps> = ({ 
-  message, 
-  type = 'info', 
-  duration = 3000, 
-  onClose 
+export const Toast: React.FC<ToastProps> = ({
+  message,
+  type = "info",
+  duration = 3000,
+  onClose,
 }) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -47,7 +47,7 @@ export const Toast: React.FC<ToastProps> = ({
         setIsVisible(false);
         setTimeout(onClose, 300); // Wait for fade out animation
       }, duration);
-      
+
       return () => clearTimeout(timer);
     }
   }, [duration, onClose]);
@@ -60,14 +60,14 @@ export const Toast: React.FC<ToastProps> = ({
   return createPortal(
     <div
       className={`fixed top-safe left-4 right-4 mx-auto max-w-sm z-[9999] transition-all duration-300 ${
-        isVisible ? 'opacity-100 translate-y-4' : 'opacity-0 translate-y-0'
+        isVisible ? "opacity-100 translate-y-4" : "opacity-0 translate-y-0"
       }`}
-      style={{ 
-        touchAction: 'none',
-        pointerEvents: isVisible ? 'auto' : 'none',
+      style={{
+        touchAction: "none",
+        pointerEvents: isVisible ? "auto" : "none",
       }}
     >
-      <div 
+      <div
         className={`flex items-center gap-3 p-4 rounded-2xl border-2 shadow-lg backdrop-blur-sm ${STYLE_MAP[type]}`}
         role="alert"
         aria-live="polite"
@@ -78,13 +78,13 @@ export const Toast: React.FC<ToastProps> = ({
           onClick={handleClose}
           className="shrink-0 p-1 rounded-full hover:bg-black/5 active:scale-95 transition-all"
           aria-label="Cerrar"
-          style={{ minWidth: '32px', minHeight: '32px' }} // Touch-friendly
+          style={{ minWidth: "32px", minHeight: "32px" }} // Touch-friendly
         >
           <X className="w-4 h-4" />
         </button>
       </div>
     </div>,
-    document.body
+    document.body,
   );
 };
 
@@ -96,21 +96,31 @@ interface ToastOptions {
 }
 
 let toastCounter = 0;
-const toastListeners = new Set<(toast: ToastOptions & { id: number }) => void>();
+const toastListeners = new Set<
+  (toast: ToastOptions & { id: number }) => void
+>();
 
-export const showToast = (message: string, type: ToastType = 'info', duration = 3000) => {
+export const showToast = (
+  message: string,
+  type: ToastType = "info",
+  duration = 3000,
+) => {
   const id = ++toastCounter;
-  toastListeners.forEach(listener => listener({ id, message, type, duration }));
+  toastListeners.forEach((listener) =>
+    listener({ id, message, type, duration }),
+  );
 };
 
 export const useToast = () => {
-  const [toasts, setToasts] = useState<Array<ToastOptions & { id: number }>>([]);
+  const [toasts, setToasts] = useState<Array<ToastOptions & { id: number }>>(
+    [],
+  );
 
   useEffect(() => {
     const listener = (toast: ToastOptions & { id: number }) => {
-      setToasts(prev => [...prev, toast]);
+      setToasts((prev) => [...prev, toast]);
     };
-    
+
     toastListeners.add(listener);
     return () => {
       toastListeners.delete(listener);
@@ -118,7 +128,7 @@ export const useToast = () => {
   }, []);
 
   const removeToast = (id: number) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   return { toasts, removeToast };

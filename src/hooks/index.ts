@@ -1,22 +1,26 @@
 // hooks/index.ts - Exportaciones centralizadas
 
-export { useUserProfile, useUpdateUserProfile } from './useUser';
-export { useProfileDraftWithData, useEditableProfile } from './useProfileDraft';
-export { useGeolocation, type GeolocationPosition, type GeolocationState } from './useGeolocation';
-export { usePWA } from './usePWA';
-export { 
-  useSavedItems, 
-  useToggleSavedItem, 
+export { useUserProfile, useUpdateUserProfile } from "./useUser";
+export { useProfileDraftWithData, useEditableProfile } from "./useProfileDraft";
+export {
+  useGeolocation,
+  type GeolocationPosition,
+  type GeolocationState,
+} from "./useGeolocation";
+export { usePWA } from "./usePWA";
+export {
+  useSavedItems,
+  useToggleSavedItem,
   useIsItemSaved,
   useAllSavedItems,
   useFeedbackMutation,
   useUserFeedback,
-} from './useSavedItems';
-export { usePantry } from './usePantry';
-export { useRateLimit } from './useRateLimit';
-export { useAnalyticsProperties } from './useAnalyticsProperties';
-export { useSmartNotifications } from './useSmartNotifications';
-export { useNetworkStatus, useIsOnline } from './useNetworkStatus';
+} from "./useSavedItems";
+export { usePantry } from "./usePantry";
+export { useRateLimit } from "./useRateLimit";
+export { useAnalyticsProperties } from "./useAnalyticsProperties";
+export { useSmartNotifications } from "./useSmartNotifications";
+export { useNetworkStatus, useIsOnline } from "./useNetworkStatus";
 
 // Nuevos hooks para escalabilidad
 export {
@@ -25,7 +29,7 @@ export {
   useChangeDetection,
   type PaginatedResult,
   type PaginationState,
-} from './usePaginatedFirestoreQuery';
+} from "./usePaginatedFirestoreQuery";
 
 // Feature Flags
 export {
@@ -38,4 +42,4 @@ export {
   getFeatureFlagsQueryKey,
   type UseFeatureFlagReturn,
   type UseFeatureFlagsReturn,
-} from './useFeatureFlag';
+} from "./useFeatureFlag";

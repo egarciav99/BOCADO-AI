@@ -7,6 +7,7 @@ El rate limiting anterior tenía **race conditions** cuando múltiples instancia
 ## ✅ Solución
 
 Usamos **transacciones atómicas de Firestore** que garantizan:
+
 - ✅ Consistencia entre múltiples instancias serverless
 - ✅ Una sola lectura/escritura por verificación (más eficiente)
 - ✅ Auto-cleanup de procesos atascados
@@ -14,25 +15,25 @@ Usamos **transacciones atómicas de Firestore** que garantizan:
 
 ## 📊 Comparación de Costos
 
-| Métrica | V1 (Antiguo) | V2 (Nuevo) | Ahorro |
-|---------|-------------|-----------|--------|
-| Lecturas por check | 2-10+ (query + scan) | 1 (transacción) | ~80% |
-| Escrituras por proceso | 2-3 | 1-2 | ~40% |
-| Race conditions | Sí | No | 100% |
+| Métrica                | V1 (Antiguo)         | V2 (Nuevo)      | Ahorro |
+| ---------------------- | -------------------- | --------------- | ------ |
+| Lecturas por check     | 2-10+ (query + scan) | 1 (transacción) | ~80%   |
+| Escrituras por proceso | 2-3                  | 1-2             | ~40%   |
+| Race conditions        | Sí                   | No              | 100%   |
 
 ## 🔧 Uso
 
 ### En el Backend (API)
 
 ```typescript
-import { rateLimiter } from './utils/rateLimit';
+import { rateLimiter } from "./utils/rateLimit";
 
 // Verificar rate limit
 const check = await rateLimiter.checkRateLimit(userId);
 if (!check.allowed) {
-  return res.status(429).json({ 
+  return res.status(429).json({
     error: check.error,
-    retryAfter: check.secondsLeft 
+    retryAfter: check.secondsLeft,
   });
 }
 
@@ -50,7 +51,7 @@ await rateLimiter.failProcess(userId, errorMessage);
 const checkRateLimit = async () => {
   const response = await fetch(`/api/recommend?userId=${userId}`);
   const status = await response.json();
-  
+
   if (!status.canRequest) {
     const seconds = status.nextAvailableIn;
     showToast(`Espera ${seconds} segundos...`);
@@ -63,11 +64,13 @@ const checkRateLimit = async () => {
 ## 🔍 Debugging
 
 ### Ver estado de un usuario
+
 ```bash
 curl "https://tu-api.vercel.app/api/recommend?userId=USER_ID"
 ```
 
 Respuesta:
+
 ```json
 {
   "requestsInWindow": 2,
@@ -78,8 +81,9 @@ Respuesta:
 ```
 
 ### Reset manual (para soporte)
+
 ```typescript
-import { rateLimiter } from './utils/rateLimit';
+import { rateLimiter } from "./utils/rateLimit";
 
 // Limpiar todos los límites de un usuario
 await rateLimiter.resetUser(userId);
@@ -88,13 +92,13 @@ await rateLimiter.resetUser(userId);
 ## ⚙️ Configuración
 
 ```typescript
-import { DistributedRateLimiter } from './utils/rateLimit';
+import { DistributedRateLimiter } from "./utils/rateLimit";
 
 const customLimiter = new DistributedRateLimiter({
-  windowMs: 10 * 60 * 1000,      // 10 minutos
-  maxRequests: 5,                 // 5 requests por ventana
-  cooldownMs: 30 * 1000,          // 30 segundos entre requests
-  stuckThresholdMs: 2 * 60 * 1000 // 2 minutos para cleanup
+  windowMs: 10 * 60 * 1000, // 10 minutos
+  maxRequests: 5, // 5 requests por ventana
+  cooldownMs: 30 * 1000, // 30 segundos entre requests
+  stuckThresholdMs: 2 * 60 * 1000, // 2 minutos para cleanup
 });
 ```
 
@@ -125,6 +129,7 @@ rate_limit_v2/{userId}
 ## 📈 Monitoreo
 
 Recomendado: Agregar logs estructurados para:
+
 - Rate limit hits (para ajustar límites)
 - Stuck process cleanups (para detectar problemas)
 - Tiempo promedio de procesamiento

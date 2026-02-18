@@ -1,4 +1,4 @@
-import type { Timestamp } from 'firebase/firestore';
+import type { Timestamp } from "firebase/firestore";
 
 // Datos que van a Firebase Auth (sensibles)
 export interface AuthData {
@@ -19,7 +19,7 @@ export interface GeoLocation {
 
 // Datos que van a Firestore (perfil sanitizado, NO sensibles)
 export interface UserProfile {
-  uid: string;                    // Referencia al UID de Auth
+  uid: string; // Referencia al UID de Auth
   gender: string;
   age: string;
   emailVerified?: boolean;
@@ -40,19 +40,20 @@ export interface UserProfile {
   nutritionalGoal: string[];
   cookingAffinity: string;
   dislikedFoods: string[];
-  language?: 'es' | 'en';         // Preferencia de idioma del usuario
+  language?: "es" | "en"; // Preferencia de idioma del usuario
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
 }
 
 // Para el formulario completo (unión de ambos)
-export interface FormData extends AuthData, Omit<UserProfile, 'uid' | 'createdAt' | 'updatedAt'> {
+export interface FormData
+  extends AuthData, Omit<UserProfile, "uid" | "createdAt" | "updatedAt"> {
   // Campo temporal para almacenar el placeId de Google Places al seleccionar ciudad
   cityPlaceId?: string;
 }
 
 // Updated to support simple string ingredients from the new structure
-export type Ingredient = string; 
+export type Ingredient = string;
 
 export interface Nutrition {
   calories: string;
@@ -64,25 +65,25 @@ export interface Nutrition {
 export interface Recipe {
   title: string;
   description?: string;
-  time: string;       // tiempo_estimado
+  time: string; // tiempo_estimado
   difficulty: string; // dificultad
   calories: string | number; // macros_por_porcion.kcal
   savingsMatch: string; // coincidencia_despensa
   ingredients: string[];
   instructions: string[];
   cuisine?: string; // Tipo de Comida (Restaurantes)
-  
+
   // ✅ MACROS COMPLETOS (disponibles para recetas En Casa)
-  protein_g?: number;      // macros_por_porcion.proteinas_g
-  carbs_g?: number;        // macros_por_porcion.carbohidratos_g
-  fat_g?: number;          // macros_por_porcion.grasas_g
-  
+  protein_g?: number; // macros_por_porcion.proteinas_g
+  carbs_g?: number; // macros_por_porcion.carbohidratos_g
+  fat_g?: number; // macros_por_porcion.grasas_g
+
   // ✅ CAMPOS ESPECÍFICOS PARA RESTAURANTES (opcionales)
-  link_maps?: string;                    // URL de Google Maps
-  direccion_aproximada?: string;         // Dirección del lugar
-  plato_sugerido?: string;              // Plato recomendado
-  por_que_es_bueno?: string;            // Descripción por qué encaja con el perfil
-  hack_saludable?: string;              // Tip para pedir saludable
+  link_maps?: string; // URL de Google Maps
+  direccion_aproximada?: string; // Dirección del lugar
+  plato_sugerido?: string; // Plato recomendado
+  por_que_es_bueno?: string; // Descripción por qué encaja con el perfil
+  hack_saludable?: string; // Tip para pedir saludable
 }
 
 export interface Meal {
@@ -102,8 +103,8 @@ export interface Plan {
   interaction_id?: string;
 }
 
-export type Freshness = 'fresh' | 'soon' | 'expired';
-export type Zone = 'Despensa' | 'Nevera' | 'Congelador';
+export type Freshness = "fresh" | "soon" | "expired";
+export type Zone = "Despensa" | "Nevera" | "Congelador";
 
 export interface KitchenItem {
   id: string;
@@ -120,7 +121,7 @@ export interface PantryDocument {
   lastUpdated?: Timestamp | Date;
 }
 
-export type SavedItemType = 'recipe' | 'restaurant';
+export type SavedItemType = "recipe" | "restaurant";
 
 export interface SavedItem {
   id: string;
@@ -138,7 +139,7 @@ export interface SavedItem {
 // FEEDBACK / CALIFICACIÓN
 // ============================================
 
-export type FeedbackType = 'home' | 'away';
+export type FeedbackType = "home" | "away";
 
 export interface FeedbackData {
   userId: string;

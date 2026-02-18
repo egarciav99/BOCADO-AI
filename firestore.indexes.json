@@ -64,30 +64,22 @@
     {
       "collectionGroup": "maps_proxy_cache",
       "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "expiresAt", "order": "ASCENDING" }
-      ]
+      "fields": [{ "fieldPath": "expiresAt", "order": "ASCENDING" }]
     },
     {
       "collectionGroup": "maps_proxy_rate_limits",
       "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "updatedAt", "order": "ASCENDING" }
-      ]
+      "fields": [{ "fieldPath": "updatedAt", "order": "ASCENDING" }]
     },
     {
       "collectionGroup": "rate_limit_v2",
       "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "updatedAt", "order": "ASCENDING" }
-      ]
+      "fields": [{ "fieldPath": "updatedAt", "order": "ASCENDING" }]
     },
     {
       "collectionGroup": "ip_rate_limits",
       "queryScope": "COLLECTION",
-      "fields": [
-        { "fieldPath": "updatedAt", "order": "ASCENDING" }
-      ]
+      "fields": [{ "fieldPath": "updatedAt", "order": "ASCENDING" }]
     },
     {
       "collectionGroup": "user_interactions",

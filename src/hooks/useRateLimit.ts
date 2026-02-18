@@ -1,7 +1,7 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback, useMemo } from 'react';
-import { env } from '../environment/env';
-import { useTranslation } from '../contexts/I18nContext';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo } from "react";
+import { env } from "../environment/env";
+import { useTranslation } from "../contexts/I18nContext";
 
 interface RateLimitStatus {
   requestsInWindow: number;
@@ -28,7 +28,7 @@ export const useRateLimit = (userId: string | undefined) => {
   const { t } = useTranslation();
 
   const { data: status = DEFAULT_STATUS, isLoading } = useQuery({
-    queryKey: ['rateLimit', userId],
+    queryKey: ["rateLimit", userId],
     queryFn: async (): Promise<RateLimitStatus> => {
       if (!userId) return DEFAULT_STATUS;
       const token = await fetchAuthToken();
@@ -38,12 +38,12 @@ export const useRateLimit = (userId: string | undefined) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (!response.ok) {
         // Si falla, asumir que puede hacer request (fail-open)
         return DEFAULT_STATUS;
       }
-      
+
       return response.json();
     },
     enabled: !!userId,
@@ -58,40 +58,51 @@ export const useRateLimit = (userId: string | undefined) => {
    * Útil después de iniciar una generación
    */
   const refreshStatus = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['rateLimit', userId] });
+    queryClient.invalidateQueries({ queryKey: ["rateLimit", userId] });
   }, [queryClient, userId]);
 
   /**
    * Formatea el tiempo restante para mostrar al usuario
    */
-  const formatTimeLeft = useCallback((seconds: number): string => {
-    if (seconds <= 0) return t('now') || 'Now';
-    if (seconds < 60) return `${seconds}s`;
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}m ${remainingSeconds}s`;
-  }, [t]);
+  const formatTimeLeft = useCallback(
+    (seconds: number): string => {
+      if (seconds <= 0) return t("now") || "Now";
+      if (seconds < 60) return `${seconds}s`;
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      return `${minutes}m ${remainingSeconds}s`;
+    },
+    [t],
+  );
 
   // Memoizar el tiempo formateado para evitar cálculos innecesarios
-  const formattedTimeLeft = useMemo(() => 
-    formatTimeLeft(status.nextAvailableIn),
-    [formatTimeLeft, status.nextAvailableIn]
+  const formattedTimeLeft = useMemo(
+    () => formatTimeLeft(status.nextAvailableIn),
+    [formatTimeLeft, status.nextAvailableIn],
   );
 
   // Memoizar el mensaje
   const message = useMemo(() => {
     if (!status.canRequest) {
-      return t('rateLimit.wait', { time: formatTimeLeft(status.nextAvailableIn) });
+      return t("rateLimit.wait", {
+        time: formatTimeLeft(status.nextAvailableIn),
+      });
     }
     // Cuando puede hacer requests, mostrar info util
     const remaining = status.remainingRequests ?? 5;
     if (remaining <= 2) {
       return remaining === 1
-        ? t('rateLimit.warning', { count: remaining })
-        : t('rateLimit.warningPlural', { count: remaining });
+        ? t("rateLimit.warning", { count: remaining })
+        : t("rateLimit.warningPlural", { count: remaining });
     }
-    return t('rateLimit.sessionInfo', { count: remaining });
-  }, [t, formatTimeLeft, status.canRequest, status.nextAvailableIn, status.remainingRequests]);
+    return t("rateLimit.sessionInfo", { count: remaining });
+  }, [
+    t,
+    formatTimeLeft,
+    status.canRequest,
+    status.nextAvailableIn,
+    status.remainingRequests,
+  ]);
 
   return {
     ...status,
@@ -107,7 +118,7 @@ export const useRateLimit = (userId: string | undefined) => {
 
 const fetchAuthToken = async (): Promise<string | null> => {
   try {
-    const { auth } = await import('../firebaseConfig');
+    const { auth } = await import("../firebaseConfig");
     const currentUser = auth.currentUser;
     if (!currentUser) return null;
     return await currentUser.getIdToken();

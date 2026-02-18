@@ -1,10 +1,10 @@
-import { test as base, expect } from '@playwright/test';
-import { TestUser, generateTestUser } from './utils/test-users';
-import { register, clearAuthState } from './utils/auth';
+import { test as base, expect } from "@playwright/test";
+import { TestUser, generateTestUser } from "./utils/test-users";
+import { register, clearAuthState } from "./utils/auth";
 
 /**
  * Fixtures personalizados para tests de Bocado AI
- * 
+ *
  * Estos fixtures extienden los tests base de Playwright
  * con utilidades específicas de nuestra aplicación.
  */
@@ -15,7 +15,7 @@ type BocadoFixtures = {
    * Se crea automáticamente antes del test
    */
   authenticatedUser: TestUser;
-  
+
   /**
    * Página con un usuario ya logueado
    */
@@ -27,11 +27,11 @@ type BocadoFixtures = {
 
 /**
  * Test extendido con fixtures de Bocado AI
- * 
+ *
  * Ejemplo de uso:
  * ```typescript
  * import { test, expect } from '../fixtures';
- * 
+ *
  * test('mi test', async ({ page, authenticatedUser }) => {
  *   // authenticatedUser ya está creado y logueado
  * });
@@ -47,7 +47,7 @@ export const test = base.extend<BocadoFixtures>({
     await register(page, user);
     await use(user);
   },
-  
+
   /**
    * Fixture: Página autenticada con cleanup
    * Similar a authenticatedUser pero con función de limpieza
@@ -55,18 +55,18 @@ export const test = base.extend<BocadoFixtures>({
   authenticatedPage: async ({ page }, use) => {
     const user = generateTestUser();
     await register(page, user);
-    
+
     await use({
       user,
       cleanup: async () => {
         await clearAuthState(page);
       },
     });
-    
+
     // Cleanup automático después del test
     await clearAuthState(page);
   },
-  
+
   /**
    * Override del page para siempre limpiar estado
    */
@@ -76,4 +76,4 @@ export const test = base.extend<BocadoFixtures>({
   },
 });
 
-export { expect } from '@playwright/test';
+export { expect } from "@playwright/test";

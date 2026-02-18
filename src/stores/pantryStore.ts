@@ -1,6 +1,6 @@
 // stores/pantryStore.ts
-import { create } from 'zustand';
-import { Zone } from '../types';
+import { create } from "zustand";
+import { Zone } from "../types";
 
 /**
  * Store de Zustand SOLO para estado UI de la despensa.
@@ -10,7 +10,7 @@ interface PantryUIState {
   // Estado de navegación UI
   activeZone: Zone | null;
   activeCategory: string;
-  
+
   // Actions
   setActiveZone: (zone: Zone | null) => void;
   setActiveCategory: (category: string) => void;
@@ -19,12 +19,12 @@ interface PantryUIState {
 
 const initialState = {
   activeZone: null,
-  activeCategory: 'Todos',
+  activeCategory: "Todos",
 };
 
 export const usePantryStore = create<PantryUIState>((set) => ({
   ...initialState,
-  
+
   setActiveZone: (zone) => set({ activeZone: zone }),
   setActiveCategory: (category) => set({ activeCategory: category }),
   reset: () => set(initialState),

@@ -13,17 +13,20 @@ Las notificaciones mostraban las claves de traducción literalmente (ej: "notifi
 ### 1. Sincronización Automática de Traducciones
 
 Se agregaron efectos en ambos hooks de notificaciones que:
+
 - Detectan cambios en el contexto de traducción
 - Actualizan automáticamente los títulos y cuerpos de las notificaciones
 - Mantienen las configuraciones del usuario (horarios, estados enabled/disabled)
 
 **Archivos modificados:**
+
 - [src/hooks/useSmartNotifications.ts](src/hooks/useSmartNotifications.ts)
 - [src/hooks/useNotifications.ts](src/hooks/useNotifications.ts)
 
 ### 2. Limpieza Automática de Datos Corruptos
 
 Se implementó una verificación al inicio que:
+
 - Detecta si hay claves de traducción guardadas en localStorage
 - Limpia automáticamente los datos corruptos
 - Regenera las notificaciones con traducciones correctas
@@ -36,16 +39,17 @@ Se creó un archivo de utilidades disponible en la consola del navegador:
 
 ```javascript
 // Verificar el estado de las notificaciones
-window.bocadoNotifications.diagnose()
+window.bocadoNotifications.diagnose();
 
 // Limpiar datos corruptos
-window.bocadoNotifications.clean()
+window.bocadoNotifications.clean();
 
 // Resetear historial completo de notificaciones
-window.bocadoNotifications.reset()
+window.bocadoNotifications.reset();
 ```
 
 **Archivo creado:**
+
 - [src/utils/cleanNotifications.ts](src/utils/cleanNotifications.ts)
 
 ## Cambios Técnicos Detallados
@@ -58,11 +62,12 @@ useEffect(() => {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     const parsed = JSON.parse(saved);
-    const hasCorruptedData = parsed.some((item: any) => 
-      item.title?.includes('notifications.') || 
-      item.title?.includes('notificacions.')
+    const hasCorruptedData = parsed.some(
+      (item: any) =>
+        item.title?.includes("notifications.") ||
+        item.title?.includes("notificacions."),
     );
-    
+
     if (hasCorruptedData) {
       localStorage.removeItem(STORAGE_KEY);
       setReminders(createDefaultReminders(t));
@@ -72,10 +77,10 @@ useEffect(() => {
 
 // Nuevo efecto de sincronización de traducciones
 useEffect(() => {
-  setReminders(prev => {
+  setReminders((prev) => {
     const defaultReminders = createDefaultReminders(t);
-    return prev.map(reminder => {
-      const defaultRem = defaultReminders.find(dr => dr.id === reminder.id);
+    return prev.map((reminder) => {
+      const defaultRem = defaultReminders.find((dr) => dr.id === reminder.id);
       if (defaultRem) {
         return {
           ...reminder,
@@ -98,9 +103,10 @@ Se aplicaron los mismos cambios que en useSmartNotifications.ts
 ### 1. Limpiar Datos Existentes
 
 En la consola del navegador:
+
 ```javascript
-window.bocadoNotifications.diagnose()
-window.bocadoNotifications.clean()
+window.bocadoNotifications.diagnose();
+window.bocadoNotifications.clean();
 ```
 
 ### 2. Verificar Notificaciones
@@ -127,6 +133,7 @@ window.bocadoNotifications.clean()
 ### Monitoreo
 
 Las utilidades de diagnóstico están disponibles permanentemente en:
+
 - Consola del navegador → `window.bocadoNotifications`
 - Logs automáticos cuando se detectan y limpian datos corruptos
 
@@ -137,6 +144,7 @@ Las utilidades de diagnóstico están disponibles permanentemente en:
 Todas las notificaciones usan las siguientes claves del archivo de traducciones:
 
 **Comidas:**
+
 - `notifications.breakfast.title` / `notifications.breakfast.titleSimple`
 - `notifications.breakfast.body` / `notifications.breakfast.bodySimple`
 - `notifications.lunch.title`
@@ -145,6 +153,7 @@ Todas las notificaciones usan las siguientes claves del archivo de traducciones:
 - `notifications.dinner.body`
 
 **Inteligentes:**
+
 - `notifications.pantryUpdate.title`
 - `notifications.pantryUpdate.body`
 - `notifications.rateRecipes.title`
@@ -153,12 +162,14 @@ Todas las notificaciones usan las siguientes claves del archivo de traducciones:
 - `notifications.comeBack.body`
 
 **Prueba:**
+
 - `notifications.testNotification.title`
 - `notifications.testNotification.body`
 
 ### Persistencia
 
 Los datos de notificaciones se guardan en:
+
 - **localStorage**: `bocado_notification_schedules`, `bocado_smart_reminders`
 - **Firestore**: `notification_settings/{userId}`
 

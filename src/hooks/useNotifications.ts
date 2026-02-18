@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  requestNotificationPermission, 
-  onForegroundMessage, 
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  requestNotificationPermission,
+  onForegroundMessage,
   areNotificationsSupported,
-  trackEvent 
-} from '../firebaseConfig';
-import { logger } from '../utils/logger';
-import { useTranslation } from '../contexts/I18nContext';
+  trackEvent,
+} from "../firebaseConfig";
+import { logger } from "../utils/logger";
+import { useTranslation } from "../contexts/I18nContext";
 
 export interface NotificationSchedule {
   id: string;
@@ -15,7 +15,7 @@ export interface NotificationSchedule {
   hour: number;
   minute: number;
   enabled: boolean;
-  type: 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'custom';
+  type: "breakfast" | "lunch" | "dinner" | "snack" | "custom";
 }
 
 interface UseNotificationsReturn {
@@ -26,50 +26,56 @@ interface UseNotificationsReturn {
   isLoading: boolean;
   requestPermission: () => Promise<boolean>;
   updateSchedule: (id: string, updates: Partial<NotificationSchedule>) => void;
-  addSchedule: (schedule: Omit<NotificationSchedule, 'id'>) => void;
+  addSchedule: (schedule: Omit<NotificationSchedule, "id">) => void;
   removeSchedule: (id: string) => void;
   toggleSchedule: (id: string) => void;
   lastMessage: any | null;
 }
 
-const createDefaultSchedules = (t: (key: string) => string): NotificationSchedule[] => [
+const createDefaultSchedules = (
+  t: (key: string) => string,
+): NotificationSchedule[] => [
   {
-    id: 'breakfast',
-    title: t('notifications.breakfast.titleSimple'),
-    body: t('notifications.breakfast.bodySimple'),
+    id: "breakfast",
+    title: t("notifications.breakfast.titleSimple"),
+    body: t("notifications.breakfast.bodySimple"),
     hour: 8,
     minute: 0,
     enabled: false,
-    type: 'breakfast',
+    type: "breakfast",
   },
   {
-    id: 'lunch',
-    title: t('notifications.lunch.title'),
-    body: t('notifications.lunch.bodySimple'),
+    id: "lunch",
+    title: t("notifications.lunch.title"),
+    body: t("notifications.lunch.bodySimple"),
     hour: 13,
     minute: 30,
     enabled: false,
-    type: 'lunch',
+    type: "lunch",
   },
   {
-    id: 'dinner',
-    title: t('notifications.dinner.titleSimple'),
-    body: t('notifications.dinner.bodySimple'),
+    id: "dinner",
+    title: t("notifications.dinner.titleSimple"),
+    body: t("notifications.dinner.bodySimple"),
     hour: 19,
     minute: 30,
     enabled: false,
-    type: 'dinner',
+    type: "dinner",
   },
 ];
 
-const STORAGE_KEY = 'bocado_notification_schedules';
+const STORAGE_KEY = "bocado_notification_schedules";
 
 export const useNotifications = (): UseNotificationsReturn => {
   const { t } = useTranslation();
   const [isSupported, setIsSupported] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission | null>(null);
+  const [permission, setPermission] = useState<NotificationPermission | null>(
+    null,
+  );
   const [token, setToken] = useState<string | null>(null);
-  const [schedules, setSchedules] = useState<NotificationSchedule[]>(() => createDefaultSchedules(t));
+  const [schedules, setSchedules] = useState<NotificationSchedule[]>(() =>
+    createDefaultSchedules(t),
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -80,22 +86,23 @@ export const useNotifications = (): UseNotificationsReturn => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const hasCorruptedData = parsed.some((item: any) => 
-          item.title?.includes('notifications.') || 
-          item.title?.includes('notificacions.') ||
-          item.body?.includes('notifications.') || 
-          item.body?.includes('notificacions.')
+        const hasCorruptedData = parsed.some(
+          (item: any) =>
+            item.title?.includes("notifications.") ||
+            item.title?.includes("notificacions.") ||
+            item.body?.includes("notifications.") ||
+            item.body?.includes("notificacions."),
         );
-        
+
         if (hasCorruptedData) {
-          logger.info('Limpiando datos de notificaciones corruptos');
+          logger.info("Limpiando datos de notificaciones corruptos");
           localStorage.removeItem(STORAGE_KEY);
           // Regenerar con traducciones correctas
           const defaultSchedules = createDefaultSchedules(t);
           setSchedules(defaultSchedules);
         }
       } catch (e) {
-        logger.error('Error verificando datos de notificaciones:', e);
+        logger.error("Error verificando datos de notificaciones:", e);
       }
     }
   }, [t]); // Al montar y cuando cambian las traducciones
@@ -105,7 +112,7 @@ export const useNotifications = (): UseNotificationsReturn => {
     const checkSupport = async () => {
       const supported = await areNotificationsSupported();
       setIsSupported(supported);
-      if (supported && 'Notification' in window) {
+      if (supported && "Notification" in window) {
         setPermission(Notification.permission);
       }
     };
@@ -120,22 +127,26 @@ export const useNotifications = (): UseNotificationsReturn => {
         const parsed = JSON.parse(saved);
         const defaultSchedules = createDefaultSchedules(t);
         // Merge con defaults para asegurar nuevos campos
-        setSchedules(defaultSchedules.map(defaultSchedule => {
-          const saved = parsed.find((s: NotificationSchedule) => s.id === defaultSchedule.id);
-          return saved ? { ...defaultSchedule, ...saved } : defaultSchedule;
-        }));
+        setSchedules(
+          defaultSchedules.map((defaultSchedule) => {
+            const saved = parsed.find(
+              (s: NotificationSchedule) => s.id === defaultSchedule.id,
+            );
+            return saved ? { ...defaultSchedule, ...saved } : defaultSchedule;
+          }),
+        );
       } catch (e) {
-        logger.error('Error cargando horarios de notificaciones:', e);
+        logger.error("Error cargando horarios de notificaciones:", e);
       }
     }
   }, [t]);
 
   // Actualizar traducciones de horarios cuando cambie el idioma
   useEffect(() => {
-    setSchedules(prev => {
+    setSchedules((prev) => {
       const defaultSchedules = createDefaultSchedules(t);
-      return prev.map(schedule => {
-        const defaultSch = defaultSchedules.find(ds => ds.id === schedule.id);
+      return prev.map((schedule) => {
+        const defaultSch = defaultSchedules.find((ds) => ds.id === schedule.id);
         if (defaultSch) {
           // Mantener configuraciones del usuario pero actualizar traducciones
           return {
@@ -157,24 +168,27 @@ export const useNotifications = (): UseNotificationsReturn => {
   // Escuchar mensajes en primer plano
   useEffect(() => {
     if (!isSupported) return;
-    
+
     onForegroundMessage((payload) => {
       setLastMessage(payload);
       // Mostrar notificación local si la app está abierta
-      if (Notification.permission === 'granted') {
-        new Notification(payload.notification?.title || t('notifications.appName'), {
-          body: payload.notification?.body,
-          icon: '/icons/icon-192x192.png',
-          badge: '/icons/icon-72x72.png',
-          tag: payload.data?.type || 'default',
-        });
+      if (Notification.permission === "granted") {
+        new Notification(
+          payload.notification?.title || t("notifications.appName"),
+          {
+            body: payload.notification?.body,
+            icon: "/icons/icon-192x192.png",
+            badge: "/icons/icon-72x72.png",
+            tag: payload.data?.type || "default",
+          },
+        );
       }
     });
   }, [isSupported]);
 
   // Verificar recordatorios cada minuto
   useEffect(() => {
-    if (!isSupported || permission !== 'granted') return;
+    if (!isSupported || permission !== "granted") return;
 
     const checkSchedules = () => {
       const now = new Date();
@@ -182,31 +196,31 @@ export const useNotifications = (): UseNotificationsReturn => {
       const currentMinute = now.getMinutes();
       const currentTime = currentHour * 60 + currentMinute;
 
-      schedules.forEach(schedule => {
+      schedules.forEach((schedule) => {
         if (!schedule.enabled) return;
-        
+
         const scheduleTime = schedule.hour * 60 + schedule.minute;
-        
+
         // Si es el momento exacto (dentro del minuto actual)
         if (currentTime === scheduleTime) {
           // Verificar si ya mostramos esta notificación hoy
           const lastShownKey = `last_notification_${schedule.id}`;
           const lastShown = localStorage.getItem(lastShownKey);
           const today = now.toDateString();
-          
+
           if (lastShown !== today) {
             localStorage.setItem(lastShownKey, today);
-            
+
             // Mostrar notificación local
             new Notification(schedule.title, {
               body: schedule.body,
-              icon: '/icons/icon-192x192.png',
-              badge: '/icons/icon-72x72.png',
+              icon: "/icons/icon-192x192.png",
+              badge: "/icons/icon-72x72.png",
               tag: schedule.id,
               requireInteraction: false,
             });
-            
-            trackEvent('notification_local_reminder_shown', {
+
+            trackEvent("notification_local_reminder_shown", {
               type: schedule.type,
               hour: schedule.hour,
             });
@@ -217,7 +231,7 @@ export const useNotifications = (): UseNotificationsReturn => {
 
     // Verificar cada minuto
     intervalRef.current = setInterval(checkSchedules, 60000);
-    
+
     // Verificar inmediatamente también
     checkSchedules();
 
@@ -230,62 +244,73 @@ export const useNotifications = (): UseNotificationsReturn => {
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported) return false;
-    
+
     setIsLoading(true);
     try {
       const fcmToken = await requestNotificationPermission();
-      
+
       if (fcmToken) {
         setToken(fcmToken);
-        setPermission('granted');
-        
+        setPermission("granted");
+
         // Guardar token en Firestore (opcional, para notificaciones push desde servidor)
         // await saveTokenToFirestore(fcmToken);
-        
-        logger.info('Permiso de notificaciones concedido');
+
+        logger.info("Permiso de notificaciones concedido");
         return true;
       } else {
         setPermission(Notification.permission);
         return false;
       }
     } catch (error) {
-      logger.error('Error solicitando permiso:', error);
+      logger.error("Error solicitando permiso:", error);
       return false;
     } finally {
       setIsLoading(false);
     }
   }, [isSupported]);
 
-  const updateSchedule = useCallback((id: string, updates: Partial<NotificationSchedule>) => {
-    setSchedules(prev => prev.map(s => 
-      s.id === id ? { ...s, ...updates } : s
-    ));
-    trackEvent('notification_schedule_updated', { id, ...updates });
-  }, []);
+  const updateSchedule = useCallback(
+    (id: string, updates: Partial<NotificationSchedule>) => {
+      setSchedules((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, ...updates } : s)),
+      );
+      trackEvent("notification_schedule_updated", { id, ...updates });
+    },
+    [],
+  );
 
-  const addSchedule = useCallback((schedule: Omit<NotificationSchedule, 'id'>) => {
-    const newSchedule = {
-      ...schedule,
-      id: `custom_${Date.now()}`,
-    };
-    setSchedules(prev => [...prev, newSchedule]);
-    trackEvent('notification_schedule_added', { type: schedule.type });
-  }, []);
+  const addSchedule = useCallback(
+    (schedule: Omit<NotificationSchedule, "id">) => {
+      const newSchedule = {
+        ...schedule,
+        id: `custom_${Date.now()}`,
+      };
+      setSchedules((prev) => [...prev, newSchedule]);
+      trackEvent("notification_schedule_added", { type: schedule.type });
+    },
+    [],
+  );
 
   const removeSchedule = useCallback((id: string) => {
-    setSchedules(prev => prev.filter(s => s.id !== id));
-    trackEvent('notification_schedule_removed', { id });
+    setSchedules((prev) => prev.filter((s) => s.id !== id));
+    trackEvent("notification_schedule_removed", { id });
   }, []);
 
   const toggleSchedule = useCallback((id: string) => {
-    setSchedules(prev => prev.map(s => {
-      if (s.id === id) {
-        const newEnabled = !s.enabled;
-        trackEvent('notification_schedule_toggled', { id, enabled: newEnabled });
-        return { ...s, enabled: newEnabled };
-      }
-      return s;
-    }));
+    setSchedules((prev) =>
+      prev.map((s) => {
+        if (s.id === id) {
+          const newEnabled = !s.enabled;
+          trackEvent("notification_schedule_toggled", {
+            id,
+            enabled: newEnabled,
+          });
+          return { ...s, enabled: newEnabled };
+        }
+        return s;
+      }),
+    );
   }, []);
 
   return {
@@ -302,4 +327,3 @@ export const useNotifications = (): UseNotificationsReturn => {
     lastMessage,
   };
 };
-

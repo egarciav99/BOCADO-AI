@@ -1,44 +1,68 @@
-import React, { useState } from 'react';
-import { trackEvent } from '../firebaseConfig';
-import { Lock, ShieldCheck, Eye, Trash2 } from './icons';
-import { useTranslation } from '../contexts/I18nContext';
+import React, { useState } from "react";
+import { trackEvent } from "../firebaseConfig";
+import { Lock, ShieldCheck, Eye, Trash2 } from "./icons";
+import { useTranslation } from "../contexts/I18nContext";
 
 interface PermissionsScreenProps {
   onAccept: () => void;
   onGoHome: () => void;
 }
 
-const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHome }) => {
+const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
+  onAccept,
+  onGoHome,
+}) => {
   const { t } = useTranslation();
   const [agreed, setAgreed] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
   const handleAccept = () => {
-    trackEvent('accept_privacy_policy', { 
+    trackEvent("accept_privacy_policy", {
       timestamp: new Date().toISOString(),
-      screen: 'permissions' 
+      screen: "permissions",
     });
     onAccept();
   };
 
   const handleGoHome = () => {
-    trackEvent('reject_privacy_policy', { 
+    trackEvent("reject_privacy_policy", {
       timestamp: new Date().toISOString(),
-      screen: 'permissions'
+      screen: "permissions",
     });
     onGoHome();
   };
 
   const dataItems = [
-    { icon: '📊', label: t('permissions.dataTypes.profile.title'), desc: t('permissions.dataTypes.profile.description') },
-    { icon: '🍎', label: t('permissions.dataTypes.preferences.title'), desc: t('permissions.dataTypes.preferences.description') },
-    { icon: '📍', label: t('permissions.dataTypes.location.title'), desc: t('permissions.dataTypes.location.description') },
+    {
+      icon: "📊",
+      label: t("permissions.dataTypes.profile.title"),
+      desc: t("permissions.dataTypes.profile.description"),
+    },
+    {
+      icon: "🍎",
+      label: t("permissions.dataTypes.preferences.title"),
+      desc: t("permissions.dataTypes.preferences.description"),
+    },
+    {
+      icon: "📍",
+      label: t("permissions.dataTypes.location.title"),
+      desc: t("permissions.dataTypes.location.description"),
+    },
   ];
 
   const benefits = [
-    { icon: <ShieldCheck className="w-5 h-5" />, text: t('permissions.benefits.noSell') },
-    { icon: <Eye className="w-5 h-5" />, text: t('permissions.benefits.download') },
-    { icon: <Trash2 className="w-5 h-5" />, text: t('permissions.benefits.delete') },
+    {
+      icon: <ShieldCheck className="w-5 h-5" />,
+      text: t("permissions.benefits.noSell"),
+    },
+    {
+      icon: <Eye className="w-5 h-5" />,
+      text: t("permissions.benefits.download"),
+    },
+    {
+      icon: <Trash2 className="w-5 h-5" />,
+      text: t("permissions.benefits.delete"),
+    },
   ];
 
   return (
@@ -50,27 +74,29 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
             <Lock className="w-8 h-8 text-bocado-green" />
           </div>
           <h1 className="text-2xl font-bold text-bocado-dark-green mb-2">
-            {t('permissions.title')}
+            {t("permissions.title")}
           </h1>
           <p className="text-sm text-bocado-gray">
-            {t('permissions.subtitle')}
+            {t("permissions.subtitle")}
           </p>
         </div>
 
         {/* Qué datos usamos */}
         <div className="mb-5">
           <h2 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-3">
-            {t('permissions.whatWeUse')}
+            {t("permissions.whatWeUse")}
           </h2>
           <div className="space-y-2">
             {dataItems.map((item, idx) => (
-              <div 
+              <div
                 key={idx}
                 className="flex items-center gap-3 p-3 bg-bocado-background/50 rounded-xl"
               >
                 <span className="text-xl">{item.icon}</span>
                 <div>
-                  <p className="text-sm font-semibold text-bocado-text">{item.label}</p>
+                  <p className="text-sm font-semibold text-bocado-text">
+                    {item.label}
+                  </p>
                   <p className="text-xs text-bocado-gray">{item.desc}</p>
                 </div>
               </div>
@@ -81,12 +107,17 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
         {/* Tus derechos */}
         <div className="mb-5">
           <h2 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-3">
-            {t('permissions.control')}
+            {t("permissions.control")}
           </h2>
           <div className="space-y-2">
             {benefits.map((benefit, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-sm text-bocado-text">
-                <span className="text-bocado-green mt-0.5 flex-shrink-0">{benefit.icon}</span>
+              <div
+                key={idx}
+                className="flex items-start gap-2 text-sm text-bocado-text"
+              >
+                <span className="text-bocado-green mt-0.5 flex-shrink-0">
+                  {benefit.icon}
+                </span>
                 <span>{benefit.text}</span>
               </div>
             ))}
@@ -98,43 +129,59 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
           onClick={() => setShowDetails(!showDetails)}
           className="w-full text-xs text-bocado-green font-medium mb-5 hover:underline flex items-center justify-center gap-1"
         >
-          {showDetails ? t('permissions.showLess') : t('permissions.showMore')}
-          <span className={`transform transition-transform ${showDetails ? 'rotate-180' : ''}`}>▼</span>
+          {showDetails ? t("permissions.showLess") : t("permissions.showMore")}
+          <span
+            className={`transform transition-transform ${showDetails ? "rotate-180" : ""}`}
+          >
+            ▼
+          </span>
         </button>
 
         {showDetails && (
           <div className="mb-5 p-4 bg-gray-50 rounded-xl text-xs text-bocado-gray space-y-2 animate-fade-in">
-            <p>{t('permissions.details.responsible')}</p>
-            <p>{t('permissions.details.purpose')}</p>
-            <p>{t('permissions.details.legitimation')}</p>
-            <p>{t('permissions.details.storage')}</p>
-            <p>{t('permissions.details.rights')}</p>
+            <p>{t("permissions.details.responsible")}</p>
+            <p>{t("permissions.details.purpose")}</p>
+            <p>{t("permissions.details.legitimation")}</p>
+            <p>{t("permissions.details.storage")}</p>
+            <p>{t("permissions.details.rights")}</p>
           </div>
         )}
 
         {/* Checkbox mejorado */}
-        <div 
+        <div
           onClick={() => setAgreed(!agreed)}
           className={`mb-5 p-4 rounded-xl border-2 cursor-pointer transition-all ${
-            agreed 
-              ? 'border-bocado-green bg-bocado-green/5' 
-              : 'border-bocado-border hover:border-bocado-green/50'
+            agreed
+              ? "border-bocado-green bg-bocado-green/5"
+              : "border-bocado-border hover:border-bocado-green/50"
           }`}
         >
           <label className="flex items-start gap-3 cursor-pointer">
-            <div className={`mt-0.5 w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
-              agreed 
-                ? 'bg-bocado-green border-bocado-green' 
-                : 'border-bocado-border'
-            }`}>
+            <div
+              className={`mt-0.5 w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                agreed
+                  ? "bg-bocado-green border-bocado-green"
+                  : "border-bocado-border"
+              }`}
+            >
               {agreed && (
-                <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-4 h-4 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={3}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
               )}
             </div>
             <span className="text-sm text-bocado-text leading-relaxed select-none">
-              {t('permissions.consent')}
+              {t("permissions.consent")}
             </span>
           </label>
         </div>
@@ -146,23 +193,33 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({ onAccept, onGoHom
             disabled={!agreed}
             className="w-full bg-bocado-green text-white font-bold py-3.5 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray/50 disabled:cursor-not-allowed disabled:shadow-none flex items-center justify-center gap-2"
           >
-            <span>{t('permissions.continue')}</span>
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            <span>{t("permissions.continue")}</span>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 7l5 5m0 0l-5 5m5-5H6"
+              />
             </svg>
           </button>
           <button
             onClick={handleGoHome}
             className="w-full bg-white border-2 border-bocado-border text-bocado-gray font-semibold py-3 px-6 rounded-full text-sm hover:border-bocado-dark-gray hover:text-bocado-dark-gray transition-all"
           >
-            {t('permissions.decline')}
+            {t("permissions.decline")}
           </button>
         </div>
 
         {/* Footer de confianza */}
         <div className="mt-6 flex items-center justify-center gap-1 text-xs text-bocado-gray">
           <ShieldCheck className="w-4 h-4 text-bocado-green" />
-          <span>{t('permissions.footer')}</span>
+          <span>{t("permissions.footer")}</span>
         </div>
       </div>
     </div>

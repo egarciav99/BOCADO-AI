@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { logger } from '../utils/logger';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { logger } from "../utils/logger";
 
 interface NetworkState {
   isOnline: boolean;
@@ -22,12 +22,12 @@ interface UseNetworkStatusOptions {
 
 /**
  * Hook para detectar y manejar el estado de la conexión de red
- * 
+ *
  * @example
  * ```tsx
  * // Uso básico
  * const { isOnline, isOffline } = useNetworkStatus();
- * 
+ *
  * // Con callbacks y toast
  * const { isOnline } = useNetworkStatus({
  *   showReconnectionToast: true,
@@ -48,7 +48,7 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
     isOnline: navigator.onLine,
     isOffline: !navigator.onLine,
     wasOffline: false,
-    connectionType: 'unknown',
+    connectionType: "unknown",
     downlink: null,
   });
 
@@ -58,32 +58,33 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
 
   // Obtener información de conexión (Network Information API)
   const getConnectionInfo = useCallback(() => {
-    const connection = (navigator as any).connection || 
-                      (navigator as any).mozConnection || 
-                      (navigator as any).webkitConnection;
+    const connection =
+      (navigator as any).connection ||
+      (navigator as any).mozConnection ||
+      (navigator as any).webkitConnection;
 
     if (connection) {
       return {
-        type: connection.effectiveType || 'unknown',
+        type: connection.effectiveType || "unknown",
         downlink: connection.downlink || null,
       };
     }
 
-    return { type: 'unknown', downlink: null };
+    return { type: "unknown", downlink: null };
   }, []);
 
   // Manejar evento online
   const handleOnline = useCallback(() => {
-    const offlineDuration = offlineStartTime.current 
-      ? Date.now() - offlineStartTime.current 
+    const offlineDuration = offlineStartTime.current
+      ? Date.now() - offlineStartTime.current
       : 0;
 
-    logger.info('Network: Conexión restaurada', { 
+    logger.info("Network: Conexión restaurada", {
       offlineDuration,
       connectionInfo: getConnectionInfo(),
     });
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isOnline: true,
       isOffline: false,
@@ -92,9 +93,11 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
     }));
 
     // Mostrar toast si estuvo offline suficiente tiempo
-    if (showReconnectionToast && 
-        offlineDuration > minOfflineDuration && 
-        !hasShownToast.current) {
+    if (
+      showReconnectionToast &&
+      offlineDuration > minOfflineDuration &&
+      !hasShownToast.current
+    ) {
       hasShownToast.current = true;
       // El toast se maneja via el componente que consume el hook
     }
@@ -105,12 +108,12 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
 
   // Manejar evento offline
   const handleOffline = useCallback(() => {
-    logger.warn('Network: Sin conexión');
+    logger.warn("Network: Sin conexión");
 
     offlineStartTime.current = Date.now();
     hasShownToast.current = false;
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isOnline: false,
       isOffline: true,
@@ -127,10 +130,10 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
 
-      const response = await fetch('/manifest.json', {
-        method: 'HEAD',
+      const response = await fetch("/manifest.json", {
+        method: "HEAD",
         signal: controller.signal,
-        cache: 'no-store',
+        cache: "no-store",
       });
 
       clearTimeout(timeoutId);
@@ -145,7 +148,7 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
     // Estado inicial - solo ejecutar una vez
     if (!hasInitialized.current) {
       const connectionInfo = getConnectionInfo();
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         ...connectionInfo,
       }));
@@ -153,40 +156,43 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
     }
 
     // Event listeners
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     // Escuchar cambios en la calidad de conexión
     const connection = (navigator as any).connection;
     if (connection) {
       const handleConnectionChange = () => {
-        setState(prev => ({
+        setState((prev) => ({
           ...prev,
           ...getConnectionInfo(),
         }));
-        logger.info('Network: Cambio en calidad de conexión', getConnectionInfo());
+        logger.info(
+          "Network: Cambio en calidad de conexión",
+          getConnectionInfo(),
+        );
       };
 
-      connection.addEventListener('change', handleConnectionChange);
+      connection.addEventListener("change", handleConnectionChange);
       return () => {
-        window.removeEventListener('online', handleOnline);
-        window.removeEventListener('offline', handleOffline);
-        connection.removeEventListener('change', handleConnectionChange);
+        window.removeEventListener("online", handleOnline);
+        window.removeEventListener("offline", handleOffline);
+        connection.removeEventListener("change", handleConnectionChange);
       };
     }
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, [handleOnline, handleOffline]);
 
   // Sincronizar cuando la app vuelve a estar visible
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         const isCurrentlyOnline = navigator.onLine;
-        
+
         // Solo actualizar si hay cambio
         if (isCurrentlyOnline !== state.isOnline) {
           if (isCurrentlyOnline) {
@@ -198,8 +204,9 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
       }
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [state.isOnline, handleOnline, handleOffline]);
 
   return {
@@ -223,12 +230,12 @@ export const useIsOnline = () => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 

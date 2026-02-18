@@ -1,9 +1,12 @@
-import { env } from '../environment/env';
-import { logger } from '../utils/logger';
-import { auth } from '../firebaseConfig';
+import { env } from "../environment/env";
+import { logger } from "../utils/logger";
+import { auth } from "../firebaseConfig";
 
 // ✅ NUEVO: Usar proxy en lugar de API key directa
-const MAPS_PROXY_URL = env.api.recommendationUrl.replace('/recommend', '/maps-proxy');
+const MAPS_PROXY_URL = env.api.recommendationUrl.replace(
+  "/recommend",
+  "/maps-proxy",
+);
 
 // ✅ OPTIMIZACIÓN: Caché local en memoria + Debounce
 const localCache = new Map<string, { data: any; timestamp: number }>();
@@ -41,35 +44,40 @@ export interface IPLocationResult {
  * Helper para hacer requests al proxy
  * Algunas acciones (autocomplete) funcionan sin auth para permitir registro
  */
-async function proxyRequest(action: string, params: Record<string, any>): Promise<any> {
+async function proxyRequest(
+  action: string,
+  params: Record<string, any>,
+): Promise<any> {
   const user = auth.currentUser;
-  
+
   // Autocomplete funciona sin auth (para flujo de registro)
   // Las demás acciones requieren autenticación
-  const requiresAuth = action !== 'autocomplete';
-  
+  const requiresAuth = action !== "autocomplete";
+
   if (requiresAuth && !user) {
-    throw new Error('Usuario no autenticado');
+    throw new Error("Usuario no autenticado");
   }
 
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
-  
+
   // Agregar token si hay usuario autenticado
   if (user) {
     const token = await user.getIdToken();
-    headers['Authorization'] = `Bearer ${token}`;
+    headers["Authorization"] = `Bearer ${token}`;
   }
-  
+
   const response = await fetch(MAPS_PROXY_URL, {
-    method: 'POST',
+    method: "POST",
     headers,
     body: JSON.stringify({ action, ...params }),
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+    const error = await response
+      .json()
+      .catch(() => ({ error: "Unknown error" }));
     throw new Error(error.error || `HTTP ${response.status}`);
   }
 
@@ -82,14 +90,14 @@ async function proxyRequest(action: string, params: Record<string, any>): Promis
  */
 export async function searchCities(
   query: string,
-  countryCode?: string
+  countryCode?: string,
 ): Promise<PlacePrediction[]> {
   if (!query.trim() || query.length < 2) {
     return [];
   }
 
   try {
-    const data = await proxyRequest('autocomplete', {
+    const data = await proxyRequest("autocomplete", {
       query: query.trim(),
       countryCode: countryCode?.toLowerCase(),
     });
@@ -102,7 +110,7 @@ export async function searchCities(
       types: prediction.types || [],
     }));
   } catch (error) {
-    logger.error('Error searching cities:', error);
+    logger.error("Error searching cities:", error);
     return [];
   }
 }
@@ -116,7 +124,7 @@ interface DebouncedSearchCallbacks {
 /**
  * Busca ciudades con debounce (300ms) y caché local.
  * Reduce drásticamente las llamadas a la API mientras el usuario escribe.
- * 
+ *
  * Uso:
  * ```typescript
  * searchCitiesDebounced('madr', {
@@ -129,7 +137,7 @@ export function searchCitiesDebounced(
   query: string,
   callbacks: DebouncedSearchCallbacks,
   countryCode?: string,
-  delay = 300
+  delay = 300,
 ): void {
   // Cancelar timer anterior
   if (debounceTimer) {
@@ -137,7 +145,7 @@ export function searchCitiesDebounced(
   }
 
   const trimmedQuery = query.trim();
-  
+
   // Si query muy corta, limpiar resultados
   if (!trimmedQuery || trimmedQuery.length < 2) {
     callbacks.onResults([]);
@@ -145,7 +153,7 @@ export function searchCitiesDebounced(
   }
 
   // Check caché local primero
-  const cacheKey = `${trimmedQuery.toLowerCase()}_${countryCode?.toLowerCase() || 'all'}`;
+  const cacheKey = `${trimmedQuery.toLowerCase()}_${countryCode?.toLowerCase() || "all"}`;
   const cached = localCache.get(cacheKey);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     callbacks.onResults(cached.data);
@@ -156,23 +164,23 @@ export function searchCitiesDebounced(
   debounceTimer = setTimeout(async () => {
     try {
       const results = await searchCities(trimmedQuery, countryCode);
-      
+
       // Guardar en caché local
-      localCache.set(cacheKey, { 
-        data: results, 
-        timestamp: Date.now() 
+      localCache.set(cacheKey, {
+        data: results,
+        timestamp: Date.now(),
       });
-      
+
       // Limpiar caché si crece demasiado (>1000 entradas)
       if (localCache.size > 1000) {
         // Evict oldest 100 entries (LRU-like)
         const keysToDelete = Array.from(localCache.keys()).slice(0, 100);
-        keysToDelete.forEach(k => localCache.delete(k));
+        keysToDelete.forEach((k) => localCache.delete(k));
       }
-      
+
       callbacks.onResults(results);
     } catch (error) {
-      logger.error('Error in debounced search:', error);
+      logger.error("Error in debounced search:", error);
       callbacks.onError?.(error as Error);
     }
   }, delay);
@@ -187,26 +195,28 @@ export function clearMapsCache(): void {
     clearTimeout(debounceTimer);
     debounceTimer = null;
   }
-  logger.info('Maps local cache cleared');
+  logger.info("Maps local cache cleared");
 }
 
 /**
  * Obtiene detalles de un lugar (incluyendo coordenadas) (vía proxy)
  */
-export async function getPlaceDetails(placeId: string): Promise<GeocodingResult | null> {
+export async function getPlaceDetails(
+  placeId: string,
+): Promise<GeocodingResult | null> {
   try {
-    const data = await proxyRequest('placeDetails', { placeId });
+    const data = await proxyRequest("placeDetails", { placeId });
 
     return {
       lat: data.location.lat,
       lng: data.location.lng,
       formattedAddress: data.formattedAddress,
-      city: data.city || '',
-      country: data.country || '',
-      countryCode: data.countryCode || '',
+      city: data.city || "",
+      country: data.country || "",
+      countryCode: data.countryCode || "",
     };
   } catch (error) {
-    logger.error('Error getting place details:', error);
+    logger.error("Error getting place details:", error);
     return null;
   }
 }
@@ -214,20 +224,22 @@ export async function getPlaceDetails(placeId: string): Promise<GeocodingResult 
 /**
  * Geocodifica una dirección/cadena de búsqueda (vía proxy)
  */
-export async function geocodeAddress(address: string): Promise<GeocodingResult | null> {
+export async function geocodeAddress(
+  address: string,
+): Promise<GeocodingResult | null> {
   try {
-    const data = await proxyRequest('geocode', { address: address.trim() });
+    const data = await proxyRequest("geocode", { address: address.trim() });
 
     return {
       lat: data.location.lat,
       lng: data.location.lng,
       formattedAddress: data.formattedAddress,
-      city: data.city || '',
-      country: data.country || '',
-      countryCode: data.countryCode || '',
+      city: data.city || "",
+      country: data.country || "",
+      countryCode: data.countryCode || "",
     };
   } catch (error) {
-    logger.error('Error geocoding address:', error);
+    logger.error("Error geocoding address:", error);
     return null;
   }
 }
@@ -235,20 +247,23 @@ export async function geocodeAddress(address: string): Promise<GeocodingResult |
 /**
  * Geocodificación inversa: coordenadas a dirección (vía proxy)
  */
-export async function reverseGeocode(lat: number, lng: number): Promise<GeocodingResult | null> {
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<GeocodingResult | null> {
   try {
-    const data = await proxyRequest('reverseGeocode', { lat, lng });
+    const data = await proxyRequest("reverseGeocode", { lat, lng });
 
     return {
       lat: data.location.lat,
       lng: data.location.lng,
       formattedAddress: data.formattedAddress,
-      city: data.city || '',
-      country: data.country || '',
-      countryCode: data.countryCode || '',
+      city: data.city || "",
+      country: data.country || "",
+      countryCode: data.countryCode || "",
     };
   } catch (error) {
-    logger.error('Error reverse geocoding:', error);
+    logger.error("Error reverse geocoding:", error);
     return null;
   }
 }
@@ -259,7 +274,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<Geocodin
  */
 export async function detectLocationByIP(): Promise<IPLocationResult | null> {
   try {
-    const data = await proxyRequest('detectLocation', {});
+    const data = await proxyRequest("detectLocation", {});
     return {
       country: data.country,
       countryCode: data.countryCode,
@@ -270,7 +285,7 @@ export async function detectLocationByIP(): Promise<IPLocationResult | null> {
       isp: data.isp,
     };
   } catch (error) {
-    logger.error('Error detecting location by IP:', error);
+    logger.error("Error detecting location by IP:", error);
     return null;
   }
 }
@@ -281,6 +296,6 @@ export async function detectLocationByIP(): Promise<IPLocationResult | null> {
  * Mantener esta función por compatibilidad si alguien la usa.
  */
 export function getMapsApiKey(): null {
-  logger.warn('getMapsApiKey está deprecada. Usar las funciones del proxy.');
+  logger.warn("getMapsApiKey está deprecada. Usar las funciones del proxy.");
   return null;
 }

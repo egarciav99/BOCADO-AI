@@ -1,20 +1,23 @@
-import React, { useState, useCallback, useMemo, memo } from 'react';
-import type { Meal } from '../types';
-import { ChevronDown, Heart } from './icons';
-import FeedbackModal from './FeedbackModal';
-import PortionSelector from './PortionSelector';
-import { useToggleSavedItem, useIsItemSaved } from '../hooks/useSavedItems';
-import { useAuthStore } from '../stores/authStore';
-import { trackEvent } from '../firebaseConfig';
-import { logger } from '../utils/logger';
-import { scaleIngredientsSimple, detectBaseServings } from '../utils/portionScaler';
-import { Tooltip } from './ui/Tooltip';
-import { useTranslation } from '../contexts/I18nContext';
-import { showToast } from './ui/Toast';
+import React, { useState, useCallback, useMemo, memo } from "react";
+import type { Meal } from "../types";
+import { ChevronDown, Heart } from "./icons";
+import FeedbackModal from "./FeedbackModal";
+import PortionSelector from "./PortionSelector";
+import { useToggleSavedItem, useIsItemSaved } from "../hooks/useSavedItems";
+import { useAuthStore } from "../stores/authStore";
+import { trackEvent } from "../firebaseConfig";
+import { logger } from "../utils/logger";
+import {
+  scaleIngredientsSimple,
+  detectBaseServings,
+} from "../utils/portionScaler";
+import { Tooltip } from "./ui/Tooltip";
+import { useTranslation } from "../contexts/I18nContext";
+import { showToast } from "./ui/Toast";
 
 interface MealCardProps {
   meal: Meal;
-  onInteraction?: (type: 'expand' | 'save' | 'feedback', data?: any) => void;
+  onInteraction?: (type: "expand" | "save" | "feedback", data?: any) => void;
 }
 
 // ============================================
@@ -22,16 +25,16 @@ interface MealCardProps {
 // ============================================
 
 const EMOJI_MAP: Record<string, string> = {
-  pollo: '🍗',
-  pescado: '🐟',
-  salmón: '🐟',
-  salmon: '🐟',
-  carne: '🥩',
-  ensalada: '🥗',
-  pasta: '🍝',
-  taco: '🌮',
-  huevo: '🍳',
-  sopa: '🍲',
+  pollo: "🍗",
+  pescado: "🐟",
+  salmón: "🐟",
+  salmon: "🐟",
+  carne: "🥩",
+  ensalada: "🥗",
+  pasta: "🍝",
+  taco: "🌮",
+  huevo: "🍳",
+  sopa: "🍲",
 };
 
 const getSmartEmoji = (title: string): string => {
@@ -39,24 +42,30 @@ const getSmartEmoji = (title: string): string => {
   for (const [key, emoji] of Object.entries(EMOJI_MAP)) {
     if (lower.includes(key)) return emoji;
   }
-  return '🍽️';
+  return "🍽️";
 };
 
 const DIFFICULTY_STYLES: Record<string, string> = {
-  'Fácil': 'bg-bocado-green/10 text-bocado-green',
-  'Media': 'bg-amber-100 text-amber-700',
-  'Difícil': 'bg-red-100 text-red-600',
+  Fácil: "bg-bocado-green/10 text-bocado-green",
+  Media: "bg-amber-100 text-amber-700",
+  Difícil: "bg-red-100 text-red-600",
 };
 
 const getDifficultyStyle = (difficulty: string): string => {
-  return DIFFICULTY_STYLES[difficulty] || 'bg-bocado-background text-bocado-dark-gray';
+  return (
+    DIFFICULTY_STYLES[difficulty] ||
+    "bg-bocado-background text-bocado-dark-gray"
+  );
 };
 
-const translateDifficulty = (difficulty: string, t: (key: string) => string): string => {
+const translateDifficulty = (
+  difficulty: string,
+  t: (key: string) => string,
+): string => {
   const map: Record<string, string> = {
-    'Fácil': t('difficulty.easy'),
-    'Media': t('difficulty.medium'),
-    'Difícil': t('difficulty.hard'),
+    Fácil: t("difficulty.easy"),
+    Media: t("difficulty.medium"),
+    Difícil: t("difficulty.hard"),
   };
   return map[difficulty] || difficulty;
 };
@@ -66,344 +75,420 @@ const translateDifficulty = (difficulty: string, t: (key: string) => string): st
 // ============================================
 
 interface RestaurantInfoSectionProps {
-  recipe: Meal['recipe'];
+  recipe: Meal["recipe"];
   onOpenMaps: (e: React.MouseEvent) => void;
   onSearchMapsFallback: (e: React.MouseEvent) => void;
   onCopyAddress: (e: React.MouseEvent) => void;
   copiedAddress: boolean;
 }
 
-const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(({
-  recipe,
-  onOpenMaps,
-  onSearchMapsFallback,
-  onCopyAddress,
-  copiedAddress,
-}) => {  const { t } = useTranslation();  const hasPreciseLocation = !!recipe.link_maps;
+const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(
+  ({
+    recipe,
+    onOpenMaps,
+    onSearchMapsFallback,
+    onCopyAddress,
+    copiedAddress,
+  }) => {
+    const { t } = useTranslation();
+    const hasPreciseLocation = !!recipe.link_maps;
 
-  return (
-    <div className="space-y-3">
-      {hasPreciseLocation ? (
-        <div className="mb-3">
-          <button
-            onClick={onOpenMaps}
-            className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
-          >
-            <span>📍</span>
-            <span>{t('mealCard.viewOnMaps')}</span>
-          </button>
-          {recipe.direccion_aproximada && (
-            <p className="text-xs text-bocado-gray text-center mt-2 px-2 flex items-center justify-center gap-1">
-              {recipe.direccion_aproximada}
-            </p>
-          )}
-        </div>
-      ) : (
-        <div className="mb-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
-          <p className="text-xs text-amber-700 mb-3 text-center font-medium">
-            {t('mealCard.approximateLocation')}
-          </p>
-          
-          {recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}` && (
-            <p className="text-sm font-medium text-bocado-text mb-3 text-center bg-white p-2 rounded-lg border border-amber-100">
-              {recipe.direccion_aproximada}
-            </p>
-          )}
-          
-          <div className="flex gap-2">
+    return (
+      <div className="space-y-3">
+        {hasPreciseLocation ? (
+          <div className="mb-3">
             <button
-              onClick={onSearchMapsFallback}
-              className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-1 font-medium"
+              onClick={onOpenMaps}
+              className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
             >
-              <span>🔍</span>
-              <span>{t('mealCard.searchMaps')}</span>
+              <span>📍</span>
+              <span>{t("mealCard.viewOnMaps")}</span>
             </button>
-            <button
-              onClick={onCopyAddress}
-              className={`flex-1 py-2.5 border rounded-lg text-xs transition-all flex items-center justify-center gap-1 font-medium ${
-                copiedAddress 
-                  ? 'bg-green-50 border-green-200 text-green-600' 
-                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <span>{copiedAddress ? '✓' : '📋'}</span>
-              <span>{copiedAddress ? t('mealCard.copied') : t('mealCard.copy')}</span>
-            </button>
+            {recipe.direccion_aproximada && (
+              <p className="text-xs text-bocado-gray text-center mt-2 px-2 flex items-center justify-center gap-1">
+                {recipe.direccion_aproximada}
+              </p>
+            )}
           </div>
-          <p className="text-[10px] text-amber-600/70 text-center mt-2">
-            {t('mealCard.locationTip')}
-          </p>
-        </div>
-      )}
+        ) : (
+          <div className="mb-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
+            <p className="text-xs text-amber-700 mb-3 text-center font-medium">
+              {t("mealCard.approximateLocation")}
+            </p>
 
-      {recipe.plato_sugerido && (
-        <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
-          <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-1">
-            {t('mealCard.suggestedDish')}
-          </h4>
-          <p className="text-sm text-bocado-text">{recipe.plato_sugerido}</p>
-        </div>
-      )}
+            {recipe.direccion_aproximada &&
+              recipe.direccion_aproximada !== `En ${recipe.title}` && (
+                <p className="text-sm font-medium text-bocado-text mb-3 text-center bg-white p-2 rounded-lg border border-amber-100">
+                  {recipe.direccion_aproximada}
+                </p>
+              )}
 
-      {recipe.por_que_es_bueno && (
-        <div className="bg-green-50 p-3 rounded-xl border border-green-100">
-          <h4 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-1">
-            {t('mealCard.whyGood')}
-          </h4>
-          <p className="text-sm text-bocado-text">{recipe.por_que_es_bueno}</p>
-        </div>
-      )}
+            <div className="flex gap-2">
+              <button
+                onClick={onSearchMapsFallback}
+                className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-1 font-medium"
+              >
+                <span>🔍</span>
+                <span>{t("mealCard.searchMaps")}</span>
+              </button>
+              <button
+                onClick={onCopyAddress}
+                className={`flex-1 py-2.5 border rounded-lg text-xs transition-all flex items-center justify-center gap-1 font-medium ${
+                  copiedAddress
+                    ? "bg-green-50 border-green-200 text-green-600"
+                    : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span>{copiedAddress ? "✓" : "📋"}</span>
+                <span>
+                  {copiedAddress ? t("mealCard.copied") : t("mealCard.copy")}
+                </span>
+              </button>
+            </div>
+            <p className="text-[10px] text-amber-600/70 text-center mt-2">
+              {t("mealCard.locationTip")}
+            </p>
+          </div>
+        )}
 
-      {recipe.hack_saludable && (
-        <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
-          <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">
-            {t('mealCard.healthyHack')}
-          </h4>
-          <p className="text-sm text-bocado-text">{recipe.hack_saludable}</p>
-        </div>
-      )}
-      
-      {!recipe.plato_sugerido && !recipe.por_que_es_bueno && !recipe.hack_saludable && (
-        <div className="text-center py-4 px-4 bg-bocado-background rounded-xl">
-          <p className="text-xs text-bocado-gray">
-            {t('mealCard.noDetailedInfo')}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-});
+        {recipe.plato_sugerido && (
+          <div className="bg-orange-50 p-3 rounded-xl border border-orange-100">
+            <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-1">
+              {t("mealCard.suggestedDish")}
+            </h4>
+            <p className="text-sm text-bocado-text">{recipe.plato_sugerido}</p>
+          </div>
+        )}
 
-RestaurantInfoSection.displayName = 'RestaurantInfoSection';
+        {recipe.por_que_es_bueno && (
+          <div className="bg-green-50 p-3 rounded-xl border border-green-100">
+            <h4 className="text-xs font-bold text-green-700 uppercase tracking-wider mb-1">
+              {t("mealCard.whyGood")}
+            </h4>
+            <p className="text-sm text-bocado-text">
+              {recipe.por_que_es_bueno}
+            </p>
+          </div>
+        )}
+
+        {recipe.hack_saludable && (
+          <div className="bg-purple-50 p-3 rounded-xl border border-purple-100">
+            <h4 className="text-xs font-bold text-purple-700 uppercase tracking-wider mb-1">
+              {t("mealCard.healthyHack")}
+            </h4>
+            <p className="text-sm text-bocado-text">{recipe.hack_saludable}</p>
+          </div>
+        )}
+
+        {!recipe.plato_sugerido &&
+          !recipe.por_que_es_bueno &&
+          !recipe.hack_saludable && (
+            <div className="text-center py-4 px-4 bg-bocado-background rounded-xl">
+              <p className="text-xs text-bocado-gray">
+                {t("mealCard.noDetailedInfo")}
+              </p>
+            </div>
+          )}
+      </div>
+    );
+  },
+);
+
+RestaurantInfoSection.displayName = "RestaurantInfoSection";
 
 // ============================================
 // COMPONENTE PRINCIPAL MEMOIZADO
 // ============================================
 
-const MealCard: React.FC<MealCardProps> = memo(({
-  meal,
-  onInteraction,
-}) => {
+const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
   const { t } = useTranslation();
   const { recipe } = meal;
-  
+
   // Estados locales
   const [isExpanded, setIsExpanded] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [showMacros, setShowMacros] = useState(false);
-  
+
   // Estado para escalar porciones (solo recetas, no restaurantes)
   const [servings, setServings] = useState(2);
   const baseServings = useMemo(() => detectBaseServings(recipe), [recipe]);
-  
+
   // 🔴 FIX #1: Mover isRestaurant ANTES de usarlo en hasMacros
-  const isRestaurant = useMemo(() => recipe.difficulty === 'Restaurante', [recipe.difficulty]);
-  
+  const isRestaurant = useMemo(
+    () => recipe.difficulty === "Restaurante",
+    [recipe.difficulty],
+  );
+
   // 🔴 FIX #2: Validar que recipe.ingredients sea array antes de .map()
   const scaledIngredients = useMemo(() => {
     if (!recipe?.ingredients || !Array.isArray(recipe.ingredients)) {
       return [];
     }
-    return scaleIngredientsSimple(recipe.ingredients, { 
-      baseServings, 
-      targetServings: servings 
+    return scaleIngredientsSimple(recipe.ingredients, {
+      baseServings,
+      targetServings: servings,
     });
   }, [recipe, baseServings, servings]);
-  
+
   // ✅ FIX: Validar recipe antes de acceder a propiedades
-  const hasMacros = useMemo(() => 
-    recipe && !isRestaurant && 
-    recipe.protein_g !== undefined && 
-    recipe.carbs_g !== undefined && 
-    recipe.fat_g !== undefined,
-    [recipe, isRestaurant]
+  const hasMacros = useMemo(
+    () =>
+      recipe &&
+      !isRestaurant &&
+      recipe.protein_g !== undefined &&
+      recipe.carbs_g !== undefined &&
+      recipe.fat_g !== undefined,
+    [recipe, isRestaurant],
   );
-  
+
   // Calculamos el "multiplicador aparente" para mostrar info al usuario
   const displayMultiplier = servings / baseServings;
 
   // Hooks de autenticación y datos
   const { user } = useAuthStore();
   const toggleMutation = useToggleSavedItem();
-  const saved = useIsItemSaved(user?.uid, recipe.difficulty === 'Restaurante' ? 'restaurant' : 'recipe', recipe.title);
-  const type = useMemo(() => isRestaurant ? 'restaurant' : 'recipe', [isRestaurant]);
+  const saved = useIsItemSaved(
+    user?.uid,
+    recipe.difficulty === "Restaurante" ? "restaurant" : "recipe",
+    recipe.title,
+  );
+  const type = useMemo(
+    () => (isRestaurant ? "restaurant" : "recipe"),
+    [isRestaurant],
+  );
   const emoji = useMemo(() => getSmartEmoji(recipe.title), [recipe.title]);
-  const showSavings = useMemo(() => 
-    recipe.savingsMatch && recipe.savingsMatch !== 'Ninguno', 
-    [recipe.savingsMatch]
+  const showSavings = useMemo(
+    () => recipe.savingsMatch && recipe.savingsMatch !== "Ninguno",
+    [recipe.savingsMatch],
   );
 
   // ============================================
   // HANDLERS MEMOIZADOS CON useCallback
   // ============================================
 
-  const handleSaveClick = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (!user) return;
-    
-    trackEvent(saved ? 'recipe_unsaved' : 'recipe_saved', {
-      item_title: recipe.title,
-      type,
-      userId: user.uid
-    });
+  const handleSaveClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!user) return;
 
-    toggleMutation.mutate({
-      userId: user.uid,
-      type,
+      trackEvent(saved ? "recipe_unsaved" : "recipe_saved", {
+        item_title: recipe.title,
+        type,
+        userId: user.uid,
+      });
+
+      toggleMutation.mutate({
+        userId: user.uid,
+        type,
+        recipe,
+        mealType: meal.mealType,
+        isSaved: saved,
+      });
+
+      onInteraction?.("save", {
+        recipe: recipe.title,
+        isSaved: !saved,
+        isRestaurant,
+      });
+    },
+    [
+      user,
+      saved,
       recipe,
-      mealType: meal.mealType,
-      isSaved: saved,
-    });
-    
-    onInteraction?.('save', { 
-      recipe: recipe.title, 
-      isSaved: !saved, 
-      isRestaurant 
-    });
-  }, [user, saved, recipe, type, meal.mealType, toggleMutation, onInteraction, isRestaurant]);
+      type,
+      meal.mealType,
+      toggleMutation,
+      onInteraction,
+      isRestaurant,
+    ],
+  );
 
   const handleExpand = useCallback(() => {
-    setIsExpanded(prev => {
+    setIsExpanded((prev) => {
       const newState = !prev;
       if (newState) {
-        trackEvent('recipe_expanded', {
+        trackEvent("recipe_expanded", {
           item_title: recipe.title,
           type,
-          is_restaurant: isRestaurant
+          is_restaurant: isRestaurant,
         });
-        onInteraction?.('expand', { recipe: recipe.title });
+        onInteraction?.("expand", { recipe: recipe.title });
       }
       return newState;
     });
   }, [recipe.title, type, isRestaurant, onInteraction]);
 
-  const handleFeedbackOpen = useCallback((e?: React.MouseEvent) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-    if (showFeedback) return;
-    trackEvent('feedback_button_click', {
-      item_title: recipe.title,
-      type,
-    });
-    setShowFeedback(true);
-    onInteraction?.('feedback', { recipe: recipe.title });
-  }, [recipe.title, type, onInteraction, showFeedback]);
+  const handleFeedbackOpen = useCallback(
+    (e?: React.MouseEvent) => {
+      e?.preventDefault();
+      e?.stopPropagation();
+      if (showFeedback) return;
+      trackEvent("feedback_button_click", {
+        item_title: recipe.title,
+        type,
+      });
+      setShowFeedback(true);
+      onInteraction?.("feedback", { recipe: recipe.title });
+    },
+    [recipe.title, type, onInteraction, showFeedback],
+  );
 
   const handleFeedbackClose = useCallback(() => {
     setShowFeedback(false);
   }, []);
 
-  const handleOpenMaps = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (recipe.link_maps) {
-      trackEvent('restaurant_maps_clicked', {
-        restaurant: recipe.title,
-        url: recipe.link_maps
-      });
-      // ✅ FIX #3: Validate window.open() return value (popup blocker)
-      const newWindow = window.open(recipe.link_maps, '_blank', 'noopener,noreferrer');
-      if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-        showToast('Por favor permite ventanas emergentes para abrir Google Maps', 'warning', 4000);
-        logger.warn('[MealCard] window.open blocked by popup blocker');
-      }
-    }
-  }, [recipe.link_maps, recipe.title]);
-
-  const handleSearchMapsFallback = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    const searchParts = [recipe.title];
-    
-    if (recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}`) {
-      searchParts.push(recipe.direccion_aproximada);
-    }
-    
-    const searchTerm = searchParts.join(' ');
-    const query = encodeURIComponent(searchTerm);
-    
-    trackEvent('restaurant_maps_fallback_search', {
-      restaurant: recipe.title,
-      query: searchTerm,
-      has_address: !!recipe.direccion_aproximada
-    });
-    
-    // ✅ FIX #3: Validate window.open() here too
-    const newWindow = window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
-    if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
-      showToast('Por favor permite ventanas emergentes para abrir Google Maps', 'warning', 4000);
-      logger.warn('[MealCard] Maps search blocked by popup blocker');
-    }
-  }, [recipe.title, recipe.direccion_aproximada]);
-
-  const handleCopyAddress = useCallback(async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    
-    const textToCopy = recipe.direccion_aproximada && recipe.direccion_aproximada !== `En ${recipe.title}`
-      ? `${recipe.title} - ${recipe.direccion_aproximada}`
-      : recipe.title;
-    
-    try {
-      // ✅ FIX: Intento 1 - Clipboard API moderna
-      await navigator.clipboard.writeText(textToCopy);
-      setCopiedAddress(true);
-      trackEvent('restaurant_address_copied', { 
-        restaurant: recipe.title,
-        address: recipe.direccion_aproximada 
-      });
-      
-      setTimeout(() => setCopiedAddress(false), 2000);
-    } catch (clipboardError) {
-      logger.warn('Clipboard API failed, trying fallback:', clipboardError);
-      
-      // ✅ FIX: Fallback mejorado con validación
-      try {
-        const textArea = document.createElement("textarea");
-        textArea.value = textToCopy;
-        textArea.style.position = "fixed";
-        textArea.style.opacity = "0";
-        textArea.style.left = "-9999px";
-        document.body.appendChild(textArea);
-        textArea.select();
-        textArea.setSelectionRange(0, 99999); // Para móviles
-        
-        const success = document.execCommand("copy");
-        document.body.removeChild(textArea);
-        
-        if (success) {
-          setCopiedAddress(true);
-          trackEvent('restaurant_address_copied_fallback', { 
-            restaurant: recipe.title 
-          });
-          setTimeout(() => setCopiedAddress(false), 2000);
-        } else {
-          // 🟡 FIX #7: Agregar logging cuando execCommand falla
-          logger.warn('[MealCard] execCommand copy returned false');
-          throw new Error('Copy command returned false');
+  const handleOpenMaps = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (recipe.link_maps) {
+        trackEvent("restaurant_maps_clicked", {
+          restaurant: recipe.title,
+          url: recipe.link_maps,
+        });
+        // ✅ FIX #3: Validate window.open() return value (popup blocker)
+        const newWindow = window.open(
+          recipe.link_maps,
+          "_blank",
+          "noopener,noreferrer",
+        );
+        if (
+          !newWindow ||
+          newWindow.closed ||
+          typeof newWindow.closed === "undefined"
+        ) {
+          showToast(
+            "Por favor permite ventanas emergentes para abrir Google Maps",
+            "warning",
+            4000,
+          );
+          logger.warn("[MealCard] window.open blocked by popup blocker");
         }
-      } catch (fallbackError) {
-        logger.error('All copy methods failed:', fallbackError);
-        // ✅ FIX #1: Use toast instead of alert() for better UX on mobile
-        showToast(`No se pudo copiar. Dirección: ${textToCopy}`, 'error', 5000);
       }
-    }
-  }, [recipe.title, recipe.direccion_aproximada]);
+    },
+    [recipe.link_maps, recipe.title],
+  );
+
+  const handleSearchMapsFallback = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation();
+
+      const searchParts = [recipe.title];
+
+      if (
+        recipe.direccion_aproximada &&
+        recipe.direccion_aproximada !== `En ${recipe.title}`
+      ) {
+        searchParts.push(recipe.direccion_aproximada);
+      }
+
+      const searchTerm = searchParts.join(" ");
+      const query = encodeURIComponent(searchTerm);
+
+      trackEvent("restaurant_maps_fallback_search", {
+        restaurant: recipe.title,
+        query: searchTerm,
+        has_address: !!recipe.direccion_aproximada,
+      });
+
+      // ✅ FIX #3: Validate window.open() here too
+      const newWindow = window.open(
+        `https://www.google.com/maps/search/?api=1&query=${query}`,
+        "_blank",
+        "noopener,noreferrer",
+      );
+      if (
+        !newWindow ||
+        newWindow.closed ||
+        typeof newWindow.closed === "undefined"
+      ) {
+        showToast(
+          "Por favor permite ventanas emergentes para abrir Google Maps",
+          "warning",
+          4000,
+        );
+        logger.warn("[MealCard] Maps search blocked by popup blocker");
+      }
+    },
+    [recipe.title, recipe.direccion_aproximada],
+  );
+
+  const handleCopyAddress = useCallback(
+    async (e: React.MouseEvent) => {
+      e.stopPropagation();
+
+      const textToCopy =
+        recipe.direccion_aproximada &&
+        recipe.direccion_aproximada !== `En ${recipe.title}`
+          ? `${recipe.title} - ${recipe.direccion_aproximada}`
+          : recipe.title;
+
+      try {
+        // ✅ FIX: Intento 1 - Clipboard API moderna
+        await navigator.clipboard.writeText(textToCopy);
+        setCopiedAddress(true);
+        trackEvent("restaurant_address_copied", {
+          restaurant: recipe.title,
+          address: recipe.direccion_aproximada,
+        });
+
+        setTimeout(() => setCopiedAddress(false), 2000);
+      } catch (clipboardError) {
+        logger.warn("Clipboard API failed, trying fallback:", clipboardError);
+
+        // ✅ FIX: Fallback mejorado con validación
+        try {
+          const textArea = document.createElement("textarea");
+          textArea.value = textToCopy;
+          textArea.style.position = "fixed";
+          textArea.style.opacity = "0";
+          textArea.style.left = "-9999px";
+          document.body.appendChild(textArea);
+          textArea.select();
+          textArea.setSelectionRange(0, 99999); // Para móviles
+
+          const success = document.execCommand("copy");
+          document.body.removeChild(textArea);
+
+          if (success) {
+            setCopiedAddress(true);
+            trackEvent("restaurant_address_copied_fallback", {
+              restaurant: recipe.title,
+            });
+            setTimeout(() => setCopiedAddress(false), 2000);
+          } else {
+            // 🟡 FIX #7: Agregar logging cuando execCommand falla
+            logger.warn("[MealCard] execCommand copy returned false");
+            throw new Error("Copy command returned false");
+          }
+        } catch (fallbackError) {
+          logger.error("All copy methods failed:", fallbackError);
+          // ✅ FIX #1: Use toast instead of alert() for better UX on mobile
+          showToast(
+            `No se pudo copiar. Dirección: ${textToCopy}`,
+            "error",
+            5000,
+          );
+        }
+      }
+    },
+    [recipe.title, recipe.direccion_aproximada],
+  );
 
   // Cleanup de timeout al desmontar
   // (El timeout se maneja dentro de handleCopyAddress)
 
   return (
     <div className="group relative border border-bocado-border rounded-2xl bg-white transition-all duration-200 hover:shadow-bocado active:scale-[0.99]">
-      
       {/* HEADER */}
-      <div
-        className="p-4 cursor-pointer"
-        onClick={handleExpand}
-      >
+      <div className="p-4 cursor-pointer" onClick={handleExpand}>
         <div className="flex justify-between items-start gap-3">
-          
           <div className="flex gap-3 flex-1 min-w-0">
-            <span className="text-2xl shrink-0 leading-none" role="img" aria-label="Tipo de comida">
+            <span
+              className="text-2xl shrink-0 leading-none"
+              role="img"
+              aria-label="Tipo de comida"
+            >
               {emoji}
             </span>
 
@@ -425,57 +510,75 @@ const MealCard: React.FC<MealCardProps> = memo(({
                   </span>
                 )}
 
-                {recipe.calories !== 'N/A' && (
+                {recipe.calories !== "N/A" && (
                   <span className="px-2 py-1 bg-bocado-background text-bocado-dark-gray rounded-lg font-medium">
                     🔥 {recipe.calories}
                   </span>
                 )}
 
-                {!isRestaurant && recipe.difficulty && recipe.difficulty !== 'N/A' && (
-                  <span className={`px-2 py-1 rounded-lg font-medium ${getDifficultyStyle(recipe.difficulty)}`}>
-                    {translateDifficulty(recipe.difficulty, t)}
-                  </span>
-                )}
+                {!isRestaurant &&
+                  recipe.difficulty &&
+                  recipe.difficulty !== "N/A" && (
+                    <span
+                      className={`px-2 py-1 rounded-lg font-medium ${getDifficultyStyle(recipe.difficulty)}`}
+                    >
+                      {translateDifficulty(recipe.difficulty, t)}
+                    </span>
+                  )}
               </div>
 
               {showSavings && (
                 <span className="inline-block mt-2 text-xs font-medium text-bocado-green bg-bocado-green/10 px-2 py-1 rounded-lg">
-                  {t('mealCard.usesYourIngredients')}
+                  {t("mealCard.usesYourIngredients")}
                 </span>
               )}
 
               {/* Macros expandibles (solo si existen) */}
-              {hasMacros && recipe.calories !== 'N/A' && (
+              {hasMacros && recipe.calories !== "N/A" && (
                 <div className="mt-3 pt-3 border-t border-bocado-background">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowMacros(!showMacros);
                       if (!showMacros) {
-                        trackEvent('macros_expanded', {
+                        trackEvent("macros_expanded", {
                           item_title: recipe.title,
                         });
                       }
                     }}
                     className="flex items-center justify-between w-full text-left text-xs font-semibold text-bocado-dark-gray hover:text-bocado-green transition-colors"
                   >
-                    <span>{t('mealCard.nutritionalInfo')}</span>
-                    <ChevronDown className={`w-4 h-4 transition-transform ${showMacros ? 'rotate-180' : ''}`} />
+                    <span>{t("mealCard.nutritionalInfo")}</span>
+                    <ChevronDown
+                      className={`w-4 h-4 transition-transform ${showMacros ? "rotate-180" : ""}`}
+                    />
                   </button>
-                  
+
                   {showMacros && (
                     <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
                       <div className="bg-blue-50 p-2 rounded-lg text-center">
-                        <div className="font-bold text-blue-600">{recipe.protein_g}g</div>
-                        <div className="text-blue-500 text-[10px] mt-0.5">{t('mealCard.proteins')}</div>
+                        <div className="font-bold text-blue-600">
+                          {recipe.protein_g}g
+                        </div>
+                        <div className="text-blue-500 text-[10px] mt-0.5">
+                          {t("mealCard.proteins")}
+                        </div>
                       </div>
                       <div className="bg-amber-50 p-2 rounded-lg text-center">
-                        <div className="font-bold text-amber-600">{recipe.carbs_g}g</div>
-                        <div className="text-amber-500 text-[10px] mt-0.5">{t('mealCard.carbs')}</div>
+                        <div className="font-bold text-amber-600">
+                          {recipe.carbs_g}g
+                        </div>
+                        <div className="text-amber-500 text-[10px] mt-0.5">
+                          {t("mealCard.carbs")}
+                        </div>
                       </div>
                       <div className="bg-rose-50 p-2 rounded-lg text-center">
-                        <div className="font-bold text-rose-600">{recipe.fat_g}g</div>
-                        <div className="text-rose-500 text-[10px] mt-0.5">{t('mealCard.fats')}</div>
+                        <div className="font-bold text-rose-600">
+                          {recipe.fat_g}g
+                        </div>
+                        <div className="text-rose-500 text-[10px] mt-0.5">
+                          {t("mealCard.fats")}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -485,21 +588,27 @@ const MealCard: React.FC<MealCardProps> = memo(({
           </div>
 
           <div className="flex flex-col items-center gap-1 shrink-0">
-            <Tooltip text={saved ? t('mealCard.saved') : t('mealCard.saveForLater')} position="left">
+            <Tooltip
+              text={saved ? t("mealCard.saved") : t("mealCard.saveForLater")}
+              position="left"
+            >
               <button
                 onClick={handleSaveClick}
                 disabled={toggleMutation.isPending}
                 className={`p-2 rounded-full transition-all active:scale-90 disabled:opacity-50 ${
-                  saved ? 'text-red-500' : 'text-bocado-gray hover:text-red-400'
+                  saved ? "text-red-500" : "text-bocado-gray hover:text-red-400"
                 }`}
               >
-                <Heart className="w-6 h-6" fill={saved ? "currentColor" : "none"} />
+                <Heart
+                  className="w-6 h-6"
+                  fill={saved ? "currentColor" : "none"}
+                />
               </button>
             </Tooltip>
 
             <ChevronDown
               className={`w-5 h-5 text-bocado-gray transition-transform duration-200 ${
-                isExpanded ? 'rotate-180' : ''
+                isExpanded ? "rotate-180" : ""
               }`}
             />
           </div>
@@ -509,7 +618,6 @@ const MealCard: React.FC<MealCardProps> = memo(({
       {/* EXPANDED CONTENT */}
       {isExpanded && (
         <div className="px-4 pb-4 pt-2 border-t border-bocado-border space-y-4 animate-fade-in">
-          
           {/* SECCIÓN PARA RESTAURANTES */}
           {isRestaurant && (
             <RestaurantInfoSection
@@ -522,55 +630,71 @@ const MealCard: React.FC<MealCardProps> = memo(({
           )}
 
           {/* Selector de porciones (solo para recetas) */}
-          {!isRestaurant && recipe.ingredients && recipe.ingredients.length > 0 && (
-            <PortionSelector
-              value={servings}
-              onChange={(val) => {
-                setServings(val);
-                trackEvent('recipe_servings_changed', {
-                  item_title: recipe.title,
-                  from: servings,
-                  to: val,
-                });
-              }}
-              baseServings={baseServings}
-              className="mb-4"
-            />
-          )}
+          {!isRestaurant &&
+            recipe.ingredients &&
+            recipe.ingredients.length > 0 && (
+              <PortionSelector
+                value={servings}
+                onChange={(val) => {
+                  setServings(val);
+                  trackEvent("recipe_servings_changed", {
+                    item_title: recipe.title,
+                    from: servings,
+                    to: val,
+                  });
+                }}
+                baseServings={baseServings}
+                className="mb-4"
+              />
+            )}
 
           {/* Ingredientes (solo para recetas en casa) */}
-          {!isRestaurant && recipe.ingredients && recipe.ingredients.length > 0 && (
-            <div>
-              <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
-                {t('mealCard.ingredients')} {servings !== baseServings && t('mealCard.servings', { count: servings })}
-              </h4>
-              <ul className="space-y-1.5">
-                {scaledIngredients.map((ing, index) => (
-                  <li key={index} className="text-sm text-bocado-text flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 bg-bocado-green rounded-full mt-1.5 shrink-0" />
-                    <span className="leading-relaxed">{ing}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          {!isRestaurant &&
+            recipe.ingredients &&
+            recipe.ingredients.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
+                  {t("mealCard.ingredients")}{" "}
+                  {servings !== baseServings &&
+                    t("mealCard.servings", { count: servings })}
+                </h4>
+                <ul className="space-y-1.5">
+                  {scaledIngredients.map((ing, index) => (
+                    <li
+                      key={index}
+                      className="text-sm text-bocado-text flex items-start gap-2"
+                    >
+                      <span className="w-1.5 h-1.5 bg-bocado-green rounded-full mt-1.5 shrink-0" />
+                      <span className="leading-relaxed">{ing}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
           {/* Preparación (solo para recetas en casa) */}
-          {!isRestaurant && recipe.instructions && recipe.instructions.length > 0 && (
-            <div>
-              <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
-                {t('mealCard.preparation')}
-              </h4>
-              <div className="space-y-2">
-                {recipe.instructions.map((step, i) => (
-                  <div key={i} className="flex gap-2 text-sm text-bocado-text">
-                    <span className="text-bocado-green font-bold shrink-0">{i + 1}.</span>
-                    <p className="leading-relaxed">{step}</p>
-                  </div>
-                ))}
+          {!isRestaurant &&
+            recipe.instructions &&
+            recipe.instructions.length > 0 && (
+              <div>
+                <h4 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
+                  {t("mealCard.preparation")}
+                </h4>
+                <div className="space-y-2">
+                  {recipe.instructions.map((step, i) => (
+                    <div
+                      key={i}
+                      className="flex gap-2 text-sm text-bocado-text"
+                    >
+                      <span className="text-bocado-green font-bold shrink-0">
+                        {i + 1}.
+                      </span>
+                      <p className="leading-relaxed">{step}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
           {/* Botón de feedback */}
           <button
@@ -580,7 +704,7 @@ const MealCard: React.FC<MealCardProps> = memo(({
             className="w-full py-3 rounded-xl bg-bocado-dark-green text-white font-semibold text-sm shadow-bocado hover:bg-bocado-green active:scale-[0.98] transition-all"
             type="button"
           >
-            {isRestaurant ? t('mealCard.wentToPlace') : t('mealCard.cooked')}
+            {isRestaurant ? t("mealCard.wentToPlace") : t("mealCard.cooked")}
           </button>
         </div>
       )}
@@ -590,13 +714,13 @@ const MealCard: React.FC<MealCardProps> = memo(({
         isOpen={showFeedback}
         onClose={handleFeedbackClose}
         itemTitle={recipe.title}
-        type={isRestaurant ? 'away' : 'home'}
+        type={isRestaurant ? "away" : "home"}
         originalData={recipe}
       />
     </div>
   );
 });
 
-MealCard.displayName = 'MealCard';
+MealCard.displayName = "MealCard";
 
 export default MealCard;

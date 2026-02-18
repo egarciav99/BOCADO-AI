@@ -1,20 +1,21 @@
-import type { Meta, StoryObj } from '@storybook/react';
-import BocadoLogo from './BocadoLogo';
+import type { Meta, StoryObj } from "@storybook/react";
+import BocadoLogo from "./BocadoLogo";
 
 const meta: Meta<typeof BocadoLogo> = {
-  title: 'Bocado/BocadoLogo',
+  title: "Bocado/BocadoLogo",
   component: BocadoLogo,
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
     className: {
-      control: 'text',
-      description: 'Clases CSS adicionales para personalizar el tamaño',
+      control: "text",
+      description: "Clases CSS adicionales para personalizar el tamaño",
     },
   },
   parameters: {
     docs: {
       description: {
-        component: 'Componente que muestra el logo oficial de Bocado AI. Utiliza una imagen cargada desde URL externa.',
+        component:
+          "Componente que muestra el logo oficial de Bocado AI. Utiliza una imagen cargada desde URL externa.",
       },
     },
   },
@@ -25,18 +26,18 @@ type Story = StoryObj<typeof BocadoLogo>;
 
 export const Default: Story = {
   args: {
-    className: 'w-32',
+    className: "w-32",
   },
 };
 
 export const Small: Story = {
   args: {
-    className: 'w-16',
+    className: "w-16",
   },
   parameters: {
     docs: {
       description: {
-        story: 'Logo en tamaño pequeño, útil para headers compactos.',
+        story: "Logo en tamaño pequeño, útil para headers compactos.",
       },
     },
   },
@@ -44,12 +45,13 @@ export const Small: Story = {
 
 export const Medium: Story = {
   args: {
-    className: 'w-32',
+    className: "w-32",
   },
   parameters: {
     docs: {
       description: {
-        story: 'Logo en tamaño medio, tamaño recomendado para la mayoría de usos.',
+        story:
+          "Logo en tamaño medio, tamaño recomendado para la mayoría de usos.",
       },
     },
   },
@@ -57,12 +59,13 @@ export const Medium: Story = {
 
 export const Large: Story = {
   args: {
-    className: 'w-48',
+    className: "w-48",
   },
   parameters: {
     docs: {
       description: {
-        story: 'Logo en tamaño grande, ideal para pantallas de bienvenida o login.',
+        story:
+          "Logo en tamaño grande, ideal para pantallas de bienvenida o login.",
       },
     },
   },
@@ -70,12 +73,12 @@ export const Large: Story = {
 
 export const ExtraLarge: Story = {
   args: {
-    className: 'w-64',
+    className: "w-64",
   },
   parameters: {
     docs: {
       description: {
-        story: 'Logo en tamaño extra grande para pantallas splash.',
+        story: "Logo en tamaño extra grande para pantallas splash.",
       },
     },
   },
@@ -98,14 +101,16 @@ export const AllSizes: Story = {
       </div>
       <div className="flex items-center gap-4">
         <BocadoLogo className="w-64" />
-        <span className="text-sm text-bocado-dark-gray">Extra Large (w-64)</span>
+        <span className="text-sm text-bocado-dark-gray">
+          Extra Large (w-64)
+        </span>
       </div>
     </div>
   ),
   parameters: {
     docs: {
       description: {
-        story: 'Todos los tamaños disponibles del logo de Bocado.',
+        story: "Todos los tamaños disponibles del logo de Bocado.",
       },
     },
   },

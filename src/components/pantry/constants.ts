@@ -1,65 +1,255 @@
 // components/pantry/constants.ts
-import { Zone } from '../../types';
+import { Zone } from "../../types";
 
-export const ZONES: Record<Zone, { emoji: string; label: string; color: string }> = {
-  'Despensa': { emoji: '🧺', label: 'Despensa', color: 'bg-[#F5F2EB] border-[#E6E0D4]' },
-  'Nevera': { emoji: '❄️', label: 'Nevera', color: 'bg-[#EFF5F3] border-[#D8E6E2]' },
-  'Congelador': { emoji: '🧊', label: 'Congelador', color: 'bg-[#F0F4F6] border-[#DAE3E8]' },
+export const ZONES: Record<
+  Zone,
+  { emoji: string; label: string; color: string }
+> = {
+  Despensa: {
+    emoji: "🧺",
+    label: "Despensa",
+    color: "bg-[#F5F2EB] border-[#E6E0D4]",
+  },
+  Nevera: {
+    emoji: "❄️",
+    label: "Nevera",
+    color: "bg-[#EFF5F3] border-[#D8E6E2]",
+  },
+  Congelador: {
+    emoji: "🧊",
+    label: "Congelador",
+    color: "bg-[#F0F4F6] border-[#DAE3E8]",
+  },
 };
 
 export const ZONE_CATEGORIES: Record<Zone, string[]> = {
-  'Despensa': ['Todos', 'Especias 🌶️', 'Latas 🥫', 'Granos 🍚', 'Bebidas 🥤', 'Snacks 🍪', 'Verduras 🥦', 'Frutas 🍎', 'Proteínas 🥩', 'Lácteos 🧀'],
-  'Nevera': ['Todos', 'Proteínas 🥩', 'Lácteos 🧀', 'Verduras 🥦', 'Frutas 🍎', 'Bebidas 🥤', 'Snacks 🍪', 'Latas 🥫', 'Granos 🍚', 'Especias 🌶️'],
-  'Congelador': ['Todos', 'Proteínas 🥩', 'Verduras 🥦', 'Frutas 🍎', 'Snacks 🍪', 'Granos 🍚', 'Lácteos 🧀', 'Latas 🥫', 'Bebidas 🥤', 'Especias 🌶️']
+  Despensa: [
+    "Todos",
+    "Especias 🌶️",
+    "Latas 🥫",
+    "Granos 🍚",
+    "Bebidas 🥤",
+    "Snacks 🍪",
+    "Verduras 🥦",
+    "Frutas 🍎",
+    "Proteínas 🥩",
+    "Lácteos 🧀",
+  ],
+  Nevera: [
+    "Todos",
+    "Proteínas 🥩",
+    "Lácteos 🧀",
+    "Verduras 🥦",
+    "Frutas 🍎",
+    "Bebidas 🥤",
+    "Snacks 🍪",
+    "Latas 🥫",
+    "Granos 🍚",
+    "Especias 🌶️",
+  ],
+  Congelador: [
+    "Todos",
+    "Proteínas 🥩",
+    "Verduras 🥦",
+    "Frutas 🍎",
+    "Snacks 🍪",
+    "Granos 🍚",
+    "Lácteos 🧀",
+    "Latas 🥫",
+    "Bebidas 🥤",
+    "Especias 🌶️",
+  ],
 };
 
-export const COMMON_INGREDIENTS_DB: Record<Zone, Record<string, { name: string; emoji: string }[]>> = {
-  'Despensa': {
-    'Verduras 🥦': [{ name: 'Papa', emoji: '🥔' }, { name: 'Cebolla', emoji: '🧅' }, { name: 'Ajo', emoji: '🧄' }, { name: 'Camote', emoji: '🍠' }],
-    'Frutas 🍎': [{ name: 'Plátano', emoji: '🍌' }, { name: 'Manzana', emoji: '🍎' }, { name: 'Naranja', emoji: '🍊' }],
-    'Granos 🍚': [{ name: 'Arroz', emoji: '🍚' }, { name: 'Pasta', emoji: '🍝' }, { name: 'Pan', emoji: '🍞' }, { name: 'Avena', emoji: '🥣' }, { name: 'Harina', emoji: '🥡' }, { name: 'Lentejas', emoji: '🥘' }, { name: 'Frijoles', emoji: '🫘' }],
-    'Latas 🥫': [{ name: 'Atún', emoji: '🐟' }, { name: 'Tomate Frito', emoji: '🥫' }, { name: 'Maíz', emoji: '🌽' }, { name: 'Sardinas', emoji: '🐟' }],
-    'Especias 🌶️': [{ name: 'Sal', emoji: '🧂' }, { name: 'Pimienta', emoji: '⚫' }, { name: 'Aceite', emoji: '🫒' }, { name: 'Vinagre', emoji: '🍾' }, { name: 'Azúcar', emoji: '🍬' }, { name: 'Café', emoji: '☕' }, { name: 'Orégano', emoji: '🌿' }, { name: 'Comino', emoji: '🍂' }],
-    'Snacks 🍪': [{ name: 'Galletas', emoji: '🍪' }, { name: 'Nueces', emoji: '🥜' }, { name: 'Chocolate', emoji: '🍫' }, { name: 'Papas Fritas', emoji: '🍟' }],
-    'Bebidas 🥤': [{ name: 'Agua', emoji: '💧' }, { name: 'Té', emoji: '🍵' }, { name: 'Vino', emoji: '🍷' }],
-    'Proteínas 🥩': [], 'Lácteos 🧀': []
+export const COMMON_INGREDIENTS_DB: Record<
+  Zone,
+  Record<string, { name: string; emoji: string }[]>
+> = {
+  Despensa: {
+    "Verduras 🥦": [
+      { name: "Papa", emoji: "🥔" },
+      { name: "Cebolla", emoji: "🧅" },
+      { name: "Ajo", emoji: "🧄" },
+      { name: "Camote", emoji: "🍠" },
+    ],
+    "Frutas 🍎": [
+      { name: "Plátano", emoji: "🍌" },
+      { name: "Manzana", emoji: "🍎" },
+      { name: "Naranja", emoji: "🍊" },
+    ],
+    "Granos 🍚": [
+      { name: "Arroz", emoji: "🍚" },
+      { name: "Pasta", emoji: "🍝" },
+      { name: "Pan", emoji: "🍞" },
+      { name: "Avena", emoji: "🥣" },
+      { name: "Harina", emoji: "🥡" },
+      { name: "Lentejas", emoji: "🥘" },
+      { name: "Frijoles", emoji: "🫘" },
+    ],
+    "Latas 🥫": [
+      { name: "Atún", emoji: "🐟" },
+      { name: "Tomate Frito", emoji: "🥫" },
+      { name: "Maíz", emoji: "🌽" },
+      { name: "Sardinas", emoji: "🐟" },
+    ],
+    "Especias 🌶️": [
+      { name: "Sal", emoji: "🧂" },
+      { name: "Pimienta", emoji: "⚫" },
+      { name: "Aceite", emoji: "🫒" },
+      { name: "Vinagre", emoji: "🍾" },
+      { name: "Azúcar", emoji: "🍬" },
+      { name: "Café", emoji: "☕" },
+      { name: "Orégano", emoji: "🌿" },
+      { name: "Comino", emoji: "🍂" },
+    ],
+    "Snacks 🍪": [
+      { name: "Galletas", emoji: "🍪" },
+      { name: "Nueces", emoji: "🥜" },
+      { name: "Chocolate", emoji: "🍫" },
+      { name: "Papas Fritas", emoji: "🍟" },
+    ],
+    "Bebidas 🥤": [
+      { name: "Agua", emoji: "💧" },
+      { name: "Té", emoji: "🍵" },
+      { name: "Vino", emoji: "🍷" },
+    ],
+    "Proteínas 🥩": [],
+    "Lácteos 🧀": [],
   },
-  'Nevera': {
-    'Verduras 🥦': [{ name: 'Lechuga', emoji: '🥬' }, { name: 'Tomate', emoji: '🍅' }, { name: 'Zanahoria', emoji: '🥕' }, { name: 'Pepino', emoji: '🥒' }, { name: 'Espinaca', emoji: '🍃' }, { name: 'Pimiento', emoji: '🫑' }, { name: 'Brocoli', emoji: '🥦' }, { name: 'Calabacín', emoji: '🥒' }],
-    'Frutas 🍎': [{ name: 'Uvas', emoji: '🍇' }, { name: 'Fresas', emoji: '🍓' }, { name: 'Limón', emoji: '🍋' }, { name: 'Aguacate', emoji: '🥑' }, { name: 'Sandía', emoji: '🍉' }],
-    'Proteínas 🥩': [{ name: 'Huevos', emoji: '🥚' }, { name: 'Pollo', emoji: '🍗' }, { name: 'Carne Molida', emoji: '🥩' }, { name: 'Jamón', emoji: '🥓' }, { name: 'Salchichas', emoji: '🌭' }],
-    'Lácteos 🧀': [{ name: 'Leche', emoji: '🥛' }, { name: 'Queso', emoji: '🧀' }, { name: 'Yogur', emoji: '🍦' }, { name: 'Mantequilla', emoji: '🧈' }, { name: 'Crema', emoji: '🥣' }],
-    'Bebidas 🥤': [{ name: 'Jugo', emoji: '🧃' }, { name: 'Refresco', emoji: '🥤' }, { name: 'Cerveza', emoji: '🍺' }],
-    'Snacks 🍪': [{ name: 'Hummus', emoji: '🥣' }, { name: 'Aceitunas', emoji: '🫒' }],
-    'Granos 🍚': [], 'Latas 🥫': [], 'Especias 🌶️': []
+  Nevera: {
+    "Verduras 🥦": [
+      { name: "Lechuga", emoji: "🥬" },
+      { name: "Tomate", emoji: "🍅" },
+      { name: "Zanahoria", emoji: "🥕" },
+      { name: "Pepino", emoji: "🥒" },
+      { name: "Espinaca", emoji: "🍃" },
+      { name: "Pimiento", emoji: "🫑" },
+      { name: "Brocoli", emoji: "🥦" },
+      { name: "Calabacín", emoji: "🥒" },
+    ],
+    "Frutas 🍎": [
+      { name: "Uvas", emoji: "🍇" },
+      { name: "Fresas", emoji: "🍓" },
+      { name: "Limón", emoji: "🍋" },
+      { name: "Aguacate", emoji: "🥑" },
+      { name: "Sandía", emoji: "🍉" },
+    ],
+    "Proteínas 🥩": [
+      { name: "Huevos", emoji: "🥚" },
+      { name: "Pollo", emoji: "🍗" },
+      { name: "Carne Molida", emoji: "🥩" },
+      { name: "Jamón", emoji: "🥓" },
+      { name: "Salchichas", emoji: "🌭" },
+    ],
+    "Lácteos 🧀": [
+      { name: "Leche", emoji: "🥛" },
+      { name: "Queso", emoji: "🧀" },
+      { name: "Yogur", emoji: "🍦" },
+      { name: "Mantequilla", emoji: "🧈" },
+      { name: "Crema", emoji: "🥣" },
+    ],
+    "Bebidas 🥤": [
+      { name: "Jugo", emoji: "🧃" },
+      { name: "Refresco", emoji: "🥤" },
+      { name: "Cerveza", emoji: "🍺" },
+    ],
+    "Snacks 🍪": [
+      { name: "Hummus", emoji: "🥣" },
+      { name: "Aceitunas", emoji: "🫒" },
+    ],
+    "Granos 🍚": [],
+    "Latas 🥫": [],
+    "Especias 🌶️": [],
   },
-  'Congelador': {
-    'Proteínas 🥩': [{ name: 'Pollo Cong.', emoji: '🍗' }, { name: 'Pescado', emoji: '🐟' }, { name: 'Carne', emoji: '🥩' }, { name: 'Mariscos', emoji: '🦐' }],
-    'Verduras 🥦': [{ name: 'Verduras Cong.', emoji: '🥦' }, { name: 'Papas Cong.', emoji: '🍟' }, { name: 'Chícharos', emoji: '🟢' }],
-    'Frutas 🍎': [{ name: 'Frutos Rojos', emoji: '🍒' }, { name: 'Mango Cong.', emoji: '🥭' }],
-    'Snacks 🍪': [{ name: 'Helado', emoji: '🍨' }, { name: 'Hielos', emoji: '🧊' }],
-    'Granos 🍚': [{ name: 'Pan Cong.', emoji: '🍞' }],
-    'Lácteos 🧀': [], 'Latas 🥫': [], 'Bebidas 🥤': [], 'Especias 🌶️': []
-  }
+  Congelador: {
+    "Proteínas 🥩": [
+      { name: "Pollo Cong.", emoji: "🍗" },
+      { name: "Pescado", emoji: "🐟" },
+      { name: "Carne", emoji: "🥩" },
+      { name: "Mariscos", emoji: "🦐" },
+    ],
+    "Verduras 🥦": [
+      { name: "Verduras Cong.", emoji: "🥦" },
+      { name: "Papas Cong.", emoji: "🍟" },
+      { name: "Chícharos", emoji: "🟢" },
+    ],
+    "Frutas 🍎": [
+      { name: "Frutos Rojos", emoji: "🍒" },
+      { name: "Mango Cong.", emoji: "🥭" },
+    ],
+    "Snacks 🍪": [
+      { name: "Helado", emoji: "🍨" },
+      { name: "Hielos", emoji: "🧊" },
+    ],
+    "Granos 🍚": [{ name: "Pan Cong.", emoji: "🍞" }],
+    "Lácteos 🧀": [],
+    "Latas 🥫": [],
+    "Bebidas 🥤": [],
+    "Especias 🌶️": [],
+  },
 };
 
 const EMOJI_MAP: Record<string, string> = {
-  tomate: '🍅', cebolla: '🧅', zanahoria: '🥕', lechuga: '🥬', papa: '🥔',
-  ajo: '🧄', manzana: '🍎', plátano: '🍌', naranja: '🍊', huevo: '🥚',
-  pollo: '🍗', carne: '🥩', pescado: '🐟', leche: '🥛', queso: '🧀',
-  arroz: '🍚', pasta: '🍝', pan: '🍞', agua: '💧', cafe: '☕',
-  sal: '🧂', aceite: '🫒', atun: '🐟', yogur: '🍦', limon: '🍋',
-  aguacate: '🥑', vino: '🍷', cerveza: '🍺', refresco: '🥤', jugo: '🧃',
-  mantequilla: '🧈', crema: '🥣', jamon: '🥓', salchicha: '🌭',
-  uvas: '🍇', fresas: '🍓', sandia: '🍉', mango: '🥭', cerezas: '🍒',
-  pepino: '🥒', pimiento: '🫑', espinaca: '🍃', brocoli: '🥦',
-  maiz: '🌽', lentejas: '🥘', frijoles: '🫘', harina: '🥡',
-  azucar: '🍬', pimienta: '⚫', oregano: '🌿', comino: '🍂',
-  galletas: '🍪', nueces: '🥜', chocolate: '🍫', helado: '🍨', hielo: '🧊'
+  tomate: "🍅",
+  cebolla: "🧅",
+  zanahoria: "🥕",
+  lechuga: "🥬",
+  papa: "🥔",
+  ajo: "🧄",
+  manzana: "🍎",
+  plátano: "🍌",
+  naranja: "🍊",
+  huevo: "🥚",
+  pollo: "🍗",
+  carne: "🥩",
+  pescado: "🐟",
+  leche: "🥛",
+  queso: "🧀",
+  arroz: "🍚",
+  pasta: "🍝",
+  pan: "🍞",
+  agua: "💧",
+  cafe: "☕",
+  sal: "🧂",
+  aceite: "🫒",
+  atun: "🐟",
+  yogur: "🍦",
+  limon: "🍋",
+  aguacate: "🥑",
+  vino: "🍷",
+  cerveza: "🍺",
+  refresco: "🥤",
+  jugo: "🧃",
+  mantequilla: "🧈",
+  crema: "🥣",
+  jamon: "🥓",
+  salchicha: "🌭",
+  uvas: "🍇",
+  fresas: "🍓",
+  sandia: "🍉",
+  mango: "🥭",
+  cerezas: "🍒",
+  pepino: "🥒",
+  pimiento: "🫑",
+  espinaca: "🍃",
+  brocoli: "🥦",
+  maiz: "🌽",
+  lentejas: "🥘",
+  frijoles: "🫘",
+  harina: "🥡",
+  azucar: "🍬",
+  pimienta: "⚫",
+  oregano: "🌿",
+  comino: "🍂",
+  galletas: "🍪",
+  nueces: "🥜",
+  chocolate: "🍫",
+  helado: "🍨",
+  hielo: "🧊",
 };
 
 export const getEmoji = (name: string): string => {
   const lower = name.toLowerCase();
-  const found = Object.keys(EMOJI_MAP).find(k => lower.includes(k));
-  return found ? EMOJI_MAP[found] : '📦';
+  const found = Object.keys(EMOJI_MAP).find((k) => lower.includes(k));
+  return found ? EMOJI_MAP[found] : "📦";
 };

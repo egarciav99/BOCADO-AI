@@ -37,18 +37,21 @@ Una vez habilitado:
 ## Características Implementadas
 
 ### Login Screen
+
 - ✅ Botón "Continuar con Google" en pantalla de login
 - ✅ Separador visual entre Google y Email/Password
 - ✅ Si el usuario no está registrado, muestra error y sugiere registro
 - ✅ Analytics tracking para eventos de Google Sign-In
 
 ### Registration Flow
+
 - ✅ Pantalla inicial para elegir método de registro (Google o Email)
 - ✅ Si elige Google y es nuevo usuario, crea perfil básico
 - ✅ Si elige Google y ya existe, muestra error y sugiere login
 - ✅ Flujo completo de registro con Google incluye completar perfil
 
 ### Seguridad
+
 - ✅ Verificación de usuarios existentes vs nuevos
 - ✅ Manejo de errores (popup cerrado, red, etc.)
 - ✅ Analytics para debugging y métricas
@@ -81,11 +84,13 @@ Una vez habilitado:
 ## Testing
 
 Para probar en desarrollo:
+
 ```bash
 npm run dev
 ```
 
 Para probar la build:
+
 ```bash
 npm run build
 npm run preview

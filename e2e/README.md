@@ -5,25 +5,30 @@
 Para correr los tests E2E localmente, necesitas instalar las dependencias del sistema:
 
 ### Ubuntu/Debian
+
 ```bash
 sudo apt-get update
 sudo apt-get install -y libatk1.0-0 libatk-bridge2.0-0 libx11-xcb1 libxcomposite1 libxdamage1 libxrandr2 libgbm1 libasound2 libpangocairo-1.0-0 libgtk-3-0
 ```
 
 ### macOS
+
 ```bash
 # No requiere dependencias adicionales
 ```
 
 ### Windows
+
 ```bash
 # No requiere dependencias adicionales
 ```
 
 ### Codespaces / Dev Containers
-En entornos de desarrollo en la nube (Codespaces, Gitpod, etc.), los navegadores pueden no funcionar por falta de dependencias del sistema. 
+
+En entornos de desarrollo en la nube (Codespaces, Gitpod, etc.), los navegadores pueden no funcionar por falta de dependencias del sistema.
 
 **Soluciones:**
+
 1. **Correr en CI**: Los tests están configurados para correr en GitHub Actions
 2. **Usar Docker**: Ver `e2e/docker-compose.yml` (opcional)
 3. **Instalar dependencias** (requiere sudo en el entorno):
@@ -85,12 +90,15 @@ e2e/
 Usamos fixtures personalizados para manejar autenticación:
 
 ```typescript
-import { test, expect } from '../fixtures';
+import { test, expect } from "../fixtures";
 
-test('usuario autenticado puede ver perfil', async ({ page, authenticatedUser }) => {
+test("usuario autenticado puede ver perfil", async ({
+  page,
+  authenticatedUser,
+}) => {
   // authenticatedUser ya está logueado
-  await page.goto('/profile');
-  await expect(page.locator('text=Mi Perfil')).toBeVisible();
+  await page.goto("/profile");
+  await expect(page.locator("text=Mi Perfil")).toBeVisible();
 });
 ```
 
@@ -103,17 +111,17 @@ Usamos `data-testid` preferentemente, pero también selectores de texto:
 await page.click('[data-testid="submit-button"]');
 
 // Alternativa
-await page.click('text=Enviar');
+await page.click("text=Enviar");
 ```
 
 ## CI/CD
 
 ### GitHub Actions Workflows
 
-| Workflow | Descripción | Trigger |
-|----------|-------------|---------|
-| `ci.yml` | Unit tests + Build | Push/PR a main/develop |
-| `e2e-manual.yml` | E2E Tests manuales | workflow_dispatch |
+| Workflow         | Descripción        | Trigger                |
+| ---------------- | ------------------ | ---------------------- |
+| `ci.yml`         | Unit tests + Build | Push/PR a main/develop |
+| `e2e-manual.yml` | E2E Tests manuales | workflow_dispatch      |
 
 ### Configuración para CI
 
@@ -146,25 +154,33 @@ npm run test:e2e
 ## Troubleshooting
 
 ### Error: `libatk-1.0.so.0: cannot open shared object file`
+
 Faltan dependencias del sistema. Instalar:
+
 ```bash
 sudo apt-get install -y libatk1.0-0 libatk-bridge2.0-0
 ```
 
 ### Error: `Executable doesn't exist`
+
 Instalar navegadores:
+
 ```bash
 npx playwright install
 ```
 
 ### Tests fallan por timeouts
+
 Aumentar el timeout en `playwright.config.ts`:
+
 ```typescript
 timeout: 120000, // 2 minutos
 ```
 
 ### Puerto 3000 en uso
+
 Cambiar el puerto en `playwright.config.ts`:
+
 ```typescript
 webServer: {
   command: 'npm run dev -- --port 3001',

@@ -1,10 +1,10 @@
 // components/PantryScreen.tsx
-import React from 'react';
-import { Zone, KitchenItem } from '../types';
-import { usePantry } from '../hooks/usePantry';
-import { usePantryStore } from '../stores/pantryStore';
-import { PantryZoneSelector, PantryZoneDetail } from './pantry';
-import { PantrySkeleton } from './skeleton';
+import React from "react";
+import { Zone, KitchenItem } from "../types";
+import { usePantry } from "../hooks/usePantry";
+import { usePantryStore } from "../stores/pantryStore";
+import { PantryZoneSelector, PantryZoneDetail } from "./pantry";
+import { PantrySkeleton } from "./skeleton";
 
 interface PantryScreenProps {
   userUid: string;
@@ -13,9 +13,10 @@ interface PantryScreenProps {
 export const PantryScreen: React.FC<PantryScreenProps> = ({ userUid }) => {
   // Estado UI con Zustand (solo estado local de la interfaz)
   const { activeZone, setActiveZone } = usePantryStore();
-  
+
   // Datos y operaciones con TanStack Query (sincronización con Firebase)
-  const { inventory, isLoading, isSaving, addItem, deleteItem, updateItem } = usePantry(userUid);
+  const { inventory, isLoading, isSaving, addItem, deleteItem, updateItem } =
+    usePantry(userUid);
   const typedInventory = inventory as KitchenItem[];
 
   if (isLoading) {
@@ -24,9 +25,9 @@ export const PantryScreen: React.FC<PantryScreenProps> = ({ userUid }) => {
 
   if (!activeZone) {
     return (
-      <PantryZoneSelector 
-        inventory={typedInventory} 
-        onSelectZone={setActiveZone} 
+      <PantryZoneSelector
+        inventory={typedInventory}
+        onSelectZone={setActiveZone}
       />
     );
   }
@@ -39,7 +40,9 @@ export const PantryScreen: React.FC<PantryScreenProps> = ({ userUid }) => {
       onBack={() => setActiveZone(null)}
       onAddItem={addItem}
       onDeleteItem={deleteItem}
-      onToggleFreshness={(id, newStatus) => updateItem(id, { freshness: newStatus })}
+      onToggleFreshness={(id, newStatus) =>
+        updateItem(id, { freshness: newStatus })
+      }
     />
   );
 };

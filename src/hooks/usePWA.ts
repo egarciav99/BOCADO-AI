@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { logger } from '../utils/logger';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { logger } from "../utils/logger";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 }
 
 interface PWAState {
@@ -38,52 +38,55 @@ export const usePWA = () => {
   const updatingRef = useRef(false);
 
   useEffect(() => {
-    const ua = navigator.userAgent || '';
-    const platform = navigator.platform || '';
-    const isIOS = /iPad|iPhone|iPod/i.test(ua)
-      || ((platform.includes('Mac') || platform.includes('MacIntel')) && navigator.maxTouchPoints > 1);
+    const ua = navigator.userAgent || "";
+    const platform = navigator.platform || "";
+    const isIOS =
+      /iPad|iPhone|iPod/i.test(ua) ||
+      ((platform.includes("Mac") || platform.includes("MacIntel")) &&
+        navigator.maxTouchPoints > 1);
     const isAndroid = /Android/i.test(ua);
 
-    setState(prev => ({ ...prev, isIOS, isAndroid }));
+    setState((prev) => ({ ...prev, isIOS, isAndroid }));
   }, []);
 
   // Detectar si está instalado
   useEffect(() => {
     const checkInstalled = () => {
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
-        || (window.navigator as any).standalone 
-        || document.referrer.includes('android-app://');
-      
-      setState(prev => ({ ...prev, isInstalled: isStandalone }));
+      const isStandalone =
+        window.matchMedia("(display-mode: standalone)").matches ||
+        (window.navigator as any).standalone ||
+        document.referrer.includes("android-app://");
+
+      setState((prev) => ({ ...prev, isInstalled: isStandalone }));
     };
 
     checkInstalled();
-    
+
     // Escuchar cambios en display mode
-    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    const mediaQuery = window.matchMedia("(display-mode: standalone)");
     const handleChange = (e: MediaQueryListEvent) => {
-      setState(prev => ({ ...prev, isInstalled: e.matches }));
+      setState((prev) => ({ ...prev, isInstalled: e.matches }));
     };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
   }, []);
 
   // Detectar instalabilidad
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setState(prev => ({
+      setState((prev) => ({
         ...prev,
         isInstallable: true,
         installPrompt: e as BeforeInstallPromptEvent,
       }));
-      logger.info('PWA: App is installable');
+      logger.info("PWA: App is installable");
     };
 
     const handleAppInstalled = () => {
-      logger.info('PWA: App was installed');
-      setState(prev => ({
+      logger.info("PWA: App was installed");
+      setState((prev) => ({
         ...prev,
         isInstalled: true,
         isInstallable: false,
@@ -91,19 +94,22 @@ export const usePWA = () => {
       }));
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-    
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
+
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener(
+        "beforeinstallprompt",
+        handleBeforeInstallPrompt,
+      );
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
   useEffect(() => {
     if (!state.isIOS) return;
 
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isInstallable: !prev.isInstalled,
     }));
@@ -112,44 +118,48 @@ export const usePWA = () => {
   // Detectar online/offline
   useEffect(() => {
     const handleOnline = () => {
-      setState(prev => ({ ...prev, isOffline: false }));
-      logger.info('PWA: App is online');
+      setState((prev) => ({ ...prev, isOffline: false }));
+      logger.info("PWA: App is online");
     };
 
     const handleOffline = () => {
-      setState(prev => ({ ...prev, isOffline: true }));
-      logger.info('PWA: App is offline');
+      setState((prev) => ({ ...prev, isOffline: true }));
+      logger.info("PWA: App is offline");
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
   // Detectar actualizaciones del SW
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
+    if ("serviceWorker" in navigator) {
       // Escuchar cuando hay un nuevo service worker esperando
       const checkForUpdates = () => {
         navigator.serviceWorker.ready.then((registration) => {
           if (registration.waiting && !updatingRef.current) {
-            setState(prev => ({ ...prev, updateAvailable: true }));
-            logger.info('PWA: New service worker waiting to activate');
+            setState((prev) => ({ ...prev, updateAvailable: true }));
+            logger.info("PWA: New service worker waiting to activate");
           }
 
           // Escuchar cuando se instala un nuevo SW
-          registration.addEventListener('updatefound', () => {
+          registration.addEventListener("updatefound", () => {
             const newWorker = registration.installing;
             if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller && !updatingRef.current) {
+              newWorker.addEventListener("statechange", () => {
+                if (
+                  newWorker.state === "installed" &&
+                  navigator.serviceWorker.controller &&
+                  !updatingRef.current
+                ) {
                   // Hay un nuevo service worker instalado mientras uno viejo sigue activo
-                  setState(prev => ({ ...prev, updateAvailable: true }));
-                  logger.info('PWA: New service worker installed');
+                  setState((prev) => ({ ...prev, updateAvailable: true }));
+                  logger.info("PWA: New service worker installed");
                 }
               });
             }
@@ -173,32 +183,32 @@ export const usePWA = () => {
   // Función para instalar la app
   const install = useCallback(async () => {
     if (!state.installPrompt) {
-      logger.warn('PWA: No install prompt available');
+      logger.warn("PWA: No install prompt available");
       return false;
     }
 
     try {
       const promptEvent = state.installPrompt;
       if (!promptEvent) return false;
-      
+
       promptEvent.prompt();
       const result = await promptEvent.userChoice;
-      
-      if (result.outcome === 'accepted') {
-        logger.info('PWA: App installed');
-        setState(prev => ({ 
-          ...prev, 
-          isInstallable: false, 
+
+      if (result.outcome === "accepted") {
+        logger.info("PWA: App installed");
+        setState((prev) => ({
+          ...prev,
+          isInstallable: false,
           installPrompt: null,
-          isInstalled: true 
+          isInstalled: true,
         }));
         return true;
       } else {
-        logger.info('PWA: Install dismissed');
+        logger.info("PWA: Install dismissed");
         return false;
       }
     } catch (error) {
-      logger.error('PWA: Error installing app', error);
+      logger.error("PWA: Error installing app", error);
       return false;
     }
   }, [state.installPrompt]);
@@ -210,49 +220,60 @@ export const usePWA = () => {
     updatingRef.current = true;
 
     // Ocultar banner inmediatamente
-    setState(prev => ({ ...prev, updateAvailable: false }));
-    
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.ready.then((registration) => {
-        // Si hay un service worker esperando, activarlo
-        if (registration.waiting) {
-          logger.info('PWA: Sending SKIP_WAITING message to service worker');
-          
-          // Enviar mensaje al SW para que haga skipWaiting
-          registration.waiting.postMessage({ type: 'SKIP_WAITING' });
-          
-          // Recargar cuando el nuevo SW tome control
-          let refreshing = false;
-          const handleControllerChange = () => {
-            if (!refreshing) {
-              logger.info('PWA: Controller changed, reloading page');
-              refreshing = true;
-              navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
-              window.location.reload();
-            }
-          };
-          
-          navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-          
-          // Fallback: Si no hay controllerchange en 3 segundos, recargar de todos modos
-          setTimeout(() => {
-            if (!refreshing) {
-              logger.info('PWA: Fallback reload after timeout');
-              navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
-              window.location.reload();
-            }
-          }, 3000);
-        } else {
-          logger.info('PWA: No waiting service worker, just reloading');
-          // Si no hay uno esperando, simplemente recargar
+    setState((prev) => ({ ...prev, updateAvailable: false }));
+
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then((registration) => {
+          // Si hay un service worker esperando, activarlo
+          if (registration.waiting) {
+            logger.info("PWA: Sending SKIP_WAITING message to service worker");
+
+            // Enviar mensaje al SW para que haga skipWaiting
+            registration.waiting.postMessage({ type: "SKIP_WAITING" });
+
+            // Recargar cuando el nuevo SW tome control
+            let refreshing = false;
+            const handleControllerChange = () => {
+              if (!refreshing) {
+                logger.info("PWA: Controller changed, reloading page");
+                refreshing = true;
+                navigator.serviceWorker.removeEventListener(
+                  "controllerchange",
+                  handleControllerChange,
+                );
+                window.location.reload();
+              }
+            };
+
+            navigator.serviceWorker.addEventListener(
+              "controllerchange",
+              handleControllerChange,
+            );
+
+            // Fallback: Si no hay controllerchange en 3 segundos, recargar de todos modos
+            setTimeout(() => {
+              if (!refreshing) {
+                logger.info("PWA: Fallback reload after timeout");
+                navigator.serviceWorker.removeEventListener(
+                  "controllerchange",
+                  handleControllerChange,
+                );
+                window.location.reload();
+              }
+            }, 3000);
+          } else {
+            logger.info("PWA: No waiting service worker, just reloading");
+            // Si no hay uno esperando, simplemente recargar
+            window.location.reload();
+          }
+        })
+        .catch((error) => {
+          logger.error("PWA: Error getting service worker registration", error);
           window.location.reload();
-        }
-      }).catch((error) => {
-        logger.error('PWA: Error getting service worker registration', error);
-        window.location.reload();
-      });
+        });
     } else {
-      logger.warn('PWA: Service worker not supported, just reloading');
+      logger.warn("PWA: Service worker not supported, just reloading");
       window.location.reload();
     }
   }, []);

@@ -2,7 +2,7 @@
 
 /**
  * Definición de todos los feature flags disponibles en la aplicación.
- * 
+ *
  * Nota: Al agregar un nuevo flag, añadirlo también en:
  * - DEFAULT_FEATURE_FLAGS (src/config/featureFlags.ts)
  * - Documentación (docs/FEATURE_FLAGS.md)
@@ -15,11 +15,11 @@ export interface FeatureFlags {
   pantryV2: boolean;
   /** Modo oscuro disponible */
   darkMode: boolean;
-  
+
   // Analytics & Tracking
   /** Habilitar tracking de analytics */
   enableAnalytics: boolean;
-  
+
   // Features experimentales (ejemplos para futuras implementaciones)
   /** Habilitar sugerencias basadas en IA avanzada */
   aiSuggestions: boolean;
@@ -56,7 +56,7 @@ export interface FeatureFlagsState {
  */
 export interface GlobalFeatureFlagsDocument {
   flags: GlobalFeatureFlags;
-  updatedAt: import('firebase/firestore').Timestamp;
+  updatedAt: import("firebase/firestore").Timestamp;
   updatedBy?: string;
 }
 
@@ -65,5 +65,5 @@ export interface GlobalFeatureFlagsDocument {
  */
 export interface UserFeatureFlagsDocument {
   flags: UserFeatureFlags;
-  updatedAt: import('firebase/firestore').Timestamp;
+  updatedAt: import("firebase/firestore").Timestamp;
 }

@@ -11,9 +11,9 @@
 //
 // IMPORTANTE: No importar hooks aquí para evitar dependencias circulares.
 
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { safeStorage } from '../utils/encryptedStorage';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { safeStorage } from "../utils/encryptedStorage";
 
 // ============================================
 // ESTADO DE UI PARA FORMULARIOS MULTI-PASO
@@ -25,11 +25,11 @@ interface ProfileDraftState {
   isHydrated: boolean;
   isDirty: boolean;
   lastSavedAt: number | null;
-  
+
   // Datos temporales del formulario (solo mientras edita)
   // NOTA: Estos NO reemplazan el perfil, son solo borrador temporal
   formData: Record<string, any>;
-  
+
   // Actions
   setCurrentStep: (step: number) => void;
   updateFormField: (field: string, value: any) => void;
@@ -52,44 +52,49 @@ export const useProfileDraftStore = create<ProfileDraftState>()(
   persist(
     (set, get) => ({
       ...INITIAL_STATE,
-      
+
       setCurrentStep: (step) => set({ currentStep: step }),
-      
-      updateFormField: (field, value) => set((state) => ({
-        formData: { ...state.formData, [field]: value },
-        isDirty: true,
-      })),
-      
-      updateFormData: (data) => set((state) => ({
-        formData: { ...state.formData, ...data },
-        isDirty: true,
-      })),
-      
+
+      updateFormField: (field, value) =>
+        set((state) => ({
+          formData: { ...state.formData, [field]: value },
+          isDirty: true,
+        })),
+
+      updateFormData: (data) =>
+        set((state) => ({
+          formData: { ...state.formData, ...data },
+          isDirty: true,
+        })),
+
       markDirty: (dirty) => set({ isDirty: dirty }),
-      
-      saveDraft: () => set({ 
-        lastSavedAt: Date.now(),
-        isDirty: false,
-      }),
-      
-      clearDraft: () => set({
-        ...INITIAL_STATE,
-        isHydrated: true,
-      }),
-      
-      resetForm: () => set({
-        formData: {},
-        isDirty: false,
-        currentStep: 1,
-        lastSavedAt: null,
-      }),
+
+      saveDraft: () =>
+        set({
+          lastSavedAt: Date.now(),
+          isDirty: false,
+        }),
+
+      clearDraft: () =>
+        set({
+          ...INITIAL_STATE,
+          isHydrated: true,
+        }),
+
+      resetForm: () =>
+        set({
+          formData: {},
+          isDirty: false,
+          currentStep: 1,
+          lastSavedAt: null,
+        }),
     }),
     {
-      name: 'bocado-form-draft-v2',
+      name: "bocado-form-draft-v2",
       storage: createJSONStorage(() => safeStorage),
       onRehydrateStorage: () => (state, error) => {
         if (error) {
-          console.warn('[ProfileDraftStore] Error rehydrating storage:', error);
+          console.warn("[ProfileDraftStore] Error rehydrating storage:", error);
         }
         if (state) state.isHydrated = true;
       },
@@ -99,8 +104,8 @@ export const useProfileDraftStore = create<ProfileDraftState>()(
         formData: state.formData,
         lastSavedAt: state.lastSavedAt,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // ============================================

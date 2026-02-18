@@ -1,32 +1,32 @@
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
 
 export default defineConfig({
   plugins: [react()],
   test: {
-    environment: 'jsdom',
+    environment: "jsdom",
     globals: true,
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ["./src/test/setup.ts"],
     exclude: [
-      'node_modules/', 
-      'functions/node_modules/', 
-      'e2e/', 
-      '**/playwright/**',
-      '.storybook/',
-      '**/*.stories.tsx',
-      '**/*.stories.ts',
+      "node_modules/",
+      "functions/node_modules/",
+      "e2e/",
+      "**/playwright/**",
+      ".storybook/",
+      "**/*.stories.tsx",
+      "**/*.stories.ts",
     ],
-    include: ['src/**/*.test.ts', 'api/**/*.test.ts'],
+    include: ["src/**/*.test.ts", "api/**/*.test.ts"],
     coverage: {
-      reporter: ['text', 'html'],
+      reporter: ["text", "html"],
       exclude: [
-        'node_modules/', 
-        'functions/', 
-        'src/test/', 
-        'e2e/',
-        '.storybook/',
-        '**/*.stories.tsx',
-      ]
+        "node_modules/",
+        "functions/",
+        "src/test/",
+        "e2e/",
+        ".storybook/",
+        "**/*.stories.tsx",
+      ],
     },
   },
 });

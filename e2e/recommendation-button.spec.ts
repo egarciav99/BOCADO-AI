@@ -1,14 +1,16 @@
-import { test, expect } from '@playwright/test';
-import { generateTestUser } from './utils/test-users';
-import { register, clearAuthState } from './utils/auth';
-import { SELECTORS } from './utils/selectors';
+import { test, expect } from "@playwright/test";
+import { generateTestUser } from "./utils/test-users";
+import { register, clearAuthState } from "./utils/auth";
+import { SELECTORS } from "./utils/selectors";
 
-test.describe('Recommendation button visibility', () => {
+test.describe("Recommendation button visibility", () => {
   test.beforeEach(async ({ page }) => {
     await clearAuthState(page);
   });
 
-  test('botón de generar es accesible en móvil tras expandir opciones', async ({ page }) => {
+  test("botón de generar es accesible en móvil tras expandir opciones", async ({
+    page,
+  }) => {
     const user = generateTestUser();
     // Registrar usuario (flujo completo) y esperar a que cargue la pantalla de recomendaciones
     await register(page, user);
@@ -17,7 +19,9 @@ test.describe('Recommendation button visibility', () => {
     await page.setViewportSize({ width: 390, height: 844 });
 
     // Esperar a que las opciones de recomendación estén visibles
-    await page.waitForSelector(SELECTORS.recommendation.homeOption, { timeout: 10000 });
+    await page.waitForSelector(SELECTORS.recommendation.homeOption, {
+      timeout: 10000,
+    });
 
     // Seleccionar 'Fuera' para mostrar más opciones
     await page.click(SELECTORS.recommendation.outsideOption);
@@ -31,7 +35,11 @@ test.describe('Recommendation button visibility', () => {
 
     const inViewport = await gen.evaluate((el) => {
       const rect = el.getBoundingClientRect();
-      return rect.top >= 0 && rect.bottom <= (window.innerHeight || document.documentElement.clientHeight);
+      return (
+        rect.top >= 0 &&
+        rect.bottom <=
+          (window.innerHeight || document.documentElement.clientHeight)
+      );
     });
     expect(inViewport).toBeTruthy();
   });

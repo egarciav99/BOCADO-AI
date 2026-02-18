@@ -1,6 +1,6 @@
 // stores/index.ts - V2: Exportaciones centralizadas
-// 
-// PRINCIPIO: 
+//
+// PRINCIPIO:
 // - Zustand: Solo UI state local (tabs, modales, drafts temporales)
 // - TanStack Query: Datos de servidor (perfil, recetas, despensa)
 // - NO duplicar estado entre ambos
@@ -8,17 +8,17 @@
 // ============================================
 // AUTH: Estado de sesión mínimo
 // ============================================
-export { 
+export {
   useAuthStore,
   selectUserUid,
   selectIsAuthenticated,
   selectIsLoading,
-} from './authStore';
+} from "./authStore";
 
 // ============================================
 // DRAFT: Estado transitorio de formularios
 // ============================================
-export { useProfileDraftStore } from './profileDraftStore';
+export { useProfileDraftStore } from "./profileDraftStore";
 
 // NOTA: useProfileDraftWithData y useEditableProfile se exportan
 // desde hooks/useProfileDraft.ts para evitar dependencias circulares.
@@ -27,7 +27,7 @@ export { useProfileDraftStore } from './profileDraftStore';
 // ============================================
 // PANTRY: Estado UI de la despensa
 // ============================================
-export { usePantryStore } from './pantryStore';
+export { usePantryStore } from "./pantryStore";
 
 // ============================================
 // NOTAS:

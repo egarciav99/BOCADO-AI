@@ -1,8 +1,8 @@
-import '@testing-library/jest-dom';
-import { vi } from 'vitest';
+import "@testing-library/jest-dom";
+import { vi } from "vitest";
 
 // Mock Firebase
-vi.mock('../firebaseConfig', () => ({
+vi.mock("../firebaseConfig", () => ({
   auth: {},
   db: {},
   trackEvent: vi.fn(),
@@ -10,9 +10,9 @@ vi.mock('../firebaseConfig', () => ({
 }));
 
 // Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
+Object.defineProperty(window, "matchMedia", {
   writable: true,
-  value: vi.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation((query) => ({
     matches: false,
     media: query,
     onchange: null,
@@ -31,7 +31,7 @@ class IntersectionObserverMock {
   unobserve = vi.fn();
 }
 
-Object.defineProperty(window, 'IntersectionObserver', {
+Object.defineProperty(window, "IntersectionObserver", {
   writable: true,
   value: IntersectionObserverMock,
 });

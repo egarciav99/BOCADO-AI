@@ -45,16 +45,19 @@ docs/
 ## 📄 Documentos Principales
 
 ### 01-producto/ - Producto & Roadmap
+
 - **vision.md** - Visión del producto
 - **roadmap.md** - Roadmap de producto
 - **metricas.md** - Métricas y KPIs
 - **ROADMAP-MEJORAS.md** - Roadmap técnico y mejoras
 
 ### 02-disenio/ - Diseño & UI
+
 - **sistema-diseno.md** - Sistema de diseño
 - **UI_COMPONENTS.md** - Catálogo de componentes UI
 
 ### 03-tecnico/ - Arquitectura & Core
+
 - **arquitectura.md** - Arquitectura general del sistema
 - **modelo-datos.md** - Modelo de datos Firestore
 - **CACHE_ARCHITECTURE.md** - Estrategia de caché
@@ -65,16 +68,19 @@ docs/
 - **schema-validation.md** - Validación Gemini ↔ UI
 
 ### 04-features/ - Features Específicas
+
 - **despensa.md** - Feature de despensa virtual
 - **generacion-recetas.md** - Feature de generación de recetas
 - **onboarding.md** - Feature de onboarding
 
 ### 05-ops/ - Operaciones & FinOps
+
 - **bugs.md** - Tracking de bugs
 - **deploy-checklist.md** - Checklist de deploy
 - **FINOPS_ANALYSIS.md** - Análisis de costos y optimizaciones
 
 ### 06-recursos/ - Recursos & Guías
+
 - **links-utiles.md** - Links y recursos útiles
 - **notas-diarias.md** - Notas de desarrollo
 - **notion-export-guide.md** - Guía de export de Notion
@@ -96,6 +102,7 @@ Ver **NOTION_MIGRATION.md** para detalles.
 ## 📋 Historial de Limpieza
 
 **2026-02-15:**
+
 - ✅ Eliminados 10 docs obsoletos (sprints, auditorías completadas)
 - ✅ Actualizados ROADMAP-MEJORAS.md y FINOPS_ANALYSIS.md
 - ✅ Archivado FINOPS_IMPLEMENTATION.md
@@ -111,6 +118,7 @@ Ver **NOTION_MIGRATION.md** para detalles.
 ## 📝 Contribuir
 
 Al agregar documentación nueva:
+
 1. Usa la estructura de carpetas existente
 2. Nombra archivos descriptivamente
 3. Incluye fecha de creación/última actualización

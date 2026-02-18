@@ -5,30 +5,34 @@
 // - Solo traduce la UI (títulos, botones, mensajes)
 // Ver: docs/i18n-architecture.md
 
-import React, { useState, useCallback, useEffect } from 'react';
-import { useProfileDraftStore } from '../stores/profileDraftStore';
-import { FormData, UserProfile } from '../types';
-import ProgressBar from './ProgressBar';
-import Step1 from './form-steps/Step1';
-import Step2 from './form-steps/Step2';
-import Step3 from './form-steps/Step3';
-import { db, auth, trackEvent } from '../firebaseConfig';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useQueryClient } from '@tanstack/react-query';
-import { 
-  createUserWithEmailAndPassword, 
-  updateProfile, 
-  sendEmailVerification 
-} from 'firebase/auth';
-import { separateUserData } from '../utils/profileSanitizer';
-import { logger } from '../utils/logger';
-import { searchCities, getPlaceDetails, PlacePrediction } from '../services/mapsService';
-import { useTranslation } from '../contexts/I18nContext';
-import { cleanForFirestore } from '../utils/cleanForFirestore';
+import React, { useState, useCallback, useEffect } from "react";
+import { useProfileDraftStore } from "../stores/profileDraftStore";
+import { FormData, UserProfile } from "../types";
+import ProgressBar from "./ProgressBar";
+import Step1 from "./form-steps/Step1";
+import Step2 from "./form-steps/Step2";
+import Step3 from "./form-steps/Step3";
+import { db, auth, trackEvent } from "../firebaseConfig";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  sendEmailVerification,
+} from "firebase/auth";
+import { separateUserData } from "../utils/profileSanitizer";
+import { logger } from "../utils/logger";
+import {
+  searchCities,
+  getPlaceDetails,
+  PlacePrediction,
+} from "../services/mapsService";
+import { useTranslation } from "../contexts/I18nContext";
+import { cleanForFirestore } from "../utils/cleanForFirestore";
 
-// ✅ CORRECCIÓN ERRORES 2305: Asegúrate que en userSchema.ts 
+// ✅ CORRECCIÓN ERRORES 2305: Asegúrate que en userSchema.ts
 // los nombres coincidan exactamente (ej. userStep1Schema o step1Schema)
-import { step1Schema, step2Schema, step3Schema } from '../schemas/userSchema';
+import { step1Schema, step2Schema, step3Schema } from "../schemas/userSchema";
 
 const TOTAL_STEPS = 3;
 
@@ -37,19 +41,22 @@ interface RegistrationFlowProps {
   onGoHome: () => void;
 }
 
-const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationComplete, onGoHome }) => {
+const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
+  onRegistrationComplete,
+  onGoHome,
+}) => {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [submissionError, setSubmissionError] = useState('');
+  const [submissionError, setSubmissionError] = useState("");
   const [showVerificationModal, setShowVerificationModal] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState('');
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const queryClient = useQueryClient();
 
   const [cityOptions, setCityOptions] = useState<PlacePrediction[]>([]);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
-  const [selectedPlaceId, setSelectedPlaceId] = useState<string>('');;
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string>("");
 
   // V2: Usar la estructura anidada del store
   const formData = useProfileDraftStore((state) => state.formData) as FormData;
@@ -60,31 +67,31 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
 
   useEffect(() => {
     if (isHydrated) {
-      trackEvent('registration_step_view', {
+      trackEvent("registration_step_view", {
         step_number: currentStep,
-        step_name: `step_${currentStep}`
+        step_name: `step_${currentStep}`,
       });
     }
   }, [currentStep, isHydrated]);
 
   // ✅ AUDITORÍA: Detectar abandono del registro al desmontar el componente
   const isCompletedRef = React.useRef(false);
-  
+
   useEffect(() => {
     return () => {
       // Solo dispara el evento si el registro no se completó
       if (!isCompletedRef.current) {
-        trackEvent('registration_abandoned', {
+        trackEvent("registration_abandoned", {
           step_number: currentStep,
           step_name: `step_${currentStep}`,
-          total_steps: TOTAL_STEPS
+          total_steps: TOTAL_STEPS,
         });
       }
     };
   }, [currentStep]);
-  
+
   const validateStep = useCallback(async () => {
-    setSubmissionError('');
+    setSubmissionError("");
     let result;
 
     if (currentStep === 1) {
@@ -114,15 +121,15 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
 
   const handleSubmit = async () => {
     setIsLoading(true);
-    setSubmissionError('');
+    setSubmissionError("");
 
     try {
       const { auth: authData, profile } = separateUserData(formData);
-      
+
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         authData.email,
-        authData.password!
+        authData.password!,
       );
       const user = userCredential.user;
 
@@ -132,7 +139,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       // Obtener coordenadas de la ciudad si hay placeId
       let location = undefined;
       const cityPlaceId = (formData as any).cityPlaceId;
-      
+
       if (cityPlaceId) {
         try {
           const placeDetails = await getPlaceDetails(cityPlaceId);
@@ -143,7 +150,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
             };
           }
         } catch (error) {
-          logger.warn('Error obteniendo coordenadas de la ciudad:', error);
+          logger.warn("Error obteniendo coordenadas de la ciudad:", error);
         }
       }
 
@@ -168,38 +175,40 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
         cookingAffinity: profile.cookingAffinity,
         dislikedFoods: profile.dislikedFoods,
         emailVerified: false,
-        createdAt: serverTimestamp() as UserProfile['createdAt'],
-        updatedAt: serverTimestamp() as UserProfile['updatedAt'],
+        createdAt: serverTimestamp() as UserProfile["createdAt"],
+        updatedAt: serverTimestamp() as UserProfile["updatedAt"],
       };
 
-      console.log('💾 Guardando perfil en Firestore...', { uid: user.uid });
+      console.log("💾 Guardando perfil en Firestore...", { uid: user.uid });
       const cleanedProfile = cleanForFirestore(userProfile);
-      await setDoc(doc(db, 'users', user.uid), cleanedProfile);
-      console.log('✅ Perfil guardado exitosamente');
-      
+      await setDoc(doc(db, "users", user.uid), cleanedProfile);
+      console.log("✅ Perfil guardado exitosamente");
+
       // Invalidar cache del perfil para forzar recarga
-      queryClient.invalidateQueries({ queryKey: ['userProfile', user.uid] });
-      queryClient.setQueryData(['userProfile', user.uid], cleanedProfile);
-      
+      queryClient.invalidateQueries({ queryKey: ["userProfile", user.uid] });
+      queryClient.setQueryData(["userProfile", user.uid], cleanedProfile);
+
       await sendEmailVerification(user);
-      
-      trackEvent('registration_complete', {
-        nutritional_goal: profile.nutritionalGoal.join(', '),
-        country: profile.country
+
+      trackEvent("registration_complete", {
+        nutritional_goal: profile.nutritionalGoal.join(", "),
+        country: profile.country,
       });
 
       // ✅ AUDITORÍA: Marcar registro como completado antes de limpiar
       isCompletedRef.current = true;
-      
+
       clearDraft();
       setRegisteredEmail(authData.email);
       setShowVerificationModal(true);
-
     } catch (error: any) {
       logger.error("Error en registro:", error);
-      trackEvent('registration_failed', { error_code: error.code || 'unknown_error', step: currentStep });
+      trackEvent("registration_failed", {
+        error_code: error.code || "unknown_error",
+        step: currentStep,
+      });
 
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.code === "auth/email-already-in-use") {
         setSubmissionError("Este correo ya está registrado");
         setCurrentStep(1);
       } else {
@@ -211,7 +220,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   };
 
   const handleVerificationComplete = () => {
-    trackEvent('registration_email_verified_click');
+    trackEvent("registration_email_verified_click");
     setShowVerificationModal(false);
     onRegistrationComplete();
   };
@@ -228,7 +237,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
 
   const prevStep = () => {
     if (currentStep > 1) {
-      setSubmissionError('');
+      setSubmissionError("");
       setCurrentStep(currentStep - 1);
     }
   };
@@ -247,7 +256,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       const predictions = await searchCities(query, formData.country);
       setCityOptions(predictions);
     } catch (error) {
-      logger.error('Error buscando ciudades:', error);
+      logger.error("Error buscando ciudades:", error);
       setCityOptions([]);
     } finally {
       setIsSearchingCity(false);
@@ -257,18 +266,22 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
   const handleClearCityOptions = () => setCityOptions([]);
 
   const handleCountryChange = (code: string) => {
-    updateField('country', code);
-    updateField('city', '');
-    updateField('cityPlaceId', '');
-    setSelectedPlaceId('');
+    updateField("country", code);
+    updateField("city", "");
+    updateField("cityPlaceId", "");
+    setSelectedPlaceId("");
   };
 
   const renderStep = () => {
-    const commonProps = { data: formData, updateData: updateFormDataFn, errors };
+    const commonProps = {
+      data: formData,
+      updateData: updateFormDataFn,
+      errors,
+    };
     switch (currentStep) {
       case 1:
         return (
-          <Step1 
+          <Step1
             {...commonProps}
             cityOptions={cityOptions}
             isSearchingCity={isSearchingCity}
@@ -299,13 +312,35 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
       <div className="min-h-full flex items-center justify-center px-4 py-6 pt-safe pb-safe">
         <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm text-center animate-fade-in">
           <div className="w-14 h-14 bg-bocado-green/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-7 h-7 text-bocado-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <svg
+              className="w-7 h-7 text-bocado-green"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">{t('registrationFlow.verifyEmailTitle')}</h2>
-          <p className="text-sm text-bocado-gray mb-4">{t('registrationFlow.sentTo')} <strong className="text-bocado-text break-all">{registeredEmail}</strong></p>
-          <button onClick={handleVerificationComplete} className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all">{t('registrationFlow.alreadyVerified')}</button>
+          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">
+            {t("registrationFlow.verifyEmailTitle")}
+          </h2>
+          <p className="text-sm text-bocado-gray mb-4">
+            {t("registrationFlow.sentTo")}{" "}
+            <strong className="text-bocado-text break-all">
+              {registeredEmail}
+            </strong>
+          </p>
+          <button
+            onClick={handleVerificationComplete}
+            className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+          >
+            {t("registrationFlow.alreadyVerified")}
+          </button>
         </div>
       </div>
     );
@@ -317,7 +352,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
         <div className="mt-4 mb-6">
           <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
         </div>
-        
+
         <div className="flex-1 relative overflow-y-auto no-scrollbar">
           {/* ✅ CORRECCIÓN ERROR 2304: Cambiado 'renderScreen' por 'renderStep' */}
           {renderStep()}
@@ -330,17 +365,35 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({ onRegistrationCompl
 
         <div className="mt-4 space-y-3 pb-safe">
           <div className="flex justify-between gap-3">
-            <button onClick={prevStep} className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${currentStep === 1 ? 'invisible' : 'bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95'}`} disabled={isLoading}>{t('registrationFlow.previous')}</button>
-            <button 
-              data-testid={currentStep === TOTAL_STEPS ? 'submit-button' : 'next-button'}
-              onClick={nextStep} 
-              className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray" 
+            <button
+              onClick={prevStep}
+              className={`flex-1 py-3 rounded-xl font-bold text-sm transition-all ${currentStep === 1 ? "invisible" : "bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95"}`}
               disabled={isLoading}
             >
-              {isLoading ? t('registrationFlow.creating') : (currentStep === TOTAL_STEPS ? t('registrationFlow.createAccount') : t('registrationFlow.next'))}
+              {t("registrationFlow.previous")}
+            </button>
+            <button
+              data-testid={
+                currentStep === TOTAL_STEPS ? "submit-button" : "next-button"
+              }
+              onClick={nextStep}
+              className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray"
+              disabled={isLoading}
+            >
+              {isLoading
+                ? t("registrationFlow.creating")
+                : currentStep === TOTAL_STEPS
+                  ? t("registrationFlow.createAccount")
+                  : t("registrationFlow.next")}
             </button>
           </div>
-          <button onClick={onGoHome} className="w-full text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray transition-colors py-2" disabled={isLoading}>{t('registrationFlow.backToHome')}</button>
+          <button
+            onClick={onGoHome}
+            className="w-full text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray transition-colors py-2"
+            disabled={isLoading}
+          >
+            {t("registrationFlow.backToHome")}
+          </button>
         </div>
       </div>
     </div>

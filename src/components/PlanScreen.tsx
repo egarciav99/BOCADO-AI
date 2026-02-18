@@ -1,11 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { db, auth, trackEvent } from '../firebaseConfig';
-import { collection, query, where, getDocs, limit, doc, getDoc, DocumentSnapshot } from 'firebase/firestore';
-import { Plan, Meal } from '../types';
-import MealCard from './MealCard';
-import BottomTabBar, { Tab } from './BottomTabBar';
-import { useTranslation } from '../contexts/I18nContext';
+import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { db, auth, trackEvent } from "../firebaseConfig";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  limit,
+  doc,
+  getDoc,
+  DocumentSnapshot,
+} from "firebase/firestore";
+import { Plan, Meal } from "../types";
+import MealCard from "./MealCard";
+import BottomTabBar, { Tab } from "./BottomTabBar";
+import { useTranslation } from "../contexts/I18nContext";
 
 interface PlanScreenProps {
   planId: string;
@@ -22,25 +31,29 @@ const processFirestoreDoc = (doc: DocumentSnapshot): Plan | null => {
     const rawDate = data.fecha_creacion || data.createdAt;
     let recipesArray: any[] = [];
     let greeting = data.saludo_personalizado || "Aquí tienes tu plan";
-    
+
     if (data.receta && Array.isArray(data.receta.recetas)) {
-        recipesArray = data.receta.recetas;
-        if (data.saludo_personalizado) greeting = data.saludo_personalizado;
+      recipesArray = data.receta.recetas;
+      if (data.saludo_personalizado) greeting = data.saludo_personalizado;
     } else if (Array.isArray(data.recetas)) {
-        recipesArray = data.recetas;
+      recipesArray = data.recetas;
     }
     if (recipesArray.length === 0) return null;
 
     const meals: Meal[] = recipesArray.map((rec: any, index: number) => ({
       mealType: `Opción ${index + 1}`,
       recipe: {
-        title: rec.titulo ?? rec.nombre ?? 'Receta',
-        time: rec.tiempo_estimado ?? rec.tiempo_preparacion ?? 'N/A',
-        difficulty: rec.dificultad ?? 'N/A',
-        calories: rec.macros_por_porcion?.kcal ?? rec.kcal ?? 'N/A',
-        savingsMatch: rec.coincidencia_despensa ?? 'Ninguno',
+        title: rec.titulo ?? rec.nombre ?? "Receta",
+        time: rec.tiempo_estimado ?? rec.tiempo_preparacion ?? "N/A",
+        difficulty: rec.dificultad ?? "N/A",
+        calories: rec.macros_por_porcion?.kcal ?? rec.kcal ?? "N/A",
+        savingsMatch: rec.coincidencia_despensa ?? "Ninguno",
         ingredients: Array.isArray(rec.ingredientes) ? rec.ingredientes : [],
-        instructions: Array.isArray(rec.pasos_preparacion) ? rec.pasos_preparacion : (Array.isArray(rec.instrucciones) ? rec.instrucciones : []),
+        instructions: Array.isArray(rec.pasos_preparacion)
+          ? rec.pasos_preparacion
+          : Array.isArray(rec.instrucciones)
+            ? rec.instrucciones
+            : [],
         // Macros completos
         protein_g: rec.macros_por_porcion?.proteinas_g,
         carbs_g: rec.macros_por_porcion?.carbohidratos_g,
@@ -48,8 +61,17 @@ const processFirestoreDoc = (doc: DocumentSnapshot): Plan | null => {
       },
     }));
 
-    return { planTitle: "Recetas Sugeridas", greeting, meals, _id: doc.id, _createdAt: rawDate, interaction_id: interactionId };
-  } catch (e) { return null; }
+    return {
+      planTitle: "Recetas Sugeridas",
+      greeting,
+      meals,
+      _id: doc.id,
+      _createdAt: rawDate,
+      interaction_id: interactionId,
+    };
+  } catch (e) {
+    return null;
+  }
 };
 
 // --- PROCESAMIENTO DE RESTAURANTES (FUERA) ---
@@ -60,61 +82,78 @@ const processRecommendationDoc = (doc: DocumentSnapshot): Plan | null => {
     // ✅ FIX: Usar ?? para preservar valores falsy válidos
     const interactionId = data.interaction_id ?? data.user_interactions;
     const rawDate = data.fecha_creacion ?? data.createdAt;
-    
-    let items = data.recomendaciones?.recomendaciones ?? data.recomendaciones ?? [];
+
+    let items =
+      data.recomendaciones?.recomendaciones ?? data.recomendaciones ?? [];
     let greeting = data.saludo_personalizado ?? "Opciones fuera de casa";
     if (!Array.isArray(items) || items.length === 0) return null;
 
     const meals: Meal[] = items.map((rec: any, index: number) => ({
       mealType: `Sugerencia ${index + 1}`,
       recipe: {
-        title: rec.nombre_restaurante ?? rec.nombre ?? 'Restaurante',
-        cuisine: rec.tipo_comida ?? rec.cuisine ?? rec.tipo ?? 'Gastronomía', 
-        time: 'N/A', 
-        difficulty: 'Restaurante', 
-        calories: 'N/A', 
-        savingsMatch: 'Ninguno',
-        
+        title: rec.nombre_restaurante ?? rec.nombre ?? "Restaurante",
+        cuisine: rec.tipo_comida ?? rec.cuisine ?? rec.tipo ?? "Gastronomía",
+        time: "N/A",
+        difficulty: "Restaurante",
+        calories: "N/A",
+        savingsMatch: "Ninguno",
+
         // Campos separados para restaurantes
         link_maps: rec.link_maps ?? null,
         direccion_aproximada: rec.direccion_aproximada ?? null,
         plato_sugerido: rec.plato_sugerido ?? null,
         por_que_es_bueno: rec.por_que_es_bueno ?? null,
         hack_saludable: rec.hack_saludable ?? null,
-        
+
         // Arrays vacíos para restaurantes
         ingredients: [],
-        instructions: []
-      }
+        instructions: [],
+      },
     }));
 
-    return { planTitle: "Lugares Recomendados", greeting, meals, _id: doc.id, _createdAt: rawDate, interaction_id: interactionId };
-  } catch (e) { return null; }
+    return {
+      planTitle: "Lugares Recomendados",
+      greeting,
+      meals,
+      _id: doc.id,
+      _createdAt: rawDate,
+      interaction_id: interactionId,
+    };
+  } catch (e) {
+    return null;
+  }
 };
 
 // --- HOOK DE CONSULTA ---
-const usePlanQuery = (planId: string | undefined, userId: string | undefined) => {
+const usePlanQuery = (
+  planId: string | undefined,
+  userId: string | undefined,
+) => {
   return useQuery({
-    queryKey: ['plan', planId, userId],
+    queryKey: ["plan", planId, userId],
     queryFn: async () => {
       if (!planId || !userId) {
-        throw new Error('Faltan parámetros');
+        throw new Error("Faltan parámetros");
       }
 
       // 1) Consulta directa por interaction_id (más eficiente y precisa)
       const [recipesSnap, recsSnap] = await Promise.all([
-        getDocs(query(
-          collection(db, "historial_recetas"),
-          where("user_id", "==", userId),
-          where("interaction_id", "==", planId),
-          limit(1)
-        )),
-        getDocs(query(
-          collection(db, "historial_recomendaciones"),
-          where("user_id", "==", userId),
-          where("interaction_id", "==", planId),
-          limit(1)
-        ))
+        getDocs(
+          query(
+            collection(db, "historial_recetas"),
+            where("user_id", "==", userId),
+            where("interaction_id", "==", planId),
+            limit(1),
+          ),
+        ),
+        getDocs(
+          query(
+            collection(db, "historial_recomendaciones"),
+            where("user_id", "==", userId),
+            where("interaction_id", "==", planId),
+            limit(1),
+          ),
+        ),
       ]);
 
       // ✅ FIX: Validar que existan docs antes de acceder al array
@@ -146,44 +185,56 @@ const usePlanQuery = (planId: string | undefined, userId: string | undefined) =>
         if (plan) return plan;
       }
 
-      throw new Error('No se encontró el plan');
+      throw new Error("No se encontró el plan");
     },
     enabled: !!planId && !!userId,
     staleTime: 1000 * 60 * 5,
   });
 };
 
-const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavigateTab }) => {
+const PlanScreen: React.FC<PlanScreenProps> = ({
+  planId,
+  onStartNewPlan,
+  onNavigateTab,
+}) => {
   const { t } = useTranslation();
-  
+
   const loadingMessages = [
-    t('plan.loadingMessages.chefs'),
-    t('plan.loadingMessages.places'),
-    t('plan.loadingMessages.ingredients'),
-    t('plan.loadingMessages.nutrition'),
-    t('plan.loadingMessages.magic'),
-    t('plan.loadingMessages.final'),
+    t("plan.loadingMessages.chefs"),
+    t("plan.loadingMessages.places"),
+    t("plan.loadingMessages.ingredients"),
+    t("plan.loadingMessages.nutrition"),
+    t("plan.loadingMessages.magic"),
+    t("plan.loadingMessages.final"),
   ];
-  
-  const [currentLoadingMessage, setCurrentLoadingMessage] = useState(loadingMessages[0]);
+
+  const [currentLoadingMessage, setCurrentLoadingMessage] = useState(
+    loadingMessages[0],
+  );
   const user = auth.currentUser;
-  const { data: selectedPlan, isLoading, isError, error, refetch } = usePlanQuery(planId, user?.uid);
+  const {
+    data: selectedPlan,
+    isLoading,
+    isError,
+    error,
+    refetch,
+  } = usePlanQuery(planId, user?.uid);
 
   useEffect(() => {
     if (selectedPlan) {
-      trackEvent('plan_viewed', {
+      trackEvent("plan_viewed", {
         plan_id: planId,
         plan_type: selectedPlan.planTitle,
-        userId: user?.uid
+        userId: user?.uid,
       });
     }
   }, [selectedPlan, planId, user]);
 
   useEffect(() => {
     if (isError) {
-      trackEvent('plan_error', {
+      trackEvent("plan_error", {
         plan_id: planId,
-        error_message: error instanceof Error ? error.message : 'Unknown error'
+        error_message: error instanceof Error ? error.message : "Unknown error",
       });
     }
   }, [isError, error, planId]);
@@ -191,11 +242,11 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavig
   useEffect(() => {
     if (!isLoading) return;
     const intervalId = setInterval(() => {
-      setCurrentLoadingMessage(prev => {
+      setCurrentLoadingMessage((prev) => {
         // 🟠 FIX #4: Validar indexOf antes de usar en array access
         const idx = loadingMessages.indexOf(prev);
         const nextIdx = idx >= 0 ? (idx + 1) % loadingMessages.length : 0;
-        return loadingMessages[nextIdx] || loadingMessages[0] || 'Cargando...';
+        return loadingMessages[nextIdx] || loadingMessages[0] || "Cargando...";
       });
     }, 4000);
     return () => clearInterval(intervalId);
@@ -206,16 +257,16 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavig
   // NO debe hacer una segunda mutación para evitar doble guardado/borrado.
   const handleToggleSave = (meal: Meal) => {
     if (!user) return;
-    const isRestaurant = meal.recipe.difficulty === 'Restaurante';
-    
-    trackEvent('plan_item_saved', {
-        item_title: meal.recipe.title,
-        type: isRestaurant ? 'restaurant' : 'recipe'
+    const isRestaurant = meal.recipe.difficulty === "Restaurante";
+
+    trackEvent("plan_item_saved", {
+      item_title: meal.recipe.title,
+      type: isRestaurant ? "restaurant" : "recipe",
     });
   };
 
   const handleStartNew = () => {
-    trackEvent('plan_return_home');
+    trackEvent("plan_return_home");
     onStartNewPlan();
   };
 
@@ -223,8 +274,12 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavig
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
         <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mb-4"></div>
-        <h2 className="text-lg font-bold text-bocado-dark-green mb-2">{t('plan.preparingTable')}</h2>
-        <p className="text-sm text-bocado-gray text-center max-w-xs">{currentLoadingMessage}</p>
+        <h2 className="text-lg font-bold text-bocado-dark-green mb-2">
+          {t("plan.preparingTable")}
+        </h2>
+        <p className="text-sm text-bocado-gray text-center max-w-xs">
+          {currentLoadingMessage}
+        </p>
       </div>
     );
   }
@@ -236,10 +291,17 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavig
           <div className="w-14 h-14 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">⚠️</span>
           </div>
-          <h2 className="text-lg font-bold text-red-500 mb-2">{t('plan.errorTitle')}</h2>
-          <p className="text-sm text-bocado-gray mb-6">{error instanceof Error ? error.message : t('plan.errorMessage')}</p>
-          <button onClick={() => refetch()} className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all">
-            {t('plan.tryAgain')}
+          <h2 className="text-lg font-bold text-red-500 mb-2">
+            {t("plan.errorTitle")}
+          </h2>
+          <p className="text-sm text-bocado-gray mb-6">
+            {error instanceof Error ? error.message : t("plan.errorMessage")}
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+          >
+            {t("plan.tryAgain")}
           </button>
         </div>
       </div>
@@ -252,9 +314,13 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavig
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto px-4 py-4 no-scrollbar min-h-0">
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold text-bocado-dark-green mb-3">{t('plan.ready')}</h1>
+          <h1 className="text-xl font-bold text-bocado-dark-green mb-3">
+            {t("plan.ready")}
+          </h1>
           <div className="p-4 bg-bocado-green/10 rounded-2xl">
-            <p className="text-bocado-dark-green italic text-sm leading-relaxed">"{selectedPlan.greeting}"</p>
+            <p className="text-bocado-dark-green italic text-sm leading-relaxed">
+              "{selectedPlan.greeting}"
+            </p>
           </div>
         </div>
 
@@ -264,7 +330,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavig
               key={index}
               meal={meal}
               onInteraction={(type) => {
-                if (type === 'save') handleToggleSave(meal);
+                if (type === "save") handleToggleSave(meal);
               }}
             />
           ))}
@@ -281,17 +347,20 @@ const PlanScreen: React.FC<PlanScreenProps> = ({ planId, onStartNewPlan, onNavig
             onClick={handleStartNew}
             className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-lg hover:bg-bocado-dark-green active:scale-95 transition-all"
           >
-            {t('plan.backToHome')}
+            {t("plan.backToHome")}
           </button>
         </div>
       </div>
 
       {/* ✅ BottomTabBar - fixed en la parte inferior */}
-      <BottomTabBar activeTab="recommendation" onTabChange={(tab) => {
-        if (onNavigateTab) {
-          onNavigateTab(tab);
-        }
-      }} />
+      <BottomTabBar
+        activeTab="recommendation"
+        onTabChange={(tab) => {
+          if (onNavigateTab) {
+            onNavigateTab(tab);
+          }
+        }}
+      />
     </div>
   );
 };

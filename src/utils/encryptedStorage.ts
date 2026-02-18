@@ -2,22 +2,25 @@
 // Uses a simple XOR encryption - NOT for highly sensitive data like passwords
 // For production apps with truly sensitive data, use a proper encryption library
 
-import { logger } from './logger';
+import { logger } from "./logger";
 
 // Check if we're in a browser environment
-const isBrowser = typeof window !== 'undefined';
+const isBrowser = typeof window !== "undefined";
 
 // ✅ FIX #10: Check if localStorage is actually available (can be disabled in iOS private mode)
 const isLocalStorageAvailable = (() => {
   if (!isBrowser) return false;
-  
+
   try {
-    const test = '__localStorage_test__';
+    const test = "__localStorage_test__";
     window.localStorage.setItem(test, test);
     window.localStorage.removeItem(test);
     return true;
   } catch (e) {
-    logger.warn('[encryptedStorage] localStorage not available (private mode or disabled):', e);
+    logger.warn(
+      "[encryptedStorage] localStorage not available (private mode or disabled):",
+      e,
+    );
     return false;
   }
 })();
@@ -25,25 +28,25 @@ const isLocalStorageAvailable = (() => {
 // Generate a key from the user's browser fingerprint + a salt
 // This makes it harder (but not impossible) to read the data from another browser
 const getEncryptionKey = (): string => {
-  const salt = 'bocado-ai-storage-v1';
+  const salt = "bocado-ai-storage-v1";
   const fingerprint = [
     navigator.userAgent,
     navigator.language,
     screen.width,
     screen.height,
     new Date().getTimezoneOffset(),
-  ].join('|');
-  
+  ].join("|");
+
   // Simple hash
   let hash = 0;
   const str = fingerprint + salt;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
+    hash = (hash << 5) - hash + char;
     hash = hash & hash;
   }
-  
-  return Math.abs(hash).toString(36).padStart(16, '0');
+
+  return Math.abs(hash).toString(36).padStart(16, "0");
 };
 
 // Convert string to UTF-8 byte array
@@ -56,11 +59,21 @@ const stringToUtf8Bytes = (str: string): number[] => {
     } else if (charcode < 0x800) {
       utf8.push(0xc0 | (charcode >> 6), 0x80 | (charcode & 0x3f));
     } else if (charcode < 0xd800 || charcode >= 0xe000) {
-      utf8.push(0xe0 | (charcode >> 12), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
-    } else { // surrogate pair
+      utf8.push(
+        0xe0 | (charcode >> 12),
+        0x80 | ((charcode >> 6) & 0x3f),
+        0x80 | (charcode & 0x3f),
+      );
+    } else {
+      // surrogate pair
       i++;
       charcode = ((charcode & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff);
-      utf8.push(0xf0 | (charcode >> 18), 0x80 | ((charcode >> 12) & 0x3f), 0x80 | ((charcode >> 6) & 0x3f), 0x80 | (charcode & 0x3f));
+      utf8.push(
+        0xf0 | (charcode >> 18),
+        0x80 | ((charcode >> 12) & 0x3f),
+        0x80 | ((charcode >> 6) & 0x3f),
+        0x80 | (charcode & 0x3f),
+      );
     }
   }
   return utf8;
@@ -68,7 +81,7 @@ const stringToUtf8Bytes = (str: string): number[] => {
 
 // Convert UTF-8 byte array to string
 const utf8BytesToString = (bytes: number[]): string => {
-  let str = '';
+  let str = "";
   let i = 0;
   while (i < bytes.length) {
     const byte1 = bytes[i];
@@ -79,11 +92,22 @@ const utf8BytesToString = (bytes: number[]): string => {
       str += String.fromCharCode(((byte1 & 0x1f) << 6) | (bytes[i + 1] & 0x3f));
       i += 2;
     } else if ((byte1 & 0xf0) === 0xe0) {
-      str += String.fromCharCode(((byte1 & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f));
+      str += String.fromCharCode(
+        ((byte1 & 0x0f) << 12) |
+          ((bytes[i + 1] & 0x3f) << 6) |
+          (bytes[i + 2] & 0x3f),
+      );
       i += 3;
     } else {
-      const codepoint = ((byte1 & 0x07) << 18) | ((bytes[i + 1] & 0x3f) << 12) | ((bytes[i + 2] & 0x3f) << 6) | (bytes[i + 3] & 0x3f);
-      str += String.fromCharCode(0xd800 + ((codepoint - 0x10000) >> 10), 0xdc00 + ((codepoint - 0x10000) & 0x3ff));
+      const codepoint =
+        ((byte1 & 0x07) << 18) |
+        ((bytes[i + 1] & 0x3f) << 12) |
+        ((bytes[i + 2] & 0x3f) << 6) |
+        (bytes[i + 3] & 0x3f);
+      str += String.fromCharCode(
+        0xd800 + ((codepoint - 0x10000) >> 10),
+        0xdc00 + ((codepoint - 0x10000) & 0x3ff),
+      );
       i += 4;
     }
   }
@@ -95,19 +119,19 @@ const xorEncrypt = (text: string, key: string): string => {
   // Convert to UTF-8 bytes to handle Unicode properly
   const bytes = stringToUtf8Bytes(text);
   const keyBytes = stringToUtf8Bytes(key);
-  
+
   // XOR each byte
   const result: number[] = [];
   for (let i = 0; i < bytes.length; i++) {
     result.push(bytes[i] ^ keyBytes[i % keyBytes.length]);
   }
-  
+
   // Convert to binary string for btoa
-  let binary = '';
+  let binary = "";
   for (let i = 0; i < result.length; i++) {
     binary += String.fromCharCode(result[i]);
   }
-  
+
   return btoa(binary); // Base64 encode
 };
 
@@ -115,13 +139,13 @@ const xorDecrypt = (encoded: string, key: string): string | null => {
   try {
     const binary = atob(encoded); // Base64 decode
     const keyBytes = stringToUtf8Bytes(key);
-    
+
     // XOR each byte
     const bytes: number[] = [];
     for (let i = 0; i < binary.length; i++) {
       bytes.push(binary.charCodeAt(i) ^ keyBytes[i % keyBytes.length]);
     }
-    
+
     return utf8BytesToString(bytes);
   } catch (e) {
     return null;
@@ -131,54 +155,60 @@ const xorDecrypt = (encoded: string, key: string): string | null => {
 export const encryptedStorage = {
   getItem: (key: string): string | null => {
     if (!isLocalStorageAvailable) {
-      logger.warn('[encryptedStorage] localStorage not available, returning null');
+      logger.warn(
+        "[encryptedStorage] localStorage not available, returning null",
+      );
       return null;
     }
-    
+
     try {
       const encrypted = localStorage.getItem(key);
       if (!encrypted) return null;
-      
+
       // Check if data is encrypted (starts with 'enc:')
-      if (encrypted.startsWith('enc:')) {
+      if (encrypted.startsWith("enc:")) {
         const key_str = getEncryptionKey();
         const decrypted = xorDecrypt(encrypted.slice(4), key_str);
         return decrypted;
       }
-      
+
       // Legacy: return as-is (for migration)
       return encrypted;
     } catch (e) {
-      logger.error('Error reading from encrypted storage', e);
+      logger.error("Error reading from encrypted storage", e);
       return null;
     }
   },
-  
+
   setItem: (key: string, value: string): void => {
     if (!isLocalStorageAvailable) {
-      logger.warn('[encryptedStorage] localStorage not available, skipping write');
+      logger.warn(
+        "[encryptedStorage] localStorage not available, skipping write",
+      );
       return;
     }
-    
+
     try {
       const key_str = getEncryptionKey();
-      const encrypted = 'enc:' + xorEncrypt(value, key_str);
+      const encrypted = "enc:" + xorEncrypt(value, key_str);
       localStorage.setItem(key, encrypted);
     } catch (e) {
-      logger.error('Error writing to encrypted storage', e);
+      logger.error("Error writing to encrypted storage", e);
     }
   },
-  
+
   removeItem: (key: string): void => {
     if (!isLocalStorageAvailable) {
-      logger.warn('[encryptedStorage] localStorage not available, skipping remove');
+      logger.warn(
+        "[encryptedStorage] localStorage not available, skipping remove",
+      );
       return;
     }
-    
+
     try {
       localStorage.removeItem(key);
     } catch (e) {
-      logger.error('Error removing from encrypted storage', e);
+      logger.error("Error removing from encrypted storage", e);
     }
   },
 };
@@ -188,7 +218,7 @@ export const encryptedStorage = {
 export const safeStorage = {
   getItem: (key: string): string | null => {
     if (!isBrowser || !isLocalStorageAvailable) return null;
-    
+
     try {
       return encryptedStorage.getItem(key);
     } catch {
@@ -201,27 +231,27 @@ export const safeStorage = {
   },
   setItem: (key: string, value: string): void => {
     if (!isBrowser || !isLocalStorageAvailable) return;
-    
+
     try {
       encryptedStorage.setItem(key, value);
     } catch {
       try {
         localStorage.setItem(key, value);
       } catch {
-        logger.warn('[safeStorage] Failed to write to storage');
+        logger.warn("[safeStorage] Failed to write to storage");
       }
     }
   },
   removeItem: (key: string): void => {
     if (!isBrowser || !isLocalStorageAvailable) return;
-    
+
     try {
       encryptedStorage.removeItem(key);
     } catch {
       try {
         localStorage.removeItem(key);
       } catch {
-        logger.warn('[safeStorage] Failed to remove from storage');
+        logger.warn("[safeStorage] Failed to remove from storage");
       }
     }
   },

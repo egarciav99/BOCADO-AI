@@ -1,28 +1,39 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { 
-  collection, 
-  query, 
-  where, 
-  getDocs, 
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  UseQueryResult,
+} from "@tanstack/react-query";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
   getDoc,
-  doc, 
-  setDoc, 
-  deleteDoc, 
+  doc,
+  setDoc,
+  deleteDoc,
   addDoc,
   serverTimestamp,
   orderBy,
   limit,
   startAfter,
   Timestamp,
-} from 'firebase/firestore';
-import { db, trackEvent } from '../firebaseConfig';
-import { Recipe, SavedItem, SavedItemType, FeedbackType, FeedbackData } from '../types';
-import { useVisibilityAwarePolling } from './usePaginatedFirestoreQuery';
-import { logger } from '../utils/logger';
+} from "firebase/firestore";
+import { db, trackEvent } from "../firebaseConfig";
+import {
+  Recipe,
+  SavedItem,
+  SavedItemType,
+  FeedbackType,
+  FeedbackData,
+} from "../types";
+import { useVisibilityAwarePolling } from "./usePaginatedFirestoreQuery";
+import { logger } from "../utils/logger";
 
-const SAVED_RECIPES_KEY = 'savedRecipes';
-const SAVED_RESTAURANTS_KEY = 'savedRestaurants';
+const SAVED_RECIPES_KEY = "savedRecipes";
+const SAVED_RESTAURANTS_KEY = "savedRestaurants";
 
 // ============================================
 // CONFIGURACIÓN DE PAGINACIÓN
@@ -41,81 +52,91 @@ interface FetchSavedItemsResult {
 }
 
 const fetchSavedItems = async (
-  userId: string, 
+  userId: string,
   type: SavedItemType,
   cursor?: Timestamp,
-  pageSize: number = PAGE_SIZE
+  pageSize: number = PAGE_SIZE,
 ): Promise<FetchSavedItemsResult> => {
-  const collectionName = type === 'recipe' ? 'saved_recipes' : 'saved_restaurants';
-  
+  const collectionName =
+    type === "recipe" ? "saved_recipes" : "saved_restaurants";
+
   try {
     // Intentar consulta optimizada con índice
     let q = query(
       collection(db, collectionName),
-      where('user_id', '==', userId),
-      orderBy('savedAt', 'desc'),
-      limit(pageSize + 1)
+      where("user_id", "==", userId),
+      orderBy("savedAt", "desc"),
+      limit(pageSize + 1),
     );
-    
+
     if (cursor) {
       q = query(q, startAfter(cursor));
     }
-    
+
     const snapshot = await getDocs(q);
-    
+
     const docs = snapshot.docs;
     const hasMore = docs.length > pageSize;
     const itemsToReturn = hasMore ? docs.slice(0, pageSize) : docs;
-    
-    const items: SavedItem[] = itemsToReturn.map((docSnap): SavedItem => ({
-      id: docSnap.id,
-      type,
-      recipe: docSnap.data().recipe as Recipe,
-      mealType: docSnap.data().mealType || 'Guardado',
-      userId: docSnap.data().user_id,
-      savedAt: docSnap.data().savedAt?.toMillis?.() || Date.now(),
-    }));
-    
-    const nextCursor = hasMore && itemsToReturn.length > 0
-      ? docs[docs.length - 1].data().savedAt
-      : undefined;
-    
+
+    const items: SavedItem[] = itemsToReturn.map(
+      (docSnap): SavedItem => ({
+        id: docSnap.id,
+        type,
+        recipe: docSnap.data().recipe as Recipe,
+        mealType: docSnap.data().mealType || "Guardado",
+        userId: docSnap.data().user_id,
+        savedAt: docSnap.data().savedAt?.toMillis?.() || Date.now(),
+      }),
+    );
+
+    const nextCursor =
+      hasMore && itemsToReturn.length > 0
+        ? docs[docs.length - 1].data().savedAt
+        : undefined;
+
     return { items, nextCursor, hasMore };
-    
   } catch (error: any) {
     // Si el error es por índice faltante, hacer fallback a consulta simple
-    if (error?.message?.includes('index') || error?.code === 'failed-precondition') {
+    if (
+      error?.message?.includes("index") ||
+      error?.code === "failed-precondition"
+    ) {
       logger.warn(`⚠️ Índice faltante en ${collectionName}, usando fallback`);
-      
+
       // Fallback: consulta sin orderBy (ordena en memoria)
       const q = query(
         collection(db, collectionName),
-        where('user_id', '==', userId),
-        limit(pageSize * 3) // Cargar más para compensar falta de orden
+        where("user_id", "==", userId),
+        limit(pageSize * 3), // Cargar más para compensar falta de orden
       );
-      
+
       const snapshot = await getDocs(q);
-      
+
       // Ordenar en memoria por savedAt descendente
       const items: SavedItem[] = snapshot.docs
-        .map((docSnap): SavedItem => ({
-          id: docSnap.id,
-          type,
-          recipe: docSnap.data().recipe as Recipe,
-          mealType: docSnap.data().mealType || 'Guardado',
-          userId: docSnap.data().user_id,
-          savedAt: docSnap.data().savedAt?.toMillis?.() || Date.now(),
-        }))
+        .map(
+          (docSnap): SavedItem => ({
+            id: docSnap.id,
+            type,
+            recipe: docSnap.data().recipe as Recipe,
+            mealType: docSnap.data().mealType || "Guardado",
+            userId: docSnap.data().user_id,
+            savedAt: docSnap.data().savedAt?.toMillis?.() || Date.now(),
+          }),
+        )
         .sort((a, b) => {
-          const bTime = typeof b.savedAt === 'number' ? b.savedAt : b.savedAt.toMillis();
-          const aTime = typeof a.savedAt === 'number' ? a.savedAt : a.savedAt.toMillis();
+          const bTime =
+            typeof b.savedAt === "number" ? b.savedAt : b.savedAt.toMillis();
+          const aTime =
+            typeof a.savedAt === "number" ? a.savedAt : a.savedAt.toMillis();
           return bTime - aTime;
         })
         .slice(0, pageSize);
-      
+
       return { items, hasMore: false }; // Sin paginación en fallback
     }
-    
+
     throw error;
   }
 };
@@ -137,12 +158,12 @@ interface UseSavedItemsReturn {
 }
 
 export const useSavedItems = (
-  userId: string | undefined, 
-  type: SavedItemType
+  userId: string | undefined,
+  type: SavedItemType,
 ): UseSavedItemsReturn => {
   const queryClient = useQueryClient();
-  const key = type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
-  
+  const key = type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+
   // Estado de paginación
   const [paginationState, setPaginationState] = useState<{
     currentPage: number;
@@ -158,14 +179,14 @@ export const useSavedItems = (
 
   // Configurar polling basado en visibilidad de pestaña
   const { refetchInterval } = useVisibilityAwarePolling({
-    refetchInterval: 30000,      // 30s cuando visible
+    refetchInterval: 30000, // 30s cuando visible
     refetchIntervalInBackground: 300000, // 5min cuando oculto
     enabled: !!userId,
   });
 
   // Query principal - Solo para la primera página
   const queryResult = useQuery<FetchSavedItemsResult>({
-    queryKey: [key, userId, 'page', 1],
+    queryKey: [key, userId, "page", 1],
     queryFn: async () => {
       if (!userId) return { items: [], hasMore: false };
       return fetchSavedItems(userId, type, undefined);
@@ -175,21 +196,25 @@ export const useSavedItems = (
     gcTime: 1000 * 60 * 10,
     refetchInterval: refetchInterval as number | false,
     refetchOnWindowFocus: true,
-    placeholderData: (previousData: FetchSavedItemsResult | undefined) => previousData,
+    placeholderData: (previousData: FetchSavedItemsResult | undefined) =>
+      previousData,
   });
 
   // Acumular items de todas las páginas cargadas
   const [allItems, setAllItems] = useState<SavedItem[]>([]);
   const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
-  
+
   // Efecto para manejar la primera página
   useEffect(() => {
     if (queryResult.data && !loadedPages.has(1)) {
       setAllItems(queryResult.data.items);
-      setPaginationState(prev => ({
+      setPaginationState((prev) => ({
         ...prev,
         hasMore: queryResult.data.hasMore,
-        cursors: [undefined, queryResult.data.nextCursor].filter(Boolean) as (Timestamp | undefined)[],
+        cursors: [undefined, queryResult.data.nextCursor].filter(Boolean) as (
+          | Timestamp
+          | undefined
+        )[],
       }));
       setLoadedPages(new Set([1]));
     }
@@ -197,35 +222,39 @@ export const useSavedItems = (
 
   // Función para cargar siguiente página
   const fetchNextPage = useCallback(async () => {
-    if (!paginationState.hasMore || paginationState.isFetchingNextPage || !userId) return;
-    
+    if (
+      !paginationState.hasMore ||
+      paginationState.isFetchingNextPage ||
+      !userId
+    )
+      return;
+
     const nextPageNum = paginationState.currentPage + 1;
-    
+
     // Verificar si ya cargamos esta página
     if (loadedPages.has(nextPageNum)) return;
-    
-    setPaginationState(prev => ({ ...prev, isFetchingNextPage: true }));
-    
+
+    setPaginationState((prev) => ({ ...prev, isFetchingNextPage: true }));
+
     try {
       const cursor = paginationState.cursors[paginationState.currentPage];
-      
+
       const result = await fetchSavedItems(userId, type, cursor);
-      
+
       // Agregar nuevos items a la lista acumulada
-      setAllItems(prev => [...prev, ...result.items]);
-      
-      setPaginationState(prev => ({
+      setAllItems((prev) => [...prev, ...result.items]);
+
+      setPaginationState((prev) => ({
         currentPage: nextPageNum,
         hasMore: result.hasMore,
         isFetchingNextPage: false,
         cursors: [...prev.cursors, result.nextCursor],
       }));
-      
-      setLoadedPages(prev => new Set([...prev, nextPageNum]));
-      
+
+      setLoadedPages((prev) => new Set([...prev, nextPageNum]));
     } catch (error) {
-      logger.error('Error fetching next page:', error);
-      setPaginationState(prev => ({ ...prev, isFetchingNextPage: false }));
+      logger.error("Error fetching next page:", error);
+      setPaginationState((prev) => ({ ...prev, isFetchingNextPage: false }));
     }
   }, [paginationState, userId, type, loadedPages]);
 
@@ -267,7 +296,7 @@ export const useToggleSavedItem = () => {
       type,
       recipe,
       mealType,
-      isSaved
+      isSaved,
     }: {
       userId: string;
       type: SavedItemType;
@@ -275,13 +304,14 @@ export const useToggleSavedItem = () => {
       mealType: string;
       isSaved: boolean;
     }) => {
-      const collectionName = type === 'recipe' ? 'saved_recipes' : 'saved_restaurants';
-      const docId = `${userId}_${recipe.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+      const collectionName =
+        type === "recipe" ? "saved_recipes" : "saved_restaurants";
+      const docId = `${userId}_${recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
       const docRef = doc(db, collectionName, docId);
 
       if (isSaved) {
         await deleteDoc(docRef);
-        return { action: 'removed' as const, type, recipe };
+        return { action: "removed" as const, type, recipe };
       } else {
         await setDoc(docRef, {
           user_id: userId,
@@ -289,39 +319,60 @@ export const useToggleSavedItem = () => {
           mealType,
           savedAt: serverTimestamp(),
         });
-        return { action: 'added' as const, type, recipe };
+        return { action: "added" as const, type, recipe };
       }
     },
-    
+
     onMutate: async ({ userId, type, recipe, isSaved }) => {
-      const key = type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
-      const docId = `${userId}_${recipe.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
-      
+      const key = type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+      const docId = `${userId}_${recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
+
       // Cancelar queries pendientes
-      await queryClient.cancelQueries({ queryKey: [key, userId], exact: false });
-      await queryClient.cancelQueries({ queryKey: ['isSaved', key, userId, docId] });
-      
+      await queryClient.cancelQueries({
+        queryKey: [key, userId],
+        exact: false,
+      });
+      await queryClient.cancelQueries({
+        queryKey: ["isSaved", key, userId, docId],
+      });
+
       // Optimistic update del estado isSaved (para que el corazón cambie inmediatamente)
-      const previousIsSaved = queryClient.getQueryData<boolean>(['isSaved', key, userId, docId]);
-      queryClient.setQueryData<boolean>(['isSaved', key, userId, docId], !isSaved);
-      
-      const previousPage = queryClient.getQueryData<FetchSavedItemsResult>([key, userId, 'page', 1]);
-      const previousAll = queryClient.getQueryData<SavedItem[]>([key, userId, 'all']) || [];
-      
+      const previousIsSaved = queryClient.getQueryData<boolean>([
+        "isSaved",
+        key,
+        userId,
+        docId,
+      ]);
+      queryClient.setQueryData<boolean>(
+        ["isSaved", key, userId, docId],
+        !isSaved,
+      );
+
+      const previousPage = queryClient.getQueryData<FetchSavedItemsResult>([
+        key,
+        userId,
+        "page",
+        1,
+      ]);
+      const previousAll =
+        queryClient.getQueryData<SavedItem[]>([key, userId, "all"]) || [];
+
       if (isSaved) {
         // Optimistic remove
         if (previousPage) {
           queryClient.setQueryData<FetchSavedItemsResult>(
-            [key, userId, 'page', 1],
+            [key, userId, "page", 1],
             {
               ...previousPage,
-              items: previousPage.items.filter((item) => item.recipe.title !== recipe.title),
-            }
+              items: previousPage.items.filter(
+                (item) => item.recipe.title !== recipe.title,
+              ),
+            },
           );
         }
         queryClient.setQueryData<SavedItem[]>(
-          [key, userId, 'all'],
-          previousAll.filter((item) => item.recipe.title !== recipe.title)
+          [key, userId, "all"],
+          previousAll.filter((item) => item.recipe.title !== recipe.title),
         );
       } else {
         // Optimistic add
@@ -329,49 +380,65 @@ export const useToggleSavedItem = () => {
           id: `temp-${Date.now()}`,
           type,
           recipe,
-          mealType: 'Guardado',
+          mealType: "Guardado",
           userId,
           savedAt: Date.now(),
         };
         if (previousPage) {
           queryClient.setQueryData<FetchSavedItemsResult>(
-            [key, userId, 'page', 1],
+            [key, userId, "page", 1],
             {
               ...previousPage,
               items: [newItem, ...previousPage.items].slice(0, PAGE_SIZE),
-            }
+            },
           );
         }
         queryClient.setQueryData<SavedItem[]>(
-          [key, userId, 'all'],
-          [newItem, ...previousAll]
+          [key, userId, "all"],
+          [newItem, ...previousAll],
         );
       }
-      
+
       return { previousPage, previousAll, previousIsSaved };
     },
-    
+
     onError: (err, variables, context) => {
-      const key = variables.type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
-      const docId = `${variables.userId}_${variables.recipe.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+      const key =
+        variables.type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+      const docId = `${variables.userId}_${variables.recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
       if (context?.previousPage) {
-        queryClient.setQueryData([key, variables.userId, 'page', 1], context.previousPage);
+        queryClient.setQueryData(
+          [key, variables.userId, "page", 1],
+          context.previousPage,
+        );
       }
       if (context?.previousAll) {
-        queryClient.setQueryData([key, variables.userId, 'all'], context.previousAll);
+        queryClient.setQueryData(
+          [key, variables.userId, "all"],
+          context.previousAll,
+        );
       }
       // Revertir el estado del corazón si hubo error
       if (context?.previousIsSaved !== undefined) {
-        queryClient.setQueryData(['isSaved', key, variables.userId, docId], context.previousIsSaved);
+        queryClient.setQueryData(
+          ["isSaved", key, variables.userId, docId],
+          context.previousIsSaved,
+        );
       }
     },
-    
+
     onSettled: (data, error, variables) => {
-      const key = variables.type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
-      const docId = `${variables.userId}_${variables.recipe.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}`;
+      const key =
+        variables.type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+      const docId = `${variables.userId}_${variables.recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
       // Invalidar para refetch con datos frescos
-      queryClient.invalidateQueries({ queryKey: [key, variables.userId], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['isSaved', key, variables.userId, docId] });
+      queryClient.invalidateQueries({
+        queryKey: [key, variables.userId],
+        exact: false,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["isSaved", key, variables.userId, docId],
+      });
     },
   });
 };
@@ -383,15 +450,18 @@ export const useToggleSavedItem = () => {
 export const useIsItemSaved = (
   userId: string | undefined,
   type: SavedItemType,
-  title: string
+  title: string,
 ): boolean => {
-  const key = type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+  const key = type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
 
-  const collectionName = type === 'recipe' ? 'saved_recipes' : 'saved_restaurants';
-  const docId = userId ? `${userId}_${title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}` : '';
-  
+  const collectionName =
+    type === "recipe" ? "saved_recipes" : "saved_restaurants";
+  const docId = userId
+    ? `${userId}_${title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`
+    : "";
+
   const { data: isSaved = false } = useQuery<boolean>({
-    queryKey: ['isSaved', key, userId, docId],
+    queryKey: ["isSaved", key, userId, docId],
     enabled: !!userId && !!docId,
     staleTime: 1000 * 60 * 5,
     gcTime: 1000 * 60 * 10,
@@ -412,17 +482,17 @@ export const useIsItemSaved = (
 
 export const useAllSavedItems = (
   userId: string | undefined,
-  type: SavedItemType
+  type: SavedItemType,
 ): UseQueryResult<SavedItem[], Error> => {
   const { refetchInterval } = useVisibilityAwarePolling({
     refetchInterval: 60000,
     enabled: !!userId,
   });
-  
-  const key = type === 'recipe' ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
+
+  const key = type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
 
   return useQuery<SavedItem[]>({
-    queryKey: [key, userId, 'all'],
+    queryKey: [key, userId, "all"],
     queryFn: async () => {
       if (!userId) return [];
       const result = await fetchSavedItems(userId, type, undefined, 1000);
@@ -438,8 +508,8 @@ export const useAllSavedItems = (
 // FEEDBACK / CALIFICACIÓN CON OPTIMISTIC UPDATES
 // ============================================
 
-const FEEDBACK_KEY = 'feedback';
-const USER_HISTORY_KEY = 'user_history';
+const FEEDBACK_KEY = "feedback";
+const USER_HISTORY_KEY = "user_history";
 
 interface FeedbackMutationVariables {
   userId: string;
@@ -480,7 +550,7 @@ export const useFeedbackMutation = () => {
       comment,
       originalData,
     }: FeedbackMutationVariables): Promise<FeedbackData> => {
-      const feedbackData: Omit<FeedbackData, 'createdAt'> = {
+      const feedbackData: Omit<FeedbackData, "createdAt"> = {
         userId,
         itemId: itemTitle,
         type,
@@ -498,7 +568,7 @@ export const useFeedbackMutation = () => {
       });
 
       // Analytics tracking (no bloqueante)
-      trackEvent('submit_feedback', {
+      trackEvent("submit_feedback", {
         item_title: itemTitle,
         rating,
         type,
@@ -514,18 +584,22 @@ export const useFeedbackMutation = () => {
 
     // OPTIMISTIC UPDATE: Actualiza la UI inmediatamente antes de la respuesta del servidor
     onMutate: async (variables): Promise<FeedbackMutationContext> => {
-      const { userId, itemTitle, type, rating, comment, originalData } = variables;
-      
+      const { userId, itemTitle, type, rating, comment, originalData } =
+        variables;
+
       // Cancelar cualquier refetch pendiente para evitar sobreescrituras
       await queryClient.cancelQueries({ queryKey: [FEEDBACK_KEY, userId] });
       await queryClient.cancelQueries({ queryKey: [USER_HISTORY_KEY, userId] });
 
       // Snapshot del estado anterior para rollback en caso de error
-      const previousFeedback = queryClient.getQueryData<FeedbackData[]>([FEEDBACK_KEY, userId]);
-      
+      const previousFeedback = queryClient.getQueryData<FeedbackData[]>([
+        FEEDBACK_KEY,
+        userId,
+      ]);
+
       // Crear ID único para el item optimista
       const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
+
       // Crear el feedback optimista
       const optimisticFeedback: FeedbackData = {
         userId,
@@ -543,7 +617,7 @@ export const useFeedbackMutation = () => {
       // Actualizar el cache inmediatamente (optimistic update)
       queryClient.setQueryData<FeedbackData[]>(
         [FEEDBACK_KEY, userId],
-        (old = []) => [optimisticFeedback, ...old]
+        (old = []) => [optimisticFeedback, ...old],
       );
 
       return { previousFeedback, optimisticId };
@@ -554,14 +628,14 @@ export const useFeedbackMutation = () => {
       if (context?.previousFeedback) {
         queryClient.setQueryData(
           [FEEDBACK_KEY, variables.userId],
-          context.previousFeedback
+          context.previousFeedback,
         );
       }
 
       // Analytics tracking de error (no bloqueante)
-      trackEvent('feedback_error', {
+      trackEvent("feedback_error", {
         item_title: variables.itemTitle,
-        error: err instanceof Error ? err.message : 'unknown_error',
+        error: err instanceof Error ? err.message : "unknown_error",
         userId: variables.userId,
       });
     },
@@ -569,9 +643,9 @@ export const useFeedbackMutation = () => {
     // INVALIDACIÓN: Refetch en background para sincronizar con servidor
     onSettled: (_data, _error, variables) => {
       // Invalidar queries para sincronizar datos del servidor
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: [FEEDBACK_KEY, variables.userId],
-        refetchType: 'active',
+        refetchType: "active",
       });
     },
   });
@@ -595,7 +669,7 @@ export const useFeedbackMutation = () => {
  */
 export const useUserFeedback = (
   userId: string | undefined,
-  options?: { limit?: number }
+  options?: { limit?: number },
 ) => {
   const { refetchInterval } = useVisibilityAwarePolling({
     refetchInterval: 60000, // 1 minuto cuando visible
@@ -607,19 +681,22 @@ export const useUserFeedback = (
     queryKey: [FEEDBACK_KEY, userId],
     queryFn: async () => {
       if (!userId) return [];
-      
+
       const q = query(
         collection(db, USER_HISTORY_KEY),
-        where('userId', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(options?.limit || 100)
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc"),
+        limit(options?.limit || 100),
       );
-      
+
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-      } as unknown as FeedbackData));
+      return snapshot.docs.map(
+        (doc) =>
+          ({
+            id: doc.id,
+            ...doc.data(),
+          }) as unknown as FeedbackData,
+      );
     },
     enabled: !!userId,
     staleTime: 1000 * 60 * 2, // 2 minutos
@@ -628,4 +705,3 @@ export const useUserFeedback = (
     refetchOnWindowFocus: true,
   });
 };
-

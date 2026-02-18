@@ -1,33 +1,35 @@
-import React, { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { useSavedItems, useToggleSavedItem } from '../hooks/useSavedItems';
-import { useAuthStore } from '../stores/authStore';
-import { BookOpen } from './icons';
-import MealCard from './MealCard';
-import { Meal } from '../types';
-import { RecipeListSkeleton } from './skeleton';
-import { useTranslation } from '../contexts/I18nContext';
+import React, { useState } from "react";
+import { createPortal } from "react-dom";
+import { useSavedItems, useToggleSavedItem } from "../hooks/useSavedItems";
+import { useAuthStore } from "../stores/authStore";
+import { BookOpen } from "./icons";
+import MealCard from "./MealCard";
+import { Meal } from "../types";
+import { RecipeListSkeleton } from "./skeleton";
+import { useTranslation } from "../contexts/I18nContext";
 
 const SavedRecipesScreen: React.FC = () => {
   const { t } = useTranslation();
-  const [mealToConfirmDelete, setMealToConfirmDelete] = useState<Meal | null>(null);
-  
+  const [mealToConfirmDelete, setMealToConfirmDelete] = useState<Meal | null>(
+    null,
+  );
+
   const { user } = useAuthStore();
-  
+
   // ✅ TANSTACK QUERY + PAGINACIÓN
-  const savedItems = useSavedItems(user?.uid, 'recipe');
+  const savedItems = useSavedItems(user?.uid, "recipe");
   const recipes = savedItems.data || [];
   const isLoading = savedItems.isLoading;
   const fetchNextPage = savedItems.fetchNextPage;
   const hasNextPage = savedItems.hasNextPage;
   const isFetchingNextPage = savedItems.isFetchingNextPage;
   const totalLoaded = savedItems.totalLoaded;
-  
+
   const toggleMutation = useToggleSavedItem();
 
   const savedMeals: Meal[] = recipes.map((saved: any) => ({
     mealType: saved.mealType,
-    recipe: saved.recipe
+    recipe: saved.recipe,
   }));
 
   const handleDeleteRequest = (meal: Meal) => {
@@ -39,12 +41,12 @@ const SavedRecipesScreen: React.FC = () => {
 
     toggleMutation.mutate({
       userId: user.uid,
-      type: 'recipe',
+      type: "recipe",
       recipe: mealToConfirmDelete.recipe,
       mealType: mealToConfirmDelete.mealType,
       isSaved: true,
     });
-    
+
     setMealToConfirmDelete(null);
   };
 
@@ -58,36 +60,48 @@ const SavedRecipesScreen: React.FC = () => {
       <div className="text-center mb-6 px-4 pt-2">
         <div className="flex items-center justify-center gap-2 mb-1">
           <BookOpen className="w-6 h-6 text-bocado-green" />
-          <h2 className="text-xl font-bold text-bocado-dark-green">{t('savedRecipes.title')}</h2>
+          <h2 className="text-xl font-bold text-bocado-dark-green">
+            {t("savedRecipes.title")}
+          </h2>
         </div>
         <p className="text-xs text-bocado-gray">
-          {t('savedRecipes.subtitle')}
+          {t("savedRecipes.subtitle")}
           {totalLoaded > 0 && (
-            <span className="ml-1 text-bocado-green font-medium">({totalLoaded})</span>
+            <span className="ml-1 text-bocado-green font-medium">
+              ({totalLoaded})
+            </span>
           )}
         </p>
-        {toggleMutation.isPending && <p className="text-[10px] text-bocado-green mt-1">{t('savedRecipes.syncing')}</p>}
+        {toggleMutation.isPending && (
+          <p className="text-[10px] text-bocado-green mt-1">
+            {t("savedRecipes.syncing")}
+          </p>
+        )}
       </div>
 
       {/* Content */}
       <div className="flex-1 px-4 pb-8 min-h-0">
         {savedMeals.length === 0 ? (
           <div className="text-center py-12 px-6 bg-bocado-background rounded-2xl border-2 border-dashed border-bocado-border">
-            <p className="text-bocado-gray text-base mb-2">{t('savedRecipes.emptyState')}</p>
-            <p className="text-xs text-bocado-gray/70">{t('savedRecipes.emptyStateSubtitle')}</p>
+            <p className="text-bocado-gray text-base mb-2">
+              {t("savedRecipes.emptyState")}
+            </p>
+            <p className="text-xs text-bocado-gray/70">
+              {t("savedRecipes.emptyStateSubtitle")}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
             {savedMeals.map((meal, index) => (
-              <MealCard 
-                key={meal.recipe.title + index} 
+              <MealCard
+                key={meal.recipe.title + index}
                 meal={meal}
                 onInteraction={(type) => {
-                  if (type === 'save') handleDeleteRequest(meal);
+                  if (type === "save") handleDeleteRequest(meal);
                 }}
               />
             ))}
-            
+
             {/* Botón Cargar Más */}
             {hasNextPage && (
               <div className="pt-4 pb-2">
@@ -99,19 +113,23 @@ const SavedRecipesScreen: React.FC = () => {
                   {isFetchingNextPage ? (
                     <>
                       <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-sm">{t('savedRecipes.loading')}</span>
+                      <span className="text-sm">
+                        {t("savedRecipes.loading")}
+                      </span>
                     </>
                   ) : (
-                    <span className="text-sm">{t('savedRecipes.loadMore')}</span>
+                    <span className="text-sm">
+                      {t("savedRecipes.loadMore")}
+                    </span>
                   )}
                 </button>
               </div>
             )}
-            
+
             {/* Mensaje de fin */}
             {!hasNextPage && savedMeals.length > 0 && (
               <p className="text-center text-xs text-bocado-gray/60 py-4">
-                {t('savedRecipes.noMore')}
+                {t("savedRecipes.noMore")}
               </p>
             )}
           </div>
@@ -119,35 +137,40 @@ const SavedRecipesScreen: React.FC = () => {
       </div>
 
       {/* Confirmation Modal */}
-      {mealToConfirmDelete && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-bocado w-full max-w-sm p-6 text-center">
-            <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-xl">🗑️</span>
+      {mealToConfirmDelete &&
+        createPortal(
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-fade-in">
+            <div className="bg-white rounded-3xl shadow-bocado w-full max-w-sm p-6 text-center">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-xl">🗑️</span>
+              </div>
+              <h3 className="text-lg font-bold text-bocado-text mb-2">
+                {t("savedRecipes.deleteTitle")}
+              </h3>
+              <p className="text-sm text-bocado-gray mb-6">
+                {t("savedRecipes.deleteMessage", {
+                  title: mealToConfirmDelete.recipe.title,
+                })}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setMealToConfirmDelete(null)}
+                  className="flex-1 bg-bocado-background text-bocado-dark-gray font-bold py-3 rounded-full text-sm hover:bg-bocado-border transition-colors active:scale-95"
+                >
+                  {t("savedRecipes.cancel")}
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  disabled={toggleMutation.isPending}
+                  className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm hover:bg-red-600 active:scale-95 transition-colors disabled:opacity-50"
+                >
+                  {toggleMutation.isPending ? "..." : t("savedRecipes.delete")}
+                </button>
+              </div>
             </div>
-            <h3 className="text-lg font-bold text-bocado-text mb-2">{t('savedRecipes.deleteTitle')}</h3>
-            <p className="text-sm text-bocado-gray mb-6">
-              {t('savedRecipes.deleteMessage', { title: mealToConfirmDelete.recipe.title })}
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setMealToConfirmDelete(null)}
-                className="flex-1 bg-bocado-background text-bocado-dark-gray font-bold py-3 rounded-full text-sm hover:bg-bocado-border transition-colors active:scale-95"
-              >
-                {t('savedRecipes.cancel')}
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={toggleMutation.isPending}
-                className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm hover:bg-red-600 active:scale-95 transition-colors disabled:opacity-50"
-              >
-                {toggleMutation.isPending ? '...' : t('savedRecipes.delete')}
-              </button>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 };

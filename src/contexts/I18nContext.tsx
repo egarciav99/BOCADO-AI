@@ -1,10 +1,18 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
-import es from '../locales/es.json';
-import en from '../locales/en.json';
-import { useAuthStore } from '../stores/authStore';
-import { useUserProfile, useUpdateUserProfile } from '../hooks/useUser';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+  useRef,
+} from "react";
+import es from "../locales/es.json";
+import en from "../locales/en.json";
+import { useAuthStore } from "../stores/authStore";
+import { useUserProfile, useUpdateUserProfile } from "../hooks/useUser";
 
-type Locale = 'es' | 'en';
+type Locale = "es" | "en";
 
 interface Translation {
   [key: string]: any;
@@ -24,23 +32,23 @@ interface I18nContextType {
 
 const I18nContext = createContext<I18nContextType | undefined>(undefined);
 
-const LOCALE_STORAGE_KEY = 'bocado-locale';
+const LOCALE_STORAGE_KEY = "bocado-locale";
 
 function getBrowserLocale(): Locale {
   const browserLang = navigator.language.toLowerCase();
-  if (browserLang.startsWith('es')) return 'es';
-  return 'en';
+  if (browserLang.startsWith("es")) return "es";
+  return "en";
 }
 
 function getStoredLocale(): Locale {
   const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
-  if (stored === 'es' || stored === 'en') return stored;
+  if (stored === "es" || stored === "en") return stored;
   return getBrowserLocale();
 }
 
 /**
  * I18nProvider
- * 
+ *
  * Sincroniza el idioma con:
  * 1. Firebase (users/{uid}/language) - Single Source of Truth
  * 2. localStorage - Fallback y respaldo local
@@ -98,35 +106,41 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [user?.uid, updateProfileMutation]
+    [user?.uid, updateProfileMutation],
   );
 
-  const t = useCallback((key: string, variables?: Record<string, any>): string => {
-    const keys = key.split('.');
-    let value: any = translations[locale];
+  const t = useCallback(
+    (key: string, variables?: Record<string, any>): string => {
+      const keys = key.split(".");
+      let value: any = translations[locale];
 
-    for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
-        value = value[k];
-      } else {
-        if (import.meta.env.DEV) console.warn(`Translation key not found: ${key}`);
+      for (const k of keys) {
+        if (value && typeof value === "object" && k in value) {
+          value = value[k];
+        } else {
+          if (import.meta.env.DEV)
+            console.warn(`Translation key not found: ${key}`);
+          return key;
+        }
+      }
+
+      if (typeof value !== "string") {
         return key;
       }
-    }
 
-    if (typeof value !== 'string') {
-      return key;
-    }
+      // Interpolación de variables: reemplazar {variableName} con el valor correspondiente
+      if (variables) {
+        return value.replace(/\{(\w+)\}/g, (match, varName) => {
+          return variables[varName] !== undefined
+            ? String(variables[varName])
+            : match;
+        });
+      }
 
-    // Interpolación de variables: reemplazar {variableName} con el valor correspondiente
-    if (variables) {
-      return value.replace(/\{(\w+)\}/g, (match, varName) => {
-        return variables[varName] !== undefined ? String(variables[varName]) : match;
-      });
-    }
-
-    return value;
-  }, [locale]);
+      return value;
+    },
+    [locale],
+  );
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t, isLoadingLocale }}>
@@ -138,7 +152,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 export function useTranslation() {
   const context = useContext(I18nContext);
   if (!context) {
-    throw new Error('useTranslation must be used within I18nProvider');
+    throw new Error("useTranslation must be used within I18nProvider");
   }
   return context;
 }

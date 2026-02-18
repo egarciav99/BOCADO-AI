@@ -4,25 +4,31 @@
  */
 
 const STORAGE_KEYS = [
-  'bocado_notification_schedules',
-  'bocado_smart_reminders',
+  "bocado_notification_schedules",
+  "bocado_smart_reminders",
 ];
 
-export function cleanCorruptedNotifications(): { cleaned: boolean; keys: string[] } {
+export function cleanCorruptedNotifications(): {
+  cleaned: boolean;
+  keys: string[];
+} {
   const cleanedKeys: string[] = [];
-  
-  STORAGE_KEYS.forEach(key => {
+
+  STORAGE_KEYS.forEach((key) => {
     const saved = localStorage.getItem(key);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        const hasCorruptedData = Array.isArray(parsed) && parsed.some((item: any) => 
-          item.title?.includes('notifications.') || 
-          item.title?.includes('notificacions.') ||
-          item.body?.includes('notifications.') || 
-          item.body?.includes('notificacions.')
-        );
-        
+        const hasCorruptedData =
+          Array.isArray(parsed) &&
+          parsed.some(
+            (item: any) =>
+              item.title?.includes("notifications.") ||
+              item.title?.includes("notificacions.") ||
+              item.body?.includes("notifications.") ||
+              item.body?.includes("notificacions."),
+          );
+
         if (hasCorruptedData) {
           localStorage.removeItem(key);
           cleanedKeys.push(key);
@@ -33,7 +39,7 @@ export function cleanCorruptedNotifications(): { cleaned: boolean; keys: string[
       }
     }
   });
-  
+
   return {
     cleaned: cleanedKeys.length > 0,
     keys: cleanedKeys,
@@ -45,37 +51,41 @@ export function cleanCorruptedNotifications(): { cleaned: boolean; keys: string[
  */
 export function resetNotificationHistory(): void {
   const keys = Object.keys(localStorage).filter(
-    key => key.startsWith('last_notification_') || 
-           key.startsWith('bocado_ratings_shown') ||
-           key.startsWith('bocado_last_active')
+    (key) =>
+      key.startsWith("last_notification_") ||
+      key.startsWith("bocado_ratings_shown") ||
+      key.startsWith("bocado_last_active"),
   );
-  
-  keys.forEach(key => localStorage.removeItem(key));
-  if (import.meta.env.DEV) console.log(`✓ Limpiado historial de ${keys.length} notificaciones`);
+
+  keys.forEach((key) => localStorage.removeItem(key));
+  if (import.meta.env.DEV)
+    console.log(`✓ Limpiado historial de ${keys.length} notificaciones`);
 }
 
 /**
  * Función de diagnóstico para verificar el estado de las notificaciones
  */
 export function diagnoseNotifications(): void {
-  console.log('=== Diagnóstico de Notificaciones ===');
-  
-  STORAGE_KEYS.forEach(key => {
+  console.log("=== Diagnóstico de Notificaciones ===");
+
+  STORAGE_KEYS.forEach((key) => {
     const saved = localStorage.getItem(key);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         console.log(`\n${key}:`);
-        
+
         if (Array.isArray(parsed)) {
           parsed.forEach((item, index) => {
-            const isCorrupted = 
-              item.title?.includes('notifications.') || 
-              item.title?.includes('notificacions.') ||
-              item.body?.includes('notifications.') || 
-              item.body?.includes('notificacions.');
-            
-            console.log(`  [${index}] ${item.id || 'sin-id'}: ${isCorrupted ? '❌ CORRUPTO' : '✓ OK'}`);
+            const isCorrupted =
+              item.title?.includes("notifications.") ||
+              item.title?.includes("notificacions.") ||
+              item.body?.includes("notifications.") ||
+              item.body?.includes("notificacions.");
+
+            console.log(
+              `  [${index}] ${item.id || "sin-id"}: ${isCorrupted ? "❌ CORRUPTO" : "✓ OK"}`,
+            );
             if (isCorrupted) {
               console.log(`      Title: ${item.title}`);
               console.log(`      Body: ${item.body}`);
@@ -89,12 +99,12 @@ export function diagnoseNotifications(): void {
       console.log(`\n${key}: (vacío)`);
     }
   });
-  
-  console.log('\n=== Fin del diagnóstico ===');
+
+  console.log("\n=== Fin del diagnóstico ===");
 }
 
 // Exponer funciones globalmente para debug en consola
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   (window as any).bocadoNotifications = {
     clean: cleanCorruptedNotifications,
     reset: resetNotificationHistory,
@@ -102,9 +112,13 @@ if (typeof window !== 'undefined') {
   };
 
   if (import.meta.env.DEV) {
-    console.log('💡 Utilidades de notificaciones disponibles:');
-    console.log('   - window.bocadoNotifications.diagnose() - Verificar estado');
-    console.log('   - window.bocadoNotifications.clean() - Limpiar datos corruptos');
-    console.log('   - window.bocadoNotifications.reset() - Resetear historial');
+    console.log("💡 Utilidades de notificaciones disponibles:");
+    console.log(
+      "   - window.bocadoNotifications.diagnose() - Verificar estado",
+    );
+    console.log(
+      "   - window.bocadoNotifications.clean() - Limpiar datos corruptos",
+    );
+    console.log("   - window.bocadoNotifications.reset() - Resetear historial");
   }
 }

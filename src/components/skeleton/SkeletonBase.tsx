@@ -1,8 +1,8 @@
-import React from 'react';
+import React from "react";
 
 export interface SkeletonBaseProps {
   className?: string;
-  variant?: 'text' | 'circular' | 'rectangular';
+  variant?: "text" | "circular" | "rectangular";
   width?: string | number;
   height?: string | number;
 }
@@ -12,17 +12,17 @@ export interface SkeletonBaseProps {
  * Proporciona animación pulse y variantes de forma
  */
 export const SkeletonBase: React.FC<SkeletonBaseProps> = ({
-  className = '',
-  variant = 'text',
+  className = "",
+  variant = "text",
   width,
   height,
 }) => {
-  const baseClasses = 'bg-gray-200 animate-pulse';
-  
+  const baseClasses = "bg-gray-200 animate-pulse";
+
   const variantClasses = {
-    text: 'rounded',
-    circular: 'rounded-full',
-    rectangular: 'rounded-lg',
+    text: "rounded",
+    circular: "rounded-full",
+    rectangular: "rounded-lg",
   };
 
   const styles: React.CSSProperties = {

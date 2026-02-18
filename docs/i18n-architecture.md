@@ -3,9 +3,11 @@
 ## ⚠️ REGLA FUNDAMENTAL: Separación UI vs Datos
 
 ### 🔴 NUNCA traducir datos en Firebase
+
 Los datos en Firebase **SIEMPRE** deben estar en **ESPAÑOL** (idioma original del sistema).
 
 ### ✅ Solo traducir la interfaz de usuario (UI)
+
 Las traducciones solo afectan lo que el usuario **ve**, nunca lo que se **guarda**.
 
 ---
@@ -43,47 +45,51 @@ Las traducciones solo afectan lo que el usuario **ve**, nunca lo que se **guarda
 ## ✅ Casos de Uso CORRECTOS
 
 ### 1. Mostrar opciones de un select
+
 ```tsx
 // ❌ MAL - Traducir las opciones guardadas
 const { t } = useTranslation();
-const diseases = DISEASES.map(d => t(`diseases.${d}`)); // ❌ NO!
+const diseases = DISEASES.map((d) => t(`diseases.${d}`)); // ❌ NO!
 
 // ✅ BIEN - Mostrar etiqueta traducida, valor en español
 <select>
-  {DISEASES.map(disease => (
+  {DISEASES.map((disease) => (
     <option key={disease} value={disease}>
-      {t(`options.diseases.${disease}`)}  {/* Solo UI */}
+      {t(`options.diseases.${disease}`)} {/* Solo UI */}
     </option>
   ))}
-</select>
+</select>;
 ```
 
 ### 2. Guardar datos de formulario
+
 ```tsx
 // ❌ MAL - Guardar valor traducido
 const handleSubmit = async () => {
-  await setDoc(doc(db, 'users', uid), {
-    goal: t('goals.muscle')  // ❌ NO! Guardará "Build Muscle" en inglés
+  await setDoc(doc(db, "users", uid), {
+    goal: t("goals.muscle"), // ❌ NO! Guardará "Build Muscle" en inglés
   });
 };
 
 // ✅ BIEN - Guardar valor original
 const handleSubmit = async () => {
-  await setDoc(doc(db, 'users', uid), {
-    goal: 'Generar músculo'  // ✅ Siempre en español
+  await setDoc(doc(db, "users", uid), {
+    goal: "Generar músculo", // ✅ Siempre en español
   });
 };
 ```
 
 ### 3. Mostrar datos guardados
+
 ```tsx
 // ✅ BIEN - Leer español, mostrar traducido
-const profile = await getDoc(doc(db, 'users', uid));
+const profile = await getDoc(doc(db, "users", uid));
 const goalInSpanish = profile.data().goal; // "Generar músculo"
 
 return (
   <div>
-    {t(`profile.goals.${goalInSpanish}`)}  {/* UI: "Build Muscle" o "Generar músculo" */}
+    {t(`profile.goals.${goalInSpanish}`)}{" "}
+    {/* UI: "Build Muscle" o "Generar músculo" */}
   </div>
 );
 ```
@@ -93,12 +99,14 @@ return (
 ## 🔍 Archivos Críticos (NO traducir datos)
 
 ### ✅ Ya seguros (datos en español):
+
 - `src/constants.ts` - Todas las constantes en español ✅
 - `src/components/form-steps/*.tsx` - Usan constantes directamente ✅
 - `src/components/RegistrationFlow.tsx` - Guarda formData sin traducir ✅
 - `src/components/ProfileScreen.tsx` - Lee/escribe español ✅
 
 ### ⚠️ Verificar al implementar traducciones:
+
 - `src/components/RecommendationScreen.tsx`
 - `src/components/PlanScreen.tsx`
 - `src/hooks/usePantry.ts`
@@ -133,8 +141,8 @@ Antes de usar `t()` en un componente, pregúntate:
 ### Formulario de Registro - Step2
 
 ```tsx
-import { useTranslation } from '../contexts/I18nContext';
-import { DISEASES, ALLERGIES } from '../constants';
+import { useTranslation } from "../contexts/I18nContext";
+import { DISEASES, ALLERGIES } from "../constants";
 
 const Step2 = () => {
   const { t } = useTranslation();
@@ -143,10 +151,10 @@ const Step2 = () => {
   return (
     <div>
       {/* ✅ Título traducido (UI) */}
-      <h2>{t('registration.step2.title')}</h2>
-      
+      <h2>{t("registration.step2.title")}</h2>
+
       {/* ✅ Opciones: valor español, texto traducido */}
-      {DISEASES.map(disease => (
+      {DISEASES.map((disease) => (
         <button
           key={disease}
           onClick={() => {
@@ -173,12 +181,12 @@ const ProfileScreen = () => {
   return (
     <div>
       {/* ✅ Label traducido */}
-      <span>{t('profile.goal.label')}: </span>
-      
+      <span>{t("profile.goal.label")}: </span>
+
       {/* ✅ Valor traducido desde español */}
       <strong>
-        {profile.nutritionalGoal.map(goal => 
-          t(`options.goals.${goal}`)  // "Generar músculo" → "Build Muscle"
+        {profile.nutritionalGoal.map(
+          (goal) => t(`options.goals.${goal}`), // "Generar músculo" → "Build Muscle"
         )}
       </strong>
     </div>
@@ -201,25 +209,29 @@ const ProfileScreen = () => {
 ## 🚨 Errores Comunes a Evitar
 
 ### ❌ Error 1: Traducir al guardar
+
 ```tsx
 const saveProfile = async () => {
-  await setDoc(doc(db, 'users', uid), {
-    disease: t('diseases.diabetes')  // ❌ Guarda "Diabetes" o "Diabetes" según idioma
+  await setDoc(doc(db, "users", uid), {
+    disease: t("diseases.diabetes"), // ❌ Guarda "Diabetes" o "Diabetes" según idioma
   });
 };
 ```
 
 ### ❌ Error 2: Comparar traducido vs español
+
 ```tsx
-if (profile.goal === t('goals.muscle')) {  // ❌ Nunca coincidirá
+if (profile.goal === t("goals.muscle")) {
+  // ❌ Nunca coincidirá
   // ...
 }
 ```
 
 ### ❌ Error 3: Enviar traducción a Firebase Functions
+
 ```tsx
 const recommendation = await callFunction({
-  craving: t('cravings.italian')  // ❌ La función espera español
+  craving: t("cravings.italian"), // ❌ La función espera español
 });
 ```
 
@@ -227,15 +239,15 @@ const recommendation = await callFunction({
 
 ## ✅ Resumen
 
-| Elemento | Idioma | Usa `t()`? |
-|----------|--------|-----------|
-| Botones, títulos | Variable | ✅ Sí |
-| Mensajes de error | Variable | ✅ Sí |
-| Placeholders | Variable | ✅ Sí |
-| **DATOS en Firebase** | **Español** | **❌ NO** |
-| **Constantes (constants.ts)** | **Español** | **❌ NO** |
-| **Valores de formulario** | **Español** | **❌ NO** |
-| Etiquetas de datos | Variable | ✅ Sí (al mostrar) |
+| Elemento                      | Idioma      | Usa `t()`?         |
+| ----------------------------- | ----------- | ------------------ |
+| Botones, títulos              | Variable    | ✅ Sí              |
+| Mensajes de error             | Variable    | ✅ Sí              |
+| Placeholders                  | Variable    | ✅ Sí              |
+| **DATOS en Firebase**         | **Español** | **❌ NO**          |
+| **Constantes (constants.ts)** | **Español** | **❌ NO**          |
+| **Valores de formulario**     | **Español** | **❌ NO**          |
+| Etiquetas de datos            | Variable    | ✅ Sí (al mostrar) |
 
 ---
 

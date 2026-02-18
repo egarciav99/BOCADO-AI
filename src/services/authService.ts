@@ -1,29 +1,31 @@
-import { auth, db } from '../firebaseConfig';
-import { 
-  createUserWithEmailAndPassword, 
-  updateProfile, 
-  signInWithPopup, 
+import { auth, db } from "../firebaseConfig";
+import {
+  createUserWithEmailAndPassword,
+  updateProfile,
+  signInWithPopup,
   GoogleAuthProvider,
   reauthenticateWithPopup,
   linkWithPopup,
   unlink,
-  User
-} from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
-import { FormData, UserProfile } from '../types';
-import { separateUserData } from '../utils/profileSanitizer';
-import { cleanForFirestore } from '../utils/cleanForFirestore';
+  User,
+} from "firebase/auth";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { FormData, UserProfile } from "../types";
+import { separateUserData } from "../utils/profileSanitizer";
+import { cleanForFirestore } from "../utils/cleanForFirestore";
 
-export const registerUser = async (formData: FormData): Promise<{ uid: string }> => {
+export const registerUser = async (
+  formData: FormData,
+): Promise<{ uid: string }> => {
   const { auth: authData, profile } = separateUserData(formData);
-  
+
   // 1. Crear usuario en Firebase Auth
   const userCredential = await createUserWithEmailAndPassword(
-    auth, 
-    authData.email, 
-    authData.password!
+    auth,
+    authData.email,
+    authData.password!,
   );
-  
+
   const user = userCredential.user;
   const uid = user.uid;
 
@@ -35,11 +37,11 @@ export const registerUser = async (formData: FormData): Promise<{ uid: string }>
   const userProfile: UserProfile = {
     uid,
     ...profile,
-    createdAt: serverTimestamp() as UserProfile['createdAt'],
-    updatedAt: serverTimestamp() as UserProfile['updatedAt'],
+    createdAt: serverTimestamp() as UserProfile["createdAt"],
+    updatedAt: serverTimestamp() as UserProfile["updatedAt"],
   };
 
-  await setDoc(doc(db, 'users', uid), cleanForFirestore(userProfile));
+  await setDoc(doc(db, "users", uid), cleanForFirestore(userProfile));
 
   return { uid };
 };
@@ -48,39 +50,39 @@ export const registerUser = async (formData: FormData): Promise<{ uid: string }>
  * Inicia sesión con Google
  * Si es un usuario nuevo, retorna isNewUser: true para que complete el perfil
  */
-export const signInWithGoogle = async (): Promise<{ 
-  uid: string; 
-  isNewUser: boolean; 
+export const signInWithGoogle = async (): Promise<{
+  uid: string;
+  isNewUser: boolean;
   email: string | null;
 }> => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({
-    prompt: 'select_account'
+    prompt: "select_account",
   });
-  
+
   const userCredential = await signInWithPopup(auth, provider);
   const user = userCredential.user;
-  
+
   // Verificar si el usuario ya tiene perfil en Firestore
-  const userDoc = await getDoc(doc(db, 'users', user.uid));
+  const userDoc = await getDoc(doc(db, "users", user.uid));
   const isNewUser = !userDoc.exists();
-  
+
   // Si es usuario nuevo, crear un perfil básico (se completará después)
   if (isNewUser) {
     const basicProfile: Partial<UserProfile> = {
       uid: user.uid,
       emailVerified: user.emailVerified,
-      createdAt: serverTimestamp() as UserProfile['createdAt'],
-      updatedAt: serverTimestamp() as UserProfile['updatedAt'],
+      createdAt: serverTimestamp() as UserProfile["createdAt"],
+      updatedAt: serverTimestamp() as UserProfile["updatedAt"],
     };
-    
-    await setDoc(doc(db, 'users', user.uid), cleanForFirestore(basicProfile));
+
+    await setDoc(doc(db, "users", user.uid), cleanForFirestore(basicProfile));
   }
-  
-  return { 
-    uid: user.uid, 
+
+  return {
+    uid: user.uid,
     isNewUser,
-    email: user.email 
+    email: user.email,
   };
 };
 
@@ -88,7 +90,7 @@ export const signInWithGoogle = async (): Promise<{
  * Detecta qué proveedores de autenticación tiene conectados el usuario
  */
 export const getUserProviders = (user: User): string[] => {
-  return user.providerData.map(provider => provider.providerId);
+  return user.providerData.map((provider) => provider.providerId);
 };
 
 /**
@@ -104,9 +106,9 @@ export const hasProvider = (user: User, providerId: string): boolean => {
 export const reauthenticateWithGoogle = async (user: User): Promise<void> => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({
-    prompt: 'select_account'
+    prompt: "select_account",
   });
-  
+
   await reauthenticateWithPopup(user, provider);
 };
 
@@ -116,9 +118,9 @@ export const reauthenticateWithGoogle = async (user: User): Promise<void> => {
 export const linkGoogleAccount = async (user: User): Promise<void> => {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({
-    prompt: 'select_account'
+    prompt: "select_account",
   });
-  
+
   await linkWithPopup(user, provider);
 };
 
@@ -126,5 +128,5 @@ export const linkGoogleAccount = async (user: User): Promise<void> => {
  * Desvincula Google de la cuenta
  */
 export const unlinkGoogleAccount = async (user: User): Promise<void> => {
-  await unlink(user, 'google.com');
+  await unlink(user, "google.com");
 };

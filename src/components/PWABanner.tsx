@@ -1,7 +1,7 @@
-import React from 'react';
-import { usePWA } from '../hooks/usePWA';
-import { Download, RefreshCw, WifiOff, X } from 'lucide-react';
-import { useTranslation } from '../contexts/I18nContext';
+import React from "react";
+import { usePWA } from "../hooks/usePWA";
+import { Download, RefreshCw, WifiOff, X } from "lucide-react";
+import { useTranslation } from "../contexts/I18nContext";
 
 interface PWABannerProps {
   showInstall?: boolean;
@@ -15,11 +15,11 @@ interface PWABannerProps {
  */
 const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
   const { t } = useTranslation();
-  const { 
-    isInstallable, 
-    isOffline, 
-    updateAvailable, 
-    install, 
+  const {
+    isInstallable,
+    isOffline,
+    updateAvailable,
+    install,
     updateApp,
     installPrompt,
     isInstalled,
@@ -29,23 +29,23 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
 
   const [dismissedInstall, setDismissedInstall] = React.useState(() => {
     // Persistir dismiss con expiración de 3 días para no ser demasiado agresivo
-    const dismissedAt = localStorage.getItem('pwa-install-dismissed-at');
+    const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
     if (!dismissedAt) return false;
     const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
     const elapsed = Date.now() - parseInt(dismissedAt, 10);
     if (elapsed > THREE_DAYS_MS) {
-      localStorage.removeItem('pwa-install-dismissed-at');
+      localStorage.removeItem("pwa-install-dismissed-at");
       return false;
     }
     return true;
   });
-  
+
   const [dismissedUpdate, setDismissedUpdate] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);
 
   const handleDismissInstall = () => {
     setDismissedInstall(true);
-    localStorage.setItem('pwa-install-dismissed-at', String(Date.now()));
+    localStorage.setItem("pwa-install-dismissed-at", String(Date.now()));
   };
 
   const handleDismissUpdate = () => {
@@ -54,9 +54,13 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
 
   // No mostrar si no hay nada que notificar o si fue descartado
   const isMobile = isIOS || isAndroid;
-  const showInstallBanner = showInstall && isInstallable && !isInstalled && !dismissedInstall;
+  const showInstallBanner =
+    showInstall && isInstallable && !isInstalled && !dismissedInstall;
 
-  if ((!showInstallBanner && !isOffline && !updateAvailable) || (updateAvailable && dismissedUpdate)) {
+  if (
+    (!showInstallBanner && !isOffline && !updateAvailable) ||
+    (updateAvailable && dismissedUpdate)
+  ) {
     return null;
   }
 
@@ -68,7 +72,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
           <div className="flex items-center gap-3">
             <RefreshCw className="w-5 h-5" />
             <span className="text-sm font-medium">
-              {t('pwaBanner.updateAvailable')}
+              {t("pwaBanner.updateAvailable")}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -84,7 +88,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
               {isUpdating ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
-                t('pwaBanner.update')
+                t("pwaBanner.update")
               )}
             </button>
             <button
@@ -105,9 +109,9 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
 
     // Determinar el texto descriptivo según plataforma
     const getInstallDescription = () => {
-      if (isManualInstall) return t('pwaBanner.installManualIOS');
-      if (!isMobile) return t('pwaBanner.installDesktop');
-      return t('pwaBanner.installQuickAccess');
+      if (isManualInstall) return t("pwaBanner.installManualIOS");
+      if (!isMobile) return t("pwaBanner.installDesktop");
+      return t("pwaBanner.installQuickAccess");
     };
 
     return (
@@ -118,10 +122,8 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
               <Download className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-sm font-bold">{t('pwaBanner.installTitle')}</p>
-              <p className="text-xs text-white/80">
-                {getInstallDescription()}
-              </p>
+              <p className="text-sm font-bold">{t("pwaBanner.installTitle")}</p>
+              <p className="text-xs text-white/80">{getInstallDescription()}</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -130,14 +132,14 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
                 onClick={handleDismissInstall}
                 className="px-3 py-2 bg-white/10 text-white text-sm font-bold rounded-xl hover:bg-white/20 transition-colors"
               >
-                {t('pwaBanner.understood')}
+                {t("pwaBanner.understood")}
               </button>
             ) : (
               <button
                 onClick={install}
                 className="px-4 py-2 bg-white text-bocado-green text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors"
               >
-                {t('pwaBanner.install')}
+                {t("pwaBanner.install")}
               </button>
             )}
             <button
@@ -159,7 +161,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
         <div className="flex items-center justify-center gap-2">
           <WifiOff className="w-4 h-4" />
           <span className="text-xs font-medium">
-            {t('pwaBanner.offlineMessage')}
+            {t("pwaBanner.offlineMessage")}
           </span>
         </div>
       </div>

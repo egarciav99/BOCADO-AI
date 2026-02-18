@@ -1,19 +1,19 @@
 // src/services/featureFlags.ts - Servicio de Feature Flags
 
-import { doc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
-import { db } from '../firebaseConfig';
-import type { 
-  FeatureFlags, 
-  GlobalFeatureFlags, 
+import { doc, getDoc, serverTimestamp, Timestamp } from "firebase/firestore";
+import { db } from "../firebaseConfig";
+import type {
+  FeatureFlags,
+  GlobalFeatureFlags,
   UserFeatureFlags,
   GlobalFeatureFlagsDocument,
-  UserFeatureFlagsDocument 
-} from '../types/featureFlags';
-import { 
-  DEFAULT_FEATURE_FLAGS, 
-  FIRESTORE_FEATURE_FLAGS 
-} from '../config/featureFlags';
-import { logger } from '../utils/logger';
+  UserFeatureFlagsDocument,
+} from "../types/featureFlags";
+import {
+  DEFAULT_FEATURE_FLAGS,
+  FIRESTORE_FEATURE_FLAGS,
+} from "../config/featureFlags";
+import { logger } from "../utils/logger";
 
 /**
  * Obtiene los feature flags globales desde Firestore.
@@ -22,23 +22,25 @@ import { logger } from '../utils/logger';
 export async function getGlobalFeatureFlags(): Promise<GlobalFeatureFlags> {
   try {
     const docRef = doc(
-      db, 
-      FIRESTORE_FEATURE_FLAGS.collection, 
-      FIRESTORE_FEATURE_FLAGS.globalDoc
+      db,
+      FIRESTORE_FEATURE_FLAGS.collection,
+      FIRESTORE_FEATURE_FLAGS.globalDoc,
     );
     const docSnap = await getDoc(docRef);
-    
+
     if (!docSnap.exists()) {
-      logger.info('[FeatureFlags] No global flags document found, using defaults');
+      logger.info(
+        "[FeatureFlags] No global flags document found, using defaults",
+      );
       return {};
     }
-    
+
     const data = docSnap.data() as GlobalFeatureFlagsDocument;
-    logger.info('[FeatureFlags] Global flags loaded successfully');
-    
+    logger.info("[FeatureFlags] Global flags loaded successfully");
+
     return data.flags || {};
   } catch (error) {
-    logger.error('[FeatureFlags] Error loading global flags:', error);
+    logger.error("[FeatureFlags] Error loading global flags:", error);
     // En caso de error, devolver objeto vacío para que se usen los defaults
     return {};
   }
@@ -48,33 +50,35 @@ export async function getGlobalFeatureFlags(): Promise<GlobalFeatureFlags> {
  * Obtiene los feature flags específicos de un usuario desde Firestore.
  * Estos tienen prioridad sobre los globales.
  */
-export async function getUserFeatureFlags(userId: string): Promise<UserFeatureFlags> {
+export async function getUserFeatureFlags(
+  userId: string,
+): Promise<UserFeatureFlags> {
   if (!userId) {
-    logger.warn('[FeatureFlags] No userId provided for user flags');
+    logger.warn("[FeatureFlags] No userId provided for user flags");
     return {};
   }
-  
+
   try {
     const docRef = doc(
-      db, 
-      FIRESTORE_FEATURE_FLAGS.collection, 
+      db,
+      FIRESTORE_FEATURE_FLAGS.collection,
       FIRESTORE_FEATURE_FLAGS.globalDoc,
       FIRESTORE_FEATURE_FLAGS.usersSubcollection,
-      userId
+      userId,
     );
     const docSnap = await getDoc(docRef);
-    
+
     if (!docSnap.exists()) {
       logger.info(`[FeatureFlags] No user flags found for user ${userId}`);
       return {};
     }
-    
+
     const data = docSnap.data() as UserFeatureFlagsDocument;
     logger.info(`[FeatureFlags] User flags loaded for user ${userId}`);
-    
+
     return data.flags || {};
   } catch (error) {
-    logger.error('[FeatureFlags] Error loading user flags:', error);
+    logger.error("[FeatureFlags] Error loading user flags:", error);
     return {};
   }
 }
@@ -83,30 +87,32 @@ export async function getUserFeatureFlags(userId: string): Promise<UserFeatureFl
  * Obtiene todos los feature flags combinados para un usuario.
  * La precedencia es: User > Global > Default
  */
-export async function getAllFeatureFlags(userId?: string | null): Promise<FeatureFlags> {
+export async function getAllFeatureFlags(
+  userId?: string | null,
+): Promise<FeatureFlags> {
   const [globalFlags, userFlags] = await Promise.all([
     getGlobalFeatureFlags(),
     userId ? getUserFeatureFlags(userId) : Promise.resolve({}),
   ]);
-  
+
   // Mergear en orden de precedencia: Defaults -> Global -> User
   const mergedFlags: FeatureFlags = {
     ...DEFAULT_FEATURE_FLAGS,
     ...globalFlags,
     ...userFlags,
   };
-  
-  logger.info('[FeatureFlags] All flags merged successfully', {
-    userId: userId || 'anonymous',
+
+  logger.info("[FeatureFlags] All flags merged successfully", {
+    userId: userId || "anonymous",
     flagCount: Object.keys(mergedFlags).length,
   });
-  
+
   return mergedFlags;
 }
 
 /**
  * Evalúa si un feature específico está habilitado.
- * 
+ *
  * Orden de precedencia:
  * 1. Flags de usuario (mayor prioridad)
  * 2. Flags globales
@@ -115,18 +121,18 @@ export async function getAllFeatureFlags(userId?: string | null): Promise<Featur
 export function isFeatureEnabled(
   feature: keyof FeatureFlags,
   userFlags: UserFeatureFlags,
-  globalFlags: GlobalFeatureFlags
+  globalFlags: GlobalFeatureFlags,
 ): boolean {
   // 1. Verificar en flags de usuario
   if (feature in userFlags && userFlags[feature] !== undefined) {
     return Boolean(userFlags[feature]);
   }
-  
+
   // 2. Verificar en flags globales
   if (feature in globalFlags && globalFlags[feature] !== undefined) {
     return Boolean(globalFlags[feature]);
   }
-  
+
   // 3. Usar valor por defecto
   return DEFAULT_FEATURE_FLAGS[feature];
 }
@@ -138,14 +144,14 @@ export function isFeatureEnabled(
 export function areFeaturesEnabled(
   features: Array<keyof FeatureFlags>,
   userFlags: UserFeatureFlags,
-  globalFlags: GlobalFeatureFlags
+  globalFlags: GlobalFeatureFlags,
 ): Record<keyof FeatureFlags, boolean> {
   const results = {} as Record<keyof FeatureFlags, boolean>;
-  
+
   for (const feature of features) {
     results[feature] = isFeatureEnabled(feature, userFlags, globalFlags);
   }
-  
+
   return results;
 }
 
@@ -155,11 +161,11 @@ export function areFeaturesEnabled(
  */
 export function haveFlagsChanged(
   oldFlags: FeatureFlags,
-  newFlags: FeatureFlags
+  newFlags: FeatureFlags,
 ): boolean {
   const keys = Object.keys(DEFAULT_FEATURE_FLAGS) as Array<keyof FeatureFlags>;
-  
-  return keys.some(key => oldFlags[key] !== newFlags[key]);
+
+  return keys.some((key) => oldFlags[key] !== newFlags[key]);
 }
 
 /**
@@ -167,7 +173,7 @@ export function haveFlagsChanged(
  * Versión optimizada que ya combina todo en una sola llamada.
  */
 export async function getEffectiveFeatureFlags(
-  userId?: string | null
+  userId?: string | null,
 ): Promise<{
   flags: FeatureFlags;
   globalFlags: GlobalFeatureFlags;
@@ -175,14 +181,16 @@ export async function getEffectiveFeatureFlags(
 }> {
   const [globalFlags, userFlags] = await Promise.all([
     getGlobalFeatureFlags(),
-    userId ? getUserFeatureFlags(userId) : Promise.resolve({} as UserFeatureFlags),
+    userId
+      ? getUserFeatureFlags(userId)
+      : Promise.resolve({} as UserFeatureFlags),
   ]);
-  
+
   const flags: FeatureFlags = {
     ...DEFAULT_FEATURE_FLAGS,
     ...globalFlags,
     ...userFlags,
   };
-  
+
   return { flags, globalFlags, userFlags };
 }

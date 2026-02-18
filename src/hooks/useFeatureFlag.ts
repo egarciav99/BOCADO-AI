@@ -1,20 +1,24 @@
 // src/hooks/useFeatureFlag.ts - Hook para Feature Flags con TanStack Query
 
-import { useQuery, useQueryClient, UseQueryResult } from '@tanstack/react-query';
-import { useEffect, useCallback, useMemo } from 'react';
-import type { FeatureFlags } from '../types/featureFlags';
-import { 
-  getAllFeatureFlags, 
+import {
+  useQuery,
+  useQueryClient,
+  UseQueryResult,
+} from "@tanstack/react-query";
+import { useEffect, useCallback, useMemo } from "react";
+import type { FeatureFlags } from "../types/featureFlags";
+import {
+  getAllFeatureFlags,
   getEffectiveFeatureFlags,
   isFeatureEnabled,
-  haveFlagsChanged 
-} from '../services/featureFlags';
-import { 
-  DEFAULT_FEATURE_FLAGS, 
+  haveFlagsChanged,
+} from "../services/featureFlags";
+import {
+  DEFAULT_FEATURE_FLAGS,
   FEATURE_FLAGS_CONFIG,
-  FEATURE_FLAGS_QUERY_KEY 
-} from '../config/featureFlags';
-import { logger } from '../utils/logger';
+  FEATURE_FLAGS_QUERY_KEY,
+} from "../config/featureFlags";
+import { logger } from "../utils/logger";
 
 // ============================================
 // TIPOS
@@ -55,8 +59,8 @@ export interface UseFeatureFlagsReturn {
 /**
  * Genera la query key para TanStack Query.
  */
-export const getFeatureFlagsQueryKey = (userId?: string | null) => 
-  [FEATURE_FLAGS_QUERY_KEY, userId || 'anonymous'] as const;
+export const getFeatureFlagsQueryKey = (userId?: string | null) =>
+  [FEATURE_FLAGS_QUERY_KEY, userId || "anonymous"] as const;
 
 // ============================================
 // FETCH FUNCTION
@@ -65,8 +69,12 @@ export const getFeatureFlagsQueryKey = (userId?: string | null) =>
 /**
  * Función de fetch para TanStack Query.
  */
-const fetchFeatureFlags = async (userId?: string | null): Promise<FeatureFlags> => {
-  logger.info('[useFeatureFlag] Fetching feature flags', { userId: userId || 'anonymous' });
+const fetchFeatureFlags = async (
+  userId?: string | null,
+): Promise<FeatureFlags> => {
+  logger.info("[useFeatureFlag] Fetching feature flags", {
+    userId: userId || "anonymous",
+  });
   return getAllFeatureFlags(userId);
 };
 
@@ -84,21 +92,21 @@ interface UseFeatureFlagsOptions {
 /**
  * Hook para obtener todos los feature flags.
  * Usa TanStack Query para cacheo y refetch automático.
- * 
+ *
  * @example
  * ```tsx
  * const { flags, isLoading, isEnabled } = useFeatureFlags({ userId: currentUser?.uid });
- * 
+ *
  * if (isEnabled('darkMode')) {
  *   return <DarkTheme />;
  * }
  * ```
  */
 export function useFeatureFlags(
-  options: UseFeatureFlagsOptions = {}
+  options: UseFeatureFlagsOptions = {},
 ): UseFeatureFlagsReturn {
   const { enabled = true, userId } = options;
-  
+
   const query: UseQueryResult<FeatureFlags, Error> = useQuery({
     queryKey: getFeatureFlagsQueryKey(userId),
     queryFn: () => fetchFeatureFlags(userId),
@@ -115,14 +123,14 @@ export function useFeatureFlags(
     // En caso de error, mantener el último valor conocido o usar defaults
     placeholderData: (previousData) => previousData ?? DEFAULT_FEATURE_FLAGS,
   });
-  
+
   const isEnabled = useCallback(
     (feature: keyof FeatureFlags): boolean => {
       return query.data?.[feature] ?? DEFAULT_FEATURE_FLAGS[feature];
     },
-    [query.data]
+    [query.data],
   );
-  
+
   return {
     flags: query.data ?? DEFAULT_FEATURE_FLAGS,
     isLoading: query.isLoading,
@@ -148,14 +156,14 @@ interface UseFeatureFlagOptions {
 
 /**
  * Hook para verificar un feature flag específico.
- * 
+ *
  * @param featureName - Nombre del feature a verificar
  * @param options - Opciones del hook
- * 
+ *
  * @example
  * ```tsx
  * const { enabled, isLoading } = useFeatureFlag('darkMode', { userId: currentUser?.uid });
- * 
+ *
  * return (
  *   <div className={enabled ? 'dark' : 'light'}>
  *     {isLoading ? 'Loading...' : <Content />}
@@ -165,10 +173,10 @@ interface UseFeatureFlagOptions {
  */
 export function useFeatureFlag(
   featureName: keyof FeatureFlags,
-  options: UseFeatureFlagOptions = {}
+  options: UseFeatureFlagOptions = {},
 ): UseFeatureFlagReturn {
   const { enabled = true, userId } = options;
-  
+
   const query: UseQueryResult<FeatureFlags, Error> = useQuery({
     queryKey: getFeatureFlagsQueryKey(userId),
     queryFn: () => fetchFeatureFlags(userId),
@@ -183,15 +191,15 @@ export function useFeatureFlag(
     initialData: DEFAULT_FEATURE_FLAGS,
     placeholderData: (previousData) => previousData ?? DEFAULT_FEATURE_FLAGS,
   });
-  
+
   const enabledFlag = useMemo(() => {
     return query.data?.[featureName] ?? DEFAULT_FEATURE_FLAGS[featureName];
   }, [query.data, featureName]);
-  
+
   const refetch = useCallback(async () => {
     await query.refetch();
   }, [query]);
-  
+
   return {
     enabled: enabledFlag,
     isLoading: query.isLoading,
@@ -215,24 +223,27 @@ interface UseMultipleFeatureFlagsOptions {
 /**
  * Hook para verificar múltiples feature flags a la vez.
  * Útil cuando un componente necesita varios flags.
- * 
+ *
  * @param featureNames - Array de nombres de features
  * @param options - Opciones del hook
- * 
+ *
  * @example
  * ```tsx
  * const flags = useMultipleFeatureFlags(['darkMode', 'pantryV2'], { userId });
- * 
+ *
  * if (flags.darkMode) return <DarkTheme />;
  * if (flags.pantryV2) return <PantryV2 />;
  * ```
  */
 export function useMultipleFeatureFlags(
   featureNames: Array<keyof FeatureFlags>,
-  options: UseMultipleFeatureFlagsOptions = {}
-): Record<keyof FeatureFlags, boolean> & { isLoading: boolean; error: Error | null } {
+  options: UseMultipleFeatureFlagsOptions = {},
+): Record<keyof FeatureFlags, boolean> & {
+  isLoading: boolean;
+  error: Error | null;
+} {
   const { enabled = true, userId } = options;
-  
+
   const query = useQuery({
     queryKey: getFeatureFlagsQueryKey(userId),
     queryFn: () => fetchFeatureFlags(userId),
@@ -255,7 +266,7 @@ export function useMultipleFeatureFlags(
       return result;
     },
   });
-  
+
   return {
     ...(query.data as Record<keyof FeatureFlags, boolean>),
     isLoading: query.isLoading,
@@ -270,27 +281,32 @@ export function useMultipleFeatureFlags(
 /**
  * Hook para hacer prefetch de feature flags.
  * Útil para precargar al iniciar sesión.
- * 
+ *
  * @example
  * ```tsx
  * const prefetchFeatureFlags = usePrefetchFeatureFlags();
- * 
+ *
  * // Al hacer login exitoso
  * prefetchFeatureFlags(currentUser.uid);
  * ```
  */
 export function usePrefetchFeatureFlags() {
   const queryClient = useQueryClient();
-  
-  return useCallback((userId?: string | null) => {
-    queryClient.prefetchQuery({
-      queryKey: getFeatureFlagsQueryKey(userId),
-      queryFn: () => fetchFeatureFlags(userId),
-      staleTime: FEATURE_FLAGS_CONFIG.staleTime,
-    });
-    
-    logger.info('[useFeatureFlag] Prefetch triggered', { userId: userId || 'anonymous' });
-  }, [queryClient]);
+
+  return useCallback(
+    (userId?: string | null) => {
+      queryClient.prefetchQuery({
+        queryKey: getFeatureFlagsQueryKey(userId),
+        queryFn: () => fetchFeatureFlags(userId),
+        staleTime: FEATURE_FLAGS_CONFIG.staleTime,
+      });
+
+      logger.info("[useFeatureFlag] Prefetch triggered", {
+        userId: userId || "anonymous",
+      });
+    },
+    [queryClient],
+  );
 }
 
 // ============================================
@@ -307,7 +323,7 @@ interface UseFeatureFlagsSubscriptionOptions {
 /**
  * Hook que suscribe a cambios en los feature flags.
  * Útil para componentes que necesitan reaccionar a cambios dinámicos.
- * 
+ *
  * @example
  * ```tsx
  * useFeatureFlagsSubscription({
@@ -321,11 +337,11 @@ interface UseFeatureFlagsSubscriptionOptions {
  * ```
  */
 export function useFeatureFlagsSubscription(
-  options: UseFeatureFlagsSubscriptionOptions = {}
+  options: UseFeatureFlagsSubscriptionOptions = {},
 ): void {
   const { onChange, userId } = options;
   const queryClient = useQueryClient();
-  
+
   const queryKey = getFeatureFlagsQueryKey(userId);
   const query = useQuery({
     queryKey,
@@ -334,16 +350,16 @@ export function useFeatureFlagsSubscription(
     refetchInterval: FEATURE_FLAGS_CONFIG.refetchInterval,
     initialData: DEFAULT_FEATURE_FLAGS,
   });
-  
+
   useEffect(() => {
     if (!onChange || !query.data) return;
-    
+
     const previousData = queryClient.getQueryData<FeatureFlags>(queryKey);
-    
+
     if (previousData && haveFlagsChanged(previousData, query.data)) {
       onChange(query.data, previousData);
     }
-    
+
     // Actualizar el cache con los nuevos datos
     queryClient.setQueryData(queryKey, query.data);
   }, [query.data, onChange, queryClient, queryKey]);
@@ -359,12 +375,17 @@ export function useFeatureFlagsSubscription(
  */
 export function useInvalidateFeatureFlags() {
   const queryClient = useQueryClient();
-  
-  return useCallback((userId?: string | null) => {
-    queryClient.invalidateQueries({
-      queryKey: getFeatureFlagsQueryKey(userId),
-    });
-    
-    logger.info('[useFeatureFlag] Cache invalidated', { userId: userId || 'all' });
-  }, [queryClient]);
+
+  return useCallback(
+    (userId?: string | null) => {
+      queryClient.invalidateQueries({
+        queryKey: getFeatureFlagsQueryKey(userId),
+      });
+
+      logger.info("[useFeatureFlag] Cache invalidated", {
+        userId: userId || "all",
+      });
+    },
+    [queryClient],
+  );
 }

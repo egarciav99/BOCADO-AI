@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 
 const BocadoLogo: React.FC<{ className?: string }> = ({ className }) => {
   return (
-    <img 
-      src="/Bocado-logo.png" 
-      alt="Bocado IA Logo" 
-      className={`h-auto object-contain ${className || ''}`}
+    <img
+      src="/Bocado-logo.png"
+      alt="Bocado IA Logo"
+      className={`h-auto object-contain ${className || ""}`}
     />
   );
 };
