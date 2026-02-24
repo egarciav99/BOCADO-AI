@@ -7,7 +7,7 @@ import MainApp from "@/components/MainApp";
 export default function DashboardPage() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const showTutorial = searchParams.get("tutorial") === "true";
+    const showTutorial = searchParams?.get("tutorial") === "true";
     const [isNewUser, setIsNewUser] = useState(showTutorial);
 
     return (
