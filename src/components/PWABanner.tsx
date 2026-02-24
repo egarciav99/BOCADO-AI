@@ -29,18 +29,22 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
     isAndroid,
   } = usePWA();
 
-  const [dismissedInstall, setDismissedInstall] = React.useState(() => {
-    // Persistir dismiss con expiración de 3 días para no ser demasiado agresivo
-    const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
-    if (!dismissedAt) return false;
-    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
-    const elapsed = Date.now() - parseInt(dismissedAt, 10);
-    if (elapsed > THREE_DAYS_MS) {
-      localStorage.removeItem("pwa-install-dismissed-at");
-      return false;
+  const [dismissedInstall, setDismissedInstall] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
+      if (dismissedAt) {
+        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+        const elapsed = Date.now() - parseInt(dismissedAt, 10);
+        if (elapsed <= THREE_DAYS_MS) {
+          setDismissedInstall(true);
+        } else {
+          localStorage.removeItem("pwa-install-dismissed-at");
+        }
+      }
     }
-    return true;
-  });
+  }, []);
 
   const [dismissedUpdate, setDismissedUpdate] = React.useState(false);
   const [isUpdating, setIsUpdating] = React.useState(false);

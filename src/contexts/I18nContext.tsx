@@ -35,12 +35,14 @@ const I18nContext = createContext<I18nContextType | undefined>(undefined);
 const LOCALE_STORAGE_KEY = "bocado-locale";
 
 function getBrowserLocale(): Locale {
+  if (typeof window === "undefined") return "es";
   const browserLang = navigator.language.toLowerCase();
   if (browserLang.startsWith("es")) return "es";
   return "en";
 }
 
 function getStoredLocale(): Locale {
+  if (typeof window === "undefined") return "es";
   const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
   if (stored === "es" || stored === "en") return stored;
   return getBrowserLocale();
@@ -118,7 +120,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         if (value && typeof value === "object" && k in value) {
           value = value[k];
         } else {
-          if (import.meta.env.DEV)
+          if (process.env.NODE_ENV === "development")
             console.warn(`Translation key not found: ${key}`);
           return key;
         }

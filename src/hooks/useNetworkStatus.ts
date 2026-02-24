@@ -45,8 +45,8 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
   } = options;
 
   const [state, setState] = useState<NetworkState>({
-    isOnline: navigator.onLine,
-    isOffline: !navigator.onLine,
+    isOnline: true,
+    isOffline: false,
     wasOffline: false,
     connectionType: "unknown",
     downlink: null,
@@ -147,9 +147,12 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
   useEffect(() => {
     // Estado inicial - solo ejecutar una vez
     if (!hasInitialized.current) {
+      const isCurrentlyOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
       const connectionInfo = getConnectionInfo();
       setState((prev) => ({
         ...prev,
+        isOnline: isCurrentlyOnline,
+        isOffline: !isCurrentlyOnline,
         ...connectionInfo,
       }));
       hasInitialized.current = true;
@@ -224,9 +227,10 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
  * Hook simplificado que solo retorna el estado online/offline
  */
 export const useIsOnline = () => {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(true);
 
   useEffect(() => {
+    setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 

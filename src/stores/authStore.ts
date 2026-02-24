@@ -73,9 +73,6 @@ export const useAuthStore = create<AuthState>()(
         if (error) {
           console.warn("[AuthStore] Error rehydrating storage:", error);
         }
-        if (state) {
-          state.isLoading = false;
-        }
       },
     },
   ),

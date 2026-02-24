@@ -6,7 +6,7 @@ export const safeLog = (
   message: string,
   error?: any,
 ) => {
-  const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
+  const isDev = process.env.NODE_ENV === "development";
 
   if (error) {
     const errorMessage = error?.message || String(error);

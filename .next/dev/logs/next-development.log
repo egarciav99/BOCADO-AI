@@ -1,7 +1,7 @@
-[00:00:04.989] Server  LOG      ○ (pwa) "PWA support is disabled."
-[00:00:08.140] Server  LOG     ✓ Ready in 7.1s
-[00:00:11.563] Server  LOG     ○ Compiling / ...
-[00:00:20.565] Server  WARN    ⚠ ./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+[00:00:06.907] Server  LOG      ○ (pwa) "PWA support is disabled."
+[00:00:07.982] Server  LOG     ✓ Ready in 7s
+[00:00:19.170] Server  LOG     ○ Compiling / ...
+[00:00:37.769] Server  WARN    ⚠ ./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
 Critical dependency: the request of a dependency is an expression
 
 Import trace for requested module:
@@ -15,35 +15,8 @@ Import trace for requested module:
 ./src/utils/sentry.ts
 ./src/utils/logger.ts
 ./src/components/NetworkStatusToast.tsx
-[00:00:21.822] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_API_KEY"
-[00:00:21.824] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"
-[00:00:21.825] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID"
-[00:00:21.825] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"
-[00:00:21.825] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"
-[00:00:21.826] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_APP_ID"
-[00:00:21.826] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY"
-[00:00:21.826] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_REGISTER_USER_URL"
-[00:00:21.902] Server  WARN    [Firebase] Fallback a getFirestore: FirebaseError: [code=failed-precondition]: initializeFirestore() has already been called with different options. To avoid this error, call initializeFirestore() with the same options as when it was originally called, or call getFirestore() to return the already initialized instance.
-[00:00:23.069] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:27.076] Browser WARN    [BOCADO:WARN] Missing environment variable: NEXT_PUBLIC_FIREBASE_API_KEY
-[00:00:27.076] Browser WARN    [BOCADO:WARN] Missing environment variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-[00:00:27.076] Browser WARN    [BOCADO:WARN] Missing environment variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-[00:00:27.076] Browser WARN    [BOCADO:WARN] Missing environment variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-[00:00:27.076] Browser WARN    [BOCADO:WARN] Missing environment variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-[00:00:27.076] Browser WARN    [BOCADO:WARN] Missing environment variable: NEXT_PUBLIC_FIREBASE_APP_ID
-[00:00:27.076] Browser WARN    [BOCADO:WARN] Missing environment variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY
-[00:00:27.076] Browser WARN    [BOCADO:WARN] Missing environment variable: NEXT_PUBLIC_REGISTER_USER_URL
-[00:00:27.076] Browser WARN    [Firebase] Fallback a getFirestore: {"code":"failed-precondition","name":"FirebaseError"}
-[00:00:27.076] Browser ERROR   unhandledRejection: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:27.076] Browser WARN    [Firebase] Fallback a getFirestore: {"code":"failed-precondition","name":"FirebaseError"}
-[00:00:27.076] Browser WARN    [Firebase] Fallback a getFirestore: {"code":"failed-precondition","name":"FirebaseError"}
-[00:00:27.076] Browser WARN    [Firebase] Fallback a getFirestore: {"code":"failed-precondition","name":"FirebaseError"}
-[00:00:27.076] Browser WARN    [Firebase] Fallback a getFirestore: {"code":"failed-precondition","name":"FirebaseError"}
-[00:00:27.076] Browser ERROR   unhandledRejection: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:27.076] Browser ERROR   unhandledRejection: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:27.076] Browser ERROR   unhandledRejection: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:27.076] Browser ERROR   uncaughtError: FirebaseError: Firebase: Error (auth/invalid-api-key).
-[00:00:48.664] Server  WARN    ⚠ ./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+[00:00:38.648] Server  LOG     ✅ [Firebase] Config: API Key (AIzaS...), ProjectID (bocado-ai)
+[00:00:42.468] Server  WARN    ⚠ ./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
 Critical dependency: the request of a dependency is an expression
 
 Import trace for requested module:
@@ -57,7 +30,15 @@ Import trace for requested module:
 ./src/utils/sentry.ts
 ./src/utils/logger.ts
 ./src/components/NetworkStatusToast.tsx
-[00:00:49.011] Server  WARN    ⚠ ./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+[00:00:43.959] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:43.959] Browser LOG     [Env] Firebase Config Check: {"authDomain":"PRESENT","hasKey":true,"keyPrefix":"AIzaS","projectId":"PRESENT (bocado-ai)"}
+[00:00:43.959] Browser LOG     ✅ [Firebase] Config: API Key (AIzaS...), ProjectID (bocado-ai)
+[00:00:46.248] Browser INFO    [BOCADO:INFO] ✅ Analytics inicializado
+[00:01:14.217] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:14.217] Browser LOG     [Env] Firebase Config Check: {"authDomain":"PRESENT","hasKey":true,"keyPrefix":"AIzaS","projectId":"PRESENT (bocado-ai)"}
+[00:01:14.217] Browser LOG     ✅ [Firebase] Config: API Key (AIzaS...), ProjectID (bocado-ai)
+[00:01:14.406] Browser INFO    [BOCADO:INFO] ✅ Analytics inicializado
+[00:01:16.348] Server  WARN    ⚠ ./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
 Critical dependency: the request of a dependency is an expression
 
 Import trace for requested module:
@@ -71,12 +52,38 @@ Import trace for requested module:
 ./src/utils/sentry.ts
 ./src/utils/logger.ts
 ./src/components/NetworkStatusToast.tsx
-[00:00:49.607] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_API_KEY"
-[00:00:49.609] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"
-[00:00:49.609] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID"
-[00:00:49.609] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"
-[00:00:49.610] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"
-[00:00:49.610] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_APP_ID"
-[00:00:49.610] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_FIREBASE_VAPID_KEY"
-[00:00:49.610] Server  WARN    [BOCADO:WARN] "Missing environment variable: NEXT_PUBLIC_REGISTER_USER_URL"
-[00:00:50.039] Server  ERROR   ⨯ FirebaseError: Firebase: Error (auth/invalid-api-key).
+[00:01:21.280] Server  WARN    ⚠ ./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/index.js
+./node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+./node_modules/@sentry/node/build/cjs/index.js
+./node_modules/@sentry/nextjs/build/cjs/index.server.js
+./src/utils/sentry.ts
+./src/utils/logger.ts
+./src/components/NetworkStatusToast.tsx
+[00:01:22.952] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:01:22.952] Browser LOG     [MainApp] Estado de Sesión: {"hasUser":false,"isAuthenticated":true,"isLoading":true}
+[00:01:22.952] Browser LOG     [MainApp] Estado de Sesión: {"hasUser":false,"isAuthenticated":true,"isLoading":true}
+[00:01:22.952] Browser INFO    [BOCADO:INFO] PWA: App is installable
+[00:01:39.821] Server  LOG     ✅ [Firebase] Config: API Key (AIzaS...), ProjectID (bocado-ai)
+[00:01:41.185] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:41.185] Browser LOG     [Env] Firebase Config Check: {"authDomain":"PRESENT","hasKey":true,"keyPrefix":"AIzaS","projectId":"PRESENT (bocado-ai)"}
+[00:01:41.185] Browser LOG     ✅ [Firebase] Config: API Key (AIzaS...), ProjectID (bocado-ai)
+[00:01:41.388] Browser INFO    [BOCADO:INFO] ✅ Analytics inicializado
+[00:01:41.388] Browser LOG     [MainApp] Estado de Sesión: {"hasUser":false,"isAuthenticated":false,"isLoading":true}
+[00:01:41.388] Browser LOG     [MainApp] Estado de Sesión: {"hasUser":false,"isAuthenticated":true,"isLoading":true}
+[00:02:02.204] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:02:02.204] Browser LOG     [Env] Firebase Config Check: {"authDomain":"PRESENT","hasKey":true,"keyPrefix":"AIzaS","projectId":"PRESENT (bocado-ai)"}
+[00:02:02.204] Browser LOG     ✅ [Firebase] Config: API Key (AIzaS...), ProjectID (bocado-ai)
+[00:02:02.353] Browser INFO    [BOCADO:INFO] ✅ Analytics inicializado
+[00:02:02.488] Browser INFO    [BOCADO:INFO] PWA: App is installable
+[00:02:04.354] Browser WARN    Detected `scroll-behavior: smooth` on the `<html>` element. To disable smooth scrolling during route transitions, add `data-scroll-behavior="smooth"` to your <html> element. Learn more: https://nextjs.org/docs/messages/missing-data-scroll-behavior
+[00:02:04.354] Browser LOG     [MainApp] Estado de Sesión: {"hasUser":false,"isAuthenticated":true,"isLoading":true}
+[00:02:04.354] Browser LOG     [MainApp] Estado de Sesión: {"hasUser":false,"isAuthenticated":true,"isLoading":true}
+[00:02:04.354] Browser INFO    [BOCADO:INFO] PWA: App is installable
+[00:02:07.352] Browser INFO    [BOCADO:INFO] PWA: App is installable

@@ -26,7 +26,7 @@ interface PWAState {
 export const usePWA = () => {
   const [state, setState] = useState<PWAState>({
     isInstallable: false,
-    isOffline: !navigator.onLine,
+    isOffline: false,
     isInstalled: false,
     installPrompt: null,
     updateAvailable: false,
@@ -46,7 +46,8 @@ export const usePWA = () => {
         navigator.maxTouchPoints > 1);
     const isAndroid = /Android/i.test(ua);
 
-    setState((prev) => ({ ...prev, isIOS, isAndroid }));
+    const isCurrentlyOffline = !navigator.onLine;
+    setState((prev) => ({ ...prev, isIOS, isAndroid, isOffline: isCurrentlyOffline }));
   }, []);
 
   // Detectar si está instalado

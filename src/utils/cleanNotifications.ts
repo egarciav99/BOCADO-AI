@@ -12,6 +12,7 @@ export function cleanCorruptedNotifications(): {
   cleaned: boolean;
   keys: string[];
 } {
+  if (typeof window === "undefined") return { cleaned: false, keys: [] };
   const cleanedKeys: string[] = [];
 
   STORAGE_KEYS.forEach((key) => {
@@ -50,6 +51,7 @@ export function cleanCorruptedNotifications(): {
  * Limpia todas las notificaciones mostradas (para resetear el sistema)
  */
 export function resetNotificationHistory(): void {
+  if (typeof window === "undefined") return;
   const keys = Object.keys(localStorage).filter(
     (key) =>
       key.startsWith("last_notification_") ||
@@ -66,6 +68,7 @@ export function resetNotificationHistory(): void {
  * Función de diagnóstico para verificar el estado de las notificaciones
  */
 export function diagnoseNotifications(): void {
+  if (typeof window === "undefined") return;
   console.log("=== Diagnóstico de Notificaciones ===");
 
   STORAGE_KEYS.forEach((key) => {

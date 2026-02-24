@@ -13,6 +13,7 @@ import { sanitizeProfileData } from "../utils/profileSanitizer";
 import { UserProfile } from "../types";
 import { logger } from "../utils/logger";
 import { useTranslation } from "../contexts/I18nContext";
+import { useAuthStore } from "../stores/authStore";
 import { signInWithGoogle } from "../services/authService";
 
 interface LoginScreenProps {
@@ -52,12 +53,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     const lowercasedEmail = email.toLowerCase();
 
     try {
+      console.log("[Login] Intentando signInWithEmailAndPassword...");
       const userCredential = await signInWithEmailAndPassword(
         auth,
         lowercasedEmail,
         password,
       );
       const user = userCredential.user;
+      console.log("[Login] Autenticación Exitosa en Auth, UID:", user.uid);
 
       if (!user.emailVerified) {
         // ✅ ANALÍTICA: Intento de login con correo no verificado
@@ -70,7 +73,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       }
 
       const userDocRef = doc(db, "users", user.uid);
+      console.log("[Login] Obteniendo perfil de Firestore para:", user.uid);
       const userDoc = await getDoc(userDocRef);
+      console.log("[Login] Resultado getDoc:", userDoc.exists() ? "Existe" : "No existe");
 
       if (userDoc.exists()) {
         const firestoreData = userDoc.data();
@@ -86,6 +91,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         queryClient.invalidateQueries({ queryKey: ["userProfile", user.uid] });
         queryClient.setQueryData(["userProfile", user.uid], sanitizedProfile);
 
+        // ✅ ACTUALIZAR STORE MANUALMENTE para evitar delay en onAuthStateChanged
+        useAuthStore.getState().setUser(user);
+
         // ✅ ANALÍTICA: Login exitoso
         trackEvent("login_success", { userId: user.uid });
 
@@ -97,16 +105,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         auth.signOut();
       }
     } catch (err: any) {
-      logger.error("Error logging in:", err.code);
+      const errorCode = err.code || (err.message ? "custom-error" : "unknown");
+      logger.error("Error logging in:", errorCode, err);
 
       // ✅ ANALÍTICA: Error en login
       trackEvent("login_error", {
-        error_code: err.code || "unknown",
-        email_provided: email.includes("@"), // Para saber si es error de formato o credenciales
+        error_code: errorCode,
+        email_provided: email.includes("@"),
       });
 
       if (
-        ["auth/network-request-failed", "auth/unavailable"].includes(err.code)
+        ["auth/network-request-failed", "auth/unavailable", "unavailable"].includes(errorCode)
       ) {
         setError(t("login.errors.networkError"));
       } else if (
@@ -115,11 +124,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           "auth/wrong-password",
           "auth/user-not-found",
           "auth/invalid-email",
-        ].includes(err.code)
+        ].includes(errorCode)
       ) {
         setError(t("login.errors.invalidCredentials"));
       } else {
-        setError(t("login.errors.genericError"));
+        // Mostrar mensaje más detallado en desarrollo
+        if (typeof process !== "undefined" && process.env.NODE_ENV === "development") {
+          setError(`${t("login.errors.genericError")} (${errorCode}: ${err.message})`);
+        } else {
+          setError(t("login.errors.genericError"));
+        }
       }
     } finally {
       setIsLoading(false);

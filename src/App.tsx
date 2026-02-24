@@ -59,19 +59,23 @@ function AppContent() {
   const [authTimeout, setAuthTimeout] = React.useState(false);
   const [renderError, setRenderError] = React.useState<Error | null>(null);
 
-  const { setUser, isLoading, isAuthenticated } = useAuthStore();
+  const setUser = useAuthStore((state) => state.setUser);
+  const isLoading = useAuthStore((state) => state.isLoading);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { t } = useTranslation();
 
   // Timeout de seguridad: si Firebase no responde en 5s, forzar continuar
   React.useEffect(() => {
+    console.log("[App] Monitor de carga inicial:", { isLoading, authTimeout });
     const timer = setTimeout(() => {
       if (isLoading) {
+        console.warn("[App] Timeout de autenticación (5s) alcanzado");
         setAuthTimeout(true);
         useAuthStore.getState().setLoading(false);
       }
     }, 5000);
     return () => clearTimeout(timer);
-  }, [isLoading]);
+  }, [isLoading, authTimeout]);
 
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
@@ -115,9 +119,11 @@ function AppContent() {
     let unsubscribe: (() => void) | null = null;
 
     try {
+      console.log("[App] Suscribiendo a onAuthStateChanged...");
       unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
+          console.log("[App] onAuthStateChanged:", user ? `Sesión Activa (${user.uid})` : "Sin Sesión");
           setUser(user);
           // Sincronizar usuario con Sentry para tracking de errores
           setUserContext(user?.uid || null, user?.email || undefined);
@@ -130,12 +136,14 @@ function AppContent() {
           }
         },
         (error) => {
+          console.error("[App] Error en onAuthStateChanged:", error);
           captureError(error, { type: "auth_state_change_error" });
           setAuthTimeout(true);
           useAuthStore.getState().setLoading(false);
         },
       );
     } catch (error) {
+      console.error("[App] Fallo crítico al configurar onAuthStateChanged:", error);
       captureError(error as Error, { type: "auth_setup_error" });
       setAuthTimeout(true);
       useAuthStore.getState().setLoading(false);
