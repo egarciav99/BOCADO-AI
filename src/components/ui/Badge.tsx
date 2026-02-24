@@ -3,17 +3,17 @@ import React from "react";
 export interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   /** Variante visual del badge */
   variant?:
-    | "default"
-    | "primary"
-    | "secondary"
-    | "success"
-    | "warning"
-    | "danger"
-    | "info";
+  | "default"
+  | "primary"
+  | "secondary"
+  | "success"
+  | "warning"
+  | "danger"
+  | "info";
   /** Tamaño del badge */
   size?: "sm" | "md" | "lg";
   /** Estilo visual */
-  style?: "filled" | "outlined" | "soft";
+  appearance?: "filled" | "outlined" | "soft";
   /** Mostrar punto indicador */
   dot?: boolean;
   /** Contenido del badge */
@@ -31,7 +31,7 @@ export const Badge: React.FC<BadgeProps> = ({
   children,
   variant = "default",
   size = "md",
-  style = "filled",
+  appearance = "filled",
   dot = false,
   className = "",
   ...props
@@ -95,7 +95,7 @@ export const Badge: React.FC<BadgeProps> = ({
 
   return (
     <span
-      className={`${baseStyles} ${variants[variant][style]} ${sizes[size]} ${className}`}
+      className={`${baseStyles} ${variants[variant][appearance]} ${sizes[size]} ${className}`}
       {...props}
     >
       {dot && (
