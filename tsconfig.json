@@ -31,15 +31,15 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "api_backup",
-    "e2e",
-    "playwright.config.ts"
+    "src/**/*.stories.ts",
+    "src/**/*.stories.tsx",
+    "src/test"
   ]
 }
