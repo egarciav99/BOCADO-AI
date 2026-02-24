@@ -208,11 +208,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   }, [viewMode, isAdmin]);
 
+  // Sync form data from Firestore — ONLY when in view mode (not while editing)
+  // Without this guard, background refetches would overwrite the user's in-progress edits
   useEffect(() => {
+    if (viewMode !== "view") return;
     const data = buildFormData(user, profile);
     setFormData(data);
     setInitialFormData(data);
-  }, [user, profile]);
+  }, [user, profile, viewMode]);
 
   // Debounce hook para búsqueda de ciudades
   const useDebounce = (value: string, delay: number = 500) => {
@@ -324,7 +327,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         userId: userUid,
         data: userProfile,
       });
-      queryClient.setQueryData(["userProfile", userUid], userProfile);
+      // The mutation's optimistic update + onSettled invalidation
+      // already keep the cache fresh — no manual setQueryData needed here
 
       // 💰 FINOPS: Invalidar cache del perfil después de actualizarlo
       try {
@@ -524,13 +528,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       const currentUser = auth.currentUser;
       const authData = currentUser
         ? {
-            uid: currentUser.uid,
-            email: currentUser.email,
-            displayName: currentUser.displayName,
-            emailVerified: currentUser.emailVerified,
-            createdAt: currentUser.metadata.creationTime,
-            lastSignInTime: currentUser.metadata.lastSignInTime,
-          }
+          uid: currentUser.uid,
+          email: currentUser.email,
+          displayName: currentUser.displayName,
+          emailVerified: currentUser.emailVerified,
+          createdAt: currentUser.metadata.creationTime,
+          lastSignInTime: currentUser.metadata.lastSignInTime,
+        }
         : null;
 
       const exportPayload = {
@@ -1269,19 +1273,19 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               {auth.currentUser?.providerData.some(
                 (p) => p.providerId === "password",
               ) && (
-                <div>
-                  <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
-                    {t("profile.currentPassword")}
-                  </label>
-                  <input
-                    type="password"
-                    value={deletePassword}
-                    onChange={(e) => setDeletePassword(e.target.value)}
-                    className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20"
-                    placeholder="••••••••"
-                  />
-                </div>
-              )}
+                  <div>
+                    <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                      {t("profile.currentPassword")}
+                    </label>
+                    <input
+                      type="password"
+                      value={deletePassword}
+                      onChange={(e) => setDeletePassword(e.target.value)}
+                      className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20"
+                      placeholder="••••••••"
+                    />
+                  </div>
+                )}
 
               {error && (
                 <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">
@@ -1375,7 +1379,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <InfoSection title={t("profile.nutritionalGoal")}>
               {formData.nutritionalGoal.length > 0 &&
-              formData.nutritionalGoal[0] !== "Sin especificar" ? (
+                formData.nutritionalGoal[0] !== "Sin especificar" ? (
                 formData.nutritionalGoal.map((g) => (
                   <Badge key={g} text={translateGoal(g)} color="green" />
                 ))
@@ -1401,7 +1405,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <InfoSection title={t("profile.health")}>
               {formData.diseases.length > 0 &&
-              formData.diseases[0] !== "Ninguna" ? (
+                formData.diseases[0] !== "Ninguna" ? (
                 formData.diseases.map((d) => (
                   <Badge key={d} text={translateDisease(d)} color="red" />
                 ))
@@ -1414,7 +1418,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <InfoSection title={t("profile.allergies")}>
               {formData.allergies.length > 0 &&
-              formData.allergies[0] !== "Ninguna" ? (
+                formData.allergies[0] !== "Ninguna" ? (
                 <>
                   {formData.allergies.map((a) => (
                     <Badge key={a} text={translateAllergy(a)} color="blue" />
@@ -1432,7 +1436,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <InfoSection title={t("profile.dislikes")}>
               {formData.dislikedFoods.length > 0 &&
-              formData.dislikedFoods[0] !== "Ninguno" ? (
+                formData.dislikedFoods[0] !== "Ninguno" ? (
                 formData.dislikedFoods.map((f) => (
                   <Badge key={f} text={translateFood(f)} color="red" />
                 ))
@@ -1455,36 +1459,36 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 {auth.currentUser?.providerData.some(
                   (p) => p.providerId === "password",
                 ) && (
-                  <button
-                    onClick={() => {
-                      trackEvent("profile_security_mode_change", {
-                        mode: "password",
-                      });
-                      setViewMode("changePassword");
-                    }}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
-                  >
-                    <span>{t("profile.changePassword")}</span>
-                    <span className="text-bocado-gray">›</span>
-                  </button>
-                )}
+                    <button
+                      onClick={() => {
+                        trackEvent("profile_security_mode_change", {
+                          mode: "password",
+                        });
+                        setViewMode("changePassword");
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
+                    >
+                      <span>{t("profile.changePassword")}</span>
+                      <span className="text-bocado-gray">›</span>
+                    </button>
+                  )}
                 {/* Solo mostrar cambio de email si tiene método de password */}
                 {auth.currentUser?.providerData.some(
                   (p) => p.providerId === "password",
                 ) && (
-                  <button
-                    onClick={() => {
-                      trackEvent("profile_security_mode_change", {
-                        mode: "email",
-                      });
-                      setViewMode("changeEmail");
-                    }}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
-                  >
-                    <span>{t("profile.changeEmail")}</span>
-                    <span className="text-bocado-gray">›</span>
-                  </button>
-                )}
+                    <button
+                      onClick={() => {
+                        trackEvent("profile_security_mode_change", {
+                          mode: "email",
+                        });
+                        setViewMode("changeEmail");
+                      }}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-bocado-background rounded-xl text-sm font-medium text-bocado-text hover:bg-bocado-border active:scale-95 transition-all"
+                    >
+                      <span>{t("profile.changeEmail")}</span>
+                      <span className="text-bocado-gray">›</span>
+                    </button>
+                  )}
               </div>
             </div>
 
@@ -1501,27 +1505,27 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 {auth.currentUser?.providerData.some(
                   (p) => p.providerId === "password",
                 ) && (
-                  <div className="px-4 py-3 bg-bocado-background rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <Lock className="w-4 h-4 text-blue-600" />
+                    <div className="px-4 py-3 bg-bocado-background rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Lock className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-bocado-text">
+                              {t("profile.loginMethods.emailPassword")}
+                            </p>
+                            <p className="text-xs text-bocado-gray">
+                              {auth.currentUser?.email}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium text-bocado-text">
-                            {t("profile.loginMethods.emailPassword")}
-                          </p>
-                          <p className="text-xs text-bocado-gray">
-                            {auth.currentUser?.email}
-                          </p>
-                        </div>
+                        <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
+                          {t("profile.loginMethods.active")}
+                        </span>
                       </div>
-                      <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded">
-                        {t("profile.loginMethods.active")}
-                      </span>
                     </div>
-                  </div>
-                )}
+                  )}
 
                 {/* Google */}
                 {auth.currentUser?.providerData.some(
@@ -1650,11 +1654,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         });
                         setLocale("es");
                       }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                        locale === "es"
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${locale === "es"
                           ? "bg-bocado-green text-white"
                           : "bg-white text-bocado-gray hover:bg-bocado-border"
-                      }`}
+                        }`}
                     >
                       {t("profile.languageES")}
                     </button>
@@ -1666,11 +1669,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         });
                         setLocale("en");
                       }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                        locale === "en"
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${locale === "en"
                           ? "bg-bocado-green text-white"
                           : "bg-white text-bocado-gray hover:bg-bocado-border"
-                      }`}
+                        }`}
                     >
                       {t("profile.languageEN")}
                     </button>
@@ -1693,11 +1695,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         });
                         setTheme("light");
                       }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                        theme === "light"
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${theme === "light"
                           ? "bg-bocado-green text-white"
                           : "bg-white text-bocado-gray hover:bg-bocado-border"
-                      }`}
+                        }`}
                     >
                       {t("profile.themeLight")}
                     </button>
@@ -1706,11 +1707,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         trackEvent("theme_change", { from: theme, to: "dark" });
                         setTheme("dark");
                       }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                        theme === "dark"
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${theme === "dark"
                           ? "bg-bocado-green text-white"
                           : "bg-white text-bocado-gray hover:bg-bocado-border"
-                      }`}
+                        }`}
                     >
                       {t("profile.themeDark")}
                     </button>
@@ -1722,11 +1722,10 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         });
                         setTheme("system");
                       }}
-                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${
-                        theme === "system"
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${theme === "system"
                           ? "bg-bocado-green text-white"
                           : "bg-white text-bocado-gray hover:bg-bocado-border"
-                      }`}
+                        }`}
                     >
                       {t("profile.themeSystem")}
                     </button>
