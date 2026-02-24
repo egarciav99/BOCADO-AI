@@ -32,10 +32,10 @@ export function cleanCorruptedNotifications(): {
         if (hasCorruptedData) {
           localStorage.removeItem(key);
           cleanedKeys.push(key);
-          if (import.meta.env.DEV) console.log(`✓ Limpiado: ${key}`);
+          if (process.env.NODE_ENV === "development") console.log(`✓ Limpiado: ${key}`);
         }
       } catch (e) {
-        if (import.meta.env.DEV) console.error(`Error limpiando ${key}:`, e);
+        if (process.env.NODE_ENV === "development") console.error(`Error limpiando ${key}:`, e);
       }
     }
   });
@@ -58,7 +58,7 @@ export function resetNotificationHistory(): void {
   );
 
   keys.forEach((key) => localStorage.removeItem(key));
-  if (import.meta.env.DEV)
+  if (process.env.NODE_ENV === "development")
     console.log(`✓ Limpiado historial de ${keys.length} notificaciones`);
 }
 
@@ -111,7 +111,7 @@ if (typeof window !== "undefined") {
     diagnose: diagnoseNotifications,
   };
 
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV === "development") {
     console.log("💡 Utilidades de notificaciones disponibles:");
     console.log(
       "   - window.bocadoNotifications.diagnose() - Verificar estado",

@@ -1,0 +1,16 @@
+"use client";
+
+import React from "react";
+import { useRouter } from "next/navigation";
+import LoginScreen from "@/components/LoginScreen";
+
+export default function LoginPage() {
+    const router = useRouter();
+
+    return (
+        <LoginScreen
+            onLoginSuccess={() => router.push("/dashboard")}
+            onGoHome={() => router.push("/")}
+        />
+    );
+}

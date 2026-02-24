@@ -27,7 +27,7 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
-const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
+const isDev = process.env.NODE_ENV === "development";
 
 const config: LoggerConfig = {
   level: isDev ? "debug" : "warn",
@@ -173,7 +173,7 @@ export const useLogger = (component: string) => {
     info: (...args: any[]) => logger.info(`[${component}]`, ...args),
     warn: (...args: any[]) => logger.warn(`[${component}]`, ...args),
     error: (...args: any[]) => logger.error(`[${component}]`, ...args),
-    
+
     /**
      * Structured logging con component automático
      */
