@@ -530,8 +530,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
             onClick={() => handleTypeChange(habit as any)}
             disabled={isGenerating}
             className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 ${recommendationType === habit
-                ? "bg-bocado-green text-white border-bocado-green shadow-bocado"
-                : "bg-white text-bocado-text border-bocado-border hover:border-bocado-green/50"
+              ? "bg-bocado-green text-white border-bocado-green shadow-bocado"
+              : "bg-white text-bocado-text border-bocado-border hover:border-bocado-green/50"
               }`}
           >
             <span className="text-3xl mb-2">
@@ -544,8 +544,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
             </span>
             <span
               className={`text-2xs mt-1 text-center leading-tight ${recommendationType === habit
-                  ? "text-white/80"
-                  : "text-bocado-gray"
+                ? "text-white/80"
+                : "text-bocado-gray"
                 }`}
             >
               {habit === "En casa"
@@ -571,8 +571,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                     onClick={() => handleMealSelect(meal)}
                     disabled={isGenerating}
                     className={`py-3 px-2 rounded-xl border-2 text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${selectedMeal === meal
-                        ? "bg-bocado-green text-white border-bocado-green shadow-sm"
-                        : "bg-white text-bocado-dark-gray border-bocado-border"
+                      ? "bg-bocado-green text-white border-bocado-green shadow-sm"
+                      : "bg-white text-bocado-dark-gray border-bocado-border"
                       }`}
                   >
                     {translateMealWithEmoji(meal, t)}
@@ -670,8 +670,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                       onClick={() => toggleCraving(craving)}
                       disabled={isGenerating}
                       className={`py-3 px-2 rounded-xl border-2 text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${selectedCravings.includes(craving)
-                          ? "bg-bocado-green text-white border-bocado-green shadow-sm"
-                          : "bg-white text-bocado-dark-gray border-bocado-border"
+                        ? "bg-bocado-green text-white border-bocado-green shadow-sm"
+                        : "bg-white text-bocado-dark-gray border-bocado-border"
                         }`}
                     >
                       {translateCravingWithEmoji(craving, t)}
@@ -698,8 +698,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                       }}
                       disabled={isGenerating}
                       className={`w-full py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all flex justify-between items-center active:scale-[0.98] disabled:opacity-50 ${selectedBudget === option.value
-                          ? "bg-bocado-green text-white border-bocado-green shadow-sm"
-                          : "bg-white text-bocado-dark-gray border-bocado-border"
+                        ? "bg-bocado-green text-white border-bocado-green shadow-sm"
+                        : "bg-white text-bocado-dark-gray border-bocado-border"
                         }`}
                     >
                       <span>
@@ -721,10 +721,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                     >
                       <MapPin
                         className={`w-4 h-4 flex-shrink-0 ${userPosition
-                            ? "text-bocado-green"
-                            : locationPermission === "denied"
-                              ? "text-red-600"
-                              : "text-bocado-gray"
+                          ? "text-bocado-green"
+                          : locationPermission === "denied"
+                            ? "text-red-600"
+                            : "text-bocado-gray"
                           }`}
                       />
                     </Tooltip>
@@ -814,6 +814,11 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                   💡 {rateLimitMessage}
                 </p>
               )}
+
+            {/* AI Disclaimer */}
+            <p className="text-center text-[10px] text-bocado-gray/60 mt-3 leading-relaxed">
+              {t("recommendation.aiDisclaimer")}
+            </p>
           </div>
         </div>
       )}

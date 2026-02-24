@@ -1851,13 +1851,18 @@ export default async function handler(req: any, res: any) {
       const profileLine = profileParts.join(" | ");
 
       // Ajuste de dificultad según experiencia culinaria
+      const cookingAffinityLower = (user.cookingAffinity || "").toLowerCase();
       const difficultyHint =
-        user.cookingAffinity === "Novato" ||
-          user.cookingAffinity === "No me gusta cocinar"
+        cookingAffinityLower.includes("novato") ||
+          cookingAffinityLower.includes("no me gusta")
           ? ", dificultad máxima: Fácil"
           : "";
 
-      finalPrompt = `Eres nutricionista. Genera 3 recetas para: ${user.nutritionalGoal || "comer saludable"}
+      const nutritionalGoalStr = Array.isArray(user.nutritionalGoal)
+        ? user.nutritionalGoal.join(", ")
+        : user.nutritionalGoal || "comer saludable";
+
+      finalPrompt = `Eres nutricionista. Genera 3 recetas para: ${nutritionalGoalStr}
 
 PERFIL: ${profileLine || "Sin restricciones"} | Ubic: ${user.city || "su ciudad"}
 SOLICITUD: ${request.mealType || "Comida"}, ${request.cookingTime || "30"}min, ${request.budget || "sin límite"} ${request.currency || ""}
@@ -1901,16 +1906,16 @@ Personaliza el saludo_personalizado usando${demographicParts.length > 0 ? " el p
       // Logging detallado para debugging de ubicación
 
       const locationContext = searchCoords
-        ? `Coordenadas de referencia: ${formatCoordinates(searchCoords)}`
-        : `Ciudad: ${user.city || "su ciudad"}`;
+        ? `Coordenadas de referencia: ${formatCoordinates(searchCoords)} `
+        : `Ciudad: ${user.city || "su ciudad"} `;
 
       const locationInstruction = searchCoords
-        ? `**IMPORTANTE - RANGO DE BÚSQUEDA**: Busca restaurantes DENTRO de un radio de ${SEARCH_RADIUS_METERS / 1000}km desde las coordenadas ${formatCoordinates(searchCoords)}. Prioriza lugares cercanos a esta ubicación.`
-        : `**IMPORTANTE**: Busca restaurantes en ${user.city || "su ciudad"} que sean accesibles y no muy alejados del centro.`;
+        ? `** IMPORTANTE - RANGO DE BÚSQUEDA **: Busca restaurantes DENTRO de un radio de ${SEARCH_RADIUS_METERS / 1000}km desde las coordenadas ${formatCoordinates(searchCoords)}. Prioriza lugares cercanos a esta ubicación.`
+        : `** IMPORTANTE **: Busca restaurantes en ${user.city || "su ciudad"} que sean accesibles y no muy alejados del centro.`;
 
       // Contexto demográfico relevante (solo si está disponible)
       const demographicPartsOut = [
-        user.eatingHabit ? `Dieta: ${user.eatingHabit}` : "",
+        user.eatingHabit ? `Dieta: ${user.eatingHabit} ` : "",
         user.age ? `${user.age} años` : "",
         user.activityLevel && user.activityLevel !== "Sedentario"
           ? user.activityLevel
@@ -1927,7 +1932,7 @@ Personaliza el saludo_personalizado usando${demographicParts.length > 0 ? " el p
       );
       const medicalContextOut =
         medicalRestrictionsOut.length > 0
-          ? `Restricciones: ${medicalRestrictionsOut.join(", ")}`
+          ? `Restricciones: ${medicalRestrictionsOut.join(", ")} `
           : "";
 
       // Alimentos no deseados
@@ -1937,13 +1942,16 @@ Personaliza el saludo_personalizado usando${demographicParts.length > 0 ? " el p
       ].filter(Boolean);
       const dislikedContextOut =
         allDislikedFoodsOut.length > 0
-          ? `NO: ${allDislikedFoodsOut.join(", ")}`
+          ? `NO: ${allDislikedFoodsOut.join(", ")} `
           : "";
 
       // Construir línea de perfil limpia
+      const nutritionalGoalStrOut = Array.isArray(user.nutritionalGoal)
+        ? user.nutritionalGoal.join(", ")
+        : user.nutritionalGoal || "saludable";
       const profilePartsOut = [
         demographicContextOut,
-        user.nutritionalGoal || "saludable",
+        nutritionalGoalStrOut,
         medicalContextOut,
         dislikedContextOut,
       ].filter(Boolean);
@@ -1954,25 +1962,25 @@ Personaliza el saludo_personalizado usando${demographicParts.length > 0 ? " el p
 
       // ✨ Mensaje personalizado para viajeros
       const travelTone = travelContext.isTraveling
-        ? `${travelContext.locationLabel}. Adapta tono amigable para turista. Menciona precios en ${travelContext.activeCurrency}.`
+        ? `${travelContext.locationLabel}. Adapta tono amigable para turista.Menciona precios en ${travelContext.activeCurrency}.`
         : "";
 
       // ✅ OPTIMIZACIÓN: Prompt conciso para restaurantes (~40% menos tokens)
       finalPrompt = `Eres guía gastronómico ${travelContext.locationLabel}. Recomienda 5 restaurantes reales.
 
-PERFIL: ${profileLineOut || "Sin restricciones"}
-UBICACIÓN: ${locationContext} | RANGO: ${SEARCH_RADIUS_METERS / 1000}km
-SOLICITUD: ${request.cravings || "saludable"}, ${budgetInstruction}
+        PERFIL: ${profileLineOut || "Sin restricciones"}
+      UBICACIÓN: ${locationContext} | RANGO: ${SEARCH_RADIUS_METERS / 1000} km
+      SOLICITUD: ${request.cravings || "saludable"}, ${budgetInstruction}
 ${travelTone ? "\nCONTEXTO: " + travelTone : ""}
 ${historyContext ? "\nMEMORIA: " + historyContext.slice(30, 200) : ""}
 ${feedbackContext ? "\nFEEDBACK: " + feedbackContext.slice(30, 150) : ""}
 
 REGLAS CRÍTICAS:
-1. Nombres reales de restaurantes existentes ${travelContext.isTraveling ? "cerca de tu ubicación actual" : `en ${user.city || "su ciudad"}`}
-2. DIRECCIONES EXACTAS: Calle Número, Colonia (ej: "Calle Arturo Soria 126, Chamartín")
-3. Si no sabes dirección exacta: usa centro comercial específico
-4. NO uses "por el centro" o direcciones vagas
-5. Rango máximo: ${SEARCH_RADIUS_METERS / 1000}km
+      1. Nombres reales de restaurantes existentes ${travelContext.isTraveling ? "cerca de tu ubicación actual" : `en ${user.city || "su ciudad"}`}
+      2. DIRECCIONES EXACTAS: Calle Número, Colonia(ej: "Calle Arturo Soria 126, Chamartín")
+      3. Si no sabes dirección exacta: usa centro comercial específico
+      4. NO uses "por el centro" o direcciones vagas
+      5. Rango máximo: ${SEARCH_RADIUS_METERS / 1000} km
 ${user.eatingHabit && (user.eatingHabit.includes("Vegano") || user.eatingHabit.includes("Vegetariano")) ? `\n6. CRÍTICO: SOLO restaurantes con opciones ${user.eatingHabit.toLowerCase()} certificadas` : ""}
 ${travelContext.isTraveling ? `\n7. Menciona precios aproximados en ${travelContext.activeCurrency} (moneda local)` : ""}
 
@@ -2006,7 +2014,7 @@ En hack_saludable${medicalRestrictionsOut.length > 0 ? " personaliza para sus co
     } catch (e) {
       // ✅ FIX: Intentar extraer JSON de markdown o texto
       const jsonMatch =
-        responseText.match(/```json\n?([\s\S]*?)\n?```/) ||
+        responseText.match(/```json\n ? ([\s\S] *?) \n ? ```/) ||
         responseText.match(/{[\s\S]*}/);
       if (jsonMatch) {
         const extractedJson = jsonMatch[1] || jsonMatch[0];
@@ -2020,7 +2028,7 @@ En hack_saludable${medicalRestrictionsOut.length > 0 ? " personaliza para sus co
             : "undefined";
           safeLog("error", "❌ JSON extraído es inválido:", preview);
           throw new Error(
-            `Invalid JSON extracted from response: ${innerError.message}`,
+            `Invalid JSON extracted from response: ${innerError.message} `,
           );
         }
       } else {

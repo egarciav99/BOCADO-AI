@@ -406,7 +406,9 @@
     "chooseCravingTip": "Choose a food type to continue",
     "chooseCravingAndBudgetTip": "Choose what you're craving and budget",
     "waitForLocation": "Wait for your location to be detected before continuing.",
-    "connectionError": "Connection error. Try again."
+    "connectionError": "Connection error. Try again.",
+    "aiDisclaimer": "Bocado AI may make mistakes. Verify important information.",
+    "generateAria": "Generate recommendation"
   },
   "mealCard": {
     "actions": {
