@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useNetworkStatus } from "../hooks/useNetworkStatus";
 import { logger } from "../utils/logger";
 import { useTranslation } from "../contexts/I18nContext";
@@ -14,7 +14,9 @@ export const NetworkStatusToast: React.FC = () => {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [toastType, setToastType] = useState<"online" | "offline">("online");
-  const [hideTimeout, setHideTimeout] = useState<NodeJS.Timeout | null>(null);
+  // Use ref instead of state — timeouts are imperative handles, not UI state.
+  // Storing them in state causes an extra re-render on every set/clear.
+  const hideTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { isOnline, isOffline, wasOffline } = useNetworkStatus({
     showReconnectionToast: true,
@@ -22,14 +24,8 @@ export const NetworkStatusToast: React.FC = () => {
       setToastMessage(t("network.offline"));
       setToastType("offline");
       setShowToast(true);
-
-      // Limpiar timeout anterior
-      if (hideTimeout) clearTimeout(hideTimeout);
-
-      // Ocultar después de 4 segundos
-      const timeout = setTimeout(() => setShowToast(false), 4000);
-      setHideTimeout(timeout);
-
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+      hideTimeoutRef.current = setTimeout(() => setShowToast(false), 4000);
       logger.info("NetworkStatusToast: Mostrando offline");
     },
     onOnline: () => {
@@ -37,25 +33,19 @@ export const NetworkStatusToast: React.FC = () => {
         setToastMessage(t("network.online"));
         setToastType("online");
         setShowToast(true);
-
-        // Limpiar timeout anterior
-        if (hideTimeout) clearTimeout(hideTimeout);
-
-        // Ocultar después de 3 segundos
-        const timeout = setTimeout(() => setShowToast(false), 3000);
-        setHideTimeout(timeout);
-
+        if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = setTimeout(() => setShowToast(false), 3000);
         logger.info("NetworkStatusToast: Mostrando online");
       }
     },
   });
 
-  // Limpiar timeout al desmontar
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (hideTimeout) clearTimeout(hideTimeout);
+      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current);
     };
-  }, [hideTimeout]);
+  }, []); // deps empty — ref is stable, no need to re-register
 
   if (!showToast) return null;
 
