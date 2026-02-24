@@ -116,21 +116,25 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
     data: profile,
     isLoading: isProfileLoading,
     isError: isProfileError,
+    isFetchedAfterMount,  // true only after the first actual fetch completes
   } = useUserProfile(user?.uid);
 
   // Track si el perfil no se encuentra después de cargar
   const [profileNotFound, setProfileNotFound] = useState(false);
 
   useEffect(() => {
-    if (!isProfileLoading && !profile && !isProfileError) {
-      // Para usuarios nuevos, dar más tiempo (Firestore eventual consistency)
-      const timeoutMs = isNewUser ? 15000 : 8000;
-      const timer = setTimeout(() => {
-        setProfileNotFound(true);
-      }, timeoutMs);
-      return () => clearTimeout(timer);
-    }
-  }, [isProfileLoading, profile, isProfileError, isNewUser]);
+    // Only start the "not found" timer AFTER we've actually fetched once.
+    // Without isFetchedAfterMount, the timer fires immediately on mount when
+    // isLoading is still false (before React Query triggers the first request),
+    // causing new users to see a false "no profile" error.
+    if (!isFetchedAfterMount || isProfileLoading || profile || isProfileError) return;
+
+    const timeoutMs = isNewUser ? 15000 : 8000;
+    const timer = setTimeout(() => {
+      setProfileNotFound(true);
+    }, timeoutMs);
+    return () => clearTimeout(timer);
+  }, [isFetchedAfterMount, isProfileLoading, profile, isProfileError, isNewUser]);
 
   // Geolocalización del usuario (solo para "Fuera")
   const {
@@ -525,11 +529,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
             key={habit}
             onClick={() => handleTypeChange(habit as any)}
             disabled={isGenerating}
-            className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 ${
-              recommendationType === habit
+            className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all duration-200 active:scale-[0.98] disabled:opacity-50 ${recommendationType === habit
                 ? "bg-bocado-green text-white border-bocado-green shadow-bocado"
                 : "bg-white text-bocado-text border-bocado-border hover:border-bocado-green/50"
-            }`}
+              }`}
           >
             <span className="text-3xl mb-2">
               {habit === "En casa" ? "🏡" : "🍽️"}
@@ -540,11 +543,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                 : t("recommendation.outButton")}
             </span>
             <span
-              className={`text-2xs mt-1 text-center leading-tight ${
-                recommendationType === habit
+              className={`text-2xs mt-1 text-center leading-tight ${recommendationType === habit
                   ? "text-white/80"
                   : "text-bocado-gray"
-              }`}
+                }`}
             >
               {habit === "En casa"
                 ? t("recommendation.useIngredients")
@@ -568,11 +570,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                     key={meal}
                     onClick={() => handleMealSelect(meal)}
                     disabled={isGenerating}
-                    className={`py-3 px-2 rounded-xl border-2 text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
-                      selectedMeal === meal
+                    className={`py-3 px-2 rounded-xl border-2 text-sm font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${selectedMeal === meal
                         ? "bg-bocado-green text-white border-bocado-green shadow-sm"
                         : "bg-white text-bocado-dark-gray border-bocado-border"
-                    }`}
+                      }`}
                   >
                     {translateMealWithEmoji(meal, t)}
                   </button>
@@ -668,11 +669,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                       key={craving}
                       onClick={() => toggleCraving(craving)}
                       disabled={isGenerating}
-                      className={`py-3 px-2 rounded-xl border-2 text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${
-                        selectedCravings.includes(craving)
+                      className={`py-3 px-2 rounded-xl border-2 text-xs font-bold transition-all active:scale-[0.98] disabled:opacity-50 ${selectedCravings.includes(craving)
                           ? "bg-bocado-green text-white border-bocado-green shadow-sm"
                           : "bg-white text-bocado-dark-gray border-bocado-border"
-                      }`}
+                        }`}
                     >
                       {translateCravingWithEmoji(craving, t)}
                     </button>
@@ -697,11 +697,10 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                         setSelectedBudget(option.value);
                       }}
                       disabled={isGenerating}
-                      className={`w-full py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all flex justify-between items-center active:scale-[0.98] disabled:opacity-50 ${
-                        selectedBudget === option.value
+                      className={`w-full py-3 px-4 rounded-xl border-2 text-sm font-bold transition-all flex justify-between items-center active:scale-[0.98] disabled:opacity-50 ${selectedBudget === option.value
                           ? "bg-bocado-green text-white border-bocado-green shadow-sm"
                           : "bg-white text-bocado-dark-gray border-bocado-border"
-                      }`}
+                        }`}
                     >
                       <span>
                         {translateBudgetLabel(option.label, option.value, t)}
@@ -721,13 +720,12 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                       position="right"
                     >
                       <MapPin
-                        className={`w-4 h-4 flex-shrink-0 ${
-                          userPosition
+                        className={`w-4 h-4 flex-shrink-0 ${userPosition
                             ? "text-bocado-green"
                             : locationPermission === "denied"
                               ? "text-red-600"
                               : "text-bocado-gray"
-                        }`}
+                          }`}
                       />
                     </Tooltip>
                     <span className="text-xs text-bocado-dark-gray">

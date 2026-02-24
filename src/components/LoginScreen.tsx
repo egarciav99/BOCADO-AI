@@ -53,19 +53,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     const lowercasedEmail = email.toLowerCase();
 
     try {
-      console.log("[Login] Intentando signInWithEmailAndPassword...");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Intentando signInWithEmailAndPassword...");
+      }
       const userCredential = await signInWithEmailAndPassword(
         auth,
         lowercasedEmail,
         password,
       );
       const user = userCredential.user;
-      console.log("[Login] Autenticación Exitosa en Auth, UID:", user.uid);
 
       if (!user.emailVerified) {
         // ✅ ANALÍTICA: Intento de login con correo no verificado
         trackEvent("login_unverified_attempt", { userId: user.uid });
-
         setNeedsVerification(true);
         setUnverifiedUser(user);
         setIsLoading(false);
@@ -73,33 +73,27 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       }
 
       const userDocRef = doc(db, "users", user.uid);
-      console.log("[Login] Obteniendo perfil de Firestore para:", user.uid);
+      if (process.env.NODE_ENV === "development") {
+        console.log("[Login] Auth OK, obteniendo perfil de Firestore...");
+      }
       const userDoc = await getDoc(userDocRef);
-      console.log("[Login] Resultado getDoc:", userDoc.exists() ? "Existe" : "No existe");
 
       if (userDoc.exists()) {
         const firestoreData = userDoc.data();
-
         if (!firestoreData.emailVerified) {
           await updateDoc(userDocRef, { emailVerified: true });
         }
 
-        const sanitizedProfile = sanitizeProfileData(
-          firestoreData,
-        ) as UserProfile;
-        // Invalidar y actualizar cache del perfil
+        // Invalidate so React Query fetches fresh from Firestore.
+        // Avoid setQueryData with locally-sanitized data — null fallbacks
+        // can mask real profile fields and confuse subsequent components.
         queryClient.invalidateQueries({ queryKey: ["userProfile", user.uid] });
-        queryClient.setQueryData(["userProfile", user.uid], sanitizedProfile);
 
-        // ✅ ACTUALIZAR STORE MANUALMENTE para evitar delay en onAuthStateChanged
+        // Update store immediately to avoid delay waiting for onAuthStateChanged
         useAuthStore.getState().setUser(user);
-
-        // ✅ ANALÍTICA: Login exitoso
         trackEvent("login_success", { userId: user.uid });
-
         onLoginSuccess();
       } else {
-        // ✅ ANALÍTICA: Login exitoso pero sin perfil en Firestore (error de datos)
         trackEvent("login_missing_profile", { userId: user.uid });
         setError(t("login.success.profileIncomplete"));
         auth.signOut();
@@ -260,16 +254,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
-        const firestoreData = userDoc.data();
-        const sanitizedProfile = sanitizeProfileData(
-          firestoreData,
-        ) as UserProfile;
-
+        // Invalidate so React Query fetches fresh data.
+        // Do not setQueryData with locally-sanitized values.
         queryClient.invalidateQueries({
           queryKey: ["userProfile", result.uid],
         });
-        queryClient.setQueryData(["userProfile", result.uid], sanitizedProfile);
-
         onLoginSuccess();
       } else {
         trackEvent("login_google_missing_profile", { userId: result.uid });
