@@ -64,6 +64,11 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(getStoredLocale());
   const [isLoadingLocale, setIsLoadingLocale] = useState(true);
   const hasLoadedFromFirebase = useRef(false);
+  // Ref to read current locale without adding it to the effect dep array
+  // (adding locale would cause the effect to re-run every time locale is set,
+  // including when the effect itself sets it from Firebase)
+  const localeRef = useRef<Locale>(locale);
+  useEffect(() => { localeRef.current = locale; }, [locale]);
 
   // Al cargar, prioridad: Firebase > localStorage > navegador
   // Solo se ejecuta UNA VEZ cuando se carga el perfil del usuario
@@ -82,18 +87,17 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
     if (profile?.language) {
       // Usuario con perfil: usar idioma de Firebase SOLO si es diferente al actual
-      if (locale !== profile.language) {
+      if (localeRef.current !== profile.language) {
         setLocaleState(profile.language);
         localStorage.setItem(LOCALE_STORAGE_KEY, profile.language);
       }
       hasLoadedFromFirebase.current = true;
       setIsLoadingLocale(false);
     } else if (profile !== undefined && !profile?.language) {
-      // Perfil cargado pero sin idioma: usar localStorage
       hasLoadedFromFirebase.current = true;
       setIsLoadingLocale(false);
     }
-  }, [user?.uid, profile, locale]);
+  }, [user?.uid, profile]); // locale removed — read via localeRef to avoid re-run loop
 
   const setLocale = useCallback(
     (newLocale: Locale) => {
