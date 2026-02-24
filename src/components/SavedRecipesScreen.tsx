@@ -27,10 +27,12 @@ const SavedRecipesScreen: React.FC = () => {
 
   const toggleMutation = useToggleSavedItem();
 
-  const savedMeals: Meal[] = recipes.map((saved: any) => ({
-    mealType: saved.mealType,
-    recipe: saved.recipe,
-  }));
+  const savedMeals: Meal[] = recipes
+    .filter((saved: any) => saved?.recipe?.title)
+    .map((saved: any) => ({
+      mealType: saved.mealType,
+      recipe: saved.recipe,
+    }));
 
   const handleDeleteRequest = (meal: Meal) => {
     setMealToConfirmDelete(meal);

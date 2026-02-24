@@ -41,10 +41,12 @@ const SavedRestaurantsScreen: React.FC = () => {
   }, []); // mount-only
 
   // Mapear a Meal[] (preserva todos los campos incluyendo link_maps)
-  const savedRestaurants: Meal[] = restaurants.map((saved: any) => ({
-    mealType: saved.mealType,
-    recipe: saved.recipe, // Ahora incluye link_maps, direccion_aproximada, etc.
-  }));
+  const savedRestaurants: Meal[] = restaurants
+    .filter((saved: any) => saved?.recipe?.title)
+    .map((saved: any) => ({
+      mealType: saved.mealType,
+      recipe: saved.recipe, // Ahora incluye link_maps, direccion_aproximada, etc.
+    }));
 
   const handleDeleteRequest = (meal: Meal) => {
     // ✅ ANALÍTICA: Intención de eliminar

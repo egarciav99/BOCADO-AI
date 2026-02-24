@@ -307,6 +307,9 @@ export const useToggleSavedItem = () => {
       mealType: string;
       isSaved: boolean;
     }) => {
+      if (!recipe?.title) {
+        throw new Error("Invalid recipe: missing title");
+      }
       const collectionName =
         type === "recipe" ? "saved_recipes" : "saved_restaurants";
       const docId = `${userId}_${recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
@@ -328,7 +331,9 @@ export const useToggleSavedItem = () => {
 
     onMutate: async ({ userId, type, recipe, isSaved }) => {
       const key = type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
-      const docId = `${userId}_${recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
+      const docId = recipe?.title
+        ? `${userId}_${recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`
+        : `${userId}_unknown`;
 
       // Cancelar queries pendientes
       await queryClient.cancelQueries({
@@ -406,6 +411,7 @@ export const useToggleSavedItem = () => {
     },
 
     onError: (err, variables, context) => {
+      if (!variables?.recipe?.title) return;
       const key =
         variables.type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
       const docId = `${variables.userId}_${variables.recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
@@ -431,6 +437,7 @@ export const useToggleSavedItem = () => {
     },
 
     onSettled: (data, error, variables) => {
+      if (!variables?.recipe?.title) return;
       const key =
         variables.type === "recipe" ? SAVED_RECIPES_KEY : SAVED_RESTAURANTS_KEY;
       const docId = `${variables.userId}_${variables.recipe.title.replace(/[^a-zA-Z0-9]/g, "_").toLowerCase()}`;
