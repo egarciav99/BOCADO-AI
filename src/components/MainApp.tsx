@@ -40,13 +40,14 @@ const MainApp: React.FC<MainAppProps> = ({
 
   const { user, isLoading, isAuthenticated } = useAuthStore();
 
-  // Logging para depurar bloqueos
+  // Logging para depurar bloqueos — solo en desarrollo
   useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
     console.log("[MainApp] Estado de Sesión:", {
       isAuthenticated,
       hasUser: !!user,
       isLoading,
-      uid: user?.uid
+      uid: user?.uid?.substring(0, 8) + "...",
     });
   }, [user, isLoading, isAuthenticated]);
 

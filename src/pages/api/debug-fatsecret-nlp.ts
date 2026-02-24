@@ -5,7 +5,7 @@
  * 
  */
 
-import { analyzeNaturalLanguage } from './utils/fatsecret';
+import { analyzeNaturalLanguage } from '../../lib/api/utils/fatsecret';
 
 export default async function handler(req: any, res: any) {
     // Solo en desarrollo

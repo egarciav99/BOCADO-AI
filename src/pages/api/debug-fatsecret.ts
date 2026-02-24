@@ -9,7 +9,7 @@
  * - FATSECRET_SECRET
  */
 
-import { searchFatSecretIngredients } from './utils/fatsecret';
+import { searchFatSecretIngredients } from '../../lib/api/utils/fatsecret';
 
 export default async function handler(req: any, res: any) {
   // 🔒 SEGURIDAD: Solo en desarrollo

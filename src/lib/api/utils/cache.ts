@@ -88,7 +88,7 @@ export function getCacheStats() {
       misses: profileCache.getStats().misses,
       hitRate:
         profileCache.getStats().hits /
-          (profileCache.getStats().hits + profileCache.getStats().misses) || 0,
+        (profileCache.getStats().hits + profileCache.getStats().misses) || 0,
     },
     pantry: {
       keys: pantryCache.keys().length,
@@ -96,7 +96,7 @@ export function getCacheStats() {
       misses: pantryCache.getStats().misses,
       hitRate:
         pantryCache.getStats().hits /
-          (pantryCache.getStats().hits + pantryCache.getStats().misses) || 0,
+        (pantryCache.getStats().hits + pantryCache.getStats().misses) || 0,
     },
     history: {
       keys: historyCache.keys().length,
@@ -104,7 +104,7 @@ export function getCacheStats() {
       misses: historyCache.getStats().misses,
       hitRate:
         historyCache.getStats().hits /
-          (historyCache.getStats().hits + historyCache.getStats().misses) || 0,
+        (historyCache.getStats().hits + historyCache.getStats().misses) || 0,
     },
   };
 }
@@ -185,19 +185,15 @@ export async function getCachedWithFallback<T>(
 // CACHE EVENTS (para logging)
 // ============================================
 
-profileCache.on("expired", (key, value) => {
-  console.log(`[Cache] Profile expired: ${key}`);
-});
-
-pantryCache.on("expired", (key, value) => {
-  console.log(`[Cache] Pantry expired: ${key}`);
-});
-
-historyCache.on("expired", (key, value) => {
-  console.log(`[Cache] History expired: ${key}`);
-});
-
-// Log cuando se inicializa
-console.log(
-  "✅ Cache layer initialized (profile: 10min, pantry: 5min, history: 1h)",
-);
+// Cache expiry events only logged in development
+if (process.env.NODE_ENV === "development") {
+  profileCache.on("expired", (key) => {
+    console.log(`[Cache] Profile expired: ${key.substring(0, 8)}...`);
+  });
+  pantryCache.on("expired", (key) => {
+    console.log(`[Cache] Pantry expired: ${key.substring(0, 8)}...`);
+  });
+  historyCache.on("expired", (key) => {
+    console.log(`[Cache] History expired: ${key.substring(0, 8)}...`);
+  });
+}

@@ -77,9 +77,11 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   // ✅ AUDITORÍA: Detectar abandono del registro al desmontar el componente
   const isCompletedRef = React.useRef(false);
 
+  // ✅ FIX: cleanup only on unmount (empty dep array)
+  // Using currentStep in deps caused this to re-register on every step change,
+  // losing the closure and making the abandonment step number stale
   useEffect(() => {
     return () => {
-      // Solo dispara el evento si el registro no se completó
       if (!isCompletedRef.current) {
         trackEvent("registration_abandoned", {
           step_number: currentStep,
@@ -88,7 +90,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         });
       }
     };
-  }, [currentStep]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally mount/unmount only
 
   const validateStep = useCallback(async () => {
     setSubmissionError("");
@@ -179,14 +181,17 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         updatedAt: serverTimestamp() as UserProfile["updatedAt"],
       };
 
-      console.log("💾 Guardando perfil en Firestore...", { uid: user.uid });
       const cleanedProfile = cleanForFirestore(userProfile);
       await setDoc(doc(db, "users", user.uid), cleanedProfile);
-      console.log("✅ Perfil guardado exitosamente");
 
-      // Invalidar cache del perfil para forzar recarga
+      if (process.env.NODE_ENV === "development") {
+        console.log("✅ Perfil guardado para uid:", user.uid.substring(0, 8) + "...");
+      }
+
+      // Invalidate so the next read fetches fresh data from Firestore.
+      // DO NOT setQueryData here — cleanedProfile contains unresolved
+      // serverTimestamp sentinels that corrupt the cache for subsequent reads.
       queryClient.invalidateQueries({ queryKey: ["userProfile", user.uid] });
-      queryClient.setQueryData(["userProfile", user.uid], cleanedProfile);
 
       await sendEmailVerification(user);
 

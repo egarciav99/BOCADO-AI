@@ -7,7 +7,7 @@ import PlanScreen from "@/components/PlanScreen";
 export default function PlanPage() {
     const router = useRouter();
     const params = useParams();
-    const planId = params.id as string;
+    const planId = (params?.id ?? "") as string;
 
     return (
         <PlanScreen

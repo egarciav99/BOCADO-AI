@@ -66,16 +66,14 @@ function AppContent() {
 
   // Timeout de seguridad: si Firebase no responde en 5s, forzar continuar
   React.useEffect(() => {
-    console.log("[App] Monitor de carga inicial:", { isLoading, authTimeout });
+    if (!isLoading) return; // Ya resolvió, no crear timer
     const timer = setTimeout(() => {
-      if (isLoading) {
-        console.warn("[App] Timeout de autenticación (5s) alcanzado");
-        setAuthTimeout(true);
-        useAuthStore.getState().setLoading(false);
-      }
+      console.warn("[App] Timeout de autenticación (5s) alcanzado");
+      setAuthTimeout(true);
+      useAuthStore.getState().setLoading(false);
     }, 5000);
     return () => clearTimeout(timer);
-  }, [isLoading, authTimeout]);
+  }, [isLoading]); // ← Solo depende de isLoading
 
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
@@ -119,11 +117,15 @@ function AppContent() {
     let unsubscribe: (() => void) | null = null;
 
     try {
-      console.log("[App] Suscribiendo a onAuthStateChanged...");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[App] Suscribiendo a onAuthStateChanged...");
+      }
       unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
-          console.log("[App] onAuthStateChanged:", user ? `Sesión Activa (${user.uid})` : "Sin Sesión");
+          if (process.env.NODE_ENV === "development") {
+            console.log("[App] onAuthStateChanged:", user ? `Sesión Activa (uid: ${user.uid.substring(0, 8)}...)` : "Sin Sesión");
+          }
           setUser(user);
           // Sincronizar usuario con Sentry para tracking de errores
           setUserContext(user?.uid || null, user?.email || undefined);

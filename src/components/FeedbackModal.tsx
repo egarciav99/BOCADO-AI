@@ -33,7 +33,7 @@ interface ModalContextType {
 
 const ModalContext = createContext<ModalContextType>({
   activeModalId: null,
-  setActiveModalId: () => {},
+  setActiveModalId: () => { },
 });
 
 export const FeedbackModalProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -78,11 +78,10 @@ const StarButton: React.FC<StarButtonProps> = React.memo(
         onClick={handleClick}
         onTouchEnd={handleClick}
         disabled={isDisabled}
-        className={`text-4xl sm:text-3xl transition-all active:scale-125 disabled:opacity-50 select-none cursor-pointer ${
-          isActive
-            ? "grayscale-0 scale-110"
-            : "grayscale opacity-40 hover:opacity-70"
-        }`}
+        className={`text-4xl sm:text-3xl transition-all active:scale-125 disabled:opacity-50 select-none cursor-pointer ${isActive
+          ? "grayscale-0 scale-110"
+          : "grayscale opacity-40 hover:opacity-70"
+          }`}
         style={{
           touchAction: "manipulation",
           WebkitTapHighlightColor: "transparent",
@@ -147,21 +146,9 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     };
   }, []);
 
-  // Manejar cierre automático después de éxito
-  useEffect(() => {
-    if (isSuccess) {
-      successTimeoutRef.current = setTimeout(() => {
-        handleClose(true);
-      }, SUCCESS_CLOSE_DELAY);
-    }
-
-    return () => {
-      if (successTimeoutRef.current) {
-        clearTimeout(successTimeoutRef.current);
-        successTimeoutRef.current = null;
-      }
-    };
-  }, [isSuccess]);
+  // Ref always pointing to the latest handleClose — lets the isSuccess
+  // effect call it without being declared before handleClose.
+  const handleCloseRef = useRef<(isFromSuccess?: boolean) => void>(() => { });
 
   // ✅ FIX #2: Use context to manage modal state properly
   useEffect(() => {
@@ -279,24 +266,39 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
   // Handler de cierre
   const handleClose = useCallback(
     (isFromSuccess = false) => {
-      // Tracking si el usuario cierra sin calificar
       if (!isFromSuccess && rating === 0 && !isSuccess) {
         trackEvent("skip_feedback", {
           item_title: itemTitle,
           type,
         });
       }
-
-      // Cleanup
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
         successTimeoutRef.current = null;
       }
-
       onClose();
     },
     [onClose, rating, isSuccess, itemTitle, type],
   );
+
+  // Keep ref in sync so the isSuccess effect always calls the latest version
+  // (declared up here, after handleClose, to avoid "used before declaration")
+  handleCloseRef.current = handleClose;
+
+  // Manejar cierre automático después de éxito
+  // Uses ref to avoid forward-reference and stale closure simultaneously
+  useEffect(() => {
+    if (!isSuccess) return;
+    successTimeoutRef.current = setTimeout(() => {
+      handleCloseRef.current(true);
+    }, SUCCESS_CLOSE_DELAY);
+    return () => {
+      if (successTimeoutRef.current) {
+        clearTimeout(successTimeoutRef.current);
+        successTimeoutRef.current = null;
+      }
+    };
+  }, [isSuccess]); // ref is always current — no need for handleClose in deps
 
   // ✅ FIX #4: Ensure backdrop click works on both desktop and mobile
   const handleBackdropPointerDown = useCallback(

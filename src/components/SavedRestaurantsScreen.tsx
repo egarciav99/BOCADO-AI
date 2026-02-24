@@ -28,15 +28,17 @@ const SavedRestaurantsScreen: React.FC = () => {
 
   const toggleMutation = useToggleSavedItem();
 
-  // ✅ ANALÍTICA: Trackear cuando se carga la pantalla
+  // Fire screen_viewed once on mount only.
+  // restaurants.length was previously in deps, causing this to re-fire
+  // on every pagination load or polling refetch.
   useEffect(() => {
     if (user) {
       trackEvent("saved_restaurants_screen_viewed", {
-        count: restaurants.length,
         userId: user.uid,
       });
     }
-  }, [user, restaurants.length]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // mount-only
 
   // Mapear a Meal[] (preserva todos los campos incluyendo link_maps)
   const savedRestaurants: Meal[] = restaurants.map((saved: any) => ({

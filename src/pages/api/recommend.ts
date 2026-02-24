@@ -4,11 +4,11 @@ import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import * as crypto from 'crypto';
 import { COUNTRY_TO_CURRENCY, CURRENCY_CONFIG } from '@/data/budgets';
-import { profileCache, pantryCache, historyCache } from './utils/cache';
+import { profileCache, pantryCache, historyCache } from '../../lib/api/utils/cache';
 // 📝 FatSecret integración (opcional - requiere API key premium free)
 // Para habilitar: descomenta y configura FATSECRET_KEY & FATSECRET_SECRET
-import { getFatSecretIngredientsWithCache } from './utils/fatsecret-logic';
-import { searchFatSecretIngredients } from './utils/fatsecret';
+import { getFatSecretIngredientsWithCache } from '../../lib/api/utils/fatsecret-logic';
+import { searchFatSecretIngredients } from '../../lib/api/utils/fatsecret';
 
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
@@ -209,7 +209,7 @@ class DistributedRateLimiter {
     const now = Date.now();
 
     try {
-      return await db.runTransaction<RateLimitResult>(async (t) => {
+      return await db.runTransaction(async (t: any) => {
         const doc = await t.get(counterRef);
         const data = doc.exists ? (doc.data() as RateLimitRecord) : null;
 
@@ -309,7 +309,7 @@ class DistributedRateLimiter {
     const now = Date.now();
 
     try {
-      await db.runTransaction(async (t) => {
+      await db.runTransaction(async (t: any) => {
         const doc = await t.get(counterRef);
 
         if (!doc.exists) {
@@ -736,7 +736,7 @@ async function getAllIngredientes(): Promise<FirestoreIngredient[]> {
 
     if (!localSnap.empty) {
       safeLog("log", `[Ingredients] Loaded ${localSnap.size} from local DB`);
-      return localSnap.docs.map(doc => ({
+      return localSnap.docs.map((doc: any) => ({
         id: doc.id,
         ...doc.data(),
       } as FirestoreIngredient));
@@ -933,7 +933,7 @@ class IPRateLimiter {
     const now = Date.now();
 
     try {
-      return await db.runTransaction(async (t) => {
+      return await db.runTransaction(async (t: any) => {
         const doc = await t.get(docRef);
         const data = doc.exists ? (doc.data() as any) : null;
 
@@ -1661,7 +1661,7 @@ export default async function handler(req: any, res: any) {
     }
 
     interactionRef = db.collection("user_interactions").doc(interactionId);
-    await interactionRef.set({
+    await interactionRef!.set({
       userId,
       interaction_id: interactionId,
       createdAt: FieldValue.serverTimestamp(),
@@ -1750,7 +1750,7 @@ export default async function handler(req: any, res: any) {
 
       if (!feedbackSnap.empty) {
         const logs = feedbackSnap.docs
-          .map((d) => d.data())
+          .map((d: any) => d.data())
           .sort(
             (a: any, b: any) =>
               (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0),

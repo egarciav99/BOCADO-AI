@@ -199,7 +199,9 @@ export function useVisibilityAwarePolling({
   refetchIntervalInBackground = 300000, // 5 minutos en background
   enabled = true,
 }: UseVisibilityAwareQueryOptions = {}) {
-  const [isVisible, setIsVisible] = useState(!document.hidden);
+  const [isVisible, setIsVisible] = useState(
+    typeof document !== "undefined" ? !document.hidden : true,
+  );
   const [effectiveInterval, setEffectiveInterval] = useState(refetchInterval);
 
   useEffect(() => {

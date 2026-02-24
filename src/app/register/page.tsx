@@ -9,7 +9,7 @@ export default function RegisterPage() {
 
     return (
         <RegistrationFlow
-            onRegistrationComplete={() => router.push("/dashboard")}
+            onRegistrationComplete={() => router.push("/dashboard?tutorial=true")}
             onGoHome={() => router.push("/")}
         />
     );

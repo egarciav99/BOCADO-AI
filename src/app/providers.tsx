@@ -8,16 +8,20 @@ import { FeedbackModalProvider } from "@/components/FeedbackModal";
 import { ToastContainer } from "@/components/ui/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
-const queryClient = new QueryClient({
-    defaultOptions: {
-        queries: {
-            staleTime: 1000 * 60 * 5,
-            refetchOnWindowFocus: false,
-        },
-    },
-});
-
 export function Providers({ children }: { children: React.ReactNode }) {
+    // useState ensures a new QueryClient per client (avoids SSR data leakage between users)
+    const [queryClient] = React.useState(
+        () =>
+            new QueryClient({
+                defaultOptions: {
+                    queries: {
+                        staleTime: 1000 * 60 * 5,
+                        refetchOnWindowFocus: false,
+                    },
+                },
+            }),
+    );
+
     return (
         <ThemeProvider>
             <QueryClientProvider client={queryClient}>

@@ -13,54 +13,60 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(0);
 
-  const steps = [
-    {
-      title: t("tutorial.welcome", {
-        userName: userName ? `, ${userName}` : "",
-      }),
-      description: t("tutorial.subtitle"),
-      icon: (
-        <div className="w-40 mx-auto">
-          <BocadoLogo className="w-full" />
-        </div>
-      ),
-      color: "bg-white",
-      textColor: "text-bocado-green",
-      id: "welcome",
-    },
-    {
-      title: t("tutorial.slides.rateLimit.title"),
-      description: t("tutorial.slides.rateLimit.description"),
-      icon: <div className="text-5xl">⏱️</div>,
-      color: "bg-amber-50",
-      textColor: "text-amber-900",
-      id: "ratelimit",
-    },
-    {
-      title: t("tutorial.slides.budget.title"),
-      description: t("tutorial.slides.budget.description"),
-      icon: <div className="text-5xl">💱</div>,
-      color: "bg-green-50",
-      textColor: "text-green-900",
-      id: "budget",
-    },
-    {
-      title: t("tutorial.slides.favorites.title"),
-      description: t("tutorial.slides.favorites.description"),
-      icon: <div className="text-5xl">❤️</div>,
-      color: "bg-red-50",
-      textColor: "text-red-900",
-      id: "favorites",
-    },
-  ];
+  // Memoize so the array reference is stable and the analytics effect
+  // below can safely include `steps` in its dependency array without
+  // causing an infinite loop
+  const steps = React.useMemo(
+    () => [
+      {
+        title: t("tutorial.welcome", {
+          userName: userName ? `, ${userName}` : "",
+        }),
+        description: t("tutorial.subtitle"),
+        icon: (
+          <div className="w-40 mx-auto">
+            <BocadoLogo className="w-full" />
+          </div>
+        ),
+        color: "bg-white",
+        textColor: "text-bocado-green",
+        id: "welcome",
+      },
+      {
+        title: t("tutorial.slides.rateLimit.title"),
+        description: t("tutorial.slides.rateLimit.description"),
+        icon: <div className="text-5xl">⏱️</div>,
+        color: "bg-amber-50",
+        textColor: "text-amber-900",
+        id: "ratelimit",
+      },
+      {
+        title: t("tutorial.slides.budget.title"),
+        description: t("tutorial.slides.budget.description"),
+        icon: <div className="text-5xl">💱</div>,
+        color: "bg-green-50",
+        textColor: "text-green-900",
+        id: "budget",
+      },
+      {
+        title: t("tutorial.slides.favorites.title"),
+        description: t("tutorial.slides.favorites.description"),
+        icon: <div className="text-5xl">❤️</div>,
+        color: "bg-red-50",
+        textColor: "text-red-900",
+        id: "favorites",
+      },
+    ],
+    [t, userName],
+  );
 
-  // ✅ ANALÍTICA: Trackeo de inicio y progreso de pasos
+  // Track step views — steps is memoized so it’s safe in the dep array
   useEffect(() => {
     trackEvent("tutorial_step_view", {
       step_index: currentStep,
-      step_id: steps[currentStep].id,
+      step_id: steps[currentStep]?.id,
     });
-  }, [currentStep]);
+  }, [currentStep, steps]); // steps added — was a stale closure before
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {

@@ -42,75 +42,75 @@ interface UseSmartNotificationsReturn {
 const createDefaultReminders = (
   t: (key: string) => string,
 ): SmartReminder[] => [
-  // Recordatorios de comidas
-  {
-    id: "breakfast",
-    type: "meal",
-    title: t("notifications.settings.breakfast.title"),
-    body: t("notifications.settings.breakfast.body"),
-    hour: 8,
-    minute: 0,
-    enabled: true,
-    condition: "always",
-    minDaysBetween: 1,
-  },
-  {
-    id: "lunch",
-    type: "meal",
-    title: t("notifications.settings.lunch.title"),
-    body: t("notifications.settings.lunch.body"),
-    hour: 13,
-    minute: 30,
-    enabled: true,
-    condition: "always",
-    minDaysBetween: 1,
-  },
-  {
-    id: "dinner",
-    type: "meal",
-    title: t("notifications.settings.dinner.title"),
-    body: t("notifications.settings.dinner.body"),
-    hour: 19,
-    minute: 30,
-    enabled: true,
-    condition: "always",
-    minDaysBetween: 1,
-  },
-  // Recordatorios inteligentes
-  {
-    id: "pantry_update",
-    type: "pantry",
-    title: t("notifications.settings.pantryUpdate.title"),
-    body: t("notifications.settings.pantryUpdate.body"),
-    hour: 10,
-    minute: 0,
-    enabled: true,
-    condition: "pantry_empty",
-    minDaysBetween: 3,
-  },
-  {
-    id: "rate_recipes",
-    type: "rating",
-    title: t("notifications.settings.rateRecipes.title"),
-    body: t("notifications.settings.rateRecipes.body"),
-    hour: 15,
-    minute: 0,
-    enabled: true,
-    condition: "pending_ratings",
-    minDaysBetween: 2,
-  },
-  {
-    id: "come_back",
-    type: "engagement",
-    title: t("notifications.settings.comeBack.title"),
-    body: t("notifications.settings.comeBack.body"),
-    hour: 12,
-    minute: 0,
-    enabled: true,
-    condition: "inactive_user",
-    minDaysBetween: 7,
-  },
-];
+    // Recordatorios de comidas
+    {
+      id: "breakfast",
+      type: "meal",
+      title: t("notifications.settings.breakfast.title"),
+      body: t("notifications.settings.breakfast.body"),
+      hour: 8,
+      minute: 0,
+      enabled: true,
+      condition: "always",
+      minDaysBetween: 1,
+    },
+    {
+      id: "lunch",
+      type: "meal",
+      title: t("notifications.settings.lunch.title"),
+      body: t("notifications.settings.lunch.body"),
+      hour: 13,
+      minute: 30,
+      enabled: true,
+      condition: "always",
+      minDaysBetween: 1,
+    },
+    {
+      id: "dinner",
+      type: "meal",
+      title: t("notifications.settings.dinner.title"),
+      body: t("notifications.settings.dinner.body"),
+      hour: 19,
+      minute: 30,
+      enabled: true,
+      condition: "always",
+      minDaysBetween: 1,
+    },
+    // Recordatorios inteligentes
+    {
+      id: "pantry_update",
+      type: "pantry",
+      title: t("notifications.settings.pantryUpdate.title"),
+      body: t("notifications.settings.pantryUpdate.body"),
+      hour: 10,
+      minute: 0,
+      enabled: true,
+      condition: "pantry_empty",
+      minDaysBetween: 3,
+    },
+    {
+      id: "rate_recipes",
+      type: "rating",
+      title: t("notifications.settings.rateRecipes.title"),
+      body: t("notifications.settings.rateRecipes.body"),
+      hour: 15,
+      minute: 0,
+      enabled: true,
+      condition: "pending_ratings",
+      minDaysBetween: 2,
+    },
+    {
+      id: "come_back",
+      type: "engagement",
+      title: t("notifications.settings.comeBack.title"),
+      body: t("notifications.settings.comeBack.body"),
+      hour: 12,
+      minute: 0,
+      enabled: true,
+      condition: "inactive_user",
+      minDaysBetween: 7,
+    },
+  ];
 
 const STORAGE_KEY = "bocado_smart_reminders";
 const LAST_ACTIVE_KEY = "bocado_last_active";
@@ -141,6 +141,10 @@ export const useSmartNotifications = (
   const [daysSinceLastAppUse, setDaysSinceLastAppUse] = useState(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoadedSettingsRef = useRef(false);
+  // Ref to prevent write-back loop:
+  // reminders changes → persistence effect writes to Firestore → (if Firestore triggers re-read)
+  // Using a ref lets us skip the first write until settings have loaded
+  const remindersRef = useRef<SmartReminder[]>([]);
 
   // Limpiar datos corruptos con claves de traducción al inicio
   useEffect(() => {
@@ -339,7 +343,13 @@ export const useSmartNotifications = (
     localStorage.setItem(STORAGE_KEY, JSON.stringify(reminders));
   }, [reminders]);
 
-  // Persistir recordatorios en Firestore
+  // Keep remindersRef in sync so checkAndShowReminders always reads latest
+  useEffect(() => {
+    remindersRef.current = reminders;
+  }, [reminders]);
+
+  // Persistir recordatorios en Firestore only after initial load
+  // (avoids write-back loop when Firestore load sets reminders)
   useEffect(() => {
     if (!userUid || !hasLoadedSettingsRef.current) return;
     saveSettings({ reminders });
@@ -379,7 +389,7 @@ export const useSmartNotifications = (
           if (lastUpdated) {
             const days = Math.floor(
               (Date.now() - new Date(lastUpdated).getTime()) /
-                (1000 * 60 * 60 * 24),
+              (1000 * 60 * 60 * 24),
             );
             setDaysSinceLastPantryUpdate(days);
           } else {
@@ -392,7 +402,7 @@ export const useSmartNotifications = (
             items.length < MIN_PANTRY_ITEMS ||
             (lastUpdated &&
               Date.now() - new Date(lastUpdated).getTime() >
-                PANTRY_STALE_DAYS * 24 * 60 * 60 * 1000);
+              PANTRY_STALE_DAYS * 24 * 60 * 60 * 1000);
 
           if (!isEffectivelyEmpty) {
             // Si la despensa no está vacía, no mostrar recordatorio de despensa
@@ -438,7 +448,8 @@ export const useSmartNotifications = (
     const currentTime = currentHour * 60 + currentMinute;
     const today = now.toDateString();
 
-    reminders.forEach((reminder) => {
+    // Use ref so we read latest reminders without changing callback reference
+    remindersRef.current.forEach((reminder) => {
       if (!reminder.enabled) return;
 
       const reminderTime = reminder.hour * 60 + reminder.minute;
@@ -490,7 +501,7 @@ export const useSmartNotifications = (
         if (shouldShow && reminder.lastShown && reminder.minDaysBetween) {
           const daysSinceLast = Math.floor(
             (now.getTime() - new Date(reminder.lastShown).getTime()) /
-              (1000 * 60 * 60 * 24),
+            (1000 * 60 * 60 * 24),
           );
           if (daysSinceLast < reminder.minDaysBetween) {
             shouldShow = false;
@@ -533,11 +544,13 @@ export const useSmartNotifications = (
   }, [
     isSupported,
     permission,
-    reminders,
     daysSinceLastPantryUpdate,
     pendingRatingsCount,
     daysSinceLastAppUse,
     token,
+    // reminders removed → use remindersRef.current so the callback
+    // doesn't change reference on every reminder update, which would
+    // recreate the interval every 60s and create a write-back loop
   ]);
 
   // Loop de verificación cada minuto
