@@ -30,8 +30,7 @@ const getAdminApp = () => {
 };
 
 const adminApp = getAdminApp();
-
-const db = getFirestore();
+const db = adminApp ? getFirestore() : null;
 
 // ============================================
 // CONFIGURACIÓN
@@ -165,7 +164,7 @@ async function checkRateLimit(
   ip: string,
   isAuthenticated: boolean = false,
 ): Promise<{ allowed: boolean; retryAfter?: number }> {
-  const docRef = db.collection("maps_proxy_rate_limits").doc(ip);
+  const docRef = db!.collection("maps_proxy_rate_limits").doc(ip);
   const now = Date.now();
 
   // Usar colección diferente para autenticados vs no autenticados
@@ -174,7 +173,7 @@ async function checkRateLimit(
     : RATE_LIMITS.unauthenticated;
 
   try {
-    return await db.runTransaction(async (t) => {
+    return await db!.runTransaction(async (t) => {
       const doc = await t.get(docRef);
       const data = doc.exists ? (doc.data() as RateLimitRecord) : null;
 
@@ -211,7 +210,7 @@ async function checkRateLimit(
 
 async function getCachedResponse(cacheKey: string): Promise<any | null> {
   try {
-    const docRef = db.collection("maps_proxy_cache").doc(cacheKey);
+    const docRef = db!.collection("maps_proxy_cache").doc(cacheKey);
     const doc = await docRef.get();
 
     if (!doc.exists) return null;
@@ -237,7 +236,7 @@ async function setCachedResponse(
   ttlMinutes: number = 60,
 ): Promise<void> {
   try {
-    const docRef = db.collection("maps_proxy_cache").doc(cacheKey);
+    const docRef = db!.collection("maps_proxy_cache").doc(cacheKey);
 
     // ✅ FIX: Calcular expiresAt correctamente sumando el TTL
     const now = Date.now();
@@ -341,6 +340,9 @@ const isOriginAllowed = (origin: string | undefined): boolean => {
 // ============================================
 
 export default async function handler(req: any, res: any) {
+  if (!adminApp || !db) {
+    return res.status(503).json({ error: "Service temporarily unavailable. Firebase not initialized." });
+  }
   const origin = req.headers.origin;
 
   // Debug logging to help diagnose 403 / origin issues in deployments

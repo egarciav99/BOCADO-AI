@@ -203,10 +203,12 @@ export const useSavedItems = (
   // Acumular items de todas las páginas cargadas
   const [allItems, setAllItems] = useState<SavedItem[]>([]);
   const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
+  const page1LoadedRef = useRef(false); // ← ref evita loop en useEffect
 
   // Efecto para manejar la primera página
   useEffect(() => {
-    if (queryResult.data && !loadedPages.has(1)) {
+    if (queryResult.data && !page1LoadedRef.current) {
+      page1LoadedRef.current = true;
       setAllItems(queryResult.data.items);
       setPaginationState((prev) => ({
         ...prev,
@@ -218,7 +220,7 @@ export const useSavedItems = (
       }));
       setLoadedPages(new Set([1]));
     }
-  }, [queryResult.data, loadedPages]);
+  }, [queryResult.data]); // ← sin loadedPages en deps
 
   // Función para cargar siguiente página
   const fetchNextPage = useCallback(async () => {
@@ -262,6 +264,7 @@ export const useSavedItems = (
   useEffect(() => {
     setAllItems([]);
     setLoadedPages(new Set());
+    page1LoadedRef.current = false; // ← resetear ref también
     setPaginationState({
       currentPage: 1,
       hasMore: true,

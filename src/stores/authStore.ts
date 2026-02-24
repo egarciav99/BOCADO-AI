@@ -64,10 +64,8 @@ export const useAuthStore = create<AuthState>()(
     {
       name: "bocado-auth-v2",
       storage: createJSONStorage(() => safeStorage),
-      // Solo persistir estado de sesión, NO datos del user
-      partialize: (state) => ({
-        isAuthenticated: state.isAuthenticated,
-      }),
+      // No persistir nada — Firebase onAuthStateChanged es la fuente de verdad
+      partialize: () => ({}),
       // Manejo de errores de persistencia
       onRehydrateStorage: () => (state, error) => {
         if (error) {

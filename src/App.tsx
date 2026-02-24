@@ -66,16 +66,14 @@ function AppContent() {
 
   // Timeout de seguridad: si Firebase no responde en 5s, forzar continuar
   React.useEffect(() => {
-    console.log("[App] Monitor de carga inicial:", { isLoading, authTimeout });
+    if (!isLoading) return; // Ya resolvió, no crear timer
     const timer = setTimeout(() => {
-      if (isLoading) {
-        console.warn("[App] Timeout de autenticación (5s) alcanzado");
-        setAuthTimeout(true);
-        useAuthStore.getState().setLoading(false);
-      }
+      console.warn("[App] Timeout de autenticación (5s) alcanzado");
+      setAuthTimeout(true);
+      useAuthStore.getState().setLoading(false);
     }, 5000);
     return () => clearTimeout(timer);
-  }, [isLoading, authTimeout]);
+  }, [isLoading]); // ← Solo depende de isLoading
 
   useEffect(() => {
     const handleGlobalError = (event: ErrorEvent) => {
