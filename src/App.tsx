@@ -117,11 +117,15 @@ function AppContent() {
     let unsubscribe: (() => void) | null = null;
 
     try {
-      console.log("[App] Suscribiendo a onAuthStateChanged...");
+      if (process.env.NODE_ENV === "development") {
+        console.log("[App] Suscribiendo a onAuthStateChanged...");
+      }
       unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
-          console.log("[App] onAuthStateChanged:", user ? `Sesión Activa (${user.uid})` : "Sin Sesión");
+          if (process.env.NODE_ENV === "development") {
+            console.log("[App] onAuthStateChanged:", user ? `Sesión Activa (uid: ${user.uid.substring(0, 8)}...)` : "Sin Sesión");
+          }
           setUser(user);
           // Sincronizar usuario con Sentry para tracking de errores
           setUserContext(user?.uid || null, user?.email || undefined);

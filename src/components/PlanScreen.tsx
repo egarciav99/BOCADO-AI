@@ -199,17 +199,22 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  const loadingMessages = [
-    t("plan.loadingMessages.chefs"),
-    t("plan.loadingMessages.places"),
-    t("plan.loadingMessages.ingredients"),
-    t("plan.loadingMessages.nutrition"),
-    t("plan.loadingMessages.magic"),
-    t("plan.loadingMessages.final"),
-  ];
+  // Memoize so the array reference is stable — without this, loadingMessages
+  // gets a new reference on every render, which restarts the interval below
+  const loadingMessages = React.useMemo(
+    () => [
+      t("plan.loadingMessages.chefs"),
+      t("plan.loadingMessages.places"),
+      t("plan.loadingMessages.ingredients"),
+      t("plan.loadingMessages.nutrition"),
+      t("plan.loadingMessages.magic"),
+      t("plan.loadingMessages.final"),
+    ],
+    [t],
+  );
 
   const [currentLoadingMessage, setCurrentLoadingMessage] = useState(
-    loadingMessages[0],
+    () => loadingMessages[0] ?? "Cargando...",
   );
   const user = auth.currentUser;
   const {
@@ -250,7 +255,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
       });
     }, 4000);
     return () => clearInterval(intervalId);
-  }, [isLoading]);
+  }, [isLoading, loadingMessages]); // loadingMessages is memoized — stable ref
 
   // NOTA: MealCard ya ejecuta toggleMutation internamente en handleSaveClick.
   // Este handler solo registra el evento de analytics desde PlanScreen.

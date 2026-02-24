@@ -35,34 +35,34 @@ interface UseNotificationsReturn {
 const createDefaultSchedules = (
   t: (key: string) => string,
 ): NotificationSchedule[] => [
-  {
-    id: "breakfast",
-    title: t("notifications.breakfast.titleSimple"),
-    body: t("notifications.breakfast.bodySimple"),
-    hour: 8,
-    minute: 0,
-    enabled: false,
-    type: "breakfast",
-  },
-  {
-    id: "lunch",
-    title: t("notifications.lunch.title"),
-    body: t("notifications.lunch.bodySimple"),
-    hour: 13,
-    minute: 30,
-    enabled: false,
-    type: "lunch",
-  },
-  {
-    id: "dinner",
-    title: t("notifications.dinner.titleSimple"),
-    body: t("notifications.dinner.bodySimple"),
-    hour: 19,
-    minute: 30,
-    enabled: false,
-    type: "dinner",
-  },
-];
+    {
+      id: "breakfast",
+      title: t("notifications.breakfast.titleSimple"),
+      body: t("notifications.breakfast.bodySimple"),
+      hour: 8,
+      minute: 0,
+      enabled: false,
+      type: "breakfast",
+    },
+    {
+      id: "lunch",
+      title: t("notifications.lunch.title"),
+      body: t("notifications.lunch.bodySimple"),
+      hour: 13,
+      minute: 30,
+      enabled: false,
+      type: "lunch",
+    },
+    {
+      id: "dinner",
+      title: t("notifications.dinner.titleSimple"),
+      body: t("notifications.dinner.bodySimple"),
+      hour: 19,
+      minute: 30,
+      enabled: false,
+      type: "dinner",
+    },
+  ];
 
 const STORAGE_KEY = "bocado_notification_schedules";
 
@@ -79,6 +79,9 @@ export const useNotifications = (): UseNotificationsReturn => {
   const [isLoading, setIsLoading] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Ref so the interval callback always reads the latest schedules
+  // without needing to restart the timer on every schedule change
+  const schedulesRef = useRef<NotificationSchedule[]>([]);
 
   // Limpiar datos corruptos con claves de traducción al inicio
   useEffect(() => {
@@ -160,6 +163,11 @@ export const useNotifications = (): UseNotificationsReturn => {
     });
   }, [t]);
 
+  // Keep schedulesRef in sync so the interval callback sees fresh data
+  useEffect(() => {
+    schedulesRef.current = schedules;
+  }, [schedules]);
+
   // Guardar horarios cuando cambien
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(schedules));
@@ -196,7 +204,8 @@ export const useNotifications = (): UseNotificationsReturn => {
       const currentMinute = now.getMinutes();
       const currentTime = currentHour * 60 + currentMinute;
 
-      schedules.forEach((schedule) => {
+      // Use ref so we read latest schedules without restarting the interval
+      schedulesRef.current.forEach((schedule) => {
         if (!schedule.enabled) return;
 
         const scheduleTime = schedule.hour * 60 + schedule.minute;
@@ -240,7 +249,7 @@ export const useNotifications = (): UseNotificationsReturn => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [isSupported, permission, schedules]);
+  }, [isSupported, permission]); // ← schedules removed: read via ref instead
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported) return false;

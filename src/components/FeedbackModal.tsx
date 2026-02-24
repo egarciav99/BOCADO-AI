@@ -33,7 +33,7 @@ interface ModalContextType {
 
 const ModalContext = createContext<ModalContextType>({
   activeModalId: null,
-  setActiveModalId: () => {},
+  setActiveModalId: () => { },
 });
 
 export const FeedbackModalProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -78,11 +78,10 @@ const StarButton: React.FC<StarButtonProps> = React.memo(
         onClick={handleClick}
         onTouchEnd={handleClick}
         disabled={isDisabled}
-        className={`text-4xl sm:text-3xl transition-all active:scale-125 disabled:opacity-50 select-none cursor-pointer ${
-          isActive
+        className={`text-4xl sm:text-3xl transition-all active:scale-125 disabled:opacity-50 select-none cursor-pointer ${isActive
             ? "grayscale-0 scale-110"
             : "grayscale opacity-40 hover:opacity-70"
-        }`}
+          }`}
         style={{
           touchAction: "manipulation",
           WebkitTapHighlightColor: "transparent",
@@ -161,7 +160,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         successTimeoutRef.current = null;
       }
     };
-  }, [isSuccess]);
+  }, [isSuccess, handleClose]); // ← handleClose added to fix stale closure
 
   // ✅ FIX #2: Use context to manage modal state properly
   useEffect(() => {
