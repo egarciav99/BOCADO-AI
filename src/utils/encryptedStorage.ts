@@ -29,12 +29,20 @@ const isLocalStorageAvailable = (() => {
 // This makes it harder (but not impossible) to read the data from another browser
 const getEncryptionKey = (): string => {
   const salt = "bocado-ai-storage-v1";
+
+  // Guard values for SSR
+  const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "ssr";
+  const language = typeof navigator !== "undefined" ? navigator.language : "en";
+  const screenWidth = typeof screen !== "undefined" ? screen.width : 0;
+  const screenHeight = typeof screen !== "undefined" ? screen.height : 0;
+  const timezoneOffset = new Date().getTimezoneOffset();
+
   const fingerprint = [
-    navigator.userAgent,
-    navigator.language,
-    screen.width,
-    screen.height,
-    new Date().getTimezoneOffset(),
+    userAgent,
+    language,
+    screenWidth,
+    screenHeight,
+    timezoneOffset,
   ].join("|");
 
   // Simple hash
@@ -94,8 +102,8 @@ const utf8BytesToString = (bytes: number[]): string => {
     } else if ((byte1 & 0xf0) === 0xe0) {
       str += String.fromCharCode(
         ((byte1 & 0x0f) << 12) |
-          ((bytes[i + 1] & 0x3f) << 6) |
-          (bytes[i + 2] & 0x3f),
+        ((bytes[i + 1] & 0x3f) << 6) |
+        (bytes[i + 2] & 0x3f),
       );
       i += 3;
     } else {

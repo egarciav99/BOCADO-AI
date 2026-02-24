@@ -24,24 +24,51 @@ import {
 import { env } from "./environment/env";
 import { logger } from "./utils/logger";
 
+const isDev = typeof process !== "undefined" && process.env.NODE_ENV === "development";
+
+// Debug log para detectar si las variables de entorno se están cargando correctamente
+if (isDev) {
+  const key = env.firebase.apiKey;
+  const projectId = env.firebase.projectId;
+  if (!key) {
+    console.error("❌ [Firebase] CRÍTICO: No se encontró NEXT_PUBLIC_FIREBASE_API_KEY");
+  } else {
+    console.log(`✅ [Firebase] Config: API Key (${key.substring(0, 5)}...), ProjectID (${projectId || "MISSING"})`);
+  }
+}
+
 const app = !getApps().length ? initializeApp(env.firebase) : getApp();
 
 // CONFIGURACIÓN OFFLINE (Firestore Persistence)
-// Nota: initializeFirestore puede lanzar si el entorno no soporta IndexedDB/BroadcastChannel
-// o si HMR re-ejecuta el módulo. En ese caso, fallback a getFirestore.
-let db: Firestore;
-try {
-  db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager(),
-    }),
-  });
-} catch (err) {
-  console.warn("[Firebase] Fallback a getFirestore:", err);
-  db = getFirestore(app);
-}
+// Usamos un patrón singleton para evitar errores de doble inicialización en Next.js (HMR)
+const getDb = () => {
+  if (typeof window === "undefined") return getFirestore(app);
 
-// AUTH
+  const apps = getApps();
+  if (apps.length > 0) {
+    try {
+      return getFirestore(app);
+    } catch (e) {
+      // Si falla getFirestore, intentamos initialize
+    }
+  }
+
+  /*
+  try {
+    return initializeFirestore(app, {
+      localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager(),
+      }),
+    });
+  } catch (err) {
+    console.warn("[Firebase] Fallback a getFirestore:", err);
+    return getFirestore(app);
+  }
+  */
+  return getFirestore(app);
+};
+
+const db = getDb();
 const auth = getAuth(app);
 
 // ============================================
@@ -54,7 +81,7 @@ const eventQueue: Array<{ eventName: string; params?: Record<string, any> }> =
   [];
 
 // Constantes para tracking
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "unknown";
+const APP_VERSION = (typeof process !== "undefined" ? process.env.NEXT_PUBLIC_APP_VERSION : "") || "unknown";
 const SESSION_STORAGE_KEY = "bocado_session_v1_next";
 const ATTR_STORAGE_KEY = "bocado_utm_v1_next";
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos de inactividad
@@ -210,7 +237,7 @@ if (typeof window !== "undefined") {
         analyticsReady = true;
         processEventQueue();
 
-        if (process.env.NODE_ENV === "development") {
+        if (isDev) {
           logger.info("✅ Analytics inicializado");
         }
       }
@@ -288,9 +315,9 @@ export const setAnalyticsUser = (
  * @deprecated Usa setAnalyticsUser(userId, properties) en su lugar.
  */
 export const setAnalyticsProperties = (properties: Record<string, any>) => {
-  if (process.env.NODE_ENV === "development") {
+  if (isDev) {
     console.warn(
-      "[Firebase] setAnalyticsProperties is deprecated. Use setAnalyticsUser() instead.",
+      "[Firebase] setAnalyticsUser(userId, properties) en su lugar.",
     );
   }
   if (analytics) {

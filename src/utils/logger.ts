@@ -27,7 +27,7 @@ const LOG_LEVELS: Record<LogLevel, number> = {
   error: 3,
 };
 
-const isDev = process.env.NODE_ENV === "development";
+const isDev = typeof process !== "undefined" && process.env.NODE_ENV === "development";
 
 const config: LoggerConfig = {
   level: isDev ? "debug" : "warn",
@@ -79,12 +79,11 @@ const sendStructuredLog = (entry: StructuredLogEntry) => {
           tags: { component: entry.component },
         });
       } else {
-        addBreadcrumb({
-          message: entry.message,
-          level: entry.level,
-          data: entry.context,
-          category: entry.component,
-        });
+        addBreadcrumb(
+          entry.message,
+          entry.component,
+          entry.level === "debug" ? "debug" : entry.level as any
+        );
       }
     });
   } catch (err) {

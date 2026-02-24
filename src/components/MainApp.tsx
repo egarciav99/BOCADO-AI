@@ -39,6 +39,17 @@ const MainApp: React.FC<MainAppProps> = ({
   }, [showTutorial]);
 
   const { user, isLoading, isAuthenticated } = useAuthStore();
+
+  // Logging para depurar bloqueos
+  useEffect(() => {
+    console.log("[MainApp] Estado de Sesión:", {
+      isAuthenticated,
+      hasUser: !!user,
+      isLoading,
+      uid: user?.uid
+    });
+  }, [user, isLoading, isAuthenticated]);
+
   useUserProfile(user?.uid);
 
   const userName = user?.displayName?.split(" ")[0] || "";
@@ -79,7 +90,7 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
-  if (isLoading) {
+  if (isLoading || (isAuthenticated && !userUid)) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-bocado-background">
         <div className="text-center">

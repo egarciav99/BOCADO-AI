@@ -285,7 +285,7 @@ export async function detectLocationByIP(): Promise<IPLocationResult | null> {
       isp: data.isp,
     };
   } catch (error) {
-    logger.error("Error detecting location by IP:", error);
+    logger.warn("IP location fallback failed (expected on localhost):", error.message || error);
     return null;
   }
 }

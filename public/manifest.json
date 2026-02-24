@@ -1,0 +1,23 @@
+{
+    "name": "Bocado - Guía Nutricional",
+    "short_name": "Bocado",
+    "description": "Tu guía nutricional inteligente con recomendaciones personalizadas",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#F8F7F2",
+    "theme_color": "#4A7C59",
+    "icons": [
+        {
+            "src": "/icons/icon-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icons/icon-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

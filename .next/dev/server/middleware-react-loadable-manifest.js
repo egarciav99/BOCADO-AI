@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{\"src/utils/logger.ts -> ../utils/sentry\":{\"id\":\"src/utils/logger.ts -> ../utils/sentry\",\"files\":[\"static/chunks/_app-pages-browser_src_utils_sentry_ts.js\"]}}"
+self.__REACT_LOADABLE_MANIFEST="{\"hooks/useRateLimit.ts -> ../firebaseConfig\":{\"id\":\"hooks/useRateLimit.ts -> ../firebaseConfig\",\"files\":[]},\"utils/logger.ts -> ../utils/sentry\":{\"id\":\"utils/logger.ts -> ../utils/sentry\",\"files\":[\"static/chunks/_app-pages-browser_src_utils_sentry_ts.js\"]}}"
