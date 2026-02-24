@@ -1,3 +1,5 @@
+"use client";
+
 import React from "react";
 import { usePWA } from "../hooks/usePWA";
 import { Download, RefreshCw, WifiOff, X } from "lucide-react";

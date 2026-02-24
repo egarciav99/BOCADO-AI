@@ -1,7 +1,7 @@
 import { logger } from "../utils/logger";
 
 const getEnvVar = (key: string): string => {
-  const value = import.meta.env[key];
+  const value = process.env[key];
   if (typeof value === "undefined") {
     logger.warn(`Missing environment variable: ${key}`);
     return "";
@@ -10,18 +10,18 @@ const getEnvVar = (key: string): string => {
 };
 
 const firebaseConfig = {
-  apiKey: getEnvVar("VITE_FIREBASE_API_KEY"),
-  authDomain: getEnvVar("VITE_FIREBASE_AUTH_DOMAIN"),
-  projectId: getEnvVar("VITE_FIREBASE_PROJECT_ID"),
-  storageBucket: getEnvVar("VITE_FIREBASE_STORAGE_BUCKET"),
-  messagingSenderId: getEnvVar("VITE_FIREBASE_MESSAGING_SENDER_ID"),
-  appId: getEnvVar("VITE_FIREBASE_APP_ID"),
-  vapidKey: getEnvVar("VITE_FIREBASE_VAPID_KEY"),
+  apiKey: getEnvVar("NEXT_PUBLIC_FIREBASE_API_KEY"),
+  authDomain: getEnvVar("NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN"),
+  projectId: getEnvVar("NEXT_PUBLIC_FIREBASE_PROJECT_ID"),
+  storageBucket: getEnvVar("NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET"),
+  messagingSenderId: getEnvVar("NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID"),
+  appId: getEnvVar("NEXT_PUBLIC_FIREBASE_APP_ID"),
+  vapidKey: getEnvVar("NEXT_PUBLIC_FIREBASE_VAPID_KEY"),
 };
 
 const apiConfig = {
   recommendationUrl: "/api/recommend",
-  registerUserUrl: getEnvVar("VITE_REGISTER_USER_URL"),
+  registerUserUrl: getEnvVar("NEXT_PUBLIC_REGISTER_USER_URL"),
   // ✅ REMOVED: googleMapsApiKey ya no se usa en frontend
   // Las llamadas a Maps ahora van al proxy protegido: /api/maps-proxy
 };

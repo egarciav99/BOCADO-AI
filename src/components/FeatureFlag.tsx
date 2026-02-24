@@ -355,7 +355,7 @@ function FeatureFlagWithTracking({
       //   featureName: props.feature,
       // });
 
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === "development") {
         console.log("[FeatureFlag.Track]", {
           event: trackEventName,
           feature: props.feature,

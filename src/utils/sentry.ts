@@ -7,15 +7,14 @@
  * 3. Configurar source maps en build
  */
 
-import * as Sentry from "@sentry/react";
+import * as Sentry from "@sentry/nextjs";
 import { env } from "../environment/env";
 
-const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
-const ENVIRONMENT = import.meta.env.MODE || "development";
+const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
+const ENVIRONMENT = process.env.NODE_ENV === "production" ? "production" : (process.env.NEXT_PUBLIC_VERCEL_ENV || "development");
 
-// Solo inicializar en producción o si hay DSN configurado
-const shouldInitialize =
-  SENTRY_DSN && (ENVIRONMENT === "production" || ENVIRONMENT === "staging");
+// Solo inicializar si hay DSN configurado
+const shouldInitialize = !!SENTRY_DSN;
 
 export function initSentry(): void {
   if (!shouldInitialize) {
@@ -77,7 +76,7 @@ export function initSentry(): void {
     initialScope: {
       tags: {
         app: "bocado-ai",
-        version: import.meta.env.VITE_APP_VERSION || "unknown",
+        version: process.env.NEXT_PUBLIC_APP_VERSION || "unknown",
       },
     },
   });

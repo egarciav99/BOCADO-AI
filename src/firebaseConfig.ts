@@ -54,9 +54,9 @@ const eventQueue: Array<{ eventName: string; params?: Record<string, any> }> =
   [];
 
 // Constantes para tracking
-const APP_VERSION = import.meta.env.VITE_APP_VERSION || "unknown";
-const SESSION_STORAGE_KEY = "bocado_session_v1";
-const ATTR_STORAGE_KEY = "bocado_utm_v1";
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || "unknown";
+const SESSION_STORAGE_KEY = "bocado_session_v1_next";
+const ATTR_STORAGE_KEY = "bocado_utm_v1_next";
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutos de inactividad
 
 /**
@@ -210,13 +210,13 @@ if (typeof window !== "undefined") {
         analyticsReady = true;
         processEventQueue();
 
-        if (import.meta.env.DEV) {
+        if (process.env.NODE_ENV === "development") {
           logger.info("✅ Analytics inicializado");
         }
       }
     })
     .catch((err) => {
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === "development") {
         logger.warn("Analytics no soportado:", err);
       }
     });
@@ -288,7 +288,7 @@ export const setAnalyticsUser = (
  * @deprecated Usa setAnalyticsUser(userId, properties) en su lugar.
  */
 export const setAnalyticsProperties = (properties: Record<string, any>) => {
-  if (import.meta.env.DEV) {
+  if (process.env.NODE_ENV === "development") {
     console.warn(
       "[Firebase] setAnalyticsProperties is deprecated. Use setAnalyticsUser() instead.",
     );
