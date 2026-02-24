@@ -38,6 +38,8 @@
   ],
   "exclude": [
     "node_modules",
-    "api_backup"
+    "api_backup",
+    "e2e",
+    "playwright.config.ts"
   ]
 }

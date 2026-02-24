@@ -53,7 +53,7 @@ export default defineConfig({
     locale: "es-ES",
 
     // Timezone
-    timezane: "Europe/Madrid",
+    timezoneId: "Europe/Madrid",
   },
 
   // Proyectos de test
