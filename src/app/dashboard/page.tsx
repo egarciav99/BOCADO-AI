@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import MainApp from "@/components/MainApp";
 
-export default function DashboardPage() {
+// Inner component that uses useSearchParams — must be inside <Suspense>
+function DashboardContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const showTutorial = searchParams?.get("tutorial") === "true";
@@ -17,5 +18,13 @@ export default function DashboardPage() {
             onTutorialFinished={() => setIsNewUser(false)}
             onLogoutComplete={() => router.push("/")}
         />
+    );
+}
+
+export default function DashboardPage() {
+    return (
+        <Suspense fallback={null}>
+            <DashboardContent />
+        </Suspense>
     );
 }
