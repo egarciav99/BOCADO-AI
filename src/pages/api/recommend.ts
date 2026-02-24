@@ -4,11 +4,11 @@ import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import * as crypto from 'crypto';
 import { COUNTRY_TO_CURRENCY, CURRENCY_CONFIG } from '@/data/budgets';
-import { profileCache, pantryCache, historyCache } from './utils/cache';
+import { profileCache, pantryCache, historyCache } from '../../lib/api/utils/cache';
 // 📝 FatSecret integración (opcional - requiere API key premium free)
 // Para habilitar: descomenta y configura FATSECRET_KEY & FATSECRET_SECRET
-import { getFatSecretIngredientsWithCache } from './utils/fatsecret-logic';
-import { searchFatSecretIngredients } from './utils/fatsecret';
+import { getFatSecretIngredientsWithCache } from '../../lib/api/utils/fatsecret-logic';
+import { searchFatSecretIngredients } from '../../lib/api/utils/fatsecret';
 
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE

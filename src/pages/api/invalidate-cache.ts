@@ -20,7 +20,7 @@ import {
   pantryCache,
   historyCache,
   getCacheStats,
-} from "./utils/cache";
+} from "../../lib/api/utils/cache";
 
 // ============================================
 // FIREBASE ADMIN INIT (reutiliza si ya está inicializado)
