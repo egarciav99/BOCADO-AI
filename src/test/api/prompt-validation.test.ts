@@ -3,6 +3,8 @@
  * incluso cuando faltan datos del perfil
  */
 
+import { describe, it, expect } from "vitest";
+
 describe("Prompt Construction - Defensive Validation", () => {
   const ensureArray = (input: any): string[] => {
     if (!input) return [];
@@ -18,7 +20,7 @@ describe("Prompt Construction - Defensive Validation", () => {
 
   describe("User Profile Completeness", () => {
     it("should handle empty user profile gracefully", () => {
-      const user = {};
+      const user: any = {};
 
       const demographicParts = [
         user.eatingHabit ? `Dieta: ${user.eatingHabit}` : "",
@@ -58,7 +60,7 @@ describe("Prompt Construction - Defensive Validation", () => {
     });
 
     it("should filter out Sedentario activity level", () => {
-      const user = {
+      const user: any = {
         activityLevel: "Sedentario",
       };
 
@@ -191,8 +193,8 @@ describe("Prompt Construction - Defensive Validation", () => {
     });
 
     it('should show "Sin restricciones" when profile is completely empty', () => {
-      const user = {};
-      const request = {};
+      const user: any = {};
+      const request: any = {};
 
       // Demographic
       const demographicParts = [
