@@ -203,24 +203,59 @@ export const useSavedItems = (
   // Acumular items de todas las páginas cargadas
   const [allItems, setAllItems] = useState<SavedItem[]>([]);
   const [loadedPages, setLoadedPages] = useState<Set<number>>(new Set());
-  const page1LoadedRef = useRef(false); // ← ref evita loop en useEffect
+  const page1LoadedRef = useRef(false);
+  const lastParamsRef = useRef<{ userId: string | undefined; type: SavedItemType }>({ userId, type });
+
+  // 1. Resetear estado cuando cambia el usuario o tipo REALMENTE
+  // Se coloca antes del efecto de sincronización para que el reset ocurra primero si es necesario
+  useEffect(() => {
+    const paramsChanged =
+      lastParamsRef.current.userId !== userId ||
+      lastParamsRef.current.type !== type;
+
+    if (paramsChanged) {
+      setAllItems([]);
+      setLoadedPages(new Set());
+      page1LoadedRef.current = false;
+      setPaginationState({
+        currentPage: 1,
+        hasMore: true,
+        isFetchingNextPage: false,
+        cursors: [undefined],
+      });
+      lastParamsRef.current = { userId, type };
+    }
+  }, [userId, type]);
 
   // Efecto para manejar la primera página
   useEffect(() => {
-    if (queryResult.data && !page1LoadedRef.current) {
-      page1LoadedRef.current = true;
-      setAllItems(queryResult.data.items);
-      setPaginationState((prev) => ({
-        ...prev,
-        hasMore: queryResult.data.hasMore,
-        cursors: [undefined, queryResult.data.nextCursor].filter(Boolean) as (
-          | Timestamp
-          | undefined
-        )[],
-      }));
-      setLoadedPages(new Set([1]));
+    if (queryResult.data) {
+      const isNewData = !page1LoadedRef.current || JSON.stringify(queryResult.data.items) !== JSON.stringify(allItems.slice(0, PAGE_SIZE));
+
+      if (isNewData) {
+        page1LoadedRef.current = true;
+
+        // Si es la carga inicial o los datos de la p1 cambiaron, actualizar
+        if (paginationState.currentPage === 1) {
+          setAllItems(queryResult.data.items);
+        } else {
+          // Si ya estamos en p2+, solo actualizar la p1 si es necesario 
+          // (aunque usualmente queremos ver los cambios arriba)
+          setAllItems(prev => {
+            const restOfItems = prev.slice(PAGE_SIZE);
+            return [...(queryResult.data?.items || []), ...restOfItems];
+          });
+        }
+
+        setPaginationState((prev) => ({
+          ...prev,
+          hasMore: queryResult.data?.hasMore ?? prev.hasMore,
+          cursors: [undefined, queryResult.data?.nextCursor],
+        }));
+        setLoadedPages((prev) => new Set([...Array.from(prev), 1]));
+      }
     }
-  }, [queryResult.data]); // ← sin loadedPages en deps
+  }, [queryResult.data]);
 
   // Función para cargar siguiente página
   const fetchNextPage = useCallback(async () => {
@@ -260,18 +295,6 @@ export const useSavedItems = (
     }
   }, [paginationState, userId, type, loadedPages]);
 
-  // Resetear estado cuando cambia el usuario o tipo
-  useEffect(() => {
-    setAllItems([]);
-    setLoadedPages(new Set());
-    page1LoadedRef.current = false; // ← resetear ref también
-    setPaginationState({
-      currentPage: 1,
-      hasMore: true,
-      isFetchingNextPage: false,
-      cursors: [undefined],
-    });
-  }, [userId, type, key]);
 
   return {
     data: allItems,

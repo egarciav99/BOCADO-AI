@@ -9,6 +9,7 @@ import {
 } from "./constants";
 import { trackEvent } from "../../firebaseConfig";
 import { useTranslation } from "../../contexts/I18nContext";
+import { EmojiPicker } from "./EmojiPicker";
 
 interface PantryZoneDetailProps {
   zone: Zone;
@@ -17,7 +18,7 @@ interface PantryZoneDetailProps {
   onBack: () => void;
   onAddItem: (item: KitchenItem) => void;
   onDeleteItem: (id: string) => void;
-  onToggleFreshness: (id: string, newStatus: Freshness) => void;
+  onUpdateItem: (id: string, updates: Partial<KitchenItem>) => void;
 }
 
 const getFreshnessColor = (status: Freshness) => {
@@ -55,11 +56,12 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
   onBack,
   onAddItem,
   onDeleteItem,
-  onToggleFreshness,
+  onUpdateItem,
 }) => {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [newItemName, setNewItemName] = useState("");
+  const [pickingEmojiItem, setPickingEmojiItem] = useState<string | null>(null);
 
   // Helper para traducir nombres de zona
   const translateZone = (zone: Zone): string => {
@@ -262,8 +264,15 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
 
   const handleToggleFreshness = (id: string, currentStatus: Freshness) => {
     const newStatus = freshnessCycle[currentStatus];
-    onToggleFreshness(id, newStatus);
+    onUpdateItem(id, { freshness: newStatus });
     trackEvent("pantry_item_freshness_toggle", { new_status: newStatus });
+  };
+
+  const handleEmojiSelect = (emoji: string) => {
+    if (pickingEmojiItem) {
+      onUpdateItem(pickingEmojiItem, { emoji });
+      setPickingEmojiItem(null);
+    }
   };
 
   return (
@@ -321,11 +330,10 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
             <button
               key={cat}
               onClick={() => handleCategorySelect(cat)}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-2xs font-bold transition-all active:scale-95 ${
-                activeCategory === cat
-                  ? "bg-bocado-green text-white shadow-sm"
-                  : "bg-bocado-background text-bocado-dark-gray"
-              }`}
+              className={`whitespace-nowrap px-3 py-1.5 rounded-full text-2xs font-bold transition-all active:scale-95 ${activeCategory === cat
+                ? "bg-bocado-green text-white shadow-sm"
+                : "bg-bocado-background text-bocado-dark-gray"
+                }`}
             >
               {translateCategory(cat)}
             </button>
@@ -334,6 +342,34 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
       </div>
 
       <div className="flex-1 px-4 py-4 pb-24 min-h-0">
+        {urgentItems.length > 0 && (
+          <div className="mb-4 bg-red-50/50 border-2 border-red-100 rounded-xl p-3 flex items-center justify-between animate-fade-in">
+            <div className="flex flex-col">
+              <span className="text-2xs font-bold text-red-500 uppercase tracking-wider">
+                {t("pantry.expiry")}
+              </span>
+              <span className="text-xs font-bold text-bocado-text">
+                {t("pantry.urgentCount", { count: urgentItems.length })}
+              </span>
+            </div>
+            <div className="flex -space-x-2">
+              {urgentItems.slice(0, 4).map((i) => (
+                <div
+                  key={i.id}
+                  className="w-7 h-7 rounded-full bg-white border-2 border-white flex items-center justify-center text-xs shadow-sm"
+                >
+                  {i.emoji}
+                </div>
+              ))}
+              {urgentItems.length > 4 && (
+                <div className="w-7 h-7 rounded-full bg-red-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-red-500">
+                  +{urgentItems.length - 4}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {suggestedItems.length > 0 && (
           <div className="mb-4">
             <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">
@@ -402,9 +438,18 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
                 >
                   <span className="text-xs">×</span>
                 </button>
-                <span className="text-2xl select-none leading-none mt-1">
-                  {item.emoji}
-                </span>
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPickingEmojiItem(item.id);
+                  }}
+                  className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-black/5 active:scale-90 transition-all cursor-pointer"
+                  title={t("pantry.selectIcon")}
+                >
+                  <span className="text-2xl select-none leading-none">
+                    {item.emoji}
+                  </span>
+                </div>
                 <span className="font-medium text-bocado-text text-2xs text-center leading-tight line-clamp-2 w-full px-1">
                   {translateIngredient(item.name)}
                 </span>
@@ -416,33 +461,11 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
           </div>
         )}
       </div>
-
-      {urgentItems.length > 0 && (
-        <div className="fixed bottom-24 left-4 right-4 max-w-md mx-auto bg-white border-t-2 border-red-400 rounded-xl p-3 shadow-bocado-lg z-30 flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-2xs font-bold text-red-500 uppercase tracking-wider">
-              {t("pantry.expiry")}
-            </span>
-            <span className="text-xs font-bold text-bocado-text">
-              {t("pantry.urgentCount", { count: urgentItems.length })}
-            </span>
-          </div>
-          <div className="flex -space-x-2">
-            {urgentItems.slice(0, 4).map((i) => (
-              <div
-                key={i.id}
-                className="w-7 h-7 rounded-full bg-bocado-background border-2 border-white flex items-center justify-center text-xs shadow-sm"
-              >
-                {i.emoji}
-              </div>
-            ))}
-            {urgentItems.length > 4 && (
-              <div className="w-7 h-7 rounded-full bg-red-50 border-2 border-white flex items-center justify-center text-[9px] font-bold text-red-500">
-                +{urgentItems.length - 4}
-              </div>
-            )}
-          </div>
-        </div>
+      {pickingEmojiItem && (
+        <EmojiPicker
+          onSelect={handleEmojiSelect}
+          onClose={() => setPickingEmojiItem(null)}
+        />
       )}
     </div>
   );

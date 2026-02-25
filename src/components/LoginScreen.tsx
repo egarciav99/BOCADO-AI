@@ -254,11 +254,16 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
-        // Invalidate so React Query fetches fresh data.
-        // Do not setQueryData with locally-sanitized values.
         queryClient.invalidateQueries({
           queryKey: ["userProfile", result.uid],
         });
+
+        // Update store immediately to avoid delay waiting for onAuthStateChanged
+        // This prevents the "Sincronizando Bocado" hang in MainApp
+        if (auth.currentUser) {
+          useAuthStore.getState().setUser(auth.currentUser);
+        }
+
         onLoginSuccess();
       } else {
         trackEvent("login_google_missing_profile", { userId: result.uid });

@@ -725,6 +725,7 @@
     "title": "Mi Cocina",
     "subtitle": "Control de ingredientes",
     "addItem": "Agregar ingrediente",
+    "selectIcon": "Selecciona un icono",
     "addItemInCategory": "Agregar en {category}",
     "addIngredient": "Agregar ingrediente...",
     "addInCategory": "Agregar en {category}...",

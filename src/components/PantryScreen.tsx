@@ -40,9 +40,7 @@ export const PantryScreen: React.FC<PantryScreenProps> = ({ userUid }) => {
       onBack={() => setActiveZone(null)}
       onAddItem={addItem}
       onDeleteItem={deleteItem}
-      onToggleFreshness={(id, newStatus) =>
-        updateItem(id, { freshness: newStatus })
-      }
+      onUpdateItem={updateItem}
     />
   );
 };
