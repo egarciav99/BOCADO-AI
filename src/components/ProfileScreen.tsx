@@ -75,6 +75,17 @@ const stripEmoji = (str: string) => {
   return str;
 };
 
+// Strip registration-time sentinel values so the profile editor starts clean.
+// The recommend API uses ["Ninguna"] / ["Ninguno"] as a placeholder when the
+// user skips a field at registration. Keeping them in the form would cause
+// toggleSelection to append to ["Ninguna"], storing ["Ninguna", "Diabetes"].
+const stripSentinels = (arr: string[] | undefined): string[] => {
+  if (!Array.isArray(arr)) return [];
+  return arr.filter(
+    (v) => v !== "Ninguna" && v !== "Ninguno" && v !== "Sin especificar",
+  );
+};
+
 const buildFormData = (
   user: any,
   profile: UserProfile | null | undefined,
@@ -95,16 +106,17 @@ const buildFormData = (
     height: profile?.height || "",
     country: profile?.country || "",
     city: profile?.city || "",
-    diseases: profile?.diseases || [],
-    allergies: profile?.allergies || [],
+    // Strip sentinel values — see comment above
+    diseases: stripSentinels(profile?.diseases),
+    allergies: stripSentinels(profile?.allergies),
     otherAllergies: profile?.otherAllergies || "",
     eatingHabit: profile?.eatingHabit || "",
     activityLevel: profile?.activityLevel || "",
     otherActivityLevel: profile?.otherActivityLevel || "",
     activityFrequency: profile?.activityFrequency || "",
-    nutritionalGoal: profile?.nutritionalGoal || [],
+    nutritionalGoal: stripSentinels(profile?.nutritionalGoal),
     cookingAffinity: profile?.cookingAffinity || "",
-    dislikedFoods: profile?.dislikedFoods || [],
+    dislikedFoods: stripSentinels(profile?.dislikedFoods),
   } as FormData;
 };
 
@@ -310,16 +322,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         city: profileData.city,
         location,
         locationEnabled: profile?.locationEnabled || false,
-        diseases: profileData.diseases,
-        allergies: profileData.allergies,
+        // Strip sentinels again before writing — defensive in case any old
+        // ["Ninguna"] value leaked through from a cached/stale form state
+        diseases: stripSentinels(profileData.diseases),
+        allergies: stripSentinels(profileData.allergies),
         otherAllergies: profileData.otherAllergies,
         eatingHabit: profileData.eatingHabit,
         activityLevel: profileData.activityLevel,
         otherActivityLevel: profileData.otherActivityLevel,
         activityFrequency: profileData.activityFrequency,
-        nutritionalGoal: profileData.nutritionalGoal,
+        nutritionalGoal: stripSentinels(profileData.nutritionalGoal),
         cookingAffinity: profileData.cookingAffinity,
-        dislikedFoods: profileData.dislikedFoods,
+        dislikedFoods: stripSentinels(profileData.dislikedFoods),
         updatedAt: serverTimestamp() as UserProfile["updatedAt"],
       };
 
@@ -1655,8 +1669,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         setLocale("es");
                       }}
                       className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${locale === "es"
-                          ? "bg-bocado-green text-white"
-                          : "bg-white text-bocado-gray hover:bg-bocado-border"
+                        ? "bg-bocado-green text-white"
+                        : "bg-white text-bocado-gray hover:bg-bocado-border"
                         }`}
                     >
                       {t("profile.languageES")}
@@ -1670,8 +1684,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         setLocale("en");
                       }}
                       className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${locale === "en"
-                          ? "bg-bocado-green text-white"
-                          : "bg-white text-bocado-gray hover:bg-bocado-border"
+                        ? "bg-bocado-green text-white"
+                        : "bg-white text-bocado-gray hover:bg-bocado-border"
                         }`}
                     >
                       {t("profile.languageEN")}
@@ -1696,8 +1710,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         setTheme("light");
                       }}
                       className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${theme === "light"
-                          ? "bg-bocado-green text-white"
-                          : "bg-white text-bocado-gray hover:bg-bocado-border"
+                        ? "bg-bocado-green text-white"
+                        : "bg-white text-bocado-gray hover:bg-bocado-border"
                         }`}
                     >
                       {t("profile.themeLight")}
@@ -1708,8 +1722,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         setTheme("dark");
                       }}
                       className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${theme === "dark"
-                          ? "bg-bocado-green text-white"
-                          : "bg-white text-bocado-gray hover:bg-bocado-border"
+                        ? "bg-bocado-green text-white"
+                        : "bg-white text-bocado-gray hover:bg-bocado-border"
                         }`}
                     >
                       {t("profile.themeDark")}
@@ -1723,8 +1737,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                         setTheme("system");
                       }}
                       className={`flex-1 py-2 px-3 rounded-lg text-xs font-medium transition-all ${theme === "system"
-                          ? "bg-bocado-green text-white"
-                          : "bg-white text-bocado-gray hover:bg-bocado-border"
+                        ? "bg-bocado-green text-white"
+                        : "bg-white text-bocado-gray hover:bg-bocado-border"
                         }`}
                     >
                       {t("profile.themeSystem")}
