@@ -5,14 +5,25 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   register: true,
   skipWaiting: true,
-  // Exclude files that Next.js generates with hashed names per build —
-  // precaching them causes a 404 on the previous build’s URL after a deploy.
-  buildExcludes: [
-    /dynamic-css-manifest\.json$/,
-    /\.hot-update\.js$/,
-    /server\/.*\.js$/,
-  ],
-  // Don’t fail the SW install if an optional precache asset returns non-200
+
+  // buildExcludes: file-scanner level exclusions
+  buildExcludes: [/\.hot-update\.js$/, /server\/.*\.js$/],
+
+  // workbox.exclude: manifest level — catches everything including
+  // Next.js-injected entries like _next/dynamic-css-manifest.json
+  // that buildExcludes alone doesn't catch.
+  workbox: {
+    exclude: [
+      // Only present in dev (HMR), not in production builds
+      /dynamic-css-manifest\.json/,
+      /\.hot-update\./,
+    ],
+    // Never let the SW intercept API routes with a navigation fallback.
+    // Without this, an outdated SW serving a stale navigation response
+    // returns 404 for /api/* routes it doesn't know about.
+    navigateFallbackDenylist: [/^\/api\//],
+  },
+
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: false,
 });
