@@ -62,6 +62,7 @@ interface UserProfile {
   nutritionalGoal?: string;
   diseases?: string[];
   allergies?: string[];
+  otherAllergies?: string;
   dislikedFoods?: string[];
   cookingAffinity?: string;
   city?: string;
@@ -116,15 +117,20 @@ async function getUserProfileCached(userId: string): Promise<UserProfile> {
   return profile;
 }
 
+interface PantryItem {
+  name: string;
+  freshness: "fresh" | "soon" | "expired";
+}
+
 /**
  * Obtiene items de despensa con cache en memoria
  * TTL: 5 minutos
  * Fallback graceful: [] si falla (no crítico)
  */
-async function getPantryItemsCached(userId: string): Promise<string[]> {
+async function getPantryItemsCached(userId: string): Promise<PantryItem[]> {
   // Layer 1: Memoria cache
   try {
-    const cached = pantryCache.get<string[]>(userId);
+    const cached = pantryCache.get<PantryItem[]>(userId);
     if (cached) {
       safeLog("log", `[Cache] Pantry HIT: ${userId.substring(0, 8)}...`);
       return cached;
@@ -142,10 +148,15 @@ async function getPantryItemsCached(userId: string): Promise<string[]> {
     const pantryDoc = await db.collection("user_pantry").doc(userId).get();
     const pantryData = pantryDoc.exists ? pantryDoc.data() : null;
 
-    // Transformar items (igual que antes)
-    const items: string[] =
+    // Transformar items (incluyendo el estado de frescura/caducidad)
+    const items: PantryItem[] =
       pantryData?.items && Array.isArray(pantryData.items)
-        ? pantryData.items.map((item: any) => item.name || "").filter(Boolean)
+        ? pantryData.items
+          .map((item: any) => ({
+            name: item.name || "",
+            freshness: item.freshness || "fresh",
+          }))
+          .filter((i: PantryItem) => i.name)
         : [];
 
     // Guardar en cache
@@ -653,11 +664,11 @@ const formatList = (data: any): string => {
 
 const scoreIngredients = (
   filteredItems: FirestoreIngredient[],
-  pantryItems: string[],
+  pantryItems: PantryItem[],
 ): { priorityList: string; marketList: string; hasPantryItems: boolean } => {
   const pantryRoots = pantryItems
-    .map((item) => getRootWord(item))
-    .filter((root) => root && root.length > 2);
+    .map((item) => ({ root: getRootWord(item.name), freshness: item.freshness }))
+    .filter((obj) => obj.root && obj.root.length > 2);
 
   const genericWords = [
     "aceite",
@@ -680,19 +691,24 @@ const scoreIngredients = (
       const root = getRootWord(rawName);
       let score = 1;
 
-      pantryRoots.forEach((pantryRoot) => {
-        if (root === pantryRoot) {
-          score = 50;
-        } else if (new RegExp(`\\b${pantryRoot}\\b`, "i").test(norm)) {
+      pantryRoots.forEach((pantryObj) => {
+        if (root === pantryObj.root) {
+          score = pantryObj.freshness === "soon" ? 100 : 50;
+        } else if (new RegExp(`\\b${pantryObj.root}\\b`, "i").test(norm)) {
           if (
-            !(norm.split(/\s+/).length > 2 && genericWords.includes(pantryRoot))
+            !(norm.split(/\s+/).length > 2 && genericWords.includes(pantryObj.root))
           ) {
-            score = 20;
+            score = pantryObj.freshness === "soon" ? 40 : 20;
           }
         }
       });
 
-      return { name: rawName, score };
+      // Añadir etiqueta de urgencia si es necesario
+      const finalName = pantryItems.some(pi => pi.name === rawName && pi.freshness === 'soon')
+        ? `${rawName} (URGENTE: Próximo a vencer)`
+        : rawName;
+
+      return { name: finalName, score };
     })
     .filter((item) => item.name);
 
@@ -811,6 +827,7 @@ function filterIngredientes(
   const dislikedFoods = (user.dislikedFoods || []).map(d => d.toLowerCase());
   const eatingHabit = (user.eatingHabit || "").toLowerCase();
   const diseases = (user.diseases || []).map(d => d.toLowerCase());
+  const otherAllergies = (user.otherAllergies || "").toLowerCase().split(",").map(a => a.trim()).filter(Boolean);
 
   // Mapeo detallado de alérgenos (coverage completa)
   const allergenMap: Record<string, string[]> = {
@@ -844,6 +861,14 @@ function filterIngredientes(
       )) {
         return false;
       }
+    }
+
+    // 2.1️⃣ Excluir alergias manuales (otherAllergies)
+    if (otherAllergies.some(oa => {
+      const pattern = createRegexPattern(oa);
+      return new RegExp(pattern, 'i').test(combinedText);
+    })) {
+      return false;
     }
 
     // 3️⃣ Filtrar por dieta (vegano/vegetariano)
@@ -1828,7 +1853,8 @@ export default async function handler(req: any, res: any) {
       // Restricciones médicas (solo mostrar si existen)
       const diseases = ensureArray(user.diseases);
       const allergies = ensureArray(user.allergies);
-      const medicalRestrictions = [...diseases, ...allergies].filter(Boolean);
+      const otherAllergiesText = user.otherAllergies || "";
+      const medicalRestrictions = [...diseases, ...allergies, otherAllergiesText].filter(Boolean);
       const medicalContext =
         medicalRestrictions.length > 0
           ? `Restricciones: ${medicalRestrictions.join(", ")}`
@@ -1880,6 +1906,7 @@ REGLAS ESTRICTAS:
 4. PROHIBIDO inventar ingredientes exóticos, raros o difíciles de conseguir. Cada ingrediente debe poder comprarse en un supermercado normal de la zona.
 5. Si mencionas un ingrediente que NO está en las listas, debe ser un básico universal (sal, aceite, agua, pimienta).
 6. Las cantidades deben ser realistas y en unidades estándar (gramos, ml, cucharadas, unidades).
+7. PRIORIZA ingredientes marcados como (URGENTE: Próximo a vencer) para reducir el desperdicio de comida.
 
 Responde EXCLUSIVAMENTE en ${request.language === "en" ? "INGLÉS." : "ESPAÑOL."}
 Responde en formato JSON usando esta estructura exacta:
@@ -1929,7 +1956,8 @@ Personaliza el saludo_personalizado usando${demographicParts.length > 0 ? " el p
       // Restricciones médicas (solo mostrar si existen)
       const diseasesOut = ensureArray(user.diseases);
       const allergiesOut = ensureArray(user.allergies);
-      const medicalRestrictionsOut = [...diseasesOut, ...allergiesOut].filter(
+      const otherAllergiesOut = user.otherAllergies || "";
+      const medicalRestrictionsOut = [...diseasesOut, ...allergiesOut, otherAllergiesOut].filter(
         Boolean,
       );
       const medicalContextOut =

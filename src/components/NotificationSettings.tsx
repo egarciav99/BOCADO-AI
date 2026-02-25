@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import {
-  useSmartNotifications,
-  SmartReminder,
-} from "../hooks/useSmartNotifications";
+  useNotifications,
+  NotificationSchedule,
+} from "../hooks/useNotifications";
 import { Bell, BellOff, Clock, CheckCircle } from "./icons";
 import { trackEvent } from "../firebaseConfig";
 import { logger } from "../utils/logger";
@@ -24,16 +24,16 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   const {
     isSupported,
     permission,
-    reminders,
+    schedules: reminders,
     isLoading,
     requestPermission,
-    toggleReminder,
-    updateReminder,
+    toggleSchedule: toggleReminder,
+    updateSchedule: updateReminder,
     sendTestNotification,
     pendingRatingsCount,
     daysSinceLastPantryUpdate,
     daysSinceLastAppUse,
-  } = useSmartNotifications(userUid);
+  } = useNotifications(userUid);
 
   const [testSent, setTestSent] = useState(false);
 
@@ -108,7 +108,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     toggleReminder(id);
   };
 
-  const startEditing = (reminder: SmartReminder) => {
+  const startEditing = (reminder: NotificationSchedule) => {
     setEditingSchedule(reminder.id);
     const timeString = `${String(reminder.hour).padStart(2, "0")}:${String(reminder.minute).padStart(2, "0")}`;
     setEditTime(timeString);
@@ -134,7 +134,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   const mealReminders = reminders.filter((r) => r.type === "meal");
   const smartReminders = reminders.filter((r) => r.type !== "meal");
 
-  const getConditionBadge = (reminder: SmartReminder) => {
+  const getConditionBadge = (reminder: NotificationSchedule) => {
     switch (reminder.condition) {
       case "pantry_empty": {
         const days = daysSinceLastPantryUpdate;
@@ -156,8 +156,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
           >
             {pendingRatingsCount > 0
               ? t("notifications.settings.pendingRatings", {
-                  count: pendingRatingsCount,
-                })
+                count: pendingRatingsCount,
+              })
               : t("notifications.settings.allRated")}
           </span>
         );
@@ -168,8 +168,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
           >
             {daysSinceLastAppUse >= 3
               ? t("notifications.settings.inactiveUser", {
-                  days: daysSinceLastAppUse,
-                })
+                days: daysSinceLastAppUse,
+              })
               : t("notifications.settings.activeUser")}
           </span>
         );
@@ -307,21 +307,19 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
           <div className="flex border-b border-bocado-border mt-6">
             <button
               onClick={() => setActiveTab("meals")}
-              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                activeTab === "meals"
+              className={`flex-1 py-3 text-sm font-semibold transition-colors ${activeTab === "meals"
                   ? "text-bocado-green border-b-2 border-bocado-green"
                   : "text-bocado-gray"
-              }`}
+                }`}
             >
               {t("notifications.settings.tabMeals")}
             </button>
             <button
               onClick={() => setActiveTab("smart")}
-              className={`flex-1 py-3 text-sm font-semibold transition-colors ${
-                activeTab === "smart"
+              className={`flex-1 py-3 text-sm font-semibold transition-colors ${activeTab === "smart"
                   ? "text-bocado-green border-b-2 border-bocado-green"
                   : "text-bocado-gray"
-              }`}
+                }`}
             >
               {t("notifications.settings.tabSmart")}
             </button>
@@ -337,11 +335,10 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                 {mealReminders.map((reminder) => (
                   <div
                     key={reminder.id}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      reminder.enabled
+                    className={`p-4 rounded-xl border-2 transition-all ${reminder.enabled
                         ? "border-bocado-green bg-bocado-green/5"
                         : "border-bocado-border bg-white"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -389,9 +386,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         {/* Toggle */}
                         <button
                           onClick={() => handleToggleReminder(reminder.id)}
-                          className={`w-12 h-6 rounded-full transition-colors relative flex items-center flex-shrink-0 ${
-                            reminder.enabled ? "bg-bocado-green" : "bg-gray-300"
-                          }`}
+                          className={`w-12 h-6 rounded-full transition-colors relative flex items-center flex-shrink-0 ${reminder.enabled ? "bg-bocado-green" : "bg-gray-300"
+                            }`}
                           aria-label={
                             reminder.enabled
                               ? t("notifications.settings.deactivate")
@@ -399,11 +395,10 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                           }
                         >
                           <span
-                            className={`absolute left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-out ${
-                              reminder.enabled
+                            className={`absolute left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-out ${reminder.enabled
                                 ? "translate-x-6"
                                 : "translate-x-0"
-                            }`}
+                              }`}
                           />
                         </button>
                       </div>
@@ -419,11 +414,10 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                 {smartReminders.map((reminder) => (
                   <div
                     key={reminder.id}
-                    className={`p-4 rounded-xl border-2 transition-all ${
-                      reminder.enabled
+                    className={`p-4 rounded-xl border-2 transition-all ${reminder.enabled
                         ? "border-bocado-green bg-bocado-green/5"
                         : "border-bocado-border bg-white opacity-75"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex items-start gap-3 flex-1">
@@ -449,9 +443,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       {/* Toggle */}
                       <button
                         onClick={() => handleToggleReminder(reminder.id)}
-                        className={`w-12 h-6 rounded-full transition-colors relative flex items-center flex-shrink-0 ml-2 ${
-                          reminder.enabled ? "bg-bocado-green" : "bg-gray-300"
-                        }`}
+                        className={`w-12 h-6 rounded-full transition-colors relative flex items-center flex-shrink-0 ml-2 ${reminder.enabled ? "bg-bocado-green" : "bg-gray-300"
+                          }`}
                         aria-label={
                           reminder.enabled
                             ? t("notifications.settings.deactivate")
@@ -459,9 +452,8 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         }
                       >
                         <span
-                          className={`absolute left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-out ${
-                            reminder.enabled ? "translate-x-6" : "translate-x-0"
-                          }`}
+                          className={`absolute left-1 w-4 h-4 bg-white rounded-full transition-transform duration-200 ease-out ${reminder.enabled ? "translate-x-6" : "translate-x-0"
+                            }`}
                         />
                       </button>
                     </div>

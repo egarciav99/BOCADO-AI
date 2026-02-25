@@ -1,5 +1,11 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
-import { EATING_HABITS, MEALS, CRAVINGS } from "../constants";
+import {
+  EATING_HABITS,
+  MEALS,
+  CRAVINGS,
+  MEAL_TRANSLATION_KEYS,
+  CRAVING_TRANSLATION_KEYS,
+} from "../constants";
 import BocadoLogo from "./BocadoLogo";
 import { db, serverTimestamp, trackEvent } from "../firebaseConfig";
 import { collection, addDoc } from "firebase/firestore";
@@ -7,7 +13,7 @@ import { CurrencyService } from "../data/budgets";
 import {
   useUserProfile,
   useGeolocation,
-  useSmartNotifications,
+  useNotifications,
 } from "../hooks";
 import { useAuthStore } from "../stores/authStore";
 import { useRateLimit } from "../hooks/useRateLimit";
@@ -40,15 +46,9 @@ const translateMealWithEmoji = (
   meal: string,
   t: (key: string) => string,
 ): string => {
-  const mealMap: Record<string, string> = {
-    Desayuno: "desayuno",
-    Comida: "comida",
-    Cena: "cena",
-    Snack: "snack",
-  };
   const text = stripEmoji(meal);
   const emoji = meal.replace(text, "").trim();
-  const key = mealMap[text];
+  const key = MEAL_TRANSLATION_KEYS[text];
   return key ? `${emoji} ${t(`meals.${key}`)}` : meal;
 };
 
@@ -57,19 +57,9 @@ const translateCravingWithEmoji = (
   craving: string,
   t: (key: string) => string,
 ): string => {
-  const cravingMap: Record<string, string> = {
-    "Italiana / Pizza": "italiana",
-    "Japonesa / Sushi": "japonesa",
-    "Saludable o fit": "saludable",
-    "Asiática / China": "asiatica",
-    Mexicana: "mexicana",
-    "Americana / Fast food": "americana",
-    Mediterránea: "mediterranea",
-    Otros: "otros",
-  };
   const text = stripEmoji(craving);
   const emoji = craving.replace(text, "").trim();
-  const key = cravingMap[text];
+  const key = CRAVING_TRANSLATION_KEYS[text];
   return key ? `${emoji} ${t(`cravings.${key}`)}` : craving;
 };
 
@@ -151,7 +141,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
   const {
     permission: notificationPermission,
     requestPermission: requestNotificationPermission,
-  } = useSmartNotifications(user?.uid);
+  } = useNotifications(user?.uid);
 
   const [showNotificationBanner, setShowNotificationBanner] = useState(true);
 
@@ -523,7 +513,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
       )}
 
       {/* Selector principal */}
-      <div className="grid grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 gap-3 mb-6">
         {EATING_HABITS.map((habit) => (
           <button
             key={habit}
@@ -564,7 +554,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
               <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider">
                 {t("recommendation.whatToCook")}
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {MEALS.map((meal) => (
                   <button
                     key={meal}
@@ -663,7 +653,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                 <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-3">
                   {t("recommendation.whatCraving")}
                 </p>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                   {CRAVINGS.map((craving) => (
                     <button
                       key={craving}

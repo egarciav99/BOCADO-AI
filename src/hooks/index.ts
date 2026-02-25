@@ -19,7 +19,7 @@ export {
 export { usePantry } from "./usePantry";
 export { useRateLimit } from "./useRateLimit";
 export { useAnalyticsProperties } from "./useAnalyticsProperties";
-export { useSmartNotifications } from "./useSmartNotifications";
+export { useNotifications, type NotificationSchedule } from "./useNotifications";
 export { useNetworkStatus, useIsOnline } from "./useNetworkStatus";
 
 // Nuevos hooks para escalabilidad

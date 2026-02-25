@@ -134,3 +134,20 @@ export const FOOD_CATEGORIES: Record<
     { key: "mustard", default: "Mostaza" },
   ],
 };
+export const MEAL_TRANSLATION_KEYS: Record<string, string> = {
+  Desayuno: "desayuno",
+  Comida: "comida",
+  Cena: "cena",
+  Snack: "snack",
+};
+
+export const CRAVING_TRANSLATION_KEYS: Record<string, string> = {
+  "Italiana / Pizza": "italiana",
+  "Japonesa / Sushi": "japonesa",
+  "Saludable o fit": "saludable",
+  "Asiática / China": "asiatica",
+  Mexicana: "mexicana",
+  "Americana / Fast food": "americana",
+  Mediterránea: "mediterranea",
+  Otros: "otros",
+};
