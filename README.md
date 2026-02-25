@@ -17,12 +17,13 @@ Recomendaciones personalizadas con IA, geolocalización para comer fuera y exper
 
 ## ✨ ¿Qué es Bocado AI?
 
-Bocado AI es una app web que adapta recomendaciones nutricionales al perfil de cada usuario. Combina:
+Bocado AI es una plataforma nutricional inteligente de alto rendimiento diseñada para adaptar recomendaciones al perfil biográfico y situacional del usuario en tiempo real.
 
-- Perfil de salud y preferencias
-- Generación de recomendaciones con IA (Gemini)
-- Búsqueda de opciones fuera de casa con Google Maps vía proxy seguro
-- Soporte PWA y experiencia offline
+- **Inteligencia Situacional**: Recomendaciones basadas en geolocalización real y contexto de viaje (detecta automáticamente si el usuario está de visita en otra ciudad).
+- **Seguridad Nutricional**: Motor de filtrado estricto para alergias predefinidas, alergias manuales (`otherAllergies`) y enfermedades crónicas.
+- **Zero Waste Logic**: Priorización inteligente de ingredientes próximos a vencer en la despensa para reducir el desperdicio.
+- **Unified Engine**: Sistema centralizado de notificaciones inteligentes y recordatorios vía Web Push y local scheduling.
+- **Soporte PWA**: Experiencia instalable con capacidades offline.
 
 ## 🧭 Navegación rápida
 
@@ -39,23 +40,22 @@ Bocado AI es una app web que adapta recomendaciones nutricionales al perfil de c
 
 | Feature            | Descripción                                           |
 | ------------------ | ----------------------------------------------------- |
-| Recomendaciones IA | Motor de recomendaciones con Gemini                   |
-| Seguridad de APIs  | `GOOGLE_MAPS_API_KEY` protegida con `/api/maps-proxy` |
-| UX móvil           | PWA instalable con fallback offline                   |
-| Calidad de código  | Unit tests (Vitest), E2E (Playwright), Storybook      |
-| Escalabilidad      | Backend serverless con Vercel Functions               |
+| **Audit Proven**   | Arquitectura optimizada tras auditoría profunda de performance, seguridad y UX. |
+| **Recomendaciones IA** | Motor con Gemini 2.0 Flash y lógica avanzada de anti-alucinación. |
+| **Seguridad de APIs** | Arquitectura Proxy para proteger llaves y manejar Rate Limiting multi-capa. |
+| **UX Multi-dispositivo** | Layout adaptativo optimizado para móvil (PWA) y panel de escritorio. |
+| **Internacionalización** | Soporte nativo y completo para Español e Inglés (ES/EN). |
 
-## 🛠️ Stack actual
+## 🛠️ Stack Tecnológico
 
-- Frontend: React 19 + TypeScript + Vite
-- Estado/datos: Zustand + TanStack Query
-- UI: Tailwind CSS
-- Backend HTTP: Vercel Functions (`/api/recommend`, `/api/maps-proxy`)
-- Base de datos y auth: Firebase (Auth + Firestore)
-- IA: Google Gemini
-- Observabilidad: Sentry (opcional)
-- Tests: Vitest + Playwright
-- Storybook: Storybook 10
+- **Frontend**: React 19 + TypeScript + Vite.
+- **Estado**: Zustand (UI) + TanStack Query (Estado de servidor con caching).
+- **Backend HTTP**: Vercel Functions (Serverless Node.js).
+- **Base de Datos**: Firebase Firestore (con optimización de lecturas).
+- **IA**: Google Gemini Pro (Generative AI).
+- **Validación**: Zod (Type-safety de extremo a extremo).
+- **Testing**: Vitest (Unit) + Playwright (E2E).
+- **Design System**: Tailwind CSS.
 
 ## 📋 Requisitos
 
@@ -71,7 +71,7 @@ npm install
 npm run dev
 ```
 
-App local: `https://bocado-ai.vercel.app`
+App local: `http://localhost:3000`
 
 ## 🔐 Variables de entorno
 
@@ -131,6 +131,40 @@ Notas:
 - `npm run build-storybook`: build de Storybook
 - `npm run generate-icons`: genera iconos PWA
 
+## 🏗️ Arquitectura y Flujo de Datos
+
+Bocado AI utiliza una arquitectura serverless moderna diseñada para ofrecer recomendaciones en tiempo real con baja latencia.
+
+```mermaid
+graph TD
+    User((Usuario)) --> FE[Frontend React/PWA]
+    FE --> Zustand[Zustand - Estado UI]
+    FE --> Query[TanStack Query - Cache]
+    
+    subgraph "Vercel Cloud"
+        API[Vercel Functions /api]
+        Proxy[Maps Proxy]
+    end
+    
+    subgraph "External Services"
+        Firebase[Firebase Auth/Firestore]
+        Gemini[Google Gemini AI]
+        Places[Google Places API]
+    end
+    
+    FE --> API
+    API --> Gemini
+    API --> Firebase
+    FE --> Proxy
+    Proxy --> Places
+```
+
+### Flujo Principal:
+1.  **Frontend**: Captura el perfil, despensa y ubicación del usuario.
+2.  **Backend (Proxy)**: Valida la sesión y el rate limit antes de procesar la solicitud.
+3.  **Motor de IA**: Construye prompts enriquecidos con contexto de salud y existencias reales.
+4.  **Respuesta**: Gemini genera JSON estructurado que el frontend renderiza de forma interactiva.
+
 ## 🌐 Endpoints API
 
 ### `POST /api/recommend`
@@ -167,8 +201,24 @@ Config raíz Firebase:
 - reglas: `firestore.rules`
 - índices: `firestore.indexes.json`
 
-## 🧪 E2E
+## 🧪 Estrategia de Testing
 
+El proyecto sigue una pirámide de pruebas robusta para garantizar la fiabilidad del motor nutricional.
+
+### Pruebas Unitarias (Vitest)
+Ubicadas en `src/test/`.
+- **Motor de Recomendaciones**: Validación de lógica de filtrado de ingredientes (alergias/dietas).
+- **Sanitización**: Verificación de limpieza de datos para Firebase y prompts.
+- **Utilidades**: Pruebas de lógica compartida y helpers de geocodificación.
+
+### Pruebas E2E (Playwright)
+Ubicadas en `e2e/`.
+- **Autenticación**: Registro completo y login con Firebase.
+- **Flujo Onboarding**: Verificación de guardado de perfil multi-paso.
+- **Gestión de Despensa**: Agregar/eliminar items y persistencia.
+- **Generación de Recetas**: Prueba real del flujo desde botón hasta renderizado de propuesta de la IA.
+
+### Ejecución
 - Configuración: `playwright.config.ts`
 - Variables de test ejemplo: `e2e/.env.test`
 - Guía detallada: `e2e/README.md`

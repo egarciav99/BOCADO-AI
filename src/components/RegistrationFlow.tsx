@@ -134,6 +134,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         authData.password!,
       );
       const user = userCredential.user;
+      // Clear sensitive data immediately after use
+      updateFormData({ password: "", confirmPassword: "" });
 
       const displayName = `${authData.firstName} ${authData.lastName}`;
       await updateProfile(user, { displayName });

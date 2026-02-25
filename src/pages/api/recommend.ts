@@ -4,11 +4,21 @@ import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import * as crypto from 'crypto';
 import { COUNTRY_TO_CURRENCY, CURRENCY_CONFIG } from '@/data/budgets';
-import { profileCache, pantryCache, historyCache, ingredientsCache, getCachedWithFallback } from '../../lib/api/utils/cache';
-// 📝 FatSecret integración (opcional - requiere API key premium free)
-// Para habilitar: descomenta y configura FATSECRET_KEY & FATSECRET_SECRET
+
+// Shared Utils & Services
+import {
+  safeLog,
+  normalizeText,
+  ensureArray,
+  cleanForFirestore,
+  createRegexPattern
+} from '../../lib/api/utils/shared-logic';
+import { RecommendationDataService, UserProfile } from '../../lib/api/services/data-service';
+import { PromptBuilder } from '../../lib/api/services/prompt-builder';
+import { RecommendationScorer, PantryItem, FirestoreIngredient } from '../../lib/api/services/recommendation-scorer';
+
+import { historyCache } from '../../lib/api/utils/cache';
 import { getFatSecretIngredientsWithCache } from '../../lib/api/utils/fatsecret-logic';
-import { searchFatSecretIngredients } from '../../lib/api/utils/fatsecret';
 
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
@@ -32,147 +42,11 @@ const getAdminApp = () => {
 };
 
 const adminApp = getAdminApp();
-
 const db = (adminApp ? getFirestore() : null) as any;
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
-// ============================================
-// 💰 FINOPS: JSON TEMPLATES (AHORRO DE TOKENS)
-// ============================================
-// Extraídos como constantes para evitar repetirlos en cada prompt (~40 tokens ahorrados por request)
-
-const RECIPE_JSON_TEMPLATE = `{"saludo_personalizado":"msg motivador","receta":{"recetas":[{"id":1,"titulo":"nombre","tiempo":"XX min","dificultad":"Fácil|Media|Difícil","coincidencia":"ingrediente casa o Ninguno","ingredientes":["cantidad+ingrediente"],"pasos_preparacion":["paso 1","paso 2"],"macros_por_porcion":{"kcal":0,"proteinas_g":0,"carbohidratos_g":0,"grasas_g":0}}]}}`;
-
-const RESTAURANT_JSON_TEMPLATE = `{"saludo_personalizado":"msg motivador","recomendaciones":[{"id":1,"nombre_restaurante":"nombre real","tipo_comida":"ej: Italiana","direccion_aproximada":"Calle Número, Colonia","plato_sugerido":"nombre plato","por_que_es_bueno":"explicar por qué","hack_saludable":"consejo práctico"}]}`;
-
-// ============================================
-// 💰 FINOPS: CACHED USER PROFILE RETRIEVAL
-// ============================================
-
-interface UserProfile {
-  userId: string;
-  eatingHabit?: string;
-  age?: number | string;
-  sex?: string;
-  gender?: string;
-  weight?: string;
-  height?: string;
-  activityLevel?: string;
-  activityFrequency?: string;
-  nutritionalGoal?: string;
-  diseases?: string[];
-  allergies?: string[];
-  otherAllergies?: string;
-  dislikedFoods?: string[];
-  cookingAffinity?: string;
-  city?: string;
-  country?: string;
-  location?: { lat: number; lng: number };
-  locationEnabled?: boolean;
-  [key: string]: any;
-}
-
-/**
- * Obtiene perfil del usuario con cache en memoria
- * TTL: 10 minutos
- * Fallback: Firestore directo si cache falla
- * Ahorro: 1 read de Firestore por cada cache hit
- */
-async function getUserProfileCached(userId: string): Promise<UserProfile> {
-  // Layer 1: Intentar memoria cache
-  try {
-    const cached = profileCache.get<UserProfile>(userId);
-    if (cached) {
-      safeLog("log", `[Cache] Profile HIT: ${userId.substring(0, 8)}...`);
-      return cached;
-    }
-  } catch (cacheError) {
-    safeLog(
-      "warn",
-      "[Cache] Profile read error, falling back to Firestore:",
-      cacheError,
-    );
-  }
-
-  // Layer 2: Fallback a Firestore
-  safeLog(
-    "log",
-    `[Cache] Profile MISS: fetching from Firestore ${userId.substring(0, 8)}...`,
-  );
-
-  const userSnap = await db.collection("users").doc(userId).get();
-  if (!userSnap.exists) {
-    throw new Error("Usuario no encontrado");
-  }
-
-  const profile = userSnap.data() as UserProfile;
-
-  // Guardar en cache (no throw si falla)
-  try {
-    profileCache.set(userId, profile);
-  } catch (cacheError) {
-    safeLog("warn", "[Cache] Profile write error:", cacheError);
-  }
-
-  return profile;
-}
-
-interface PantryItem {
-  name: string;
-  freshness: "fresh" | "soon" | "expired";
-}
-
-/**
- * Obtiene items de despensa con cache en memoria
- * TTL: 5 minutos
- * Fallback graceful: [] si falla (no crítico)
- */
-async function getPantryItemsCached(userId: string): Promise<PantryItem[]> {
-  // Layer 1: Memoria cache
-  try {
-    const cached = pantryCache.get<PantryItem[]>(userId);
-    if (cached) {
-      safeLog("log", `[Cache] Pantry HIT: ${userId.substring(0, 8)}...`);
-      return cached;
-    }
-  } catch (cacheError) {
-    safeLog("warn", "[Cache] Pantry read error:", cacheError);
-  }
-
-  // Layer 2: Fallback a Firestore
-  try {
-    safeLog(
-      "log",
-      `[Cache] Pantry MISS: fetching from Firestore ${userId.substring(0, 8)}...`,
-    );
-    const pantryDoc = await db.collection("user_pantry").doc(userId).get();
-    const pantryData = pantryDoc.exists ? pantryDoc.data() : null;
-
-    // Transformar items (incluyendo el estado de frescura/caducidad)
-    const items: PantryItem[] =
-      pantryData?.items && Array.isArray(pantryData.items)
-        ? pantryData.items
-          .map((item: any) => ({
-            name: item.name || "",
-            freshness: item.freshness || "fresh",
-          }))
-          .filter((i: PantryItem) => i.name)
-        : [];
-
-    // Guardar en cache
-    try {
-      pantryCache.set(userId, items);
-    } catch (cacheError) {
-      safeLog("warn", "[Cache] Pantry write error:", cacheError);
-    }
-
-    return items;
-  } catch (error) {
-    // Graceful degradation: despensa no es crítica
-    safeLog("warn", "[Cache] Pantry fetch failed, using empty array:", error);
-    return [];
-  }
-}
+// Initialize Services
+const dataService = new RecommendationDataService(db);
 
 // ============================================
 // RATE LIMITING DISTRIBUIDO (INLINE - después de inicializar Firebase)
@@ -535,272 +409,14 @@ const RestaurantResponseSchema = z.object({
 // ============================================
 
 // Sanitiza errores para no exponer datos sensibles en logs
-const sanitizeError = (
-  error: any,
-): { message: string; code?: string; safeToLog: boolean } => {
-  const errorMessage = error?.message || String(error);
-
-  // Detectar errores que pueden contener datos sensibles
-  const sensitivePatterns = [
-    /api[_-]?key/i,
-    /token/i,
-    /password/i,
-    /secret/i,
-    /credential/i,
-    /firebase/i,
-  ];
-
-  const hasSensitiveData = sensitivePatterns.some((pattern) =>
-    pattern.test(errorMessage),
-  );
-
-  if (hasSensitiveData) {
-    return {
-      message: "Error sanitizado: contiene datos sensibles",
-      code: error?.code,
-      safeToLog: false,
-    };
-  }
-
-  return {
-    message: errorMessage.substring(0, 500), // Limitar longitud
-    code: error?.code,
-    safeToLog: true,
-  };
-};
-
-// Logger seguro que respeta el entorno
-const safeLog = (
-  level: "log" | "error" | "warn",
-  message: string,
-  error?: any,
-) => {
-  const isDev = process.env.NODE_ENV === "development";
-
-  if (error) {
-    const sanitized = sanitizeError(error);
-    if (sanitized.safeToLog || isDev) {
-      console[level](message, isDev ? error : sanitized.message);
-    } else {
-      console[level](message, "[Error sanitizado - ver logs seguros]");
-    }
-  } else {
-    console[level](message);
-  }
-};
-
-const normalizeText = (text: string): string =>
-  text
-    ? text
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .trim()
-    : "";
-
-const getRootWord = (text: string): string => {
-  let clean = normalizeText(text);
-  if (clean.length <= 3) return clean;
-  if (clean.endsWith("ces")) return clean.slice(0, -3) + "z";
-  if (clean.endsWith("es")) return clean.slice(0, -2);
-  if (clean.endsWith("s")) return clean.slice(0, -1);
-  return clean;
-};
-
-const createRegexPattern = (text: string): string => {
-  const root = getRootWord(text);
-  return root
-    .replace(/a/g, "[aáàäâ]")
-    .replace(/e/g, "[eéèëê]")
-    .replace(/i/g, "[iíìïî]")
-    .replace(/o/g, "[oóòöô]")
-    .replace(/u/g, "[uúùüû]");
-};
-
-const ensureArray = (input: any): string[] => {
-  if (!input) return [];
-  if (Array.isArray(input))
-    return input.filter((i): i is string => typeof i === "string");
-  if (typeof input === "string")
-    return input
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-  return [];
-};
-
-/**
- * 🛠️ Limpia objetos para Firestore, convirtiendo undefined a null
- * Firestore NO acepta undefined y lanza error 500 si no se limpia.
- */
-function cleanForFirestore(obj: any): any {
-  if (obj === null || obj === undefined) return null;
-  if (Array.isArray(obj)) return obj.map(v => cleanForFirestore(v));
-  if (typeof obj === 'object' && !(obj instanceof Date)) {
-    const cleaned: any = {};
-    Object.keys(obj).forEach(key => {
-      const val = cleanForFirestore(obj[key]);
-      if (val !== undefined) cleaned[key] = val;
-    });
-    return cleaned;
-  }
-  return obj;
-}
-
-const formatList = (data: any): string => {
-  if (!data || (Array.isArray(data) && data.length === 0)) return "Ninguna";
-  if (Array.isArray(data)) return data.join(", ");
-  return String(data);
-};
+// Utility functions moved to shared-logic.ts
 
 // ============================================
 // 4. FILTROS DE SEGURIDAD ALIMENTARIA
 // ============================================
 
 
-// ============================================
-// 5. SISTEMA DE SCORING
-// ============================================
-
-const scoreIngredients = (
-  filteredItems: FirestoreIngredient[],
-  pantryItems: PantryItem[],
-): { priorityList: string; marketList: string; hasPantryItems: boolean } => {
-  const pantryRoots = pantryItems
-    .map((item) => ({ root: getRootWord(item.name), freshness: item.freshness }))
-    .filter((obj) => obj.root && obj.root.length > 2);
-
-  const genericWords = [
-    "aceite",
-    "sal",
-    "leche",
-    "pan",
-    "harina",
-    "agua",
-    "mantequilla",
-    "crema",
-    "salsa",
-  ];
-
-  const scoredItems = filteredItems
-    .map((item) => {
-      const rawName = item.regional.mx || item.name || item.regional.es || "";
-      if (!rawName) return { name: "", score: 0 };
-
-      const norm = normalizeText(rawName);
-      const root = getRootWord(rawName);
-      let score = 1;
-
-      pantryRoots.forEach((pantryObj) => {
-        if (root === pantryObj.root) {
-          score = pantryObj.freshness === "soon" ? 100 : 50;
-        } else if (new RegExp(`\\b${pantryObj.root}\\b`, "i").test(norm)) {
-          if (
-            !(norm.split(/\s+/).length > 2 && genericWords.includes(pantryObj.root))
-          ) {
-            score = pantryObj.freshness === "soon" ? 40 : 20;
-          }
-        }
-      });
-
-      // Añadir etiqueta de urgencia si es necesario
-      const finalName = pantryItems.some(pi => pi.name === rawName && pi.freshness === 'soon')
-        ? `${rawName} (URGENTE: Próximo a vencer)`
-        : rawName;
-
-      return { name: finalName, score };
-    })
-    .filter((item) => item.name);
-
-  scoredItems.sort((a, b) => b.score - a.score);
-
-  const priorityList = scoredItems
-    .filter((i) => i.score >= 20)
-    .map((i) => i.name)
-    .join(", ");
-  const marketList = scoredItems
-    .filter((i) => i.score < 20)
-    .map((i) => i.name)
-    .join(", ");
-
-  return { priorityList, marketList, hasPantryItems: priorityList.length > 0 };
-};
-
-// ============================================
-// TIPOS PARA INGREDIENTES
-// ============================================
-
-interface FirestoreIngredient {
-  id: string;
-  name: string;
-  category: string;
-  regional: {
-    es?: string;
-    mx?: string;
-    en?: string;
-  };
-  nutrients?: {
-    calories?: number;
-    protein?: number;
-    carbs?: number;
-    fat?: number;
-  };
-}
-
-// ============================================
-// 5B. OBTENER Y FILTRAR INGREDIENTES
-// ============================================
-
-/**
- * 🔍 Obtiene todos los ingredientes disponibles de Firestore
- * Usa cache global para evitar 1000 reads en cada request
- */
-async function getAllIngredientes(): Promise<FirestoreIngredient[]> {
-  return getCachedWithFallback(
-    ingredientsCache,
-    "global_ingredients_list",
-    async () => {
-      try {
-        // Layer 1: Intentar base de datos local
-        const localSnap = await db
-          .collection("ingredients")
-          .limit(1000)
-          .get();
-
-        if (!localSnap.empty) {
-          safeLog("log", `[Ingredients] Fetched ${localSnap.size} from Firestore`);
-          return localSnap.docs.map((doc: any) => ({
-            id: doc.id,
-            ...doc.data(),
-          } as FirestoreIngredient));
-        }
-
-        // Layer 2: FatSecret fallback
-        if (process.env.FATSECRET_KEY && process.env.FATSECRET_SECRET) {
-          const fatsecretResults = await searchFatSecretIngredients("*", 500);
-          if (fatsecretResults?.length > 0) {
-            return fatsecretResults.map((fs: any) => ({
-              id: `fs_${fs.food_id}`,
-              name: fs.food_name,
-              category: fs.food_type || "Generic",
-              regional: { es: fs.food_name, mx: fs.food_name },
-            }));
-          }
-        }
-
-        return [
-          { id: "1", name: "Pollo pechuga", category: "proteína", regional: { es: "Pollo pechuga", mx: "Pechuga de pollo" } },
-          { id: "2", name: "Arroz integral", category: "grano", regional: { es: "Arroz integral", mx: "Arroz integral" } },
-          { id: "3", name: "Brócoli", category: "verdura", regional: { es: "Brócoli", mx: "Brócoli" } },
-        ];
-      } catch (error) {
-        safeLog("error", "[Ingredients] Error loading", error);
-        return [];
-      }
-    },
-    5000 // Timeout 5s para Firestore
-  );
-}
+// Scoring and Ingredient fetching moved to services/recommendation-scorer.ts and services/data-service.ts
 
 /**
  * 🧹 Filtra ingredientes según restricciones del usuario
@@ -1700,7 +1316,7 @@ export default async function handler(req: any, res: any) {
       type === "En casa" ? "historial_recetas" : "historial_recomendaciones";
 
     // 💰 FINOPS: Usar cache de perfil en lugar de lectura directa
-    const user = await getUserProfileCached(userId);
+    const user = await dataService.getUserProfile(userId);
 
     let historyContext = "";
     try {
@@ -1812,215 +1428,82 @@ export default async function handler(req: any, res: any) {
     let parsedData: any;
 
     if (type === "En casa") {
-      // ✅ Obtener ingredientes de Firestore (reemplaza Airtable)
-      let filteredItems: FirestoreIngredient[] = [];
-      try {
-        const allIngredients = await getAllIngredientes();
-        filteredItems = filterIngredientes(allIngredients, user);
-        safeLog(
-          "log",
-          `[Ingredients] ${filteredItems.length}/${allIngredients.length} passed filters`,
-        );
-      } catch (ingredientError: any) {
-        safeLog("error", "❌ Ingredients Fetch Failed", ingredientError);
-        filteredItems = [];
-      }
+      // 1. Obtener datos (con cache)
+      const allIngredients = await dataService.getAllIngredients();
+      const filteredItems = filterIngredientes(allIngredients, user);
+      const pantryItems = await dataService.getPantryItems(userId);
 
-      // 💰 FINOPS: Usar cache de pantry en lugar de lectura directa
-      const pantryItems = await getPantryItemsCached(userId);
-
-      const { priorityList, marketList, hasPantryItems } = scoreIngredients(
+      // 2. Puntuar ingredientes
+      const { priorityList, marketList, hasPantryItems } = RecommendationScorer.scoreIngredients(
         filteredItems,
         pantryItems,
       );
 
-      // ✅ OPTIMIZACIÓN: Prompt conciso para reducir tokens (~30% menos)
+      // 3. Preparar contexto
+      const diseases = ensureArray(user.diseases);
+      const allergies = ensureArray(user.allergies);
+      const otherAllergiesText = user.otherAllergies || "";
+      const medicalContext = [...diseases, ...allergies, otherAllergiesText].filter(Boolean).join(", ");
+
+      const dislikedFoodsContext = [
+        ...ensureArray(user.dislikedFoods),
+        ...ensureArray(request.dislikedFoods),
+      ].filter(Boolean).join(", ");
+
+      const cookingAffinityLower = (user.cookingAffinity || "").toLowerCase();
+      const difficultyHint = (cookingAffinityLower.includes("novato") || cookingAffinityLower.includes("no me gusta"))
+        ? ", dificultad máxima: Fácil" : "";
+
       const pantryRule = request.onlyPantryIngredients
         ? "usar SOLO ingredientes de la despensa (sin excepciones, sin básicos)"
         : "usar despensa primero, respetar restricciones. Opcionales: básicos (aceite, sal, especias)";
 
-      // Contexto demográfico relevante (solo si está disponible)
-      const demographicParts = [
-        user.eatingHabit ? `Dieta: ${user.eatingHabit}` : "",
-        user.age ? `${user.age} años` : "",
-        user.activityLevel && user.activityLevel !== "Sedentario"
-          ? user.activityLevel
-          : "",
-      ].filter(Boolean);
-      const demographicContext =
-        demographicParts.length > 0 ? demographicParts.join(", ") : "";
-
-      // Restricciones médicas (solo mostrar si existen)
-      const diseases = ensureArray(user.diseases);
-      const allergies = ensureArray(user.allergies);
-      const otherAllergiesText = user.otherAllergies || "";
-      const medicalRestrictions = [...diseases, ...allergies, otherAllergiesText].filter(Boolean);
-      const medicalContext =
-        medicalRestrictions.length > 0
-          ? `Restricciones: ${medicalRestrictions.join(", ")}`
-          : "";
-
-      // Alimentos no deseados
-      const allDislikedFoods = [
-        ...ensureArray(user.dislikedFoods),
-        ...ensureArray(request.dislikedFoods),
-      ].filter(Boolean);
-      const dislikedContext =
-        allDislikedFoods.length > 0
-          ? `NO usar: ${allDislikedFoods.join(", ")}`
-          : "";
-
-      // Construir línea de perfil limpia
-      const profileParts = [
-        demographicContext,
-        medicalContext,
-        dislikedContext,
-      ].filter(Boolean);
-      const profileLine = profileParts.join(" | ");
-
-      // Ajuste de dificultad según experiencia culinaria
-      const cookingAffinityLower = (user.cookingAffinity || "").toLowerCase();
-      const difficultyHint =
-        cookingAffinityLower.includes("novato") ||
-          cookingAffinityLower.includes("no me gusta")
-          ? ", dificultad máxima: Fácil"
-          : "";
-
-      const nutritionalGoalStr = Array.isArray(user.nutritionalGoal)
-        ? user.nutritionalGoal.join(", ")
-        : user.nutritionalGoal || "comer saludable";
-
-      finalPrompt = `Eres nutricionista. Genera 3 recetas para: ${nutritionalGoalStr}
-
-PERFIL: ${profileLine || "Sin restricciones"} | Ubic: ${user.city || "su ciudad"}
-SOLICITUD: ${request.mealType || "Comida"}, ${request.cookingTime || "30"}min, ${request.budget || "sin límite"} ${request.currency || ""}
-${historyContext ? "\nMEMORIA: " + historyContext.slice(30, 200) : ""}
-${feedbackContext ? "\nFEEDBACK: " + feedbackContext.slice(30, 150) : ""}
-${hasPantryItems ? `\nDESPENSA: ${priorityList.slice(0, 200)}` : ""}
-${marketList && !request.onlyPantryIngredients ? `\nDISPONIBLE: ${marketList.slice(0, 150)}` : ""}
-
-REGLAS ESTRICTAS:
-1. Exactamente 3 recetas, tiempo ≤${request.cookingTime || "30"}min${difficultyHint}
-2. ${pantryRule}
-3. USA EXCLUSIVAMENTE ingredientes de las listas DESPENSA y DISPONIBLE proporcionadas arriba. Si no hay lista, usa solo ingredientes COMUNES y FÁCILES de encontrar en supermercados de ${user.city || user.country || "la región del usuario"}.
-4. PROHIBIDO inventar ingredientes exóticos, raros o difíciles de conseguir. Cada ingrediente debe poder comprarse en un supermercado normal de la zona.
-5. Si mencionas un ingrediente que NO está en las listas, debe ser un básico universal (sal, aceite, agua, pimienta).
-6. Las cantidades deben ser realistas y en unidades estándar (gramos, ml, cucharadas, unidades).
-7. PRIORIZA ingredientes marcados como (URGENTE: Próximo a vencer) para reducir el desperdicio de comida.
-
-Responde EXCLUSIVAMENTE en ${request.language === "en" ? "INGLÉS." : "ESPAÑOL."}
-Responde en formato JSON usando esta estructura exacta:
-${RECIPE_JSON_TEMPLATE}
-
-Personaliza el saludo_personalizado usando${demographicParts.length > 0 ? " el perfil del usuario" : " un mensaje motivador"}.`;
+      // 4. Construir Prompt (Anti-Injection)
+      finalPrompt = PromptBuilder.buildRecipePrompt({
+        type: "En casa",
+        mealType: request.mealType || "Comida",
+        cookingTime: request.cookingTime as number,
+        dietaryGoal: Array.isArray(user.nutritionalGoal) ? user.nutritionalGoal.join(", ") : (user.nutritionalGoal || "comer saludable"),
+        medicalContext: PromptBuilder.escapeUserInput(medicalContext),
+        dislikedFoodsContext: PromptBuilder.escapeUserInput(dislikedFoodsContext),
+        historyContext,
+        feedbackContext,
+        pantryContext: priorityList,
+        marketList,
+        onlyPantryIngredients: request.onlyPantryIngredients,
+        city: user.city,
+        country: user.country,
+        language: request.language,
+        difficultyHint,
+        pantryRule
+      });
     } else {
       // 🔴 FIX #11: Mover searchCoords ANTES de usarlo en validación
       // Determinar coordenadas para búsqueda de restaurantes
+      // 1. Determinar coordenadas
       const searchCoords = getSearchCoordinates(request, user);
-
-      // ✅ FIX: Validar ciudad antes de generar prompt de restaurantes
       if (!user.city && !searchCoords) {
-        throw new Error(
-          "No se pudo determinar tu ubicación. Por favor actualiza tu perfil o activa el GPS.",
-        );
+        throw new Error("Ubicación no disponible.");
       }
 
-      // ✨ NUEVA LÓGICA: Detectar si está viajando y qué moneda usar
-      const travelContext = await detectTravelContext(
-        searchCoords,
-        request,
-        user,
-      );
-
-      // Logging detallado para debugging de ubicación
-
-      const locationContext = searchCoords
-        ? `Coordenadas de referencia: ${formatCoordinates(searchCoords)} `
-        : `Ciudad: ${user.city || "su ciudad"} `;
-
-      const locationInstruction = searchCoords
-        ? `** IMPORTANTE - RANGO DE BÚSQUEDA **: Busca restaurantes DENTRO de un radio de ${SEARCH_RADIUS_METERS / 1000}km desde las coordenadas ${formatCoordinates(searchCoords)}. Prioriza lugares cercanos a esta ubicación.`
-        : `** IMPORTANTE **: Busca restaurantes en ${user.city || "su ciudad"} que sean accesibles y no muy alejados del centro.`;
-
-      // Contexto demográfico relevante (solo si está disponible)
-      const demographicPartsOut = [
-        user.eatingHabit ? `Dieta: ${user.eatingHabit} ` : "",
-        user.age ? `${user.age} años` : "",
-        user.activityLevel && user.activityLevel !== "Sedentario"
-          ? user.activityLevel
-          : "",
-      ].filter(Boolean);
-      const demographicContextOut =
-        demographicPartsOut.length > 0 ? demographicPartsOut.join(", ") : "";
-
-      // Restricciones médicas (solo mostrar si existen)
-      const diseasesOut = ensureArray(user.diseases);
-      const allergiesOut = ensureArray(user.allergies);
-      const otherAllergiesOut = user.otherAllergies || "";
-      const medicalRestrictionsOut = [...diseasesOut, ...allergiesOut, otherAllergiesOut].filter(
-        Boolean,
-      );
-      const medicalContextOut =
-        medicalRestrictionsOut.length > 0
-          ? `Restricciones: ${medicalRestrictionsOut.join(", ")} `
-          : "";
-
-      // Alimentos no deseados
-      const allDislikedFoodsOut = [
-        ...ensureArray(user.dislikedFoods),
-        ...ensureArray(request.dislikedFoods),
-      ].filter(Boolean);
-      const dislikedContextOut =
-        allDislikedFoodsOut.length > 0
-          ? `NO: ${allDislikedFoodsOut.join(", ")} `
-          : "";
-
-      // Construir línea de perfil limpia
-      const nutritionalGoalStrOut = Array.isArray(user.nutritionalGoal)
-        ? user.nutritionalGoal.join(", ")
-        : user.nutritionalGoal || "saludable";
-      const profilePartsOut = [
-        demographicContextOut,
-        nutritionalGoalStrOut,
-        medicalContextOut,
-        dislikedContextOut,
-      ].filter(Boolean);
-      const profileLineOut = profilePartsOut.join(" | ");
-
-      // ✨ Instrucción de presupuesto con conversión de moneda
+      // 2. Contexto de viaje
+      const travelContext = await detectTravelContext(searchCoords, request, user);
       const budgetInstruction = getBudgetInstruction(request, travelContext);
 
-      // ✨ Mensaje personalizado para viajeros
-      const travelTone = travelContext.isTraveling
-        ? `${travelContext.locationLabel}. Adapta tono amigable para turista.Menciona precios en ${travelContext.activeCurrency}.`
-        : "";
+      // 3. Preparar contexto
+      const medicalContextOut = [...ensureArray(user.diseases), ...ensureArray(user.allergies), user.otherAllergies || ""].filter(Boolean).join(", ");
+      const dislikedContextOut = [...ensureArray(user.dislikedFoods), ...ensureArray(request.dislikedFoods)].filter(Boolean).join(", ");
 
-      // ✅ OPTIMIZACIÓN: Prompt conciso para restaurantes (~40% menos tokens)
-      finalPrompt = `Eres guía gastronómico ${travelContext.locationLabel}. Recomienda 5 restaurantes reales.
-
-        PERFIL: ${profileLineOut || "Sin restricciones"}
-      UBICACIÓN: ${locationContext} | RANGO: ${SEARCH_RADIUS_METERS / 1000} km
-      SOLICITUD: ${request.cravings || "saludable"}, ${budgetInstruction}
-${travelTone ? "\nCONTEXTO: " + travelTone : ""}
-${historyContext ? "\nMEMORIA: " + historyContext.slice(30, 200) : ""}
-${feedbackContext ? "\nFEEDBACK: " + feedbackContext.slice(30, 150) : ""}
-
-REGLAS CRÍTICAS:
-      1. Nombres reales de restaurantes existentes ${travelContext.isTraveling ? "cerca de tu ubicación actual" : `en ${user.city || "su ciudad"}`}
-      2. DIRECCIONES EXACTAS: Calle Número, Colonia(ej: "Calle Arturo Soria 126, Chamartín")
-      3. Si no sabes dirección exacta: usa centro comercial específico
-      4. NO uses "por el centro" o direcciones vagas
-      5. Rango máximo: ${SEARCH_RADIUS_METERS / 1000} km
-${user.eatingHabit && (user.eatingHabit.includes("Vegano") || user.eatingHabit.includes("Vegetariano")) ? `\n6. CRÍTICO: SOLO restaurantes con opciones ${user.eatingHabit.toLowerCase()} certificadas` : ""}
-${travelContext.isTraveling ? `\n7. Menciona precios aproximados en ${travelContext.activeCurrency} (moneda local)` : ""}
-
-Responde EXCLUSIVAMENTE en ${request.language === "en" ? "INGLÉS." : "ESPAÑOL."}
-Responde en formato JSON usando esta estructura exacta:
-${RESTAURANT_JSON_TEMPLATE}
-
-Personaliza el saludo_personalizado${travelContext.isTraveling ? " mencionando exploración de la zona" : demographicPartsOut.length > 0 ? " usando perfil" : " con mensaje motivador"}.
-En por_que_es_bueno${medicalRestrictionsOut.length > 0 || demographicPartsOut.length > 0 ? " explica cómo se ajusta al perfil" : " explica por qué es buena opción"}.
-En hack_saludable${medicalRestrictionsOut.length > 0 ? " personaliza para sus condiciones" : " da consejo práctico"}.`;
+      // 4. Construir Prompt (Anti-Injection)
+      finalPrompt = PromptBuilder.buildRestaurantPrompt({
+        type: "Fuera",
+        dietaryGoal: Array.isArray(user.nutritionalGoal) ? user.nutritionalGoal.join(", ") : (user.nutritionalGoal || "saludable"),
+        medicalContext: PromptBuilder.escapeUserInput(medicalContextOut),
+        dislikedFoodsContext: PromptBuilder.escapeUserInput(dislikedContextOut),
+        city: user.city || "su ubicación actual",
+        mealType: request.cravings as string || "Cualquiera saludable",
+        language: request.language
+      });
     }
 
     const result = await model.generateContent({
