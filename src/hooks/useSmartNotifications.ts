@@ -352,7 +352,14 @@ export const useSmartNotifications = (
   // (avoids write-back loop when Firestore load sets reminders)
   useEffect(() => {
     if (!userUid || !hasLoadedSettingsRef.current) return;
-    saveSettings({ reminders });
+
+    // 💰 FINOPS: Solo guardar campos de configuración, NO los textos traducidos
+    // Esto evita escrituras infinitas al cambiar de idioma y ahorra espacio en DB
+    const configToSave = reminders.map(({ id, hour, minute, enabled, lastShown }) => ({
+      id, hour, minute, enabled, lastShown
+    }));
+
+    saveSettings({ reminders: configToSave });
   }, [reminders, userUid, saveSettings]);
 
   // Actualizar última actividad
@@ -405,14 +412,18 @@ export const useSmartNotifications = (
               PANTRY_STALE_DAYS * 24 * 60 * 60 * 1000);
 
           if (!isEffectivelyEmpty) {
-            // Si la despensa no está vacía, no mostrar recordatorio de despensa
-            setReminders((prev) =>
-              prev.map((r) =>
-                r.id === "pantry_update"
-                  ? { ...r, condition: "pantry_empty", enabled: r.enabled }
-                  : r,
-              ),
-            );
+            // Si la despensa no está vacía, asegurar que la condición sea correcta
+            setReminders((prev) => {
+              const pantryRem = prev.find(r => r.id === "pantry_update");
+              if (pantryRem && pantryRem.condition !== "pantry_empty") {
+                return prev.map((r) =>
+                  r.id === "pantry_update"
+                    ? { ...r, condition: "pantry_empty" }
+                    : r,
+                );
+              }
+              return prev;
+            });
           }
         } else {
           setDaysSinceLastPantryUpdate(null);

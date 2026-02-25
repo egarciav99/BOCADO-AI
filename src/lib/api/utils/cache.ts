@@ -58,6 +58,17 @@ export const historyCache = new NodeCache({
   maxKeys: 10000,
 });
 
+/**
+ * Ingredients Cache (Global)
+ * - TTL: 1 hora
+ */
+export const ingredientsCache = new NodeCache({
+  stdTTL: 3600,
+  checkperiod: 600,
+  useClones: false,
+  deleteOnExpire: true,
+});
+
 // ============================================
 // CACHE UTILITIES
 // ============================================

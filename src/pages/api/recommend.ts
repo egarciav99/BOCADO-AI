@@ -4,7 +4,7 @@ import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import * as crypto from 'crypto';
 import { COUNTRY_TO_CURRENCY, CURRENCY_CONFIG } from '@/data/budgets';
-import { profileCache, pantryCache, historyCache } from '../../lib/api/utils/cache';
+import { profileCache, pantryCache, historyCache, ingredientsCache, getCachedWithFallback } from '../../lib/api/utils/cache';
 // 📝 FatSecret integración (opcional - requiere API key premium free)
 // Para habilitar: descomenta y configura FATSECRET_KEY & FATSECRET_SECRET
 import { getFatSecretIngredientsWithCache } from '../../lib/api/utils/fatsecret-logic';
@@ -618,6 +618,24 @@ const ensureArray = (input: any): string[] => {
   return [];
 };
 
+/**
+ * 🛠️ Limpia objetos para Firestore, convirtiendo undefined a null
+ * Firestore NO acepta undefined y lanza error 500 si no se limpia.
+ */
+function cleanForFirestore(obj: any): any {
+  if (obj === null || obj === undefined) return null;
+  if (Array.isArray(obj)) return obj.map(v => cleanForFirestore(v));
+  if (typeof obj === 'object' && !(obj instanceof Date)) {
+    const cleaned: any = {};
+    Object.keys(obj).forEach(key => {
+      const val = cleanForFirestore(obj[key]);
+      if (val !== undefined) cleaned[key] = val;
+    });
+    return cleaned;
+  }
+  return obj;
+}
+
 const formatList = (data: any): string => {
   if (!data || (Array.isArray(data) && data.length === 0)) return "Ninguna";
   if (Array.isArray(data)) return data.join(", ");
@@ -719,69 +737,53 @@ interface FirestoreIngredient {
 
 /**
  * 🔍 Obtiene todos los ingredientes disponibles de Firestore
- * 
- * Fuentes (en orden de preferencia):
- * 1. google_ingredients collection (base de datos local)
- * 2. FatSecret (si está habilitado y tienen credenciales premium)
- * 
- * @returns Array de ingredientes disponibles
+ * Usa cache global para evitar 1000 reads en cada request
  */
 async function getAllIngredientes(): Promise<FirestoreIngredient[]> {
-  try {
-    // Layer 1: Intentar base de datos local (más rápido)
-    const localSnap = await db
-      .collection("ingredients")
-      .limit(1000) // Máximo ingredientes a cargar
-      .get();
-
-    if (!localSnap.empty) {
-      safeLog("log", `[Ingredients] Loaded ${localSnap.size} from local DB`);
-      return localSnap.docs.map((doc: any) => ({
-        id: doc.id,
-        ...doc.data(),
-      } as FirestoreIngredient));
-    }
-
-    // Layer 2: FatSecret (si está habilitado - requiere FATSECRET_KEY & FATSECRET_SECRET)
-    if (process.env.FATSECRET_KEY && process.env.FATSECRET_SECRET) {
+  return getCachedWithFallback(
+    ingredientsCache,
+    "global_ingredients_list",
+    async () => {
       try {
-        safeLog("log", "[Ingredients] Local DB empty, trying FatSecret...");
-        const fatsecretResults = await searchFatSecretIngredients("*", 500); // Buscar alimentos comunes
+        // Layer 1: Intentar base de datos local
+        const localSnap = await db
+          .collection("ingredients")
+          .limit(1000)
+          .get();
 
-        if (fatsecretResults && Array.isArray(fatsecretResults) && fatsecretResults.length > 0) {
-          const items: FirestoreIngredient[] = fatsecretResults.map((fs: any) => ({
-            id: `fs_${fs.food_id}`,
-            name: fs.food_name,
-            category: fs.food_type || "Generic",
-            regional: {
-              es: fs.food_name,
-              mx: fs.food_name
-            },
-          }));
-
-          safeLog("log", `[Ingredients] Loaded ${items.length} from FatSecret`);
-          return items;
+        if (!localSnap.empty) {
+          safeLog("log", `[Ingredients] Fetched ${localSnap.size} from Firestore`);
+          return localSnap.docs.map((doc: any) => ({
+            id: doc.id,
+            ...doc.data(),
+          } as FirestoreIngredient));
         }
-      } catch (fatsecretError) {
-        safeLog("warn", "[Ingredients] FatSecret error, using fallback", fatsecretError);
-      }
-    } else {
-      safeLog("log", "[Ingredients] FatSecret not configured (FATSECRET_KEY/SECRET missing)");
-    }
 
-    // Fallback: ingredientes básicos
-    safeLog("warn", "[Ingredients] No ingredients found, using basic fallback");
-    return [
-      { id: "1", name: "Pollo pechuga", category: "proteína", regional: { es: "Pollo pechuga", mx: "Pechuga de pollo" } },
-      { id: "2", name: "Arroz integral", category: "grano", regional: { es: "Arroz integral", mx: "Arroz integral" } },
-      { id: "3", name: "Brócoli", category: "verdura", regional: { es: "Brócoli", mx: "Brócoli" } },
-      { id: "4", name: "Huevo", category: "proteína", regional: { es: "Huevo", mx: "Huevo" } },
-      { id: "5", name: "Tomate", category: "verdura", regional: { es: "Tomate", mx: "Tomate" } },
-    ];
-  } catch (error) {
-    safeLog("error", "[Ingredients] Fatal error loading", error);
-    return [];
-  }
+        // Layer 2: FatSecret fallback
+        if (process.env.FATSECRET_KEY && process.env.FATSECRET_SECRET) {
+          const fatsecretResults = await searchFatSecretIngredients("*", 500);
+          if (fatsecretResults?.length > 0) {
+            return fatsecretResults.map((fs: any) => ({
+              id: `fs_${fs.food_id}`,
+              name: fs.food_name,
+              category: fs.food_type || "Generic",
+              regional: { es: fs.food_name, mx: fs.food_name },
+            }));
+          }
+        }
+
+        return [
+          { id: "1", name: "Pollo pechuga", category: "proteína", regional: { es: "Pollo pechuga", mx: "Pechuga de pollo" } },
+          { id: "2", name: "Arroz integral", category: "grano", regional: { es: "Arroz integral", mx: "Arroz integral" } },
+          { id: "3", name: "Brócoli", category: "verdura", regional: { es: "Brócoli", mx: "Brócoli" } },
+        ];
+      } catch (error) {
+        safeLog("error", "[Ingredients] Error loading", error);
+        return [];
+      }
+    },
+    5000 // Timeout 5s para Firestore
+  );
 }
 
 /**
@@ -2070,20 +2072,20 @@ En hack_saludable${medicalRestrictionsOut.length > 0 ? " personaliza para sus co
     const batch = db.batch();
 
     const historyRef = db.collection(historyCol).doc();
-    batch.set(historyRef, {
+    batch.set(historyRef, cleanForFirestore({
       user_id: userId,
       interaction_id: interactionId,
       fecha_creacion: FieldValue.serverTimestamp(),
       tipo: type,
       ...parsedData,
-    });
+    }));
 
-    batch.update(interactionRef, {
+    batch.update(interactionRef, cleanForFirestore({
       procesado: true,
       status: "completed",
       completedAt: FieldValue.serverTimestamp(),
       historyDocId: historyRef.id,
-    });
+    }));
 
     await batch.commit();
 
