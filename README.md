@@ -75,24 +75,24 @@ App local: `http://localhost:3000`
 
 ## 🔐 Variables de entorno
 
-### Frontend (`.env.local`)
+### Frontend (`.env.local` o Vercel Environment Variables)
 
 ```bash
-VITE_FIREBASE_API_KEY=
-VITE_FIREBASE_AUTH_DOMAIN=
-VITE_FIREBASE_PROJECT_ID=
-VITE_FIREBASE_STORAGE_BUCKET=
-VITE_FIREBASE_MESSAGING_SENDER_ID=
-VITE_FIREBASE_APP_ID=
-VITE_FIREBASE_VAPID_KEY=
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_VAPID_KEY=
 
 # Opcionales
-VITE_SENTRY_DSN=
-VITE_APP_VERSION=local
-VITE_REGISTER_USER_URL=
+NEXT_PUBLIC_SENTRY_DSN=
+NEXT_PUBLIC_APP_VERSION=local
+NEXT_PUBLIC_REGISTER_USER_URL=
 ```
 
-### Backend Vercel (Project Settings > Environment Variables)
+### Backend (Vercel Project Settings > Environment Variables)
 
 ```bash
 FIREBASE_SERVICE_ACCOUNT_KEY=
@@ -104,6 +104,7 @@ Notas:
 
 - `FIREBASE_SERVICE_ACCOUNT_KEY` debe contener el JSON completo de service account.
 - No expongas `GOOGLE_MAPS_API_KEY` en frontend. Usa siempre `/api/maps-proxy`.
+- En Vercel, todas las variables `NEXT_PUBLIC_*` se hacen públicas en el cliente. Las demás solo están disponibles en Cloud Functions y API routes.
 
 ## 📜 Scripts disponibles
 

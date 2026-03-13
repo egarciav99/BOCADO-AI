@@ -13,6 +13,7 @@ import { I18nProvider, useTranslation } from "./contexts/I18nContext";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastContainer } from "./components/ui/Toast";
 import { FeedbackModalProvider } from "./components/FeedbackModal";
+import { logEnvironmentStatus } from "./utils/envValidator";
 
 // 🚀 LAZY LOADING: Reduce bundle inicial ~50KB
 const HomeScreen = lazy(() => import("./components/HomeScreen"));
@@ -63,6 +64,11 @@ function AppContent() {
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { t } = useTranslation();
+
+  // Validar variables de entorno al inicializar
+  React.useEffect(() => {
+    logEnvironmentStatus();
+  }, []);
 
   // Timeout de seguridad: si Firebase no responde en 5s, forzar continuar
   React.useEffect(() => {
