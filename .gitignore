@@ -8,6 +8,10 @@ dist-ssr/
 dev-dist/
 *.local
 
+# Next.js Build Output (Never commit - Vercel rebuilds)
+.next/
+out/
+
 # Secretos y Variables de Entorno (CRÍTICO: No subir)
 .env
 .env.local

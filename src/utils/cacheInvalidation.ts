@@ -5,6 +5,7 @@
  * cuando los datos del usuario cambien.
  */
 
+import React from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '../stores/authStore';
 
@@ -81,34 +82,4 @@ export const useCacheInvalidation = () => {
   };
 };
 
-/**
- * Hook que se ejecuta automáticamente cuando el usuario cambia
- * (ej: login, logout, cambio de usuario)
- */
-export const useAutoInvalidateOnUserChange = () => {
-  const uid = useAuthStore((state) => state.user?.uid);
-  const { invalidateAll } = useCacheInvalidation();
 
-  // Invalidar datos cuando el UID cambia
-  React.useEffect(() => {
-    if (uid) {
-      invalidateAll(uid);
-    }
-  }, [uid, invalidateAll]);
-};
-
-// Para usar en servicios no-React (como en API calls)
-export const createCacheInvalidator = (queryClient: any) => ({
-  invalidateUserProfile: (userId: string) => {
-    queryClient.invalidateQueries({
-      queryKey: ['userProfile', userId],
-    });
-  },
-  invalidatePantry: (userId: string) => {
-    queryClient.invalidateQueries({
-      queryKey: ['pantry', userId],
-    });
-  },
-});
-
-import React from 'react';

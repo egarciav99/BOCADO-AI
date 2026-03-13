@@ -1,9 +1,11 @@
 /**
  * Sentry Error Boundary
  * Captura errores de React y los envía a Sentry
+ * 
+ * Nota: Usando @sentry/nextjs que incluye soporte completo para React
  */
 
-import * as Sentry from "@sentry/react";
+import * as Sentry from "@sentry/nextjs";
 import { Component, ReactNode } from "react";
 import { useTranslation } from "../contexts/I18nContext";
 

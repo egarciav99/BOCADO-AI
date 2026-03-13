@@ -28,12 +28,12 @@ const isDev = typeof process !== "undefined" && process.env.NODE_ENV === "develo
 
 // Debug log para detectar si las variables de entorno se están cargando correctamente
 if (isDev) {
-  const key = env.firebase.apiKey;
   const projectId = env.firebase.projectId;
-  if (!key) {
+  if (!env.firebase.apiKey) {
     console.error("❌ [Firebase] CRÍTICO: No se encontró NEXT_PUBLIC_FIREBASE_API_KEY");
   } else {
-    console.log(`✅ [Firebase] Config: API Key (${key.substring(0, 5)}...), ProjectID (${projectId || "MISSING"})`);
+    // Verificar que Firebase pueda inicializarse sin loguear credenciales
+    console.log(`✅ [Firebase] Inicializado - ProjectID: ${projectId || "MISSING"}`);
   }
 }
 
