@@ -10,6 +10,8 @@ import BocadoLogo from "./BocadoLogo";
 import { db, serverTimestamp, trackEvent } from "../firebaseConfig";
 import { collection, addDoc } from "firebase/firestore";
 import { CurrencyService } from "../data/budgets";
+import { UserInteractionSchema, validateOrThrow } from "../schemas/validation";
+import { ErrorHandler } from "../utils/ErrorHandler";
 import {
   useUserProfile,
   useGeolocation,
@@ -162,12 +164,17 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
   const currencyConfig = CurrencyService.fromCountryCode(countryCode);
   const budgetOptions = CurrencyService.getBudgetOptions(countryCode);
 
-  // Limpiar abort controller al desmontar
+  // Limpiar abort controller y timers al desmontar
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
+        try {
+          abortControllerRef.current.abort();
+        } catch (e) {
+          // Ignore errors during cleanup
+        }
       }
+      isProcessingRef.current = false;
     };
   }, []);
 
@@ -245,7 +252,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
 
     const interactionData = {
       userId: user.uid,
-      type: recommendationType,
       mealType:
         recommendationType === "En casa"
           ? stripEmoji(selectedMeal)
@@ -260,6 +266,17 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
       createdAt: serverTimestamp(),
       procesado: false,
     };
+
+    // Validar datos antes de escribir a Firestore
+    try {
+      validateOrThrow(UserInteractionSchema, interactionData, 'User Interaction');
+    } catch (validationError) {
+      const error = ErrorHandler.normalizeError(validationError, 'VALIDATION_ERROR');
+      logger.error("Validation error:", error);
+      setError(error.message);
+      resetProcessingState();
+      return;
+    }
 
     trackEvent("recommendation_generation_start", {
       type: recommendationType,
@@ -277,12 +294,36 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
       const token = await user.getIdToken();
 
       // Preparar datos con ubicación si está disponible (solo para "Fuera")
-      const requestBody: any = {
-        ...interactionData,
-        _id: newDoc.id,
-        language: locale, // Agregar idioma actual
+      interface RequestBody {
+        userId: string;
+        mealType: string;
+        cookingTime: number | null;
+        cravings: string[];
+        budget: string;
+        currency: string;
+        dislikedFoods: string[];
+        onlyPantryIngredients: boolean;
+        _id: string;
+        language: string;
+        userLocation?: {
+          lat: number;
+          lng: number;
+          accuracy: number;
+        };
+      }
+
+      const requestBody: RequestBody = {
+        userId: user.uid,
+        mealType: interactionData.mealType,
+        cookingTime: interactionData.cookingTime,
+        cravings: interactionData.cravings,
+        budget: interactionData.budget,
+        currency: interactionData.currency,
+        dislikedFoods: interactionData.dislikedFoods,
         onlyPantryIngredients:
           recommendationType === "En casa" && onlyPantryIngredients,
+        _id: newDoc.id,
+        language: locale,
       };
 
       if (recommendationType === "Fuera" && userPosition) {
@@ -299,81 +340,93 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
       // Timeout de 30s para evitar esperas indefinidas
       const timeoutId = setTimeout(() => {
         controller.abort();
-        setError("La solicitud tardó demasiado. Por favor intenta de nuevo.");
-        resetProcessingState();
+        isProcessingRef.current = false;
+        setIsGenerating(false);
+        setError(t("recommendation.connectionError"));
+        trackEvent("recommendation_timeout", { type: recommendationType });
       }, 30000); // 30 segundos
 
-      const response = await fetch(env.api.recommendationUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(requestBody),
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      // ✅ CORREGIDO: Manejar 429 sin quedar bloqueado
-      if (response.status === 429) {
-        // 🟠 FIX #5: Try-catch para response.json() con defaults robustos
-        let errorData: any = {};
-        try {
-          errorData = await response.json();
-        } catch (jsonError) {
-          logger.warn(
-            "[RecommendationScreen] Failed to parse 429 error JSON:",
-            jsonError,
-          );
-          errorData = {
-            error: "Demasiadas solicitudes. Por favor espera.",
-            retryAfter: 60,
-          };
-        }
-
-        trackEvent("recommendation_rate_limited", {
-          retryAfter: errorData.retryAfter || 30,
-          type: recommendationType,
+      try {
+        const response = await fetch(env.api.recommendationUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal,
         });
 
-        // Mostrar mensaje y refreschar status del rate limit
-        const fallbackSeconds =
-          typeof errorData.retryAfter === "number" ? errorData.retryAfter : 30;
-        const fallbackMessage = `Espera ${fallbackSeconds}s antes de generar otra recomendación.`;
-        setError(errorData.error || fallbackMessage);
-        refreshStatus();
-        resetProcessingState();
-        return;
-      }
+        clearTimeout(timeoutId);
 
-      if (!response.ok) {
-        // 🟠 FIX #9: Limitar tamaño de response.text() para evitar OOM en móviles
-        const errorText = await response.text();
-        const truncatedError = errorText.substring(0, 10000); // Max 10KB
-        throw new Error(`Error ${response.status}: ${truncatedError}`);
-      }
+        // ✅ CORREGIDO: Manejar 429 sin quedar bloqueado
+        if (response.status === 429) {
+          // 🟠 FIX #5: Try-catch para response.json() con defaults robustos
+          let errorData: any = {};
+          try {
+            errorData = await response.json();
+          } catch (jsonError) {
+            logger.warn(
+              "[RecommendationScreen] Failed to parse 429 error JSON:",
+              jsonError,
+            );
+            errorData = {
+              error: "Demasiadas solicitudes. Por favor espera.",
+              retryAfter: 60,
+            };
+          }
 
-      // Éxito
-      trackEvent("recommendation_api_success", { type: recommendationType });
-      refreshStatus(); // 🔄 Actualizar rate limit después de éxito
-      resetProcessingState(); // ✅ Limpieza antes de navegar
-      onPlanGenerated(newDoc.id);
+          trackEvent("recommendation_rate_limited", {
+            retryAfter: errorData.retryAfter || 30,
+            type: recommendationType,
+          });
+
+          // Mostrar mensaje y refreschar status del rate limit
+          const fallbackSeconds =
+            typeof errorData.retryAfter === "number" ? errorData.retryAfter : 30;
+          const fallbackMessage = `Espera ${fallbackSeconds}s antes de generar otra recomendación.`;
+          setError(errorData.error || fallbackMessage);
+          refreshStatus();
+          resetProcessingState();
+          return;
+        }
+
+        if (!response.ok) {
+          // 🟠 FIX #9: Limitar tamaño de response.text() para evitar OOM en móviles
+          const errorText = await response.text();
+          const truncatedError = errorText.substring(0, 10000); // Max 10KB
+          throw new Error(`Error ${response.status}: ${truncatedError}`);
+        }
+
+        // Éxito
+        trackEvent("recommendation_api_success", { type: recommendationType });
+        refreshStatus(); // 🔄 Actualizar rate limit después de éxito
+        resetProcessingState(); // ✅ Limpieza antes de navegar
+        onPlanGenerated(newDoc.id);
+      } catch (fetchError) {
+        clearTimeout(timeoutId);
+        throw fetchError;
+      }
     } catch (error: any) {
-      if (error.name === "AbortError") {
+      const standardError = ErrorHandler.normalizeError(error, 'FETCH_FAILED', {
+        type: recommendationType,
+      });
+
+      if (standardError.code === 'ABORT') {
         resetProcessingState();
         return;
       }
 
-      logger.error("Error generating recommendation:", error);
+      logger.error("Error generating recommendation:", standardError);
 
       trackEvent("recommendation_generation_error", {
-        error: error.message,
+        error: standardError.code,
+        message: standardError.message,
         type: recommendationType,
       });
 
       // ✅ NUEVO: Mostrar error en UI en lugar de alert()
-      setError(error.message || t("recommendation.connectionError"));
+      setError(standardError.message || t("recommendation.connectionError"));
       resetProcessingState();
     }
   };

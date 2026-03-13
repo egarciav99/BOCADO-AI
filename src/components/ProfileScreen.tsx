@@ -15,6 +15,7 @@ import Step3 from "./form-steps/Step3";
 import NotificationSettings from "./NotificationSettings";
 import NotificationTokensAdmin from "./NotificationTokensAdmin";
 import { db, auth, trackEvent } from "../firebaseConfig";
+import { useDebouncedValue } from "../hooks/useDebounce";
 import {
   doc,
   setDoc,
@@ -229,25 +230,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     setInitialFormData(data);
   }, [user, profile, viewMode]);
 
-  // Debounce hook para búsqueda de ciudades
-  const useDebounce = (value: string, delay: number = 500) => {
-    const [debouncedValue, setDebouncedValue] = useState(value);
-
-    useEffect(() => {
-      const handler = setTimeout(() => {
-        setDebouncedValue(value);
-      }, delay);
-
-      return () => {
-        clearTimeout(handler);
-      };
-    }, [value, delay]);
-
-    return debouncedValue;
-  };
-
+  // Debounce hook para búsqueda de ciudades - usar hook reutilizable
   const [cityQuery, setCityQuery] = useState("");
-  const debouncedCityQuery = useDebounce(cityQuery, 500);
+  const debouncedCityQuery = useDebouncedValue(cityQuery, { delay: 500 });
 
   useEffect(() => {
     if (debouncedCityQuery.trim().length >= 3) {

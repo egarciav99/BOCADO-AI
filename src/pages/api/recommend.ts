@@ -1148,16 +1148,25 @@ const ALLOWED_ORIGINS = [
 ];
 
 const isOriginAllowed = (origin: string | undefined): boolean => {
-  // Permitir peticiones sin origin (same-origin requests, mobile apps, etc.)
-  if (!origin) return true;
-  // Permitir localhost en desarrollo
-  if (
-    origin.startsWith("http://localhost:") ||
-    origin.startsWith("http://127.0.0.1:")
-  ) {
-    return true;
+  // En producción, NO permitir peticiones sin origin header
+  // (Solo same-origin requests pueden venir sin origin)
+  // Sin embargo, algunos clientes legítimos (curl, mobile apps) pueden omitirlo
+  // Solución: Permitir sin origin, pero requerir válido token JWT
+  
+  // Si viene con origin, validar que sea conocido
+  if (origin) {
+    // Permitir localhost en desarrollo
+    if (
+      origin.startsWith("http://localhost:") ||
+      origin.startsWith("http://127.0.0.1:")
+    ) {
+      return true;
+    }
+    return ALLOWED_ORIGINS.includes(origin);
   }
-  return ALLOWED_ORIGINS.includes(origin);
+
+  // Sin origin: permitir, pero JWT debe ser válido (validado después)
+  return true;
 };
 
 // ============================================

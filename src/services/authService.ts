@@ -13,6 +13,8 @@ import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { FormData, UserProfile } from "../types";
 import { separateUserData } from "../utils/profileSanitizer";
 import { cleanForFirestore } from "../utils/cleanForFirestore";
+import { UserProfileSchema, validateOrThrow } from "../schemas/validation";
+import { ErrorHandler } from "../utils/ErrorHandler";
 
 export const registerUser = async (
   formData: FormData,
@@ -42,15 +44,17 @@ export const registerUser = async (
       updatedAt: serverTimestamp() as UserProfile["updatedAt"],
     };
 
+    // Validar antes de escribir
+    validateOrThrow(UserProfileSchema, userProfile, 'User Profile Validation');
+
     await setDoc(doc(db, "users", uid), cleanForFirestore(userProfile));
 
     return { uid };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Error desconocido durante el registro";
-    console.error("[AuthService] Registration failed:", error);
+    const standardError = ErrorHandler.normalizeError(error, 'AUTH_FAILED', { context: 'registration' });
+    console.error("[AuthService] Registration failed:", standardError);
     throw new Error(
-      `No se pudo crear la cuenta. ${errorMessage}. Intenta de nuevo.`,
+      `No se pudo crear la cuenta. ${standardError.message}. Intenta de nuevo.`,
     );
   }
 };
@@ -94,9 +98,12 @@ export const signInWithGoogle = async (): Promise<{
       };
 
       try {
+        // Validar antes de escribir
+        validateOrThrow(UserProfileSchema, basicProfile, 'Basic Profile Creation');
         await setDoc(doc(db, "users", user.uid), cleanForFirestore(basicProfile));
       } catch (profileError) {
-        console.error("[AuthService] Failed to create basic profile:", profileError);
+        const profileErr = ErrorHandler.normalizeError(profileError, 'FIRESTORE_WRITE_FAILED', { step: 'basic_profile' });
+        console.error("[AuthService] Failed to create basic profile:", profileErr);
         // No bloquear el login si falla crear el perfil básico
       }
     }
@@ -107,10 +114,9 @@ export const signInWithGoogle = async (): Promise<{
       email: user.email,
     };
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Error desconocido en Google Sign In";
-    console.error("[AuthService] Google Sign In failed:", error);
-    throw new Error(`No se pudo iniciar sesión con Google. ${errorMessage}. Intenta de nuevo.`);
+    const standardError = ErrorHandler.normalizeError(error, 'AUTH_FAILED', { context: 'google_signin' });
+    console.error("[AuthService] Google Sign In failed:", standardError);
+    throw new Error(`No se pudo iniciar sesión con Google. ${standardError.message}. Intenta de nuevo.`);
   }
 };
 
@@ -140,10 +146,9 @@ export const reauthenticateWithGoogle = async (user: User): Promise<void> => {
 
     await reauthenticateWithPopup(user, provider);
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Error desconocido en autenticación";
-    console.error("[AuthService] Reauthentication failed:", error);
-    throw new Error(`No se pudo reautenticar. ${errorMessage}. Intenta de nuevo.`);
+    const standardError = ErrorHandler.normalizeError(error, 'AUTH_FAILED', { context: 'reauthentication' });
+    console.error("[AuthService] Reauthentication failed:", standardError);
+    throw new Error(`No se pudo reautenticar. ${standardError.message}. Intenta de nuevo.`);
   }
 };
 
@@ -159,10 +164,9 @@ export const linkGoogleAccount = async (user: User): Promise<void> => {
 
     await linkWithPopup(user, provider);
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Error desconocido en vinculación";
-    console.error("[AuthService] Google account linking failed:", error);
-    throw new Error(`No se pudo vincular la cuenta de Google. ${errorMessage}. Intenta de nuevo.`);
+    const standardError = ErrorHandler.normalizeError(error, 'AUTH_FAILED', { context: 'google_linking' });
+    console.error("[AuthService] Google account linking failed:", standardError);
+    throw new Error(`No se pudo vincular la cuenta de Google. ${standardError.message}. Intenta de nuevo.`);
   }
 };
 
@@ -173,9 +177,8 @@ export const unlinkGoogleAccount = async (user: User): Promise<void> => {
   try {
     await unlink(user, "google.com");
   } catch (error) {
-    const errorMessage =
-      error instanceof Error ? error.message : "Error desconocido en desvinculación";
-    console.error("[AuthService] Google account unlinking failed:", error);
-    throw new Error(`No se pudo desvincular Google. ${errorMessage}. Intenta de nuevo.`);
+    const standardError = ErrorHandler.normalizeError(error, 'AUTH_FAILED', { context: 'google_unlinking' });
+    console.error("[AuthService] Google account unlinking failed:", standardError);
+    throw new Error(`No se pudo desvincular Google. ${standardError.message}. Intenta de nuevo.`);
   }
 };

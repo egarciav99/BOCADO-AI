@@ -21,6 +21,11 @@ export { useRateLimit } from "./useRateLimit";
 export { useAnalyticsProperties } from "./useAnalyticsProperties";
 export { useNotifications, type NotificationSchedule } from "./useNotifications";
 export { useNetworkStatus, useIsOnline } from "./useNetworkStatus";
+export {
+  useDebouncedValue,
+  useDebouncedCallback,
+  useDebouncedState,
+} from "./useDebounce";
 
 // Nuevos hooks para escalabilidad
 export {

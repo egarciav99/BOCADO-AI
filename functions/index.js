@@ -22,7 +22,7 @@ const messaging = admin.messaging();
 /**
  * Cleanup old user_interactions documents
  * Runs every day at 3:00 AM
- * Deletes documents older than 30 days
+ * Deletes documents older than 30 days (pagination-safe)
  */
 exports.cleanupOldInteractions = functions.pubsub
   .schedule("0 3 * * *") // Every day at 3:00 AM
@@ -32,31 +32,53 @@ exports.cleanupOldInteractions = functions.pubsub
       new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days ago
     );
 
-    const batch = db.batch();
-    let deletedCount = 0;
+    let totalDeleted = 0;
+    let batchCount = 0;
+    const MAX_BATCHES = 20; // Límite para evitar timeout (timeout=540s)
 
     try {
-      // Query for old documents
-      const snapshot = await db
-        .collection("user_interactions")
-        .where("createdAt", "<", cutoffDate)
-        .limit(500) // Process in batches
-        .get();
+      while (batchCount < MAX_BATCHES) {
+        const batch = db.batch();
+        let batchSize = 0;
 
-      if (snapshot.empty) {
-        console.log("No old interactions to clean up");
-        return null;
+        // Query para documentos viejos (de forma incremental)
+        const snapshot = await db
+          .collection("user_interactions")
+          .where("createdAt", "<", cutoffDate)
+          .limit(500) // Firestore batch limit
+          .get();
+
+        if (snapshot.empty) {
+          console.log(
+            `✅ Cleanup complete: Deleted ${totalDeleted} old interactions in ${batchCount} batches`,
+          );
+          return { deleted: totalDeleted, batches: batchCount };
+        }
+
+        // Agregar a batch
+        snapshot.docs.forEach((doc) => {
+          batch.delete(doc.ref);
+          batchSize++;
+        });
+
+        // Ejecutar batch
+        if (batchSize > 0) {
+          await batch.commit();
+          totalDeleted += batchSize;
+          batchCount++;
+          console.log(
+            `Deleted ${batchSize} interactions (batch ${batchCount}, total: ${totalDeleted})`,
+          );
+        }
+
+        // Pequeña pausa entre batches para no sobrecargar
+        await new Promise((resolve) => setTimeout(resolve, 100));
       }
 
-      snapshot.docs.forEach((doc) => {
-        batch.delete(doc.ref);
-        deletedCount++;
-      });
-
-      await batch.commit();
-      console.log(`Deleted ${deletedCount} old interactions`);
-
-      return { deleted: deletedCount };
+      console.warn(
+        `⚠️ Cleanup reached batch limit (${MAX_BATCHES}). May need to run again. Total deleted: ${totalDeleted}`,
+      );
+      return { deleted: totalDeleted, batches: batchCount, limitReached: true };
     } catch (error) {
       console.error("Error cleaning up interactions:", error);
       throw error;
