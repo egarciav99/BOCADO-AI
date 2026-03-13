@@ -33,6 +33,7 @@ const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: process.cwd(),
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
