@@ -302,8 +302,10 @@ import { z } from "zod";
 // ✅ FIX: Schema más estricto para validar datos
 const RequestBodySchema = z.object({
   userId: z.string().min(1).max(128),
-  type: z.enum(["En casa", "Fuera"]),
+  type: z.enum(["En casa", "Fuera", "Receta Rápida"]),
   mealType: z.string().max(50).optional().nullable(),
+  // ✅ NUEVO: Ingredientes para Receta Rápida
+  ingredientes: z.array(z.string().max(100)).max(20).optional().default([]),
   // ✅ Validación estricta: solo números o strings numéricos
   cookingTime: z
     .union([
@@ -1485,6 +1487,42 @@ export default async function handler(req: any, res: any) {
         language: request.language,
         difficultyHint,
         pantryRule
+      });
+    } else if (type === "Receta Rápida") {
+      // ✅ NUEVO: Lógica para Receta Rápida
+      // 1. Obtener e ingredientes
+      const allIngredients = await dataService.getAllIngredients();
+      
+      // 2. Normalizar ingredientes del usuario contra BD
+      const normalizedIngredientes = (request.ingredientes || [])
+        .map((ing) => normalizeText(ing.toLowerCase()))
+        .filter(Boolean);
+
+      if (normalizedIngredientes.length < 2) {
+        throw new Error("Se requieren al menos 2 ingredientes para generar una receta rápida.");
+      }
+
+      // 3. Preparar contexto de restricciones
+      const diseases = ensureArray(user.diseases);
+      const allergies = ensureArray(user.allergies);
+      const otherAllergiesText = user.otherAllergies || "";
+      const medicalContext = [...diseases, ...allergies, otherAllergiesText].filter(Boolean).join(", ");
+
+      const dislikedFoodsContext = [
+        ...ensureArray(user.dislikedFoods),
+        ...ensureArray(request.dislikedFoods),
+      ].filter(Boolean).join(", ");
+
+      // 4. Construir Prompt para Receta Rápida
+      finalPrompt = PromptBuilder.buildQuickRecipePrompt({
+        type: "Receta Rápida",
+        ingredientes: request.ingredientes,
+        dietaryGoal: Array.isArray(user.nutritionalGoal) ? user.nutritionalGoal.join(", ") : (user.nutritionalGoal || "comer saludable"),
+        medicalContext: PromptBuilder.escapeUserInput(medicalContext),
+        dislikedFoodsContext: PromptBuilder.escapeUserInput(dislikedFoodsContext),
+        city: user.city,
+        cookingTime: request.cookingTime as number,
+        language: request.language,
       });
     } else {
       // 🔴 FIX #11: Mover searchCoords ANTES de usarlo en validación

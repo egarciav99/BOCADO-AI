@@ -1140,5 +1140,37 @@
     "spicy": "Picante (Chile/Ají)",
     "mayonnaise": "Mayonesa",
     "mustard": "Mostaza"
+  },
+  "quickRecipe": {
+    "buttonTooltip": "Receta Rápida",
+    "title": "⚡ Receta Rápida",
+    "description": "Agrega ingredientes que tengas y genera una receta en segundos.",
+    "ingredientsLabel": "Ingredientes",
+    "ingredientPlaceholder": "Escribe: pan, huevo, leche...",
+    "pressEnterHint": "Presiona Enter o selecciona de la lista",
+    "ingredientsCount": "ingredientes",
+    "customizeTime": "Personalizar tiempo de cocción",
+    "cancelButton": "Cancelar",
+    "generateButton": "Generar Receta",
+    "generatingButton": "Generando...",
+    "minIngredientsError": "Se requieren al menos 2 ingredientes",
+    "maxIngredientsReached": "Máximo 15 ingredientes permitidos",
+    "ingredientDuplicate": "Ingrediente ya agregado",
+    "userNotFound": "Usuario no encontrado",
+    "connectionError": "Error de conexión, intenta de nuevo",
+    "rateLimited": "Demasiadas solicitudes, intenta más tarde",
+    "generationError": "Error al generar la receta",
+    "unknownError": "Error desconocido, intenta de nuevo",
+    "success": "¡Receta generada exitosamente!",
+    "tutorial": {
+      "title": "¡Receta Rápida!",
+      "description": "Genera una receta en segundos con los ingredientes que tengas a mano.",
+      "step1": "Toca el botón ⚡ en la esquina inferior derecha",
+      "step2": "Escribe o selecciona los ingredientes (mín. 2)",
+      "step3": "¡Listo! Recibirás una receta personalizada al instante",
+      "benefit": "Sin llenar despensa, sin esperar: recetas en segundos",
+      "gotItButton": "¡Entendido!",
+      "dontShowButton": "No mostrar"
+    }
   }
 }

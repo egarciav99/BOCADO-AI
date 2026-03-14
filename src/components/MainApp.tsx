@@ -6,6 +6,7 @@ import ProfileScreen from "./ProfileScreen";
 import SavedRecipesScreen from "./SavedRecipesScreen";
 import SavedRestaurantsScreen from "./SavedRestaurantsScreen";
 import TutorialModal from "./TutorialModal";
+import QuickRecipeButton from "./QuickRecipeButton";
 import ErrorBoundary from "./ErrorBoundary";
 import { auth, trackEvent } from "../firebaseConfig";
 import { updateProfile } from "firebase/auth";
@@ -128,7 +129,8 @@ const MainApp: React.FC<MainAppProps> = ({
       )}
 
       {/* Contenido - ocupa todo el espacio restante */}
-      <main className="flex-1 overflow-y-auto min-h-0 pb-20 flex flex-col no-scrollbar">
+      {/* pb-28 (112px) = reservar espacio para FAB (56px) + BottomTabBar (~70px) + padd safe (~20px) */}
+      <main className="flex-1 overflow-y-auto min-h-0 pb-28 flex flex-col no-scrollbar">
         <div className="min-h-full w-full max-w-md md:max-w-4xl lg:max-w-5xl mx-auto flex flex-col px-4 md:px-8">
           <ErrorBoundary>
             {activeTab === "recommendation" && (
@@ -169,6 +171,15 @@ const MainApp: React.FC<MainAppProps> = ({
 
       {/* BottomTabBar - siempre visible abajo */}
       <BottomTabBar activeTab={activeTab} onTabChange={setActiveTab} />
+
+      {/* QuickRecipeButton (FAB) - accesible desde cualquier pantalla */}
+      {/* Posicionado en bottom-32 (128px) en mobile, bottom-24 (96px) en desktop para mejor acceso */}
+      {/* Tutorial will not show when on Profile screen (isProfileScreen={true}) */}
+      <QuickRecipeButton
+        userName={userName}
+        onPlanGenerated={onPlanGenerated}
+        isProfileScreen={activeTab === "profile"}
+      />
     </div>
   );
 };

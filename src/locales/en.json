@@ -1008,5 +1008,37 @@
     "spicy": "Spicy (Chili)",
     "mayonnaise": "Mayonnaise",
     "mustard": "Mustard"
+  },
+  "quickRecipe": {
+    "buttonTooltip": "Quick Recipe",
+    "title": "⚡ Quick Recipe",
+    "description": "Add ingredients you have and generate a recipe in seconds.",
+    "ingredientsLabel": "Ingredients",
+    "ingredientPlaceholder": "Type: bread, egg, milk...",
+    "pressEnterHint": "Press Enter or select from the list",
+    "ingredientsCount": "ingredients",
+    "customizeTime": "Customize cooking time",
+    "cancelButton": "Cancel",
+    "generateButton": "Generate Recipe",
+    "generatingButton": "Generating...",
+    "minIngredientsError": "At least 2 ingredients are required",
+    "maxIngredientsReached": "Maximum 15 ingredients allowed",
+    "ingredientDuplicate": "Ingredient already added",
+    "userNotFound": "User not found",
+    "connectionError": "Connection error, please try again",
+    "rateLimited": "Too many requests, please try later",
+    "generationError": "Error generating recipe",
+    "unknownError": "Unknown error, please try again",
+    "success": "Recipe generated successfully!",
+    "tutorial": {
+      "title": "Quick Recipe!",
+      "description": "Generate a recipe in seconds with the ingredients you have on hand.",
+      "step1": "Tap the ⚡ button in the bottom-right corner",
+      "step2": "Type or select ingredients (min. 2)",
+      "step3": "Done! You'll get a personalized recipe instantly",
+      "benefit": "No pantry filling, no waiting: recipes in seconds",
+      "gotItButton": "Got it!",
+      "dontShowButton": "Don't show"
+    }
   }
 }
