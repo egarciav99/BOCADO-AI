@@ -7,7 +7,7 @@ const withPWA = withPWAInit({
   skipWaiting: true,
 
   // buildExcludes: file-scanner level exclusions
-  buildExcludes: [/\.hot-update\.js$/, /server\/.*\.js$/],
+  buildExcludes: [/\.hot-update\.js$/, /server\/.*\.js$/, /manifest\.json$/],
 
   // workbox.exclude: manifest level — catches everything including
   // Next.js-injected entries like _next/dynamic-css-manifest.json
@@ -17,6 +17,9 @@ const withPWA = withPWAInit({
       // Only present in dev (HMR), not in production builds
       /dynamic-css-manifest\.json/,
       /\.hot-update\./,
+      // Exclude all optional manifest files that might not exist
+      /.*-manifest\.json/,
+      /_next\/.*manifest/,
     ],
     // Never let the SW intercept API routes with a navigation fallback.
     // Without this, an outdated SW serving a stale navigation response
