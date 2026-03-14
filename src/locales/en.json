@@ -378,10 +378,11 @@
     "homeButton": "At home",
     "outButton": "Eat out",
     "notificationBanner": {
-      "title": "🔔 Don't miss your meals",
-      "description": "Receive reminders for breakfast, lunch and dinner.",
-      "activate": "Activate",
-      "later": "Later"
+      "title": "🔔 Enable notifications",
+      "description": "Get personalized suggestions at your preferred times",
+      "customize": "✏️ Customize breakfast, lunch, dinner times and more",
+      "activate": "✓ Allow notifications",
+      "later": "Not now"
     },
     "useIngredients": "Use your\ningredients",
     "findPlace": "Find me\na place",

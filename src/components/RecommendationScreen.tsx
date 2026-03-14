@@ -25,6 +25,7 @@ import { MapPin, Bell } from "./icons";
 import { ProfileSkeleton } from "./skeleton";
 import { Tooltip } from "./ui/Tooltip";
 import { useTranslation } from "../contexts/I18nContext";
+import { NotificationSettings } from "./NotificationSettings";
 
 interface RecommendationScreenProps {
   userName: string;
@@ -146,6 +147,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
   } = useNotifications(user?.uid);
 
   const [showNotificationBanner, setShowNotificationBanner] = useState(true);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   const [locationRequested, setLocationRequested] = useState(false);
 
@@ -536,8 +538,11 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
               <p className="text-sm font-bold text-amber-900">
                 {t("recommendation.notificationBanner.title")}
               </p>
-              <p className="text-xs text-amber-800 mt-0.5">
+              <p className="text-xs text-amber-800 mt-1">
                 {t("recommendation.notificationBanner.description")}
+              </p>
+              <p className="text-xs text-amber-700 mt-1 font-medium">
+                {t("recommendation.notificationBanner.customize")}
               </p>
             </div>
             <div className="flex flex-col gap-1.5 flex-shrink-0">
@@ -547,6 +552,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                   if (granted) {
                     trackEvent("notification_banner_activated");
                     setShowNotificationBanner(false);
+                    // Abrir automáticamente el modal de personalización
+                    setTimeout(() => setShowNotificationSettings(true), 500);
                   }
                 }}
                 className="text-xs bg-amber-600 text-white font-bold px-3 py-1.5 rounded-full hover:bg-amber-700 active:scale-95 transition-all whitespace-nowrap"
@@ -867,6 +874,13 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
           </div>
         </div>
       )}
+
+      {/* Modal de Notificaciones */}
+      <NotificationSettings
+        isOpen={showNotificationSettings}
+        onClose={() => setShowNotificationSettings(false)}
+        userUid={user?.uid || ""}
+      />
     </div>
   );
 };

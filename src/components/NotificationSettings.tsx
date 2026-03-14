@@ -141,7 +141,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
         const isEmpty = days === null || days >= 3;
         return (
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${isEmpty ? "bg-orange-100 text-orange-700" : "bg-green-100 text-green-700"}`}
+            className={`text-xs px-2 py-0.5 rounded-full ${isEmpty ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-bocado-green/10 text-bocado-green"}`}
           >
             {isEmpty
               ? t("notifications.settings.pantryEmpty")
@@ -152,7 +152,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       case "pending_ratings":
         return (
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${pendingRatingsCount > 0 ? "bg-yellow-100 text-yellow-700" : "bg-green-100 text-green-700"}`}
+            className={`text-xs px-2 py-0.5 rounded-full ${pendingRatingsCount > 0 ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-bocado-green/10 text-bocado-green"}`}
           >
             {pendingRatingsCount > 0
               ? t("notifications.settings.pendingRatings", {
@@ -164,7 +164,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       case "inactive_user":
         return (
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${daysSinceLastAppUse >= 3 ? "bg-purple-100 text-purple-700" : "bg-green-100 text-green-700"}`}
+            className={`text-xs px-2 py-0.5 rounded-full ${daysSinceLastAppUse >= 3 ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-bocado-green/10 text-bocado-green"}`}
           >
             {daysSinceLastAppUse >= 3
               ? t("notifications.settings.inactiveUser", {
@@ -248,22 +248,22 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
         >
           {/* Estado de permisos */}
           {permission !== "granted" ? (
-            <div className="mx-6 mt-6 p-4 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+            <div className="mx-6 mt-6 p-4 bg-gradient-to-br from-bocado-background to-bocado-cream rounded-xl border border-bocado-border">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                  <Bell className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-bocado-green/10 rounded-full flex items-center justify-center flex-shrink-0">
+                  <Bell className="w-5 h-5 text-bocado-green" />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-bold text-blue-800 mb-1">
+                  <p className="text-sm font-bold text-bocado-dark-green mb-1">
                     {t("notifications.settings.activateReminders")}
                   </p>
-                  <p className="text-xs text-blue-600 mb-3 leading-relaxed">
+                  <p className="text-xs text-bocado-green mb-3 leading-relaxed">
                     {t("notifications.settings.activateDescription")}
                   </p>
                   <button
                     onClick={handleRequestPermission}
                     disabled={isLoading}
-                    className="w-full text-xs bg-blue-600 text-white font-bold px-4 py-2.5 rounded-full hover:bg-blue-700 disabled:bg-blue-300 transition-colors shadow-sm"
+                    className="w-full text-xs bg-bocado-green text-white font-bold px-4 py-2.5 rounded-full hover:bg-bocado-green-hover disabled:bg-bocado-green/50 transition-colors shadow-sm"
                   >
                     {isLoading
                       ? t("notifications.settings.requesting")
@@ -273,17 +273,17 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               </div>
             </div>
           ) : (
-            <div className="mx-6 mt-6 p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl border border-green-100">
+            <div className="mx-6 mt-6 p-4 bg-gradient-to-br from-bocado-background to-bocado-cream rounded-xl border border-bocado-border">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 bg-bocado-green/10 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-5 h-5 text-bocado-green" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-green-800">
+                    <p className="text-sm font-bold text-bocado-dark-green">
                       {t("notifications.settings.notificationsActive")}
                     </p>
-                    <p className="text-xs text-green-600">
+                    <p className="text-xs text-bocado-green">
                       {t("notifications.settings.configuredReminders", {
                         count: reminders.filter((r) => r.enabled).length,
                       })}
@@ -293,7 +293,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                 <button
                   onClick={handleTestNotification}
                   disabled={testSent}
-                  className="text-xs bg-white text-green-700 font-semibold px-3 py-2 rounded-lg border border-green-200 hover:bg-green-50 disabled:opacity-50 transition-colors"
+                  className="text-xs bg-white text-bocado-green font-semibold px-3 py-2 rounded-lg border border-bocado-border hover:bg-bocado-background disabled:opacity-50 transition-colors"
                 >
                   {testSent
                     ? t("notifications.settings.sent")

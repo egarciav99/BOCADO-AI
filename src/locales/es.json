@@ -388,10 +388,11 @@
     "homeButton": "En casa",
     "outButton": "Fuera",
     "notificationBanner": {
-      "title": "🔔 No te pierdas tus comidas",
-      "description": "Recibe recordatorios para desayuno, comida y cena.",
-      "activate": "Activar",
-      "later": "Después"
+      "title": "🔔 Activa notificaciones",
+      "description": "Recibe sugerencias personalizadas en tus horarios preferidos",
+      "customize": "✏️ Personaliza horarios de desayuno, almuerzo, cena y más",
+      "activate": "✓ Permitir notificaciones",
+      "later": "Ahora no"
     },
     "useIngredients": "Usa tus\ningredientes",
     "findPlace": "Encuéntrame\nun lugar",
