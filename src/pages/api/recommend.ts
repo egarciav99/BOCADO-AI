@@ -1229,13 +1229,25 @@ export default async function handler(req: any, res: any) {
     const batch = db.batch();
 
     const historyRef = db.collection(historyCol).doc();
-    batch.set(historyRef, cleanForFirestore({
+    
+    // ✅ DEBUG: Log what we're about to save
+    const historyData = cleanForFirestore({
       user_id: userId,
       interaction_id: interactionId,
       fecha_creacion: FieldValue.serverTimestamp(),
       tipo: type,
       ...parsedData,
-    }));
+    });
+    
+    safeLog("log", `📝 Guardando en ${historyCol}:`, {
+      docId: historyRef.id,
+      interaction_id: interactionId,
+      user_id: userId,
+      tipo: type,
+      hasInteractionId: !!historyData.interaction_id,
+    });
+    
+    batch.set(historyRef, historyData);
 
     batch.update(interactionRef, cleanForFirestore({
       procesado: true,
