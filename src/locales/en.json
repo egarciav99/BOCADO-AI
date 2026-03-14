@@ -322,36 +322,13 @@
       }
     },
     "onboarding": {
-      "next": "Next",
-      "skip": "Skip",
-      "welcome": {
-        "title": "Activate your reminders!",
-        "description": "Get personalized notifications at your preferred times so you never miss a meal"
-      },
-      "feature1": {
-        "title": "Meals on your schedule",
-        "desc": "Suggestions at your preferred time"
-      },
-      "feature2": {
-        "title": "Fully customizable",
-        "desc": "Adjust each time as you like"
-      },
-      "feature3": {
-        "title": "Smart and useful",
-        "desc": "Reminders based on your activity"
-      },
       "meals": {
-        "title": "Your 3 main meals",
-        "description": "Here are your times. You can customize them anytime.",
-        "customize": "You can change the times in your Profile > Reminders"
+        "title": "Your reminder times",
+        "customize": "You can change these in Profile > Reminders"
       },
       "done": {
-        "title": "All set! 🎉",
-        "description": "Your notifications are activated. You'll get reminders at the times you set.",
-        "cta": "Back to Recommendations",
-        "customize": "Customize more",
-        "tip": "Tip: You can add more reminders in your Profile",
-        "tipDesc": "Add reminders for ratings, pantry updates, and more"
+        "title": "All set! ✓",
+        "description": "You'll get notifications at these times"
       }
     },
     "types": {

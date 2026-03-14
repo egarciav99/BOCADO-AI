@@ -30,14 +30,14 @@ service cloud.firestore {
 
     // Generated plans (backend writes via API endpoints)
     match /historial_recetas/{docId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow read: if isAuthenticated();
       // ✅ Allow creates from authenticated API endpoints (with user token)
       allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
       allow update, delete: if false; // Backend-only modifications via Admin SDK
     }
 
     match /historial_recomendaciones/{docId} {
-      allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
+      allow read: if isAuthenticated();
       // ✅ Allow creates from authenticated API endpoints (with user token)
       allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
       allow update, delete: if false; // Backend-only modifications via Admin SDK
