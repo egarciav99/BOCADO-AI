@@ -124,11 +124,11 @@ const processRecommendationDoc = (doc: DocumentSnapshot): Plan | null => {
   }
 };
 
-// --- HELPER: Retry con delay para race conditions de replicación ---
+// --- HELPER: Retry con delay para fallback query ---
 const retryQuery = async (
   fn: () => Promise<any>,
-  maxRetries: number = 3,
-  delayMs: number = 1000,
+  maxRetries: number = 2,
+  delayMs: number = 500,
 ): Promise<any> => {
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
@@ -155,7 +155,23 @@ const usePlanQuery = (
         throw new Error("Faltan parámetros");
       }
 
-      // 1) Consulta directa por interaction_id con retry (race condition protection)
+      // 1) Direct docId lookup (most reliable - docId == interactionId since API v2)
+      const [recipesDoc, recsDoc] = await Promise.all([
+        getDoc(doc(db, "historial_recetas", planId)),
+        getDoc(doc(db, "historial_recomendaciones", planId)),
+      ]);
+
+      if (recipesDoc.exists()) {
+        const plan = processFirestoreDoc(recipesDoc);
+        if (plan) return plan;
+      }
+
+      if (recsDoc.exists()) {
+        const plan = processRecommendationDoc(recsDoc);
+        if (plan) return plan;
+      }
+
+      // 2) Fallback: Legacy query by interaction_id (for older docs)
       const result = await retryQuery(async () => {
         const [recipesSnap, recsSnap] = await Promise.all([
           getDocs(
@@ -176,7 +192,6 @@ const usePlanQuery = (
           ),
         ]);
 
-        // ✅ FIX: Validar que existan docs antes de acceder al array
         if (!recipesSnap.empty && recipesSnap.docs.length > 0) {
           const docSnap = recipesSnap.docs[0];
           const plan = processFirestoreDoc(docSnap);
@@ -190,31 +205,9 @@ const usePlanQuery = (
         }
 
         return null;
-      }, 3, 800);
+      }, 2, 500);
 
       if (result) return result;
-
-      // 2) Fallback legacy: docId == planId (con retry)
-      const legacyResult = await retryQuery(async () => {
-        const [recipesDoc, recsDoc] = await Promise.all([
-          getDoc(doc(db, "historial_recetas", planId)),
-          getDoc(doc(db, "historial_recomendaciones", planId)),
-        ]);
-
-        if (recipesDoc.exists()) {
-          const plan = processFirestoreDoc(recipesDoc);
-          if (plan) return plan;
-        }
-
-        if (recsDoc.exists()) {
-          const plan = processRecommendationDoc(recsDoc);
-          if (plan) return plan;
-        }
-
-        return null;
-      }, 3, 800);
-
-      if (legacyResult) return legacyResult;
 
       throw new Error("No se encontró el plan");
     },

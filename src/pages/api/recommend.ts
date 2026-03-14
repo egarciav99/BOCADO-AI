@@ -1228,7 +1228,9 @@ export default async function handler(req: any, res: any) {
 
     const batch = db.batch();
 
-    const historyRef = db.collection(historyCol).doc();
+    // ✅ FIX: Use interactionId as the document ID in historial_recetas
+    // This allows PlanScreen to fetch directly by docId without query overhead
+    const historyRef = db.collection(historyCol).doc(interactionId);
     
     // ✅ DEBUG: Log what we're about to save
     const historyData = cleanForFirestore({
