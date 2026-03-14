@@ -1,20 +1,6 @@
-/**
- * 💰 FINOPS: Cache Invalidation API
- *
- * Endpoint para invalidar cache cuando el usuario actualiza datos:
- * - Profile actualizado → invalidar profileCache
- * - Pantry modificada → invalidar pantryCache
- * - Historial borrado → invalidar historyCache
- *
- * POST /api/invalidate-cache  (requiere auth Bearer token)
- * Body: { type?: 'profile' | 'pantry' | 'history' | 'all' }
- *
- * GET /api/invalidate-cache   (requiere x-api-key o dev mode)
- * Retorna estadísticas del cache
- */
-
-import { getApps, cert, initializeApp } from "firebase-admin/app";
 import { getAuth as getAdminAuth } from "firebase-admin/auth";
+import { initFirebaseAdmin } from "../../lib/api/firebase-admin";
+import { isOriginAllowed, ALLOWED_ORIGINS_LIST } from "../../lib/api/cors-utils";
 import {
   profileCache,
   pantryCache,
@@ -22,55 +8,7 @@ import {
   getCacheStats,
 } from "../../lib/api/utils/cache";
 
-// ============================================
-// FIREBASE ADMIN INIT (reutiliza si ya está inicializado)
-// ============================================
-const getAdminApp = () => {
-  if (getApps().length > 0) return getApps()[0];
-
-  try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (serviceAccountKey) {
-      const serviceAccount = JSON.parse(serviceAccountKey.trim());
-      return initializeApp({ credential: cert(serviceAccount) });
-    } else {
-      console.warn(
-        "[invalidate-cache] FIREBASE_SERVICE_ACCOUNT_KEY not set - auth will fail",
-      );
-    }
-  } catch (error) {
-    console.error("[invalidate-cache] Firebase init error:", error);
-  }
-  return null;
-};
-
-const adminApp = getAdminApp();
-
-// ============================================
-// CORS
-// ============================================
-const ALLOWED_ORIGINS = [
-  // Producción
-  "https://bocado-ai.vercel.app",
-  "https://bocado.app",
-  "https://www.bocado.app",
-  "https://app.bocado.app",
-  // Desarrollo
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:5173",
-];
-
-const isOriginAllowed = (origin: string | undefined): boolean => {
-  if (!origin) return true; // same-origin requests
-  if (
-    origin.startsWith("http://localhost:") ||
-    origin.startsWith("http://127.0.0.1:")
-  )
-    return true;
-  return ALLOWED_ORIGINS.includes(origin);
-};
+const adminApp = initFirebaseAdmin();
 
 // ============================================
 // HANDLER (Vercel Serverless)
@@ -82,7 +20,7 @@ export default async function handler(req: any, res: any) {
     return res.status(403).json({ error: "Origin not allowed" });
   }
 
-  res.setHeader("Access-Control-Allow-Origin", origin || ALLOWED_ORIGINS[0]);
+  res.setHeader("Access-Control-Allow-Origin", origin || ALLOWED_ORIGINS_LIST[0]);
   res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",

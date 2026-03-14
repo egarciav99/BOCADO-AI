@@ -6,23 +6,9 @@
  */
 
 import { getFirestore } from "firebase-admin/firestore";
-import { getApps, cert, initializeApp } from "firebase-admin/app";
+import { initFirebaseAdmin } from "../../lib/api/firebase-admin";
 
-// Firebase Admin Init
-const getAdminApp = () => {
-  if (getApps().length > 0) return getApps()[0];
-  try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountKey) throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY no definida");
-    const serviceAccount = JSON.parse(serviceAccountKey.trim());
-    return initializeApp({ credential: cert(serviceAccount) });
-  } catch (error) {
-    console.error("❌ Error Firebase Admin Init:", error);
-    return null;
-  }
-};
-
-const adminApp = getAdminApp();
+const adminApp = initFirebaseAdmin();
 const db = adminApp ? getFirestore() : null;
 
 // Simple in-memory cache (TTL: 1 hora)

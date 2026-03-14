@@ -110,7 +110,13 @@ export default [
         {}),
       // relax a few rules to allow automated fixes and reduce noise
       "@typescript-eslint/no-explicit-any": "off",
-      "@typescript-eslint/no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+        },
+      ],
       "no-undef": "off",
       // keep JSX/react adjustments
       "react/react-in-jsx-scope": "off",

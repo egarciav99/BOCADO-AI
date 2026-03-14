@@ -5,31 +5,14 @@
  * El frontend NUNCA debe tener acceso directo a la API key.
  */
 
-import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { z } from "zod";
+import { initFirebaseAdmin } from "../../lib/api/firebase-admin";
+import { isOriginAllowed } from "../../lib/api/cors-utils";
+import { IPRateLimiter } from "../../lib/api/utils/ip-rate-limiter";
 
-// ============================================
-// INICIALIZACIÓN DE FIREBASE
-// ============================================
-const getAdminApp = () => {
-  if (getApps().length > 0) return getApps()[0];
-
-  try {
-    const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
-    if (!serviceAccountKey) {
-      throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY no definida");
-    }
-    const serviceAccount = JSON.parse(serviceAccountKey.trim());
-    return initializeApp({ credential: cert(serviceAccount) });
-  } catch (error) {
-    console.error("❌ Error Firebase Admin Init (Maps Proxy):", error);
-    return null;
-  }
-};
-
-const adminApp = getAdminApp();
+const adminApp = initFirebaseAdmin();
 const db = adminApp ? getFirestore() : null;
 
 // ============================================
@@ -138,73 +121,6 @@ const ReverseGeocodeSchema = z.object({
 });
 
 // ============================================
-// RATE LIMITING POR IP
-// ============================================
-
-interface RateLimitRecord {
-  requests: number[];
-  updatedAt: FirebaseFirestore.Timestamp;
-}
-
-// Límites de rate limiting
-// Autenticados: más permisivos
-// No autenticados: más restrictivos pero suficientes para búsqueda
-const RATE_LIMITS = {
-  authenticated: {
-    windowMs: 60 * 1000, // 1 minuto
-    maxRequests: 50, // 50 requests por minuto
-  },
-  unauthenticated: {
-    windowMs: 60 * 1000, // 1 minuto
-    maxRequests: 20, // 20 requests por minuto (suficiente para typing)
-  },
-};
-
-async function checkRateLimit(
-  ip: string,
-  isAuthenticated: boolean = false,
-): Promise<{ allowed: boolean; retryAfter?: number }> {
-  const docRef = db!.collection("maps_proxy_rate_limits").doc(ip);
-  const now = Date.now();
-
-  // Usar colección diferente para autenticados vs no autenticados
-  const limits = isAuthenticated
-    ? RATE_LIMITS.authenticated
-    : RATE_LIMITS.unauthenticated;
-
-  try {
-    return await db!.runTransaction(async (t) => {
-      const doc = await t.get(docRef);
-      const data = doc.exists ? (doc.data() as RateLimitRecord) : null;
-
-      const validRequests = (data?.requests || []).filter(
-        (ts) => now - ts < limits.windowMs,
-      );
-
-      if (validRequests.length >= limits.maxRequests) {
-        const oldestRequest = Math.min(...validRequests);
-        const retryAfter = Math.ceil(
-          (oldestRequest + limits.windowMs - now) / 1000,
-        );
-        return { allowed: false, retryAfter };
-      }
-
-      t.set(docRef, {
-        requests: [...validRequests, now],
-        updatedAt: FieldValue.serverTimestamp(),
-        isAuthenticated, // Guardar estado para debugging
-      });
-
-      return { allowed: true };
-    });
-  } catch (error) {
-    console.error("Error en rate limit:", error);
-    // Fail-closed: rechazar si hay error
-    return { allowed: false, retryAfter: 60 };
-  }
-}
-
-// ============================================
 // CACHE SIMPLE (Firestore)
 // ============================================
 
@@ -260,80 +176,6 @@ function generateCacheKey(prefix: string, params: Record<string, any>): string {
     .join("&");
   return `${prefix}_${Buffer.from(sortedParams).toString("base64").substring(0, 50)}`;
 }
-
-// ============================================
-// CORS CONFIGURATION (env-configurable + wildcards)
-// ============================================
-
-// Builtin production + common dev origins. Can be extended with
-// a comma-separated env var `ALLOWED_ORIGINS`.
-const DEFAULT_ALLOWED_ORIGINS = [
-  "https://bocado-ai.vercel.app",
-  "https://bocado.app",
-  "https://www.bocado.app",
-  "https://app.bocado.app",
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:5173",
-];
-
-const envAllowed = (process.env.ALLOWED_ORIGINS || "")
-  .split(",")
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-const ALLOWED_ORIGINS = Array.from(
-  new Set([...DEFAULT_ALLOWED_ORIGINS, ...envAllowed]),
-);
-
-const wildcardPatterns = ALLOWED_ORIGINS.filter((o) => o.includes("*")).map(
-  (p) =>
-    new RegExp("^" + p.replace(/\./g, "\\.").replace(/\*/g, ".*") + "$", "i"),
-);
-
-const isOriginAllowed = (origin: string | undefined): boolean => {
-  // Permitir peticiones sin origin (same-origin requests, mobile apps, etc.)
-  if (!origin) return true;
-
-  // Quick allow for local dev hosts
-  if (
-    origin.startsWith("http://localhost:") ||
-    origin.startsWith("http://127.0.0.1:")
-  ) {
-    return true;
-  }
-
-  // Normalize and exact-match against configured origins
-  const originLower = origin.toLowerCase();
-  if (ALLOWED_ORIGINS.map((o) => o.toLowerCase()).includes(originLower))
-    return true;
-
-  // Match wildcard patterns (e.g. https://*.vercel.app)
-  for (const re of wildcardPatterns) {
-    try {
-      if (re.test(origin)) return true;
-    } catch (e) {
-      // ignore bad regex
-    }
-  }
-
-  // Allow common preview host patterns (vercel / previews) by hostname suffix
-  try {
-    const hostname = new URL(origin).hostname.toLowerCase();
-    if (
-      hostname.endsWith(".vercel.app") ||
-      hostname.endsWith(".vercel-preview.app") ||
-      hostname.endsWith(".githubpreview.dev")
-    ) {
-      return true;
-    }
-  } catch (e) {
-    // If origin is not a valid URL, deny below
-  }
-
-  return false;
-};
 
 // ============================================
 // HANDLER PRINCIPAL
@@ -424,12 +266,13 @@ export default async function handler(req: any, res: any) {
     return res.status(401).json({ error: "Auth token required" });
   }
 
-  // Rate limiting: más estricto para requests públicos
-  const rateCheck = await checkRateLimit(clientIP, isAuthenticated);
+  // Rate limiting: usar IPRateLimiter para proteger el endpoint
+  const rateLimiter = new IPRateLimiter(db!);
+  const rateCheck = await rateLimiter.checkRateLimit(clientIP);
   if (!rateCheck.allowed) {
     return res.status(429).json({
       error: "Rate limit exceeded",
-      retryAfter: rateCheck.retryAfter,
+      retryAfter: rateCheck.secondsLeft,
     });
   }
 
