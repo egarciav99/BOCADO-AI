@@ -46,9 +46,9 @@ const getSmartEmoji = (title: string): string => {
 };
 
 const DIFFICULTY_STYLES: Record<string, string> = {
-  Fácil: "bg-bocado-green/10 text-bocado-green",
-  Media: "bg-amber-100 text-amber-700",
-  Difícil: "bg-red-100 text-red-600",
+  Fácil: "bg-bocado-green/15 text-bocado-green font-semibold",
+  Media: "bg-amber-100 text-amber-800 font-semibold",
+  Difícil: "bg-red-100 text-red-700 font-semibold",
 };
 
 const getDifficultyStyle = (difficulty: string): string => {
@@ -99,7 +99,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(
           <div className="mb-3">
             <button
               onClick={onOpenMaps}
-              className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all duration-200 hover:scale-[1.02] hover:shadow-md flex items-center justify-center gap-2"
             >
               <span>📍</span>
               <span>{t("mealCard.viewOnMaps")}</span>
@@ -126,14 +126,14 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(
             <div className="flex gap-2">
               <button
                 onClick={onSearchMapsFallback}
-                className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all flex items-center justify-center gap-1 font-medium"
+                className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-1 font-medium"
               >
                 <span>🔍</span>
                 <span>{t("mealCard.searchMaps")}</span>
               </button>
               <button
                 onClick={onCopyAddress}
-                className={`flex-1 py-2.5 border rounded-lg text-xs transition-all flex items-center justify-center gap-1 font-medium ${
+                className={`flex-1 py-2.5 border rounded-lg text-xs transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-1 font-medium ${
                   copiedAddress
                     ? "bg-green-50 border-green-200 text-green-600"
                     : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
@@ -560,24 +560,24 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
                         <div className="font-bold text-blue-600">
                           {recipe.protein_g}g
                         </div>
-                        <div className="text-blue-500 text-[10px] mt-0.5">
-                          {t("mealCard.proteins")}
+                        <div className="text-blue-500 text-xs mt-0.5">
+                          {t("mealCard.proteins")
                         </div>
                       </div>
                       <div className="bg-amber-50 p-2 rounded-lg text-center">
                         <div className="font-bold text-amber-600">
                           {recipe.carbs_g}g
                         </div>
-                        <div className="text-amber-500 text-[10px] mt-0.5">
-                          {t("mealCard.carbs")}
+                        <div className="text-amber-500 text-xs mt-0.5">
+                          {t("mealCard.carbs")
                         </div>
                       </div>
                       <div className="bg-rose-50 p-2 rounded-lg text-center">
                         <div className="font-bold text-rose-600">
                           {recipe.fat_g}g
                         </div>
-                        <div className="text-rose-500 text-[10px] mt-0.5">
-                          {t("mealCard.fats")}
+                        <div className="text-rose-500 text-xs mt-0.5">
+                          {t("mealCard.fats")
                         </div>
                       </div>
                     </div>

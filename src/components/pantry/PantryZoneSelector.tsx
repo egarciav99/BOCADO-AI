@@ -188,7 +188,7 @@ export const PantryZoneSelector: React.FC<PantryZoneSelectorProps> = ({
                 >
                   <span className="text-base">{item.emoji}</span>
                 </div>
-                <span className="text-2xs text-bocado-dark-gray truncate w-full text-center mt-1">
+                <span className="text-xs text-bocado-dark-gray truncate w-full text-center mt-1">
                   {translateIngredient(item.name)}
                 </span>
               </div>

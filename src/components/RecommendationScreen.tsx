@@ -606,7 +606,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
         <div className="flex-1 animate-fade-in">
           {recommendationType === "En casa" ? (
             <div className="space-y-4">
-              <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider">
+              <p className="text-center text-xs font-bold text-bocado-dark-gray uppercase tracking-wider">
                 {t("recommendation.whatToCook")}
               </p>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -629,7 +629,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                 <div className="bg-bocado-background p-4 rounded-2xl mt-2 animate-fade-in space-y-4">
                   <div>
                     <div className="flex justify-between items-center mb-4">
-                      <label className="text-2xs font-bold text-bocado-gray uppercase tracking-wide">
+                      <label className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wide">
                         {t("recommendation.cookingTime")}
                       </label>
                       <span className="text-lg font-bold text-bocado-green bg-white px-3 py-1 rounded-full">
@@ -664,7 +664,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                       />
 
                       {/* Marcas de referencia */}
-                      <div className="flex justify-between text-2xs text-bocado-gray font-medium px-1">
+                      <div className="flex justify-between text-xs text-bocado-dark-gray font-medium px-1">
                         <span>🚀 10m</span>
                         <span>⚡ 30m</span>
                         <span>🍽️ 60m</span>
@@ -691,7 +691,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                         <p className="text-sm font-bold text-bocado-dark-gray group-hover:text-bocado-green transition-colors">
                           {t("recommendation.onlyMyIngredients")}
                         </p>
-                        <p className="text-2xs text-bocado-gray mt-0.5">
+                        <p className="text-xs text-bocado-dark-gray mt-0.5">
                           {onlyPantryIngredients
                             ? t("recommendation.onlyMyIngredientsHelp")
                             : t("recommendation.onlyMyIngredientsHelpOff")}
@@ -705,7 +705,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
           ) : (
             <div className="space-y-4">
               <div>
-                <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-3">
+                <p className="text-center text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-3">
                   {t("recommendation.whatCraving")}
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -726,7 +726,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
               </div>
 
               <div>
-                <p className="text-center text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-3">
+                <p className="text-center text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-3">
                   {t("recommendation.budget", {
                     currency: currencyConfig.name,
                   })}
@@ -805,7 +805,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                     </button>
                   )}
                 </div>
-                <p className="text-2xs text-bocado-gray mt-2 ml-6">
+                <p className="text-xs text-bocado-dark-gray mt-2 ml-6">
                   {userPosition
                     ? `${t("recommendation.searchingIn")} ${SEARCH_RADIUS.label} ${detectedLocation?.city || t("recommendation.yourLocation")}`
                     : `${t("recommendation.noLocationSearching")} ${profile?.city || t("recommendation.yourCity")}`}
@@ -842,7 +842,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
 
             {/* Microcopy cuando no está listo aún */}
             {!isSelectionMade && (
-              <p className="text-center text-2xs text-bocado-gray mt-2">
+              <p className="text-center text-xs text-bocado-dark-gray mt-2">
                 {recommendationType === "En casa"
                   ? t("recommendation.chooseCravingTip")
                   : t("recommendation.chooseCravingAndBudgetTip")}

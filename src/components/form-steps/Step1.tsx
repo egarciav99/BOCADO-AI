@@ -234,7 +234,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       {/* Nombre y Apellido */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+          <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
             {t("step1.firstName")}
           </label>
           <input
@@ -254,11 +254,11 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             }`}
           />
           {errors.firstName && (
-            <p className="text-red-500 text-2xs mt-1">{errors.firstName}</p>
+            <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
           )}
         </div>
         <div>
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+          <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
             {t("step1.lastName")}
           </label>
           <input
@@ -278,7 +278,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             }`}
           />
           {errors.lastName && (
-            <p className="text-red-500 text-2xs mt-1">{errors.lastName}</p>
+            <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
           )}
         </div>
       </div>
@@ -287,7 +287,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
         {/* Género - Izquierda en desktop */}
         <div className="flex-1">
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">
+          <label className="block text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider text-center sm:text-left">
             {t("step1.gender")}
           </label>
           <div className="flex gap-2 max-w-[320px] mx-auto sm:mx-0">
@@ -325,7 +325,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             ))}
           </div>
           {errors.gender && (
-            <p className="text-red-500 text-2xs mt-1 text-center sm:text-left">
+            <p className="text-red-500 text-xs mt-1 text-center sm:text-left">
               {errors.gender}
             </p>
           )}
@@ -361,12 +361,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
 
       {/* Datos corporales */}
       <div className="bg-bocado-background p-3 rounded-xl border border-bocado-border">
-        <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">
+        <p className="text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           {t("step1.bodyData")}
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">
+            <label className="block text-xs font-medium text-bocado-dark-gray mb-1">
               {t("step1.weight")}
             </label>
             <div className="relative">
@@ -386,7 +386,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           </div>
 
           <div>
-            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">
+            <label className="block text-xs font-medium text-bocado-dark-gray mb-1">
               {t("step1.height")}
             </label>
             <div className="relative">
@@ -409,7 +409,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       {/* País y Ciudad */}
       <div className="space-y-3">
         <div>
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+          <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
             {t("step1.country")}
           </label>
           <div className="relative">
@@ -432,12 +432,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             </select>
           </div>
           {errors.country && (
-            <p className="text-red-500 text-2xs mt-1">{errors.country}</p>
+            <p className="text-red-500 text-xs mt-1">{errors.country}</p>
           )}
         </div>
 
         <div className="relative">
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+          <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
             {t("step1.city")}
           </label>
           <div className="relative">
@@ -499,7 +499,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
 
       {/* Email */}
       <div className="relative">
-        <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+        <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
           {t("step1.email")}
         </label>
         <input
@@ -543,7 +543,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           </div>
         )}
         {errors.email && (
-          <p className="text-red-500 text-2xs mt-1">{errors.email}</p>
+          <p className="text-red-500 text-xs mt-1">{errors.city}</p>
         )}
       </div>
 
@@ -551,7 +551,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       {!hidePasswordFields && (
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+            <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
               {t("step1.password")}
             </label>
             <div className="relative">
@@ -574,11 +574,11 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               />
             </div>
             {errors.password && (
-              <p className="text-red-500 text-2xs mt-1">{errors.password}</p>
+              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
             )}
           </div>
           <div>
-            <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+            <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
               {t("step1.confirmPassword")}
             </label>
             <input
@@ -600,7 +600,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               }`}
             />
             {errors.confirmPassword && (
-              <p className="text-red-500 text-2xs mt-1">
+              <p className="text-red-500 text-xs mt-1">
                 {errors.confirmPassword}
               </p>
             )}

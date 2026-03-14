@@ -36,11 +36,11 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    "inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100";
+    "inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bocado-green/50 focus:ring-offset-2 active:scale-[0.98] hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100";
 
   const variants = {
     primary:
-      "bg-bocado-green text-white hover:bg-bocado-green-hover focus:ring-bocado-green shadow-bocado",
+      "bg-bocado-green text-white hover:bg-bocado-green-hover focus:ring-bocado-green shadow-bocado hover:shadow-bocado-lg",
     secondary:
       "bg-bocado-cream text-bocado-dark-gray hover:bg-bocado-border focus:ring-bocado-gray",
     outline:
@@ -59,7 +59,7 @@ export const Button: React.FC<ButtonProps> = ({
 
   return (
     <button
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${className}`}
+      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${isLoading ? "opacity-75" : ""} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >

@@ -437,7 +437,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div>
           <label
             htmlFor="password"
-            className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider"
+            className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider"
           >
             {t("login.password")}
           </label>
@@ -507,7 +507,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div>
           <label
             htmlFor="reset-email"
-            className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider"
+            className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider"
           >
             {t("login.email")}
           </label>

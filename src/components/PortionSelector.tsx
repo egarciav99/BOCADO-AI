@@ -61,6 +61,7 @@ const PortionSelector: React.FC<PortionSelectorProps> = ({
       <div className="relative">
         <div
           ref={scrollRef}
+          role="radiogroup"
           className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide snap-x snap-mandatory"
           style={{
             // Prevent scroll bounce/propagation to parent on iOS
@@ -94,7 +95,7 @@ const PortionSelector: React.FC<PortionSelectorProps> = ({
               }}
             >
               <span className="text-lg mb-0.5">{option.icon}</span>
-              <span className="text-2xs font-bold whitespace-nowrap">
+              <span className="text-xs font-bold whitespace-nowrap">
                 {option.value}
               </span>
             </button>
@@ -115,7 +116,7 @@ const PortionSelector: React.FC<PortionSelectorProps> = ({
       {/* Opción personalizada (8+) */}
       <div className="mt-2 pt-2 border-t border-bocado-border/30">
         <div className="flex items-center justify-between">
-          <span className="text-sm text-bocado-gray">
+          <span className="text-sm text-bocado-dark-gray">
             {t("portions.moreOptions")}
           </span>
           <div className="flex gap-2">

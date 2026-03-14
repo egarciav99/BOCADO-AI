@@ -70,7 +70,7 @@ export const Toast: React.FC<ToastProps> = ({
       <div
         className={`flex items-center gap-3 p-4 rounded-2xl border-2 shadow-lg backdrop-blur-sm ${STYLE_MAP[type]}`}
         role="alert"
-        aria-live="polite"
+        aria-live={type === "error" || type === "warning" ? "assertive" : "polite"}
       >
         <div className="shrink-0">{ICON_MAP[type]}</div>
         <p className="flex-1 text-sm font-medium break-words">{message}</p>

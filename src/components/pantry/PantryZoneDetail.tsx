@@ -297,31 +297,31 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
 
         {/* Leyenda de frescura */}
         <div className="bg-bocado-background/50 rounded-lg p-3 mb-3 border border-bocado-border/30">
-          <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">
+          <p className="text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
             {t("pantry.states")}
           </p>
           <div className="flex gap-3 flex-wrap">
-            <div className="flex items-center gap-2 text-2xs">
+            <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-green-400"></div>
               <span className="font-medium text-bocado-text">
                 {t("pantry.fresh")}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-2xs">
+            <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
               <span className="font-medium text-bocado-text">
                 {t("pantry.expiringSoon")}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-2xs">
+            <div className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-full bg-red-500"></div>
               <span className="font-medium text-bocado-text">
                 {t("pantry.urgent")}
               </span>
             </div>
           </div>
-          <p className="text-2xs text-bocado-gray mt-2">
-            {t("pantry.tapToChange")}
+          <p className="text-xs text-bocado-dark-gray mt-2">
+            {t("pantry.tapToChange")}}
           </p>
         </div>
 
@@ -372,8 +372,8 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
 
         {suggestedItems.length > 0 && (
           <div className="mb-4">
-            <p className="text-2xs font-bold text-bocado-gray mb-2 uppercase tracking-wider">
-              {t("pantry.suggestions")}
+            <p className="text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+              {t("pantry.suggestions")}}
             </p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               {suggestedItems.map((item) => (

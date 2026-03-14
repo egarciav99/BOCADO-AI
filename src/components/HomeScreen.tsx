@@ -87,26 +87,26 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               {t("home.titleHighlight")}
             </span>
           </h1>
-          <p className="text-base text-bocado-gray dark:text-gray-400">
+          <p className="text-base text-bocado-dark-gray dark:text-gray-400">
             {t("home.subtitle")}
           </p>
         </div>
 
         {/* Botones */}
-        <div className="flex flex-col w-full gap-4">
+        <div className="flex flex-col w-full gap-3.5">
           {hasSession ? (
             <>
               <button
                 data-testid="enter-app-button"
                 onClick={handleEnterApp}
-                className="w-full bg-bocado-green text-white font-bold py-3.5 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+                className="w-full bg-bocado-green text-white font-bold py-3 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all duration-200 hover:scale-[1.02]"
               >
                 {t("home.enterButton")}
               </button>
               <button
                 data-testid="logout-button"
                 onClick={handleLogout}
-                className="w-full bg-white dark:bg-gray-800 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3.5 px-8 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-700 active:scale-95 transition-all"
+                className="w-full bg-white dark:bg-gray-800 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3 px-8 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-700 active:scale-95 transition-all duration-200 hover:scale-[1.02]"
               >
                 {t("home.logoutButton")}
               </button>
@@ -116,14 +116,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
               <button
                 data-testid="start-button"
                 onClick={handleStartRegistration}
-                className="w-full bg-bocado-green text-white font-bold py-3.5 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+                className="w-full bg-bocado-green text-white font-bold py-3 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all duration-200 hover:scale-[1.02]"
               >
                 {t("home.startButton")}
               </button>
               <button
                 data-testid="login-button"
                 onClick={handleGoToLogin}
-                className="w-full bg-white dark:bg-gray-800 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3.5 px-8 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-700 active:scale-95 transition-all"
+                className="w-full bg-white dark:bg-gray-800 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3 px-8 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-700 active:scale-95 transition-all duration-200 hover:scale-[1.02]"
               >
                 {t("home.loginButton")}
               </button>

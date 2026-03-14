@@ -151,7 +151,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
     <div className="space-y-5 animate-fade-in">
       {/* Actividad */}
       <div>
-        <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+        <label className="block text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           {t("step3.activityLevel")}
         </label>
         <div className="flex flex-wrap gap-2">
@@ -192,7 +192,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       {/* Frecuencia */}
       <div>
         <label
-          className={`block text-2xs font-bold mb-2 uppercase tracking-wider transition-colors ${
+          className={`block text-xs font-bold mb-2 uppercase tracking-wider transition-colors ${
             data.activityLevel === "🪑 Sedentario"
               ? "text-bocado-gray"
               : "text-bocado-dark-gray"
@@ -221,10 +221,10 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
 
       {/* Ingredientes que no le gustan */}
       <div>
-        <label className="block text-2xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-1">
+        <label className="block text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-1">
           {t("step3.dislikedFoods")}
         </label>
-        <p className="text-2xs text-bocado-gray mb-3">
+        <p className="text-xs text-bocado-dark-gray mb-3">
           {t("step3.dislikedFoodsHelp")}
         </p>
 

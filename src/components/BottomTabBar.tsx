@@ -59,7 +59,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({
               className="w-5 h-5"
               strokeWidth={isActive("saved") ? 2.5 : 1.5}
             />
-            <span className="text-2xs font-medium whitespace-nowrap">
+            <span className="text-xs font-medium whitespace-nowrap">
               {t("tabs.recipes")}
             </span>
           </button>
@@ -81,7 +81,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({
               className="w-5 h-5"
               strokeWidth={isActive("restaurants") ? 2.5 : 1.5}
             />
-            <span className="text-2xs font-medium whitespace-nowrap">
+            <span className="text-xs font-medium whitespace-nowrap">
               {t("tabs.restaurants")}
             </span>
           </button>
@@ -128,7 +128,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({
               className="w-5 h-5"
               strokeWidth={isActive("pantry") ? 2.5 : 1.5}
             />
-            <span className="text-2xs font-medium whitespace-nowrap">
+            <span className="text-xs font-medium whitespace-nowrap">
               {t("tabs.pantry")}
             </span>
           </button>
@@ -150,7 +150,7 @@ const BottomTabBar: React.FC<BottomTabBarProps> = ({
               className="w-5 h-5"
               strokeWidth={isActive("profile") ? 2.5 : 1.5}
             />
-            <span className="text-2xs font-medium whitespace-nowrap">
+            <span className="text-xs font-medium whitespace-nowrap">
               {t("tabs.profile")}
             </span>
           </button>

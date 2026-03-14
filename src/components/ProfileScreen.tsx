@@ -126,7 +126,7 @@ const InfoSection: React.FC<{ title: string; children: React.ReactNode }> = ({
   children,
 }) => (
   <div className="mb-4">
-    <h3 className="text-2xs font-bold text-bocado-gray uppercase tracking-wider mb-2">
+    <h3 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
       {title}
     </h3>
     <div className="flex flex-wrap gap-2">{children}</div>
@@ -980,7 +980,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
                   {t("profile.newPassword")}
                 </label>
                 <input
@@ -992,7 +992,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 />
               </div>
               <div>
-                <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
                   {t("profile.confirmPassword")}
                 </label>
                 <input

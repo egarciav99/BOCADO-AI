@@ -125,7 +125,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
     <div className="space-y-5 animate-fade-in">
       {/* Enfermedades */}
       <div>
-        <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+        <label className="block text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           {t("step2.diseases")}
         </label>
         <div className="flex flex-wrap gap-2">
@@ -143,7 +143,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
 
       {/* Alergias */}
       <div>
-        <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+        <label className="block text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           {t("step2.allergies")}
         </label>
         <div className="flex flex-wrap gap-2">
@@ -160,7 +160,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
 
         {allergies.includes("Otro") && (
           <div className="mt-3">
-            <label className="block text-2xs font-medium text-bocado-dark-gray mb-1">
+            <label className="block text-xs font-medium text-bocado-dark-gray mb-1">
               {t("step2.specify")}
             </label>
             <input
@@ -176,7 +176,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
               }`}
             />
             {errors.otherAllergies && (
-              <p className="text-red-500 text-2xs mt-1">
+              <p className="text-red-500 text-xs mt-1">
                 {errors.otherAllergies}
               </p>
             )}
@@ -186,7 +186,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
 
       {/* Objetivos */}
       <div>
-        <label className="block text-2xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
+        <label className="block text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
           {t("step2.goals")}
         </label>
         <div className="flex flex-wrap gap-2">
@@ -201,9 +201,9 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
           ))}
         </div>
         {errors.nutritionalGoal && (
-          <p className="text-red-500 text-2xs mt-2">{errors.nutritionalGoal}</p>
+          <p className="text-red-500 text-xs mt-2">{errors.nutritionalGoal}</p>
         )}
-        <p className="text-2xs text-bocado-gray mt-2">{t("step2.goalsHelp")}</p>
+        <p className="text-xs text-bocado-gray mt-2">{t("step2.goalsHelp")}</p>
       </div>
     </div>
   );

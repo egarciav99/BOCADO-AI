@@ -35,7 +35,7 @@ export const Tooltip: React.FC<TooltipProps> = ({
         invisible group-hover:visible
         opacity-0 group-hover:opacity-100
         transition-opacity duration-200
-        bg-bocado-dark-gray text-white text-2xs
+        bg-bocado-dark-gray text-white text-xs
         px-3 py-1.5 rounded-lg
         whitespace-nowrap z-50
         pointer-events-none

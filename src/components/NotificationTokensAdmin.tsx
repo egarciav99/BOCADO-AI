@@ -223,7 +223,7 @@ const NotificationTokensAdmin: React.FC<NotificationTokensAdminProps> = ({
                 <p className="text-xs font-mono text-bocado-dark-gray break-all">
                   {maskToken(token.token)}
                 </p>
-                <div className="mt-2 text-2xs text-bocado-gray space-y-1">
+                <div className="mt-2 text-xs text-bocado-dark-gray space-y-1">
                   <p>Zona horaria: {token.timezone || "-"}</p>
                   <p>
                     Actualizado:{" "}
@@ -234,13 +234,13 @@ const NotificationTokensAdmin: React.FC<NotificationTokensAdminProps> = ({
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() => handleCopyToken(token.token)}
-                  className="text-2xs font-semibold text-bocado-green hover:text-bocado-dark-green"
+                  className="text-xs font-semibold text-bocado-green hover:text-bocado-dark-green transition-colors duration-200"
                 >
                   Copiar
                 </button>
                 <button
                   onClick={() => handleDeleteToken(token.id)}
-                  className="text-2xs font-semibold text-red-600 hover:text-red-700"
+                  className="text-xs font-semibold text-red-600 hover:text-red-700 transition-colors duration-200"
                 >
                   Eliminar
                 </button>

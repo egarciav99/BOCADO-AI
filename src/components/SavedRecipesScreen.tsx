@@ -75,7 +75,7 @@ const SavedRecipesScreen: React.FC = () => {
           )}
         </p>
         {toggleMutation.isPending && (
-          <p className="text-[10px] text-bocado-green mt-1">
+          <p className="text-xs text-bocado-green mt-1">
             {t("savedRecipes.syncing")}
           </p>
         )}
@@ -110,7 +110,7 @@ const SavedRecipesScreen: React.FC = () => {
                 <button
                   onClick={() => fetchNextPage()}
                   disabled={isFetchingNextPage}
-                  className="w-full py-3 px-4 bg-bocado-background text-bocado-dark-gray font-medium rounded-xl border border-bocado-border hover:bg-bocado-border/50 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 bg-bocado-background text-bocado-dark-gray font-medium rounded-xl border border-bocado-border hover:bg-bocado-border/50 transition-all duration-200 hover:scale-[1.01] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isFetchingNextPage ? (
                     <>

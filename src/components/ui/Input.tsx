@@ -47,7 +47,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
 
     const baseStyles =
-      "block w-full rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 disabled:bg-bocado-cream disabled:cursor-not-allowed";
+      "block w-full rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:scale-[1.01] disabled:bg-bocado-cream disabled:cursor-not-allowed";
 
     const sizes = {
       sm: "px-3 py-2 text-sm",
@@ -73,7 +73,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-sm font-bold text-bocado-dark-gray mb-2"
+            className="block text-xs font-bold text-bocado-dark-gray mb-2.5"
           >
             {label}
           </label>
