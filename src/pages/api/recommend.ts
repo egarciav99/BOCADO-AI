@@ -925,7 +925,7 @@ export default async function handler(req: any, res: any) {
     });
 
     const historyCol =
-      type === "En casa" ? "historial_recetas" : "historial_recomendaciones";
+      type === "Fuera" ? "historial_recomendaciones" : "historial_recetas";
 
     // 💰 FINOPS: Usar cache de perfil en lugar de lectura directa
     const user = await dataService.getUserProfile(userId);
@@ -1247,8 +1247,11 @@ export default async function handler(req: any, res: any) {
       user_id: userId,
       tipo: type,
       hasInteractionId: !!historyData.interaction_id,
+      hasReceta: !!historyData.receta,
+      hasRecomendaciones: !!historyData.recomendaciones,
+      dataSize: JSON.stringify(historyData).length,
     });
-    
+
     batch.set(historyRef, historyData);
 
     batch.update(interactionRef, cleanForFirestore({
@@ -1259,6 +1262,8 @@ export default async function handler(req: any, res: any) {
     }));
 
     await batch.commit();
+    
+    safeLog("log", `✅ Batch committed successfully for ${historyCol}/${interactionId}`);
 
     // ============================================
     // ÉXITO: Marcar proceso como completado
