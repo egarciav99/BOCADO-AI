@@ -51,7 +51,7 @@ export type UserProfile = z.infer<typeof UserProfileSchema>;
  */
 export const UserInteractionSchema = z.object({
   userId: z.string().min(1),
-  _id: z.string().min(1),
+  _id: z.string().min(1).optional(), // ID es asignado por Firestore después de addDoc
   mealType: z.string().min(1).max(100),
   cookingTime: z.number().int().min(1).max(120).nullable().optional(),
   cravings: z.array(z.string()).optional(),
@@ -60,8 +60,8 @@ export const UserInteractionSchema = z.object({
   dislikedFoods: z.array(z.string()).optional(),
   onlyPantryIngredients: z.boolean().optional(),
   language: z.string().length(2).optional(),
-  createdAt: z.date().or(z.object({ _seconds: z.number() })).optional(),
-  procesado: z.boolean().default(false),
+  createdAt: z.any().optional(), // Firestore FieldValue, no validamos directamente
+  procesado: z.boolean().default(false).optional(),
 });
 
 export type UserInteraction = z.infer<typeof UserInteractionSchema>;
