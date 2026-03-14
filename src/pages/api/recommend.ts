@@ -1490,9 +1490,9 @@ export default async function handler(req: any, res: any) {
       });
     } else if (type === "Receta Rápida") {
       // ✅ NUEVO: Lógica para Receta Rápida
-      // 1. Normalizar ingredientes del usuario
+      // 1. Normalizar y sanitizar ingredientes del usuario
       const normalizedIngredientes = (request.ingredientes || [])
-        .map((ing) => normalizeText(ing.toLowerCase()))
+        .map((ing) => PromptBuilder.escapeUserInput(normalizeText(ing.toLowerCase())))
         .filter(Boolean);
 
       if (normalizedIngredientes.length < 2) {
