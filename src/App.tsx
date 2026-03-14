@@ -14,6 +14,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastContainer } from "./components/ui/Toast";
 import { FeedbackModalProvider } from "./components/FeedbackModal";
 import { logEnvironmentStatus } from "./utils/envValidator";
+import { markSessionRestored, hasSessionInStorage } from "./utils/sessionPersistence";
 
 // 🚀 LAZY LOADING: Reduce bundle inicial ~50KB
 const HomeScreen = lazy(() => import("./components/HomeScreen"));
@@ -70,14 +71,15 @@ function AppContent() {
     logEnvironmentStatus();
   }, []);
 
-  // Timeout de seguridad: si Firebase no responde en 5s, forzar continuar
+  // Timeout de seguridad: si Firebase no responde en 10s, forzar continuar
+  // Aumentado a 10s para permitir que Firebase restaure la sesión desde localStorage
   React.useEffect(() => {
     if (!isLoading) return; // Ya resolvió, no crear timer
     const timer = setTimeout(() => {
-      console.warn("[App] Timeout de autenticación (5s) alcanzado");
+      console.warn("[App] Timeout de autenticación (10s) alcanzado");
       setAuthTimeout(true);
       useAuthStore.getState().setLoading(false);
-    }, 5000);
+    }, 10000);
     return () => clearTimeout(timer);
   }, [isLoading]); // ← Solo depende de isLoading
 
@@ -123,15 +125,31 @@ function AppContent() {
     let unsubscribe: (() => void) | null = null;
 
     try {
+      // Diagnóstico de sesión
+      const hasStorageSession = hasSessionInStorage();
       if (process.env.NODE_ENV === "development") {
+        console.log("[App] ¿Sesión en storage?", hasStorageSession);
         console.log("[App] Suscribiendo a onAuthStateChanged...");
       }
+
       unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
           if (process.env.NODE_ENV === "development") {
-            console.log("[App] onAuthStateChanged:", user ? `Sesión Activa (uid: ${user.uid.substring(0, 8)}...)` : "Sin Sesión");
+            console.log(
+              "[App] onAuthStateChanged:",
+              user
+                ? `✅ Sesión Restaurada (uid: ${user.uid.substring(0, 8)}...)`
+                : "❌ Sin Sesión",
+            );
           }
+
+          // ✅ Marcar que se restauró la sesión desde storage
+          if (user) {
+            markSessionRestored();
+            trackEvent("session_restored", { userId: user.uid });
+          }
+
           setUser(user);
           // Sincronizar usuario con Sentry para tracking de errores
           setUserContext(user?.uid || null, user?.email || undefined);

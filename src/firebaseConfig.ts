@@ -7,7 +7,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import type { Firestore } from "firebase/firestore";
-import { getAuth } from "firebase/auth";
+import { getAuth, setPersistence, browserLocalPersistence, initializeAuth } from "firebase/auth";
 import {
   getAnalytics,
   isSupported,
@@ -47,29 +47,61 @@ const getDb = () => {
   const apps = getApps();
   if (apps.length > 0) {
     try {
-      return getFirestore(app);
+      // Intentar inicializar con persistencia local
+      try {
+        return initializeFirestore(app, {
+          localCache: persistentLocalCache({
+            tabManager: persistentMultipleTabManager(),
+          }),
+        });
+      } catch (err) {
+        // Si falla (ej: ya inicializado), usar getFirestore
+        return getFirestore(app);
+      }
     } catch (e) {
-      // Si falla getFirestore, intentamos initialize
+      // Fallback final
+      return getFirestore(app);
     }
   }
 
-  /*
-  try {
-    return initializeFirestore(app, {
-      localCache: persistentLocalCache({
-        tabManager: persistentMultipleTabManager(),
-      }),
-    });
-  } catch (err) {
-    console.warn("[Firebase] Fallback a getFirestore:", err);
-    return getFirestore(app);
-  }
-  */
   return getFirestore(app);
 };
 
 const db = getDb();
+
+// ✅ CONFIGURACIÓN CRÍTICA: Persistencia explícita de Firebase Auth
+// Esto asegura que la sesión se mantenga incluso después de cerrar/reabrir la app
+const getAuthInstance = async () => {
+  const authInstance = getAuth(app);
+  
+  // Solo configurar en el navegador
+  if (typeof window !== "undefined") {
+    try {
+      // Configurar persistencia explícita (localStorage)
+      await setPersistence(authInstance, browserLocalPersistence);
+      if (isDev) console.log("✅ [Auth] Persistencia LOCAL configurada");
+    } catch (error: any) {
+      // Si falla (ej: modo incógnito), ignorar — Firebase usará fallback
+      if (error.code !== "auth/operation-not-supported-in-this-environment") {
+        console.warn("[Auth] No se pudo usar LOCAL persistence:", error.code);
+      }
+    }
+  }
+  
+  return authInstance;
+};
+
+// Auth instance — se inicializa de forma síncrona, persistencia se configura después
 const auth = getAuth(app);
+
+// Configurar persistencia de forma segura (fire and forget)
+if (typeof window !== "undefined") {
+  setPersistence(auth, browserLocalPersistence).catch((error: any) => {
+    if (error.code !== "auth/operation-not-supported-in-this-environment") {
+      logger.warn("[Auth] Persistencia config failed:", error.code);
+    }
+  });
+}
 
 // ============================================
 // ANALYTICS CON CONTEXTO ENRIQUECIDO

@@ -6,6 +6,7 @@ import { useAuthStore } from "../stores/authStore";
 import { useUserProfile } from "../hooks/useUser";
 import { logger } from "../utils/logger";
 import { useTranslation } from "../contexts/I18nContext";
+import { clearSessionData } from "../utils/sessionPersistence";
 
 interface HomeScreenProps {
   onStartRegistration: () => void;
@@ -44,6 +45,8 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const handleLogout = async () => {
     try {
       trackEvent("home_logout", { userId: user?.uid }); // ✅ Analítica
+      // Limpiar datos de sesión antes de logout
+      clearSessionData();
       await signOut(auth);
     } catch (error) {
       logger.error("Error signing out: ", error);
