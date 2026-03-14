@@ -295,6 +295,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
 
       // Preparar datos con ubicación si está disponible (solo para "Fuera")
       interface RequestBody {
+        type: "En casa" | "Fuera";
         userId: string;
         mealType: string;
         cookingTime: number | null;
@@ -313,6 +314,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
       }
 
       const requestBody: RequestBody = {
+        type: recommendationType,
         userId: user.uid,
         mealType: interactionData.mealType,
         cookingTime: interactionData.cookingTime,
