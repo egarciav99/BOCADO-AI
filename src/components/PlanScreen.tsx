@@ -124,6 +124,25 @@ const processRecommendationDoc = (doc: DocumentSnapshot): Plan | null => {
   }
 };
 
+// --- HELPER: Retry con delay para race conditions de replicación ---
+const retryQuery = async (
+  fn: () => Promise<any>,
+  maxRetries: number = 3,
+  delayMs: number = 1000,
+): Promise<any> => {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const result = await fn();
+      if (result) return result;
+    } catch (error) {
+      if (attempt < maxRetries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+  return null;
+};
+
 // --- HOOK DE CONSULTA ---
 const usePlanQuery = (
   planId: string | undefined,
@@ -136,59 +155,72 @@ const usePlanQuery = (
         throw new Error("Faltan parámetros");
       }
 
-      // 1) Consulta directa por interaction_id (más eficiente y precisa)
-      const [recipesSnap, recsSnap] = await Promise.all([
-        getDocs(
-          query(
-            collection(db, "historial_recetas"),
-            where("user_id", "==", userId),
-            where("interaction_id", "==", planId),
-            limit(1),
+      // 1) Consulta directa por interaction_id con retry (race condition protection)
+      const result = await retryQuery(async () => {
+        const [recipesSnap, recsSnap] = await Promise.all([
+          getDocs(
+            query(
+              collection(db, "historial_recetas"),
+              where("user_id", "==", userId),
+              where("interaction_id", "==", planId),
+              limit(1),
+            ),
           ),
-        ),
-        getDocs(
-          query(
-            collection(db, "historial_recomendaciones"),
-            where("user_id", "==", userId),
-            where("interaction_id", "==", planId),
-            limit(1),
+          getDocs(
+            query(
+              collection(db, "historial_recomendaciones"),
+              where("user_id", "==", userId),
+              where("interaction_id", "==", planId),
+              limit(1),
+            ),
           ),
-        ),
-      ]);
+        ]);
 
-      // ✅ FIX: Validar que existan docs antes de acceder al array
-      if (!recipesSnap.empty && recipesSnap.docs.length > 0) {
-        const docSnap = recipesSnap.docs[0];
-        const plan = processFirestoreDoc(docSnap);
-        if (plan) return plan;
-      }
+        // ✅ FIX: Validar que existan docs antes de acceder al array
+        if (!recipesSnap.empty && recipesSnap.docs.length > 0) {
+          const docSnap = recipesSnap.docs[0];
+          const plan = processFirestoreDoc(docSnap);
+          if (plan) return plan;
+        }
 
-      if (!recsSnap.empty && recsSnap.docs.length > 0) {
-        const docSnap = recsSnap.docs[0];
-        const plan = processRecommendationDoc(docSnap);
-        if (plan) return plan;
-      }
+        if (!recsSnap.empty && recsSnap.docs.length > 0) {
+          const docSnap = recsSnap.docs[0];
+          const plan = processRecommendationDoc(docSnap);
+          if (plan) return plan;
+        }
 
-      // 2) Fallback legacy: docId == planId
-      const [recipesDoc, recsDoc] = await Promise.all([
-        getDoc(doc(db, "historial_recetas", planId)),
-        getDoc(doc(db, "historial_recomendaciones", planId)),
-      ]);
+        return null;
+      }, 3, 800);
 
-      if (recipesDoc.exists()) {
-        const plan = processFirestoreDoc(recipesDoc);
-        if (plan) return plan;
-      }
+      if (result) return result;
 
-      if (recsDoc.exists()) {
-        const plan = processRecommendationDoc(recsDoc);
-        if (plan) return plan;
-      }
+      // 2) Fallback legacy: docId == planId (con retry)
+      const legacyResult = await retryQuery(async () => {
+        const [recipesDoc, recsDoc] = await Promise.all([
+          getDoc(doc(db, "historial_recetas", planId)),
+          getDoc(doc(db, "historial_recomendaciones", planId)),
+        ]);
+
+        if (recipesDoc.exists()) {
+          const plan = processFirestoreDoc(recipesDoc);
+          if (plan) return plan;
+        }
+
+        if (recsDoc.exists()) {
+          const plan = processRecommendationDoc(recsDoc);
+          if (plan) return plan;
+        }
+
+        return null;
+      }, 3, 800);
+
+      if (legacyResult) return legacyResult;
 
       throw new Error("No se encontró el plan");
     },
     enabled: !!planId && !!userId,
     staleTime: 1000 * 60 * 5,
+    retry: 1,
   });
 };
 
@@ -330,7 +362,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
         </div>
 
         <div className="space-y-3 max-w-2xl mx-auto">
-          {selectedPlan.meals.map((meal, index) => (
+          {selectedPlan.meals.map((meal: Meal, index: number) => (
             <MealCard
               key={index}
               meal={meal}
