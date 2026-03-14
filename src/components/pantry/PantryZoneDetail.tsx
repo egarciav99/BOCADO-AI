@@ -321,7 +321,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
             </div>
           </div>
           <p className="text-xs text-bocado-dark-gray mt-2">
-            {t("pantry.tapToChange")}}
+            {t("pantry.tapToChange")}
           </p>
         </div>
 
@@ -373,7 +373,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
         {suggestedItems.length > 0 && (
           <div className="mb-4">
             <p className="text-xs font-bold text-bocado-dark-gray mb-2 uppercase tracking-wider">
-              {t("pantry.suggestions")}}
+              {t("pantry.suggestions")}
             </p>
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               {suggestedItems.map((item) => (
