@@ -25,6 +25,7 @@ import { MapPin, Bell } from "./icons";
 import { ProfileSkeleton } from "./skeleton";
 import { Tooltip } from "./ui/Tooltip";
 import { useTranslation } from "../contexts/I18nContext";
+import { NotificationOnboarding } from "./NotificationOnboarding";
 import { NotificationSettings } from "./NotificationSettings";
 
 interface RecommendationScreenProps {
@@ -147,6 +148,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
   } = useNotifications(user?.uid);
 
   const [showNotificationBanner, setShowNotificationBanner] = useState(true);
+  const [showNotificationOnboarding, setShowNotificationOnboarding] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   const [locationRequested, setLocationRequested] = useState(false);
@@ -552,8 +554,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                   if (granted) {
                     trackEvent("notification_banner_activated");
                     setShowNotificationBanner(false);
-                    // Abrir automáticamente el modal de personalización
-                    setTimeout(() => setShowNotificationSettings(true), 500);
+                    // Abrir automáticamente el onboarding simple
+                    setTimeout(() => setShowNotificationOnboarding(true), 500);
                   }
                 }}
                 className="text-xs bg-amber-600 text-white font-bold px-3 py-1.5 rounded-full hover:bg-amber-700 active:scale-95 transition-all whitespace-nowrap"
@@ -875,7 +877,15 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
         </div>
       )}
 
-      {/* Modal de Notificaciones */}
+      {/* Onboarding de Notificaciones */}
+      <NotificationOnboarding
+        isOpen={showNotificationOnboarding}
+        onClose={() => setShowNotificationOnboarding(false)}
+        onOpenSettings={() => setShowNotificationSettings(true)}
+        userUid={user?.uid || ""}
+      />
+
+      {/* Modal de Notificaciones (Settings completo) */}
       <NotificationSettings
         isOpen={showNotificationSettings}
         onClose={() => setShowNotificationSettings(false)}

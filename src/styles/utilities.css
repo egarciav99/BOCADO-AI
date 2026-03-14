@@ -239,51 +239,9 @@
     filter: brightness(0.95);
   }
 
-  /* Slider mejorado con marcas */
+  /* Slider mejorado con marcas - Ahora usa quick-recipe-range-slider */
   .slider-with-ticks {
-    -webkit-appearance: slider-horizontal;
-  }
-
-  .slider-with-ticks::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: linear-gradient(
-      135deg,
-      var(--color-bocado-green) 0%,
-      var(--color-bocado-dark-green) 100%
-    );
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 181, 89, 0.3);
-    border: 2px solid white;
-    transition: all 0.2s ease;
-  }
-
-  .slider-with-ticks::-webkit-slider-thumb:active {
-    transform: scale(1.15);
-    box-shadow: 0 4px 12px rgba(0, 181, 89, 0.5);
-  }
-
-  .slider-with-ticks::-moz-range-thumb {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: linear-gradient(
-      135deg,
-      var(--color-bocado-green) 0%,
-      var(--color-bocado-dark-green) 100%
-    );
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0, 181, 89, 0.3);
-    border: 2px solid white;
-    transition: all 0.2s ease;
-  }
-
-  .slider-with-ticks::-moz-range-thumb:active {
-    transform: scale(1.15);
-    box-shadow: 0 4px 12px rgba(0, 181, 89, 0.5);
+    @apply quick-recipe-range-slider;
   }
 
   /* Smooth pulse para loading */

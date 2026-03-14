@@ -23,18 +23,24 @@ service cloud.firestore {
     match /user_interactions/{interactionId} {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow update, delete: if false;
+      // ✅ Allow updates from API endpoints (to mark as processed, etc.)
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow delete: if false; // No deletes allowed
     }
 
-    // Generated plans (backend writes)
+    // Generated plans (backend writes via API endpoints)
     match /historial_recetas/{docId} {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create, update, delete: if false;
+      // ✅ Allow creates from authenticated API endpoints (with user token)
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow update, delete: if false; // Backend-only modifications via Admin SDK
     }
 
     match /historial_recomendaciones/{docId} {
       allow read: if isAuthenticated() && resource.data.user_id == request.auth.uid;
-      allow create, update, delete: if false;
+      // ✅ Allow creates from authenticated API endpoints (with user token)
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow update, delete: if false; // Backend-only modifications via Admin SDK
     }
 
     // Saved items

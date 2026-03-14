@@ -321,6 +321,39 @@
         "body": "¡Las notificaciones están funcionando correctamente!"
       }
     },
+    "onboarding": {
+      "next": "Siguiente",
+      "skip": "Omitir",
+      "welcome": {
+        "title": "¡Activa tus recordatorios!",
+        "description": "Recibe notificaciones personalizadas en tus horarios preferidos para no perderte ninguna comida"
+      },
+      "feature1": {
+        "title": "Comidas en tu horario",
+        "desc": "Sugerencias a la hora que prefieras"
+      },
+      "feature2": {
+        "title": "Totalmente personalizable",
+        "desc": "Ajusta cada horario como quieras"
+      },
+      "feature3": {
+        "title": "Inteligentes y útiles",
+        "desc": "Recordatorios según tu actividad"
+      },
+      "meals": {
+        "title": "Tus 3 comidas principales",
+        "description": "Aquí están tus horarios. Podrás personalizarlos en cualquier momento.",
+        "customize": "Puedes cambiar los horarios en tu Perfil > Recordatorios"
+      },
+      "done": {
+        "title": "¡Todo listo! 🎉",
+        "description": "Tus notificaciones están activadas. Recibirás recordatorios en los horarios que configuraste.",
+        "cta": "Volver a Recomendaciones",
+        "customize": "Personalizar más",
+        "tip": "Tip: Puedes personalizar más recordatorios en tu Perfil",
+        "tipDesc": "Agrega recordatorios para calificaciones, actualizaciones de despensa y más"
+      }
+    },
     "types": {
       "mealReady": "¡Es hora de {meal}!",
       "planExpiring": "Tu plan semanal expira mañana",
@@ -1151,7 +1184,7 @@
     "ingredientPlaceholder": "Escribe: pan, huevo, leche...",
     "pressEnterHint": "Presiona Enter o selecciona de la lista",
     "ingredientsCount": "ingredientes",
-    "customizeTime": "Personalizar tiempo de cocción",
+    "customizeTime": "Personalizar tiempo",
     "cancelButton": "Cancelar",
     "generateButton": "Generar Receta",
     "generatingButton": "Generando...",

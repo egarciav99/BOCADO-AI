@@ -321,6 +321,39 @@
         "body": "Notifications are working correctly!"
       }
     },
+    "onboarding": {
+      "next": "Next",
+      "skip": "Skip",
+      "welcome": {
+        "title": "Activate your reminders!",
+        "description": "Get personalized notifications at your preferred times so you never miss a meal"
+      },
+      "feature1": {
+        "title": "Meals on your schedule",
+        "desc": "Suggestions at your preferred time"
+      },
+      "feature2": {
+        "title": "Fully customizable",
+        "desc": "Adjust each time as you like"
+      },
+      "feature3": {
+        "title": "Smart and useful",
+        "desc": "Reminders based on your activity"
+      },
+      "meals": {
+        "title": "Your 3 main meals",
+        "description": "Here are your times. You can customize them anytime.",
+        "customize": "You can change the times in your Profile > Reminders"
+      },
+      "done": {
+        "title": "All set! 🎉",
+        "description": "Your notifications are activated. You'll get reminders at the times you set.",
+        "cta": "Back to Recommendations",
+        "customize": "Customize more",
+        "tip": "Tip: You can add more reminders in your Profile",
+        "tipDesc": "Add reminders for ratings, pantry updates, and more"
+      }
+    },
     "types": {
       "mealReady": "It's time for {meal}!",
       "planExpiring": "Your weekly plan expires tomorrow",
@@ -1019,7 +1052,7 @@
     "ingredientPlaceholder": "Type: bread, egg, milk...",
     "pressEnterHint": "Press Enter or select from the list",
     "ingredientsCount": "ingredients",
-    "customizeTime": "Customize cooking time",
+    "customizeTime": "Customize time",
     "cancelButton": "Cancel",
     "generateButton": "Generate Recipe",
     "generatingButton": "Generating...",
