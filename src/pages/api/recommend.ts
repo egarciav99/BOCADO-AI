@@ -1203,7 +1203,8 @@ export default async function handler(req: any, res: any) {
     // VALIDACIÓN ESTRUCTURAL DE LA RESPUESTA
     // ============================================
     try {
-      if (type === "En casa") {
+      // ✅ NUEVO: Validar "Receta Rápida" con RecipeResponseSchema (genera recetas, no restaurantes)
+      if (type === "En casa" || type === "Receta Rápida") {
         parsedData = RecipeResponseSchema.parse(parsedData);
       } else {
         parsedData = RestaurantResponseSchema.parse(parsedData);

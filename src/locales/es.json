@@ -1143,6 +1143,7 @@
   },
   "quickRecipe": {
     "buttonTooltip": "Receta Rápida",
+    "tooltipDescription": "Crea una receta en segundos con los ingredientes que tengas",
     "title": "⚡ Receta Rápida",
     "description": "Agrega ingredientes que tengas y genera una receta en segundos.",
     "ingredientsLabel": "Ingredientes",

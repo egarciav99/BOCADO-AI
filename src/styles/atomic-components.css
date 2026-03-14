@@ -22,6 +22,57 @@
          dark:placeholder:text-gray-400;
 }
 
+/* ============================================
+   RANGE SLIDER - QUICK RECIPE
+   ============================================ */
+.quick-recipe-range-slider {
+  @apply h-2 rounded-lg appearance-none cursor-pointer
+         bg-bocado-border dark:bg-gray-600;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.quick-recipe-range-slider::-webkit-slider-thumb {
+  appearance: none;
+  @apply w-5 h-5 rounded-full
+         bg-bocado-green hover:bg-bocado-dark-green
+         shadow-md cursor-pointer transition-all duration-200
+         border border-white dark:border-gray-700;
+}
+
+.quick-recipe-range-slider::-webkit-slider-thumb:active {
+  @apply scale-110 shadow-lg;
+}
+
+/* Firefox */
+.quick-recipe-range-slider::-moz-range-thumb {
+  @apply w-5 h-5 rounded-full
+         bg-bocado-green hover:bg-bocado-dark-green
+         shadow-md cursor-pointer transition-all duration-200
+         border border-white dark:border-gray-700
+         appearance-none;
+}
+
+.quick-recipe-range-slider::-moz-range-thumb:active {
+  @apply scale-110 shadow-lg;
+}
+
+.quick-recipe-range-slider::-moz-range-track {
+  @apply bg-transparent border-none;
+}
+
+.quick-recipe-range-slider::-moz-range-progress {
+  @apply bg-bocado-green rounded-lg;
+}
+
+/* Disabled state */
+.quick-recipe-range-slider:disabled::-webkit-slider-thumb {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.quick-recipe-range-slider:disabled::-moz-range-thumb {
+  @apply opacity-50 cursor-not-allowed;
+}
+
 .input-error {
   @apply border-red-500 focus:border-red-500 focus:ring-red-200
          text-red-900 placeholder:text-red-300

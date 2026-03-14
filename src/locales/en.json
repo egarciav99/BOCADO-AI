@@ -1011,6 +1011,7 @@
   },
   "quickRecipe": {
     "buttonTooltip": "Quick Recipe",
+    "tooltipDescription": "Create a recipe in seconds with your ingredients",
     "title": "⚡ Quick Recipe",
     "description": "Add ingredients you have and generate a recipe in seconds.",
     "ingredientsLabel": "Ingredients",

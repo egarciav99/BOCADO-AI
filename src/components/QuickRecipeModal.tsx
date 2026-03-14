@@ -419,7 +419,7 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
                 value={cookingTime || 20}
                 onChange={(e) => setCookingTime(parseInt(e.target.value, 10))}
                 disabled={isGenerating}
-                className="w-full"
+                className="quick-recipe-range-slider w-full"
               />
             </div>
           )}
