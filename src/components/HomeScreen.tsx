@@ -131,6 +131,32 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
           )}
         </div>
       </div>
+
+      {/* FatSecret Platform API Attribution */}
+      <div className="mt-8 flex flex-col items-center gap-3 text-center">
+        <a
+          href="https://platform.fatsecret.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block hover:opacity-80 transition-opacity"
+          aria-label="Powered by FatSecret Platform API"
+        >
+          <img
+            alt="Nutrition information provided by fatsecret Platform API"
+            src="https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand.png"
+            srcSet="https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand@2x.png 2x, https://platform.fatsecret.com/api/static/images/powered_by_fatsecret_horizontal_brand@3x.png 3x"
+            className="h-8 w-auto"
+          />
+        </a>
+        <a
+          href="https://platform.fatsecret.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-bocado-gray dark:text-gray-500 hover:text-bocado-green dark:hover:text-bocado-green-light transition-colors"
+        >
+          Powered by FatSecret Platform API
+        </a>
+      </div>
     </div>
   );
 };
