@@ -125,7 +125,7 @@ className="fixed bottom-32 right-6 z-40 ... md:bottom-24"
 
 - **Mobile (< 768px)**: `bottom-32` (máxima altura para no tapar)
 - **Tablet (768px+)**: `bottom-24` (más espacio, puede estar más bajo)
-- **Desktop (1024px+)**: `bottom-24` (desktops pueden scrollear, no criticó)
+- **Desktop (1024px+)**: `bottom-24` (desktops pueden scrollear, no es crítico)
 
 ---
 
@@ -138,4 +138,4 @@ Una vez verificadas todas las pantallas sin problemas, considera esto **finaliza
 - ✅ MainApp padding aumentado: `pb-20` → `pb-28`
 - ✅ Responsive design con `md:bottom-24` para desktop
 - ✅ Comentarios explanatorios en código
-- ✅ Z-index seguro: 40 (FAB) < 50 (BottomTabBar) < 50 (Modal)
+- ✅ Z-index seguro: 40 (FAB) < 50 (BottomTabBar, Modal)

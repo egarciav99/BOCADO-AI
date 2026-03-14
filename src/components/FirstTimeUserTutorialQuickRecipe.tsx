@@ -18,16 +18,33 @@ const FirstTimeUserTutorialQuickRecipe: React.FC<
 
   useEffect(() => {
     // Verificar si el usuario ya vió el tutorial
-    const hasSeenTutorial = localStorage.getItem(
-      "hasSeenQuickRecipeTutorial"
-    );
-    if (hasSeenTutorial) {
-      setDismissed(true);
+    try {
+      const hasSeenTutorial = localStorage.getItem(
+        "hasSeenQuickRecipeTutorial"
+      );
+      if (hasSeenTutorial) {
+        setDismissed(true);
+      }
+    } catch (error) {
+      // localStorage might be unavailable (private mode, etc)
+      // If we can't read, just show the tutorial - no error needed
+      if (error instanceof Error) {
+        console.warn("Failed to read quick recipe tutorial preference:", error.message);
+      }
     }
   }, []);
 
   const handleDismiss = () => {
-    localStorage.setItem("hasSeenQuickRecipeTutorial", "true");
+    try {
+      localStorage.setItem("hasSeenQuickRecipeTutorial", "true");
+    } catch (error) {
+      // localStorage might be unavailable (private mode, quota exceeded, etc)
+      // Log the error but don't rethrow - dismiss must always complete
+      if (error instanceof Error) {
+        console.warn("Failed to save quick recipe tutorial preference:", error.message);
+      }
+    }
+    // Always dismiss the tutorial regardless of localStorage availability
     setDismissed(true);
     onDismiss();
   };

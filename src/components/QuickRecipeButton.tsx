@@ -47,7 +47,7 @@ const QuickRecipeButton: React.FC<QuickRecipeButtonProps> = ({
         disabled={disabled}
         className="fixed bottom-32 right-6 z-40 w-14 h-14 rounded-full bg-bocado-green hover:bg-bocado-dark-green active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center text-white text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed md:bottom-24"
         title={t("quickRecipe.buttonTooltip") || "Receta Rápida"}
-        aria-label="Generar receta rápida"
+        aria-label={t("quickRecipe.buttonTooltip") || "Generar receta rápida"}
       >
         ⚡
       </button>

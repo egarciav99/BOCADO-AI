@@ -129,8 +129,8 @@ const MainApp: React.FC<MainAppProps> = ({
       )}
 
       {/* Contenido - ocupa todo el espacio restante */}
-      {/* pb-28 (112px) = reservar espacio para FAB (56px) + BottomTabBar (~70px) + padd safe (~20px) */}
-      <main className="flex-1 overflow-y-auto min-h-0 pb-28 flex flex-col no-scrollbar">
+      {/* pb-36 (144px) = reservar espacio para FAB (56px) + BottomTabBar (~70px) + safe area (~20px) */}
+      <main className="flex-1 overflow-y-auto min-h-0 pb-36 flex flex-col no-scrollbar">
         <div className="min-h-full w-full max-w-md md:max-w-4xl lg:max-w-5xl mx-auto flex flex-col px-4 md:px-8">
           <ErrorBoundary>
             {activeTab === "recommendation" && (

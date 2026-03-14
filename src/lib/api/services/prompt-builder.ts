@@ -134,8 +134,12 @@ Personaliza el saludo_personalizado para hacerlo motivador y amable.`;
             language,
         } = options;
 
-        const ingredientesStr = ingredientes.join(", ");
-        const ingredientesFormatted = ingredientes.length > 0 
+        // 🛡️ Sanitize each ingredient to prevent prompt injection
+        const sanitizedIngredientes = ingredientes.map(ing => 
+            PromptBuilder.escapeUserInput(ing)
+        );
+        const ingredientesStr = sanitizedIngredientes.join(", ");
+        const ingredientesFormatted = sanitizedIngredientes.length > 0 
             ? `- DISPONIBLES: ${ingredientesStr}`
             : "";
 

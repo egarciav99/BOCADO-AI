@@ -147,10 +147,11 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
   };
 
   // 5. Remover ingrediente
-  const removeIngredient = (index: number) => {
-    const removed = selectedIngredients[index];
-    setSelectedIngredients(selectedIngredients.filter((_, i) => i !== index));
-    trackEvent("quick_recipe_ingredient_removed", { ingredient: removed });
+  const removeIngredient = (ingredientName: string) => {
+    setSelectedIngredients(
+      selectedIngredients.filter((ing) => ing !== ingredientName),
+    );
+    trackEvent("quick_recipe_ingredient_removed", { ingredient: ingredientName });
   };
 
   // 6. Generar receta
@@ -176,6 +177,9 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
 
     const controller = new AbortController();
     abortControllerRef.current = controller;
+    
+    // Initialize timeoutId - will be set if fetch starts successfully
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     try {
       // 1. Crear documento de interacción en Firestore
@@ -214,7 +218,7 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
         language: "es", // TODO: usar locale del context
       };
 
-      const timeoutId = setTimeout(() => {
+      timeoutId = setTimeout(() => {
         controller.abort();
         isProcessingRef.current = false;
         setIsGenerating(false);
@@ -233,8 +237,6 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
         body: JSON.stringify(requestBody),
         signal: controller.signal,
       });
-
-      clearTimeout(timeoutId);
 
       if (!response.ok) {
         if (response.status === 429) {
@@ -260,6 +262,10 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
         cooking_time: cookingTime,
       });
 
+      // Reset processing flags before notifying parent
+      isProcessingRef.current = false;
+      setIsGenerating(false);
+
       // Callback para cerrar modal y redirigir
       onRecipeGenerated(newDoc.id);
     } catch (err: any) {
@@ -277,6 +283,11 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
       isProcessingRef.current = false;
       setIsGenerating(false);
       trackEvent("quick_recipe_error", { error: err.message });
+    } finally {
+      // Ensure timeout is always cleared, regardless of success or error
+      if (timeoutId !== null) {
+        clearTimeout(timeoutId);
+      }
     }
   };
 
@@ -353,14 +364,14 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
         {/* Ingredientes Seleccionados como Chips */}
         {selectedIngredients.length > 0 && (
           <div className="flex flex-wrap gap-2">
-            {selectedIngredients.map((ing, idx) => (
+            {selectedIngredients.map((ing) => (
               <div
-                key={idx}
+                key={ing}
                 className="bg-bocado-green text-white px-3 py-1 rounded-full text-sm font-medium flex items-center gap-2"
               >
                 {ing}
                 <button
-                  onClick={() => removeIngredient(idx)}
+                  onClick={() => removeIngredient(ing)}
                   className="hover:opacity-70 transition"
                   aria-label={`Remover ${ing}`}
                 >

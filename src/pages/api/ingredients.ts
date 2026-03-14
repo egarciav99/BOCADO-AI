@@ -35,18 +35,20 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: "Firebase not initialized" });
   }
 
-  if (req.method !== "GET") {
-    return res.status(405).json({ error: "Método no permitido" });
-  }
-
   try {
-    // CORS headers
+    // CORS headers - ALWAYS SET before method checks
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
+    // Handle OPTIONS preflight requests before method validation
     if (req.method === "OPTIONS") {
       return res.status(200).end();
+    }
+
+    // Only GET is allowed from here
+    if (req.method !== "GET") {
+      return res.status(405).json({ error: "Método no permitido" });
     }
 
     // Verificar caché
@@ -62,6 +64,9 @@ export default async function handler(req: any, res: any) {
 
     if (snap.empty) {
       console.warn("[Ingredients] No ingredients found in Firestore");
+      // Cache the empty result to avoid repeated Firestore queries
+      ingredientsCache = [];
+      cacheTimestamp = now;
       return res.status(200).json({ ingredients: [] });
     }
 
@@ -81,7 +86,6 @@ export default async function handler(req: any, res: any) {
     console.error("[Ingredients] Error:", error);
     return res.status(500).json({
       error: "Error fetching ingredients",
-      message: error.message,
     });
   }
 }
