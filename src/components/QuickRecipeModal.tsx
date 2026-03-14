@@ -338,7 +338,8 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
                 t("quickRecipe.ingredientPlaceholder") || "Escribe: pan, huevo..."
               }
               disabled={isGenerating || loading}
-              className="w-full px-4 py-2 border border-bocado-border dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-bocado-dark-gray dark:text-white placeholder-gray-400 focus:outline-none focus:border-bocado-green transition disabled:opacity-50"
+              className="input-base"
+              aria-label={t("quickRecipe.ingredientsLabel")}
             />
 
             {/* Suggestions Dropdown */}
@@ -429,7 +430,7 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
           <button
             onClick={onClose}
             disabled={isGenerating}
-            className="flex-1 px-4 py-3 rounded-full border-2 border-bocado-green text-bocado-green font-bold hover:bg-bocado-background disabled:opacity-50 transition"
+            className="btn-secondary flex-1"
           >
             {t("quickRecipe.cancelButton") || "Cancelar"}
           </button>
@@ -440,7 +441,7 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
               selectedIngredients.length < 2 ||
               loading
             }
-            className="flex-1 px-4 py-3 rounded-full bg-bocado-green text-white font-bold hover:bg-bocado-dark-green active:scale-95 disabled:opacity-50 transition flex items-center justify-center gap-2"
+            className="btn-primary flex-1"
           >
             {isGenerating ? (
               <>

@@ -236,7 +236,8 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onFocus={() => trackEvent("registration_dislike_search_focus")} // ✅ Analítica
-            className="w-full px-4 py-2.5 rounded-xl border-2 border-bocado-border text-sm focus:outline-none focus:border-bocado-green"
+            className="input-base"
+            aria-label={t("step3.searchFood")}
           />
         </div>
 
@@ -303,12 +304,13 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
                 value={customFoodInput}
                 onChange={(e) => setCustomFoodInput(e.target.value)}
                 placeholder={t("step3.ingredientPlaceholder")}
-                className="flex-1 px-3 py-2 rounded-xl border-2 border-bocado-border text-sm focus:outline-none focus:border-bocado-green"
+                className="input-base flex-1"
+                aria-label={t("step3.ingredientPlaceholder")}
               />
               <button
                 type="button"
                 onClick={handleAddCustomFood}
-                className="px-4 py-2 bg-bocado-green text-white font-bold text-sm rounded-xl hover:bg-bocado-dark-green active:scale-95 transition-all"
+                className="btn-primary px-4 py-2 text-sm"
               >
                 {t("step3.add")}
               </button>

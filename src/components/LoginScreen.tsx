@@ -394,7 +394,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div className="relative">
           <label
             htmlFor="email"
-            className="block text-xs font-medium text-bocado-dark-gray mb-1"
+            className="label-base"
           >
             {t("login.email")}
           </label>
@@ -407,7 +407,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             onChange={handleEmailChange}
             onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 150)}
             autoComplete="email"
-            className={`w-full px-4 py-3 bg-bocado-background border-2 ${error ? "border-red-400" : "border-transparent"} rounded-xl text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all`}
+            className={`input-base ${error ? "border-red-500 focus:ring-red-200" : ""}`}
             placeholder={t("login.placeholders.email")}
             disabled={isLoading}
           />
@@ -437,7 +437,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div>
           <label
             htmlFor="password"
-            className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider"
+            className="label-base"
           >
             {t("login.password")}
           </label>
@@ -451,7 +451,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               setPassword(e.target.value);
               setError("");
             }}
-            className={`w-full px-4 py-3 bg-bocado-background border-2 ${error ? "border-red-400" : "border-transparent"} rounded-xl text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all`}
+            className={`input-base ${error ? "border-red-500 focus:ring-red-200" : ""}`}
             placeholder="••••••••"
             disabled={isLoading}
           />
@@ -516,9 +516,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             id="reset-email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-3 bg-bocado-background border-2 border-transparent rounded-xl text-sm text-bocado-text placeholder-bocado-gray/50 focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20 transition-all"
+            className="input-base"
             placeholder="tu@correo.com"
             disabled={isLoading}
+            aria-label={t("login.email")}
           />
         </div>
 

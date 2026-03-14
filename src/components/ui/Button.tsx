@@ -36,17 +36,17 @@ export const Button: React.FC<ButtonProps> = ({
   ...props
 }) => {
   const baseStyles =
-    "inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-bocado-green/50 focus:ring-offset-2 active:scale-[0.98] hover:scale-[1.02] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100";
+    "inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100 active:scale-[0.98] hover:scale-[1.02] min-w-0";
 
   const variants = {
     primary:
-      "bg-bocado-green text-white hover:bg-bocado-green-hover focus:ring-bocado-green shadow-bocado hover:shadow-bocado-lg",
+      "bg-bocado-green text-white hover:bg-bocado-green-hover focus:ring-2 focus:ring-bocado-green focus:ring-offset-2 shadow-bocado hover:shadow-bocado-lg dark:bg-bocado-green dark:hover:bg-bocado-dark-green dark:focus:ring-bocado-green/70",
     secondary:
-      "bg-bocado-cream text-bocado-dark-gray hover:bg-bocado-border focus:ring-bocado-gray",
+      "bg-bocado-cream text-bocado-dark-gray hover:bg-bocado-border focus:ring-2 focus:ring-bocado-gray focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500",
     outline:
-      "border-2 border-bocado-green text-bocado-green hover:bg-bocado-green hover:text-white focus:ring-bocado-green",
-    ghost: "text-bocado-dark-gray hover:bg-bocado-cream focus:ring-bocado-gray",
-    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500",
+      "border-2 border-bocado-green text-bocado-green hover:bg-bocado-green hover:text-white focus:ring-2 focus:ring-bocado-green focus:ring-offset-2 dark:border-bocado-green dark:text-bocado-green",
+    ghost: "text-bocado-dark-gray hover:bg-bocado-cream focus:ring-2 focus:ring-bocado-gray focus:ring-offset-2 dark:text-gray-200 dark:hover:bg-gray-700",
+    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-red-700 dark:hover:bg-red-800",
   };
 
   const sizes = {
@@ -61,6 +61,8 @@ export const Button: React.FC<ButtonProps> = ({
     <button
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthClass} ${isLoading ? "opacity-75" : ""} ${className}`}
       disabled={disabled || isLoading}
+      aria-busy={isLoading}
+      aria-disabled={disabled || isLoading}
       {...props}
     >
       {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

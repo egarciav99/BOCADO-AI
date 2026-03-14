@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import atomic component styles */
+@import './styles/atomic-components.css';
+
 @layer base {
   * {
     box-sizing: border-box;

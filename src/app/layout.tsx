@@ -37,7 +37,7 @@ export default function RootLayout({
                 md:max-w-app lg:max-w-app-lg xl:max-w-app-xl
                 md:rounded-4xl md:shadow-bocado-lg 
                 md:border-8 md:border-white dark:md:border-gray-700
-                overflow-visible relative flex flex-col"
+                overflow-hidden relative flex flex-col"
                         >
                             <PWABanner />
                             <NetworkStatusToast />

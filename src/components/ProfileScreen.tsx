@@ -126,7 +126,7 @@ const InfoSection: React.FC<{ title: string; children: React.ReactNode }> = ({
   children,
 }) => (
   <div className="mb-4">
-    <h3 className="text-xs font-bold text-bocado-dark-gray uppercase tracking-wider mb-2">
+    <h3 className="label-base">
       {title}
     </h3>
     <div className="flex flex-wrap gap-2">{children}</div>
@@ -968,39 +968,42 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </h2>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                <label className="label-base text-2xs">
                   {t("profile.currentPassword")}
                 </label>
                 <input
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20"
+                  className="input-base"
                   placeholder="••••••••"
+                  aria-label={t("profile.currentPassword")}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                <label className="label-base">
                   {t("profile.newPassword")}
                 </label>
                 <input
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20"
+                  className="input-base"
                   placeholder={t("registration.placeholders.password")}
+                  aria-label={t("profile.newPassword")}
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                <label className="label-base">
                   {t("profile.confirmPassword")}
                 </label>
                 <input
                   type="password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20"
+                  className="input-base"
                   placeholder="••••••••"
+                  aria-label={t("profile.confirmPassword")}
                 />
               </div>
               {error && (
@@ -1049,27 +1052,29 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             </p>
             <form onSubmit={handleChangeEmail} className="space-y-4">
               <div>
-                <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                <label className="label-base text-2xs">
                   {t("profile.currentPassword")}
                 </label>
                 <input
                   type="password"
                   value={emailPassword}
                   onChange={(e) => setEmailPassword(e.target.value)}
-                  className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20"
+                  className="input-base"
                   placeholder="••••••••"
+                  aria-label={t("profile.currentPassword")}
                 />
               </div>
               <div>
-                <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                <label className="label-base text-2xs">
                   {t("profile.newEmail")}
                 </label>
                 <input
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20"
+                  className="input-base"
                   placeholder={t("registration.placeholders.email")}
+                  aria-label={t("profile.newEmail")}
                 />
               </div>
               {error && (
@@ -1263,8 +1268,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   type="text"
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
-                  className="w-full px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm focus:outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100"
+                  className="input-base border-red-500 focus:ring-red-200 text-red-900 placeholder:text-red-300 dark:text-red-400 dark:border-red-600"
                   placeholder="ELIMINAR"
+                  aria-label={t("profile.deleteConfirmText")}
                 />
               </div>
 
@@ -1280,8 +1286,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       type="password"
                       value={deletePassword}
                       onChange={(e) => setDeletePassword(e.target.value)}
-                      className="w-full px-4 py-3 bg-bocado-background border border-bocado-border rounded-xl text-sm focus:outline-none focus:border-bocado-green focus:ring-2 focus:ring-bocado-green/20"
+                      className="input-base"
                       placeholder="••••••••"
+                      aria-label={t("profile.currentPassword")}
                     />
                   </div>
                 )}

@@ -105,7 +105,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(
               <span>{t("mealCard.viewOnMaps")}</span>
             </button>
             {recipe.direccion_aproximada && (
-              <p className="text-xs text-bocado-gray text-center mt-2 px-2 flex items-center justify-center gap-1">
+              <p className="text-xs text-bocado-gray text-center mt-2 px-2 flex items-center justify-center gap-1 line-clamp-2 max-w-sm mx-auto">
                 {recipe.direccion_aproximada}
               </p>
             )}
@@ -595,6 +595,8 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
               <button
                 onClick={handleSaveClick}
                 disabled={toggleMutation.isPending}
+                aria-label={saved ? t("mealCard.saved") : t("mealCard.saveForLater")}
+                aria-pressed={saved}
                 className={`p-2 rounded-full transition-all active:scale-90 disabled:opacity-50 ${
                   saved ? "text-red-500" : "text-bocado-gray hover:text-red-400"
                 }`}

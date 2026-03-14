@@ -47,7 +47,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
 
     const baseStyles =
-      "block w-full rounded-xl border transition-all duration-200 focus:outline-none focus:ring-2 focus:scale-[1.01] disabled:bg-bocado-cream disabled:cursor-not-allowed";
+      "block w-full rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:border-bocado-green focus:scale-[1.01] disabled:bg-bocado-cream disabled:cursor-not-allowed min-w-0 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-400";
 
     const sizes = {
       sm: "px-3 py-2 text-sm",
@@ -57,8 +57,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
     const hasError = !!error;
     const stateStyles = hasError
-      ? "border-red-500 focus:border-red-500 focus:ring-red-200 text-red-900 placeholder:text-red-300"
-      : "border-bocado-border focus:border-bocado-green focus:ring-bocado-green/20 placeholder:text-bocado-gray";
+      ? "border-red-500 focus:border-red-500 focus:ring-red-200 text-red-900 placeholder:text-red-300 dark:text-red-400 dark:border-red-600 dark:focus:ring-red-900/30"
+      : "border-bocado-border focus:border-bocado-green focus:ring-bocado-green/20 placeholder:text-bocado-gray dark:border-gray-600 dark:focus:ring-bocado-green/30";
 
     const iconPadding = {
       sm: leftIcon ? "pl-9" : rightIcon ? "pr-9" : "",

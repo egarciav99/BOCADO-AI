@@ -1,0 +1,314 @@
+/**
+ * ATOMIC COMPONENTS - Sistema de estilos base reutilizable
+ * 
+ * Propósito: Eliminar duplicación de estilos y asegurar consistencia visual
+ * WCAG AA Compliant - Contraste y accesibilidad garantizados
+ */
+
+/* ============================================
+   1. INPUT STYLES - BASE ESTANDARIZADO
+   ============================================ */
+
+.input-base {
+  @apply w-full px-3 py-2.5 sm:px-4 sm:py-3 min-w-0
+         rounded-lg border border-bocado-border
+         text-sm font-medium
+         placeholder:text-bocado-gray
+         focus:outline-none focus:ring-2 focus:ring-bocado-green/20
+         focus:border-bocado-green focus:scale-[1.01]
+         transition-all duration-200
+         disabled:bg-bocado-cream disabled:cursor-not-allowed
+         dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100
+         dark:placeholder:text-gray-400;
+}
+
+.input-error {
+  @apply border-red-500 focus:border-red-500 focus:ring-red-200
+         text-red-900 placeholder:text-red-300
+         dark:text-red-400 dark:border-red-600;
+}
+
+/* ============================================
+   2. BUTTON STYLES - BASE + VARIANTS
+   ============================================ */
+
+.btn-base {
+  @apply px-4 py-3 rounded-xl font-bold
+         transition-all duration-200
+         active:scale-95 
+         disabled:opacity-50 disabled:cursor-not-allowed
+         flex items-center justify-center gap-2
+         focus:outline-none focus:ring-2 focus:ring-offset-2
+         dark:focus:ring-offset-gray-800;
+}
+
+.btn-primary {
+  @apply bg-bocado-green text-white 
+         hover:bg-bocado-green-hover hover:scale-[1.02]
+         hover:shadow-bocado
+         focus:ring-bocado-green/30
+         dark:bg-bocado-green dark:hover:bg-bocado-green-hover;
+}
+
+.btn-secondary {
+  @apply bg-bocado-background text-bocado-dark-gray border border-bocado-border
+         hover:bg-bocado-border hover:scale-[1.02]
+         focus:ring-bocado-green/20
+         dark:bg-gray-700 dark:text-gray-100 dark:border-gray-600
+         dark:hover:bg-gray-600;
+}
+
+.btn-danger {
+  @apply bg-red-50 text-red-600 border border-red-200
+         hover:bg-red-100 hover:scale-[1.02]
+         focus:ring-red-200
+         dark:bg-red-900/20 dark:text-red-400 dark:border-red-700
+         dark:hover:bg-red-900/40;
+}
+
+.btn-icon {
+  @apply p-2 hover:bg-bocado-cream rounded-lg transition-colors
+         focus:outline-none focus:ring-2 focus:ring-bocado-green/20
+         dark:hover:bg-gray-700;
+}
+
+/* ============================================
+   3. LABEL STYLES
+   ============================================ */
+
+.label-base {
+  @apply block text-xs font-bold text-bocado-dark-gray
+         uppercase tracking-wider mb-2.5
+         dark:text-gray-200;
+}
+
+.label-optional {
+  @apply text-xs font-normal text-bocado-gray
+         dark:text-gray-400;
+}
+
+/* ============================================
+   4. BADGE STYLES
+   ============================================ */
+
+.badge-base {
+  @apply inline-flex items-center gap-1.5 px-3 py-1.5
+         rounded-full text-sm font-medium truncate max-w-xs
+         dark:bg-opacity-20;
+}
+
+.badge-green {
+  @apply badge-base bg-bocado-green/15 text-bocado-green
+         dark:bg-bocado-green/20 dark:text-bocado-green-light;
+}
+
+.badge-blue {
+  @apply badge-base bg-blue-100 text-blue-700
+         dark:bg-blue-900/20 dark:text-blue-400;
+}
+
+.badge-red {
+  @apply badge-base bg-red-100 text-red-700
+         dark:bg-red-900/20 dark:text-red-400;
+}
+
+.badge-yellow {
+  @apply badge-base bg-yellow-100 text-yellow-700
+         dark:bg-yellow-900/20 dark:text-yellow-400;
+}
+
+.badge-gray {
+  @apply badge-base bg-bocado-background text-bocado-dark-gray
+         dark:bg-gray-700 dark:text-gray-200;
+}
+
+/* ============================================
+   5. TEXT STYLES - JERARQUÍA
+   ============================================ */
+
+.text-primary {
+  @apply text-bocado-dark-gray dark:text-gray-100;
+}
+
+.text-secondary {
+  @apply text-bocado-gray dark:text-gray-400;
+}
+
+.text-tertiary {
+  @apply text-bocado-gray/70 text-xs dark:text-gray-500;
+}
+
+.text-error {
+  @apply text-red-600 dark:text-red-400 text-sm font-medium;
+}
+
+.text-success {
+  @apply text-bocado-green dark:text-bocado-green-light font-medium;
+}
+
+/* ============================================
+   6. ICON SIZES - CONSISTENCIA
+   ============================================ */
+
+.icon-xs { @apply w-3 h-3; }
+.icon-sm { @apply w-4 h-4; }
+.icon-md { @apply w-5 h-5; }
+.icon-lg { @apply w-6 h-6; }
+.icon-xl { @apply w-8 h-8; }
+
+/* ============================================
+   7. RESPONSIVE PADDING & CONTAINERS
+   ============================================ */
+
+.px-safe {
+  @apply px-4 sm:px-6 md:px-8;
+}
+
+.py-safe {
+  @apply py-4 sm:py-6 md:py-8;
+}
+
+.container-safe {
+  @apply w-full max-w-full flex flex-col
+         px-4 sm:px-6 gap-4 overflow-hidden;
+}
+
+.grid-cols-safe {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+         gap-3 sm:gap-4 px-4 sm:px-6;
+}
+
+/* ============================================
+   8. TEXT OVERFLOW & TRUNCATION
+   ============================================ */
+
+.truncate-address {
+  @apply truncate text-ellipsis max-w-xs;
+}
+
+.line-clamp-2-mobile {
+  @apply line-clamp-2;
+}
+
+@media (min-width: 640px) {
+  .line-clamp-2-mobile {
+    @apply line-clamp-none;
+  }
+}
+
+.btn-text-safe {
+  @apply truncate flex-1 overflow-hidden text-ellipsis min-w-0;
+}
+
+/* ============================================
+   9. ANIMATIONS & TRANSITIONS
+   ============================================ */
+
+.transition-interactive {
+  @apply transition-all duration-200 ease-out;
+}
+
+.hover-scale-up {
+  @apply hover:scale-[1.02] hover:shadow-md;
+}
+
+.active-scale-down {
+  @apply active:scale-[0.98];
+}
+
+/* ============================================
+   10. FOCUS STATES - ACCESIBILIDAD WCAG AA
+   ============================================ */
+
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2
+         focus:ring-bocado-green focus:ring-offset-bocado-background
+         dark:focus:ring-offset-gray-800;
+}
+
+.focus-ring-error {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2
+         focus:ring-red-500 focus:ring-offset-bocado-background
+         dark:focus:ring-offset-gray-800;
+}
+
+/* ============================================
+   11. SKELETON & LOADING STATES
+   ============================================ */
+
+.skeleton-pulse {
+  @apply animate-pulse bg-bocado-cream dark:bg-gray-700;
+}
+
+/* ============================================
+   12. CARD STYLES
+   ============================================ */
+
+.card-base {
+  @apply rounded-xl bg-white dark:bg-gray-800 
+         border border-bocado-border dark:border-gray-700
+         shadow-sm hover:shadow-md transition-shadow;
+}
+
+.card-elevated {
+  @apply rounded-xl bg-white dark:bg-gray-800
+         shadow-bocado hover:shadow-bocado-lg transition-shadow;
+}
+
+/* ============================================
+   13. SECTION DIVIDERS
+   ============================================ */
+
+.section-divider {
+  @apply border-t border-bocado-border dark:border-gray-700 my-4;
+}
+
+/* ============================================
+   14. ACCESSIBILITY HELPERS
+   ============================================ */
+
+.sr-only {
+  @apply absolute w-1 h-1 p-0 -m-1 overflow-hidden 
+         whitespace-nowrap border-0;
+  clip: rect(0, 0, 0, 0);
+}
+
+.visually-hidden {
+  @apply sr-only;
+}
+
+/* ============================================
+   15. DARK MODE - CONSISTENT PALETTE
+   ============================================ */
+
+@media (prefers-color-scheme: dark) {
+  .dark\:interactive-element {
+    @apply dark:hover:bg-gray-700 dark:focus:outline-none;
+  }
+}
+
+/* ============================================
+   16. HIGH CONTRAST MODE (Accessibility)
+   ============================================ */
+
+@media (prefers-contrast: more) {
+  .input-base {
+    @apply border-2;
+  }
+  
+  .btn-base {
+    @apply ring-2 ring-offset-2 ring-bocado-green;
+  }
+}
+
+/* ============================================
+   17. REDUCED MOTION (Accessibility)
+   ============================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .transition-interactive,
+  .hover-scale-up,
+  .active-scale-down {
+    @apply transition-none;
+  }
+}

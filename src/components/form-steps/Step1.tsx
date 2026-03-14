@@ -230,11 +230,11 @@ const Step1: React.FC<ExtendedStep1Props> = ({
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-4 animate-fade-in px-4 sm:px-0">
       {/* Nombre y Apellido */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+          <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider dark:text-gray-200">
             {t("step1.firstName")}
           </label>
           <input
@@ -247,7 +247,9 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               trackEvent("registration_input_focus", { field: "firstName" })
             }
             placeholder={t("step1.firstNamePlaceholder")}
-            className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+            maxLength={50}
+            aria-label={t("step1.firstName")}
+            className={`input-base ${
               errors.firstName
                 ? "border-red-300 bg-red-50"
                 : "border-bocado-border focus:border-bocado-green focus:outline-none"
@@ -258,7 +260,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           )}
         </div>
         <div>
-          <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+          <label className="label-base">
             {t("step1.lastName")}
           </label>
           <input
@@ -271,11 +273,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               trackEvent("registration_input_focus", { field: "lastName" })
             }
             placeholder={t("step1.lastNamePlaceholder")}
-            className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
+            className={`input-base ${
               errors.lastName
-                ? "border-red-300 bg-red-50"
-                : "border-bocado-border focus:border-bocado-green focus:outline-none"
+                ? "border-red-500 focus:ring-red-200"
+                : ""
             }`}
+            aria-label={t("step1.lastName")}
           />
           {errors.lastName && (
             <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
