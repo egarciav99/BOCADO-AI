@@ -59,7 +59,7 @@ export const EmojiPicker: React.FC<EmojiPickerProps> = ({ onSelect, onClose }) =
                     {EMOJI_CATEGORIES.map((cat) => (
                         <div key={cat.key} className="mb-6">
                             <p className="text-xs font-bold text-bocado-dark-gray mb-3 uppercase tracking-wider">
-                                {t(`pantry.categories.${cat.key}`)}}
+                                {t(`pantry.categories.${cat.key}`)}
                             </p>
                             <div className="grid grid-cols-5 gap-2">
                                 {cat.emojis.map((emoji) => (

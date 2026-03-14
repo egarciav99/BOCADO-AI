@@ -569,7 +569,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
                           {recipe.carbs_g}g
                         </div>
                         <div className="text-amber-500 text-xs mt-0.5">
-                          {t("mealCard.carbs")
+                          {t("mealCard.carbs")}
                         </div>
                       </div>
                       <div className="bg-rose-50 p-2 rounded-lg text-center">
@@ -577,7 +577,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
                           {recipe.fat_g}g
                         </div>
                         <div className="text-rose-500 text-xs mt-0.5">
-                          {t("mealCard.fats")
+                          {t("mealCard.fats")}
                         </div>
                       </div>
                     </div>
