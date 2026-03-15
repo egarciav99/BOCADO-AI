@@ -398,10 +398,10 @@
     "homeButton": "En casa",
     "outButton": "Fuera",
     "notificationBanner": {
-      "title": "🔔 Activa notificaciones",
-      "description": "Recibe sugerencias personalizadas en tus horarios preferidos",
-      "customize": "✏️ Personaliza horarios de desayuno, almuerzo, cena y más",
-      "activate": "✓ Permitir notificaciones",
+      "title": "🔔 Notificaciones",
+      "description": "Sugerencias en tus horarios",
+      "customize": "Personaliza en tu Perfil",
+      "activate": "Permitir",
       "later": "Ahora no"
     },
     "useIngredients": "Usa tus\ningredientes",

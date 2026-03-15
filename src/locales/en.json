@@ -388,10 +388,10 @@
     "homeButton": "At home",
     "outButton": "Eat out",
     "notificationBanner": {
-      "title": "🔔 Enable notifications",
-      "description": "Get personalized suggestions at your preferred times",
-      "customize": "✏️ Customize breakfast, lunch, dinner times and more",
-      "activate": "✓ Allow notifications",
+      "title": "🔔 Notifications",
+      "description": "Suggestions at your times",
+      "customize": "Customize in Profile",
+      "activate": "Allow",
       "later": "Not now"
     },
     "useIngredients": "Use your\ningredients",

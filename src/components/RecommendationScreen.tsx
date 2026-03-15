@@ -882,7 +882,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
         isOpen={showNotificationOnboarding}
         onClose={() => setShowNotificationOnboarding(false)}
         onOpenSettings={() => setShowNotificationSettings(true)}
-        userUid={user?.uid || ""}
       />
 
       {/* Modal de Notificaciones (Settings completo) */}

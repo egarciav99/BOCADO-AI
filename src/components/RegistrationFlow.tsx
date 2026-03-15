@@ -355,7 +355,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
 
   return (
     <div className="h-full min-h-0 flex flex-col px-4 pt-safe pb-4">
-      <div className="flex-1 flex flex-col max-w-md mx-auto w-full">
+      <div className="flex-1 flex flex-col max-w-md mx-auto w-full min-h-0">
         <div className="mt-4 mb-6">
           <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
         </div>

@@ -367,6 +367,10 @@ export const setAnalyticsProperties = (properties: Record<string, any>) => {
 
 let messaging: ReturnType<typeof getMessaging> | null = null;
 
+// Tracker para evitar registrar el listener múltiples veces
+let foregroundMessageListenerRegistered = false;
+let foregroundMessageUnsubscribe: (() => void) | null = null;
+
 // Inicializar messaging solo si está soportado (no en Safari iOS)
 const initMessaging = async () => {
   if (typeof window === "undefined") return null;
@@ -436,19 +440,46 @@ export const requestNotificationPermission = async (): Promise<
 
 /**
  * Escuchar mensajes en primer plano
+ * IMPORTANTE: Solo se registra el listener UNA vez globalmente para evitar duplicados.
+ * Cada llamada simplemente activa la lógica de creación de notificación.
  */
 export const onForegroundMessage = (callback: (payload: any) => void) => {
-  initMessaging().then((msg) => {
-    if (msg) {
-      onMessage(msg, (payload) => {
-        logger.info("Mensaje recibido en primer plano:", payload);
-        trackEvent("notification_received_foreground", {
-          title: payload.notification?.title,
+  // Registrar el listener solo la primera vez
+  if (!foregroundMessageListenerRegistered) {
+    foregroundMessageListenerRegistered = true;
+    
+    initMessaging().then((msg) => {
+      if (msg) {
+        // onMessage devuelve una función unsubscribe que guardamos por si acaso
+        foregroundMessageUnsubscribe = onMessage(msg, (payload) => {
+          logger.info("Mensaje recibido en primer plano:", payload);
+          trackEvent("notification_received_foreground", {
+            title: payload.notification?.title,
+          });
+          
+          // Mostrar notificación si el usuario tiene permisos
+          if (Notification.permission === "granted") {
+            new Notification(payload.notification?.title || "Bocado", {
+              body: payload.notification?.body,
+              icon: "/icons/icon-192x192.png",
+              badge: "/icons/icon-72x72.png",
+            });
+          }
         });
-        callback(payload);
-      });
-    }
-  });
+      }
+    });
+  }
+};
+
+/**
+ * Limpiar el listener global de mensajes en foreground (si es necesario)
+ */
+export const unsubscribeForegroundMessage = () => {
+  if (foregroundMessageUnsubscribe) {
+    foregroundMessageUnsubscribe();
+    foregroundMessageUnsubscribe = null;
+    foregroundMessageListenerRegistered = false;
+  }
 };
 
 /**

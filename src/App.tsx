@@ -15,6 +15,16 @@ import { ToastContainer } from "./components/ui/Toast";
 import { FeedbackModalProvider } from "./components/FeedbackModal";
 import { logEnvironmentStatus } from "./utils/envValidator";
 import { markSessionRestored, hasSessionInStorage } from "./utils/sessionPersistence";
+import {
+  logAuthState,
+  validateAuthTokenStorage,
+  detectPrivateMode,
+} from "./utils/authDebug";
+import {
+  saveUserDataForOffline,
+  recordTokenRefresh,
+  getFirebaseTokenDiagnostics,
+} from "./utils/tokenPersistence";
 
 // 🚀 LAZY LOADING: Reduce bundle inicial ~50KB
 const HomeScreen = lazy(() => import("./components/HomeScreen"));
@@ -69,6 +79,22 @@ function AppContent() {
   // Validar variables de entorno al inicializar
   React.useEffect(() => {
     logEnvironmentStatus();
+    
+    // ✅ DEBUG: Verificar estado de autenticación al startup
+    if (process.env.NODE_ENV === "development") {
+      console.log("\n%c═══════ AUTH STARTUP DEBUG ═══════", "color: #ff6b6b; font-weight: bold");
+      logAuthState("STARTUP");
+      
+      const tokenStatus = validateAuthTokenStorage();
+      console.log("🔑 Token Storage:", tokenStatus);
+      
+      const tokenDiagnostics = getFirebaseTokenDiagnostics();
+      console.log("📊 Token Diagnostics:", tokenDiagnostics);
+      
+      detectPrivateMode().then((isPrivate) => {
+        console.log("🔒 Private Mode:", isPrivate ? "YES ⚠️" : "NO");
+      });
+    }
   }, []);
 
   // Timeout de seguridad: si Firebase no responde en 10s, forzar continuar
@@ -123,6 +149,7 @@ function AppContent() {
     }
 
     let unsubscribe: (() => void) | null = null;
+    let authStateChangedCount = 0;
 
     try {
       // Diagnóstico de sesión
@@ -135,18 +162,39 @@ function AppContent() {
       unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
+          authStateChangedCount++;
+          const timestamp = new Date().toISOString();
+
           if (process.env.NODE_ENV === "development") {
             console.log(
-              "[App] onAuthStateChanged:",
-              user
-                ? `✅ Sesión Restaurada (uid: ${user.uid.substring(0, 8)}...)`
-                : "❌ Sin Sesión",
+              `%c[Auth State #${authStateChangedCount}] ${timestamp}`,
+              "color: #00a8e8; font-weight: bold",
             );
+            if (user) {
+              console.log(
+                "%c✅ Sesión Restaurada",
+                "color: #2ecc71; font-weight: bold",
+              );
+              console.log("  UID:", user.uid);
+              console.log("  Email:", user.email);
+              console.log("  Email Verified:", user.emailVerified);
+              logAuthState("AFTER_RESTORE");
+              recordTokenRefresh();
+            } else {
+              console.log(
+                "%c❌ Sin Sesión",
+                "color: #e74c3c; font-weight: bold",
+              );
+            }
           }
+
+          // ✅ Guardar datos del usuario para restauración offline
+          saveUserDataForOffline(user);
 
           // ✅ Marcar que se restauró la sesión desde storage
           if (user) {
             markSessionRestored();
+            recordTokenRefresh();
             trackEvent("session_restored", { userId: user.uid });
           }
 
@@ -162,7 +210,11 @@ function AppContent() {
           }
         },
         (error) => {
-          console.error("[App] Error en onAuthStateChanged:", error);
+          console.error(
+            "%c[Auth Error]",
+            "color: #e74c3c; font-weight: bold",
+            error,
+          );
           captureError(error, { type: "auth_state_change_error" });
           setAuthTimeout(true);
           useAuthStore.getState().setLoading(false);

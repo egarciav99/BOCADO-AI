@@ -260,20 +260,15 @@ export const useNotifications = (
     localStorage.setItem(LAST_ACTIVE_KEY, new Date().toISOString());
   }, []);
 
-  // Sync Foreground Messages
+  // Sync Foreground Messages - register global listener once
+  // (The listener itself only registers once globally to avoid duplicates)
   useEffect(() => {
     if (!isSupported) return;
-    return onForegroundMessage((payload) => {
-      setLastMessage(payload);
-      if (Notification.permission === "granted") {
-        new Notification(payload.notification?.title || t("notifications.appName"), {
-          body: payload.notification?.body,
-          icon: "/icons/icon-192x192.png",
-          badge: "/icons/icon-72x72.png",
-        });
-      }
+    onForegroundMessage(() => {
+      // Callback is no longer used since the listener is registered globally
+      // in firebaseConfig.ts to avoid duplicates when multiple components use this hook
     });
-  }, [isSupported, t]);
+  }, [isSupported]);
 
   // Check conditions for smart notifications
   const checkNotifications = useCallback(() => {
