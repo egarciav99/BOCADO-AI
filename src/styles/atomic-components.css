@@ -36,7 +36,7 @@
   appearance: none;
   @apply w-5 h-5 rounded-full
          bg-bocado-green hover:bg-bocado-dark-green
-         shadow-bocado cursor-pointer transition-all duration-200
+         shadow-bocado cursor-pointer
          border-2 border-white dark:border-gray-700;
 }
 
@@ -53,7 +53,7 @@
 .quick-recipe-range-slider::-moz-range-thumb {
   @apply w-5 h-5 rounded-full
          bg-bocado-green hover:bg-bocado-dark-green
-         shadow-bocado cursor-pointer transition-all duration-200
+         shadow-bocado cursor-pointer
          border-2 border-white dark:border-gray-700
          appearance-none;
 }
