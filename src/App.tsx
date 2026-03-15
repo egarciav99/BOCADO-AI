@@ -25,6 +25,18 @@ import {
   recordTokenRefresh,
   getFirebaseTokenDiagnostics,
 } from "./utils/tokenPersistence";
+import {
+  debugLog,
+  logSessionStatus,
+  dumpDebugLogs,
+} from "./utils/debugLogger";
+
+// ✅ DEBUG: Import debug console (only in development)
+const DebugConsole = lazy(() =>
+  import("./components/DebugConsole").then((m) => ({
+    default: m.DebugConsole,
+  })),
+);
 
 // 🚀 LAZY LOADING: Reduce bundle inicial ~50KB
 const HomeScreen = lazy(() => import("./components/HomeScreen"));
@@ -81,19 +93,23 @@ function AppContent() {
     logEnvironmentStatus();
     
     // ✅ DEBUG: Verificar estado de autenticación al startup
+    debugLog("state", "APP_STARTUP", {
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV,
+    });
+
+    logSessionStatus();
+
+    const hasStorage = hasSessionInStorage();
+    debugLog("info", "Checking session in storage", {
+      hasStorageSession: hasStorage,
+    });
+
     if (process.env.NODE_ENV === "development") {
-      console.log("\n%c═══════ AUTH STARTUP DEBUG ═══════", "color: #ff6b6b; font-weight: bold");
-      logAuthState("STARTUP");
-      
-      const tokenStatus = validateAuthTokenStorage();
-      console.log("🔑 Token Storage:", tokenStatus);
-      
-      const tokenDiagnostics = getFirebaseTokenDiagnostics();
-      console.log("📊 Token Diagnostics:", tokenDiagnostics);
-      
-      detectPrivateMode().then((isPrivate) => {
-        console.log("🔒 Private Mode:", isPrivate ? "YES ⚠️" : "NO");
-      });
+      // Mostrar logs en la consola en desarrollo
+      setTimeout(() => {
+        dumpDebugLogs();
+      }, 500);
     }
   }, []);
 
@@ -142,11 +158,15 @@ function AppContent() {
   useEffect(() => {
     // Verificar que Firebase esté configurado
     if (!env.firebase.apiKey || env.firebase.apiKey === "") {
-      console.error("[App] Firebase API Key no configurada");
+      debugLog("error", "Firebase API Key not configured", {});
       setAuthTimeout(true);
       useAuthStore.getState().setLoading(false);
       return;
     }
+
+    debugLog("info", "Firebase API Key found", {
+      projectId: env.firebase.projectId,
+    });
 
     let unsubscribe: (() => void) | null = null;
     let authStateChangedCount = 0;
@@ -154,49 +174,35 @@ function AppContent() {
     try {
       // Diagnóstico de sesión
       const hasStorageSession = hasSessionInStorage();
-      if (process.env.NODE_ENV === "development") {
-        console.log("[App] ¿Sesión en storage?", hasStorageSession);
-        console.log("[App] Suscribiendo a onAuthStateChanged...");
-      }
+      
+      debugLog("info", "Setting up onAuthStateChanged", {
+        hasStorageSession,
+      });
 
       unsubscribe = onAuthStateChanged(
         auth,
         (user) => {
           authStateChangedCount++;
-          const timestamp = new Date().toISOString();
 
-          if (process.env.NODE_ENV === "development") {
-            console.log(
-              `%c[Auth State #${authStateChangedCount}] ${timestamp}`,
-              "color: #00a8e8; font-weight: bold",
-            );
-            if (user) {
-              console.log(
-                "%c✅ Sesión Restaurada",
-                "color: #2ecc71; font-weight: bold",
-              );
-              console.log("  UID:", user.uid);
-              console.log("  Email:", user.email);
-              console.log("  Email Verified:", user.emailVerified);
-              logAuthState("AFTER_RESTORE");
-              recordTokenRefresh();
-            } else {
-              console.log(
-                "%c❌ Sin Sesión",
-                "color: #e74c3c; font-weight: bold",
-              );
-            }
+          if (user) {
+            debugLog("state", "Session Restored from Firebase", {
+              uid: user.uid,
+              email: user.email,
+              emailVerified: user.emailVerified,
+              count: authStateChangedCount,
+            });
+
+            markSessionRestored();
+            recordTokenRefresh();
+            trackEvent("session_restored", { userId: user.uid });
+          } else {
+            debugLog("warn", "No Session Found", {
+              count: authStateChangedCount,
+            });
           }
 
           // ✅ Guardar datos del usuario para restauración offline
           saveUserDataForOffline(user);
-
-          // ✅ Marcar que se restauró la sesión desde storage
-          if (user) {
-            markSessionRestored();
-            recordTokenRefresh();
-            trackEvent("session_restored", { userId: user.uid });
-          }
 
           setUser(user);
           // Sincronizar usuario con Sentry para tracking de errores
@@ -210,18 +216,20 @@ function AppContent() {
           }
         },
         (error) => {
-          console.error(
-            "%c[Auth Error]",
-            "color: #e74c3c; font-weight: bold",
-            error,
-          );
+          debugLog("error", "Auth State Changed Error", {
+            code: (error as any)?.code,
+            message: (error as any)?.message,
+          });
+
           captureError(error, { type: "auth_state_change_error" });
           setAuthTimeout(true);
           useAuthStore.getState().setLoading(false);
         },
       );
     } catch (error) {
-      console.error("[App] Fallo crítico al configurar onAuthStateChanged:", error);
+      debugLog("error", "Critical error setting up auth", {
+        message: (error as any)?.message || String(error),
+      });
       captureError(error as Error, { type: "auth_setup_error" });
       setAuthTimeout(true);
       useAuthStore.getState().setLoading(false);
@@ -376,8 +384,8 @@ function AppContent() {
           return (
             <Suspense fallback={<ScreenLoadingFallback />}>
               <HomeScreen
-                onStartRegistration={() => setCurrentScreen("permissions")}
-                onGoToApp={() => setCurrentScreen("recommendation")}
+                onStartRegistration={() => setCurrentScreen("registerMethod")}
+                onGoToApp={() => setCurrentScreen("permissions")}
                 onGoToLogin={() => setCurrentScreen("login")}
               />
             </Suspense>
@@ -418,6 +426,13 @@ function AppContent() {
           </div>
         </div>
       </div>
+
+      {/* Debug Console (only in development) */}
+      {process.env.NODE_ENV === "development" && (
+        <Suspense fallback={null}>
+          <DebugConsole />
+        </Suspense>
+      )}
     </SentryErrorBoundary>
   );
 }
