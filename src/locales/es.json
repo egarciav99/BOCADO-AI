@@ -655,6 +655,16 @@
     "decline": "No acepto, volver al inicio",
     "footer": "Tus datos están encriptados y protegidos"
   },
+  "completeProfile": {
+    "title": "Completa tu Perfil",
+    "subtitle": "Necesitamos un poco más de información para personalizar tu experiencia",
+    "progress": "Progreso",
+    "missingFieldsCount": "Campos faltantes",
+    "info": "Con esta información podemos darte recomendaciones personalizadas de comidas y planes nutricionales adaptados a ti.",
+    "continueButton": "Completar Perfil",
+    "logoutButton": "Cerrar Sesión",
+    "footer": "Tu información está segura y protegida por encriptación."
+  },
   "tutorial": {
     "welcome": "¡Bienvenido{userName}!",
     "subtitle": "Tu asistente inteligente de nutrición. Te mostramos lo que necesitas saber.",

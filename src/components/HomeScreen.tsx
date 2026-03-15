@@ -1,12 +1,13 @@
 import React from "react";
 import BocadoLogo from "./BocadoLogo";
 import { signOut } from "firebase/auth";
-import { auth, trackEvent } from "../firebaseConfig"; // ✅ Importado trackEvent
+import { auth, trackEvent } from "../firebaseConfig";
 import { useAuthStore } from "../stores/authStore";
 import { useUserProfile } from "../hooks/useUser";
 import { logger } from "../utils/logger";
 import { useTranslation } from "../contexts/I18nContext";
 import { clearSessionData } from "../utils/sessionPersistence";
+import { isProfileComplete } from "../utils/profileValidation";
 
 interface HomeScreenProps {
   onStartRegistration: () => void;
@@ -20,10 +21,32 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onGoToLogin,
 }) => {
   const { isAuthenticated, user } = useAuthStore();
-  const { data: profile } = useUserProfile(user?.uid);
+  const { data: profile, isLoading: profileLoading } = useUserProfile(user?.uid);
   const { t, locale, setLocale } = useTranslation();
 
-  const hasSession = isAuthenticated || !!profile;
+  // ✅ FIX: hasSession debe ser true SOLO si:
+  // 1. Usuario está autenticado en Firebase
+  // 2. El perfil ya cargó (no en loading)
+  // 3. El perfil está COMPLETO
+  const hasCompleteProfile = !profileLoading && isProfileComplete(profile);
+  const hasSession = isAuthenticated && hasCompleteProfile;
+
+  // Mostrar loading mientras se verifica el perfil
+  if (isAuthenticated && profileLoading) {
+    return (
+      <div className="h-full flex items-center justify-center px-4 py-8 pt-safe pb-safe bg-gradient-to-b from-bocado-cream to-white dark:from-gray-900 dark:to-gray-800">
+        <div className="text-center">
+          <div className="w-40 mx-auto mb-6">
+            <BocadoLogo className="w-full" />
+          </div>
+          <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-bocado-green font-bold animate-pulse">
+            {t("common.loading") || "Cargando..."}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // --- HANDLERS CON ANALÍTICA ---
 

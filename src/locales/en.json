@@ -597,6 +597,16 @@
     "decline": "I don't accept, go back home",
     "footer": "Your data is encrypted and protected"
   },
+  "completeProfile": {
+    "title": "Complete Your Profile",
+    "subtitle": "We need a little more information to personalize your experience",
+    "progress": "Progress",
+    "missingFieldsCount": "Missing fields",
+    "info": "With this information we can give you personalized meal recommendations and nutrition plans tailored to you.",
+    "continueButton": "Complete Profile",
+    "logoutButton": "Logout",
+    "footer": "Your information is safe and protected by encryption."
+  },
   "tutorial": {
     "welcome": "Welcome{userName}!",
     "subtitle": "Your intelligent nutrition assistant. Here's what you need to know.",

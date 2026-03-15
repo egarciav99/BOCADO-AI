@@ -30,6 +30,9 @@ import {
   logSessionStatus,
   dumpDebugLogs,
 } from "./utils/debugLogger";
+import { isProfileComplete } from "./utils/profileValidation";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "./firebaseConfig";
 
 // ✅ DEBUG: Import debug console (only in development)
 const DebugConsole = lazy(() =>
@@ -44,6 +47,7 @@ const RegistrationMethodScreen = lazy(() => import("./components/RegistrationMet
 const RegistrationFlow = lazy(() => import("./components/RegistrationFlow"));
 const LoginScreen = lazy(() => import("./components/LoginScreen"));
 const PermissionsScreen = lazy(() => import("./components/PermissionsScreen"));
+const CompleteProfileScreen = lazy(() => import("./components/CompleteProfileScreen"));
 const PlanScreen = lazy(() => import("./components/PlanScreen"));
 const MainApp = lazy(() => import("./components/MainApp"));
 
@@ -64,6 +68,7 @@ export type AppScreen =
   | "login"
   | "recommendation"
   | "permissions"
+  | "completeProfile"
   | "plan";
 
 // Configuración de TanStack Query
@@ -181,7 +186,7 @@ function AppContent() {
 
       unsubscribe = onAuthStateChanged(
         auth,
-        (user) => {
+        async (user) => {
           authStateChangedCount++;
 
           if (user) {
@@ -195,10 +200,50 @@ function AppContent() {
             markSessionRestored();
             recordTokenRefresh();
             trackEvent("session_restored", { userId: user.uid });
+
+            // ✅ CRÍTICO: Validar que el usuario tiene un perfil COMPLETO
+            try {
+              const profileRef = doc(db, "users", user.uid);
+              const profileSnap = await getDoc(profileRef);
+              
+              if (profileSnap.exists()) {
+                const profile = profileSnap.data();
+                const hasCompleteProfile = isProfileComplete(profile as any);
+
+                debugLog("info", "Profile Status Check", {
+                  uid: user.uid.substring(0, 8) + "...",
+                  hasProfile: true,
+                  isComplete: hasCompleteProfile,
+                });
+
+                // Decidir navegación basado en si el perfil está completo
+                if (hasCompleteProfile) {
+                  setCurrentScreen("recommendation");
+                } else {
+                  // Perfil incompleto → permitir que lo complete
+                  setCurrentScreen("completeProfile");
+                }
+              } else {
+                // Usuario sin perfil → debe completarlo
+                debugLog("warn", "User has no profile document", {
+                  uid: user.uid.substring(0, 8) + "...",
+                });
+
+                setCurrentScreen("completeProfile");
+              }
+            } catch (profileError) {
+              debugLog("error", "Error checking profile", {
+                error: (profileError as any)?.message || String(profileError),
+              });
+
+              // En caso de error, ir a completeProfile (es más seguro que recommendation)
+              setCurrentScreen("completeProfile");
+            }
           } else {
             debugLog("warn", "No Session Found", {
               count: authStateChangedCount,
             });
+            setCurrentScreen("home");
           }
 
           // ✅ Guardar datos del usuario para restauración offline
@@ -209,10 +254,8 @@ function AppContent() {
           setUserContext(user?.uid || null, user?.email || undefined);
           if (user) {
             addBreadcrumb("User authenticated", "auth");
-            setCurrentScreen("recommendation");
           } else {
             addBreadcrumb("User logged out", "auth");
-            setCurrentScreen("home");
           }
         },
         (error) => {
@@ -310,7 +353,13 @@ function AppContent() {
           return (
             <Suspense fallback={<ScreenLoadingFallback />}>
               <PermissionsScreen
-                onAccept={() => setCurrentScreen("registerMethod")}
+                onAccept={() => {
+                  if (isAuthenticated) {
+                    setCurrentScreen("recommendation");
+                  } else {
+                    setCurrentScreen("registerMethod");
+                  }
+                }}
                 onGoHome={() => setCurrentScreen("home")}
               />
             </Suspense>
@@ -347,9 +396,17 @@ function AppContent() {
               <LoginScreen
                 onLoginSuccess={() => {
                   setIsNewUser(false);
-                  setCurrentScreen("recommendation");
                 }}
                 onGoHome={() => setCurrentScreen("home")}
+              />
+            </Suspense>
+          );
+        case "completeProfile":
+          return (
+            <Suspense fallback={<ScreenLoadingFallback />}>
+              <CompleteProfileScreen
+                onStartCompletion={() => setCurrentScreen("register")}
+                onLogout={() => setCurrentScreen("home")}
               />
             </Suspense>
           );
