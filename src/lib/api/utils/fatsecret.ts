@@ -55,27 +55,36 @@ export async function getFatSecretToken() {
 export async function searchFatSecretIngredients(query: string, maxResults = 50, region?: string, language?: string) {
   const startTime = Date.now();
   const token = await getFatSecretToken();
+  
+  // Premium Free tier: only basic params supported
   const params: any = {
     method: 'foods.search',
     search_expression: query,
-    max_results: maxResults,
     format: 'json',
   };
+  
+  // Note: region and language may not be supported in Premium Free tier
+  // Omit them to use default behavior
 
-  if (region) params.region = region;
-  if (language) params.language = language;
-
-  console.log(`[FatSecret] Searching: "${query}" (region: ${region || 'default'}, lang: ${language || 'default'})`);
+  console.log(`[FatSecret] Searching: "${query}"`);
 
   const res = await fetch(`https://platform.fatsecret.com/rest/server.api?${stringifyParams(params)}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
   if (!res.ok) {
-    console.error(`[FatSecret] Search failed for "${query}": HTTP ${res.status}`);
+    const errorText = await res.text();
+    console.error(`[FatSecret] Search failed for "${query}": HTTP ${res.status}`, errorText);
     throw new Error('FatSecret search failed');
   }
   const data = await res.json();
+  
+  // Check for API errors
+  if (data.error) {
+    console.error(`[FatSecret] API error for "${query}":`, data.error);
+    return [];
+  }
+  
   const results = data.foods?.food || [];
   const duration = Date.now() - startTime;
   console.log(`[FatSecret] Search "${query}" returned ${results.length} results in ${duration}ms`);
