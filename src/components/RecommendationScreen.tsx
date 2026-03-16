@@ -675,8 +675,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                       {/* Marcas de referencia */}
                       <div className="flex justify-between text-xs text-bocado-dark-gray font-medium px-1">
                         <span>🚀 10m</span>
-                        <span>⚡ 30m</span>
-                        <span>🍽️ 60m</span>
+                        <span>⚡ 35m</span>
+                        <span>🍽️ 60m+</span>
                       </div>
                     </div>
                   </div>
