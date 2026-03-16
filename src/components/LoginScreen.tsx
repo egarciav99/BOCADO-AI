@@ -289,7 +289,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   if (needsVerification && unverifiedUser) {
     return (
       <div className="min-h-full flex items-center justify-center px-4 py-8 pt-safe pb-safe">
-        <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm text-center animate-fade-in">
+        <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm text-center animate-fade-in">
           <div className="w-14 h-14 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
               className="w-7 h-7 text-yellow-600"
@@ -305,13 +305,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               />
             </svg>
           </div>
-          <h2 className="text-xl font-bold text-bocado-dark-green mb-2">
-            {t("login.emailNotVerified")}
+          <h2 className="text-xl font-bold text-bocado-dark-green dark:text-green-300 mb-2">
           </h2>
-          <p className="text-base text-bocado-dark-gray mb-4">
+          <p className="text-base text-bocado-dark-gray dark:text-gray-300 mb-4">
             {t("login.verificationRequired")}
           </p>
-          <p className="text-sm text-bocado-gray mb-6 break-all">
+          <p className="text-sm text-bocado-gray dark:text-gray-400 mb-6 break-all">
             {t("login.linkSentTo")} <strong>{unverifiedUser.email}</strong>
           </p>
 
@@ -336,7 +335,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             </button>
             <button
               onClick={handleLogoutUnverified}
-              className="w-full text-bocado-gray font-medium py-2 text-sm hover:text-bocado-dark-gray transition-colors"
+              className="w-full text-bocado-gray dark:text-gray-400 font-medium py-2 text-sm hover:text-bocado-dark-gray dark:hover:text-gray-300 transition-colors"
             >
               {t("login.useOtherAccount")}
             </button>
@@ -352,16 +351,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div className="w-40 mx-auto mb-2">
           <BocadoLogo className="w-full" />
         </div>
-        <h1 className="text-xl font-bold text-bocado-dark-green">
+        <h1 className="text-xl font-bold text-bocado-dark-green dark:text-green-300">
           {t("login.title")}
         </h1>
-        <p className="text-sm text-bocado-gray mt-1">{t("login.subtitle")}</p>
+        <p className="text-sm text-bocado-gray dark:text-gray-400 mt-1">{t("login.subtitle")}</p>
       </div>
 
       <button
         onClick={handleGoogleSignIn}
         disabled={isLoading}
-        className="w-full bg-white border-2 border-bocado-border text-bocado-text font-bold py-3 px-4 rounded-full text-base shadow-sm hover:bg-bocado-background hover:border-bocado-dark-gray active:scale-95 transition-all disabled:bg-bocado-gray disabled:text-white flex items-center justify-center gap-2 mb-4"
+        aria-label={t("login.continueWithGoogle") || "Continuar con Google"}
+        className="w-full bg-white dark:bg-gray-700 border-2 border-bocado-border dark:border-gray-600 text-bocado-text dark:text-gray-200 font-bold py-3 px-4 rounded-full text-base shadow-sm hover:bg-bocado-background dark:hover:bg-gray-600 hover:border-bocado-dark-gray active:scale-95 transition-all disabled:bg-bocado-gray disabled:text-white flex items-center justify-center gap-2 mb-4"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path
@@ -385,9 +385,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       </button>
 
       <div className="flex items-center gap-3 my-4">
-        <div className="flex-1 h-px bg-bocado-border"></div>
-        <span className="text-xs text-bocado-gray font-medium">O</span>
-        <div className="flex-1 h-px bg-bocado-border"></div>
+        <div className="flex-1 h-px bg-bocado-border dark:bg-gray-700"></div>
+        <span className="text-xs text-bocado-gray dark:text-gray-500 font-medium">O</span>
+        <div className="flex-1 h-px bg-bocado-border dark:bg-gray-700"></div>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-4">
@@ -413,7 +413,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           />
           {showEmailSuggestions && emailSuggestions.length > 0 && (
             <div
-              className="absolute z-10 w-full mt-1 bg-white border border-bocado-border rounded-xl shadow-lg overflow-hidden"
+              className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-700 border border-bocado-border dark:border-gray-600 rounded-xl shadow-lg overflow-hidden"
               role="listbox"
               aria-label={t("login.emailSuggestions")}
             >
@@ -424,7 +424,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
                     role="option"
                     tabIndex={0}
                     onMouseDown={() => handleEmailSuggestionClick(suggestion)}
-                    className="px-4 py-2 text-sm text-bocado-text cursor-pointer hover:bg-bocado-background active:bg-bocado-green/10"
+                    className="px-4 py-2 text-sm text-bocado-text dark:text-gray-200 cursor-pointer hover:bg-bocado-background dark:hover:bg-gray-600 active:bg-bocado-green/10"
                   >
                     {suggestion}
                   </li>
@@ -458,7 +458,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg">
+          <p className="text-red-500 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/20 p-2 rounded-lg">
             {error}
           </p>
         )}
@@ -495,10 +495,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           <BocadoLogo className="w-full h-auto" />
         </div>
 
-        <h1 className="text-xl font-bold text-bocado-dark-green">
+        <h1 className="text-xl font-bold text-bocado-dark-green dark:text-green-300">
           {t("login.resetPassword")}
         </h1>
-        <p className="text-sm text-bocado-gray mt-1">
+        <p className="text-sm text-bocado-gray dark:text-gray-400 mt-1">
           {t("login.resetSubtitle")}
         </p>
       </div>
@@ -507,7 +507,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div>
           <label
             htmlFor="reset-email"
-            className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider"
+            className="block text-xs font-bold text-bocado-dark-gray dark:text-gray-300 mb-1.5 uppercase tracking-wider"
           >
             {t("login.email")}
           </label>
@@ -557,12 +557,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
   return (
     <div className="min-h-full flex items-center justify-center px-4 py-8 pt-safe pb-safe">
-      <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
+      <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
         {view === "login" ? renderLoginView() : renderResetView()}
-        <div className="mt-6 text-center pt-4 border-t border-bocado-border">
+        <div className="mt-6 text-center pt-4 border-t border-bocado-border dark:border-gray-700">
           <button
             onClick={handleGoBack}
-            className="text-xs text-bocado-gray hover:text-bocado-dark-gray transition-colors"
+            className="text-xs text-bocado-gray dark:text-gray-400 hover:text-bocado-dark-gray dark:hover:text-gray-300 transition-colors"
             disabled={isLoading}
           >
             {t("home.backToHome")}

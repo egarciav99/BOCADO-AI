@@ -71,15 +71,15 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
 
   return (
     <div className="min-h-full flex items-center justify-center px-4 py-8 pt-safe pb-safe">
-      <div className="bg-white p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
+      <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in">
         <div className="text-center mb-6">
           <div className="w-40 mx-auto mb-2">
             <BocadoLogo className="w-full" />
           </div>
-          <h1 className="text-xl font-bold text-bocado-dark-green">
+          <h1 className="text-xl font-bold text-bocado-dark-green dark:text-green-300">
             {t("registration.title") || "Crear cuenta"}
           </h1>
-          <p className="text-sm text-bocado-gray mt-1">
+          <p className="text-sm text-bocado-gray dark:text-gray-400 mt-1">
             {t("registration.subtitle") || "Elige cómo quieres registrarte"}
           </p>
         </div>
@@ -88,7 +88,8 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            className="w-full bg-white border-2 border-bocado-border text-bocado-text font-bold py-3 px-4 rounded-full text-base shadow-sm hover:bg-bocado-background hover:border-bocado-dark-gray active:scale-95 transition-all disabled:bg-bocado-gray disabled:text-white flex items-center justify-center gap-2"
+            aria-label={t("registration.continueWithGoogle") || "Continuar con Google"}
+            className="w-full bg-white dark:bg-gray-700 border-2 border-bocado-border dark:border-gray-600 text-bocado-text dark:text-gray-200 font-bold py-3 px-4 rounded-full text-base shadow-sm hover:bg-bocado-background dark:hover:bg-gray-600 hover:border-bocado-dark-gray active:scale-95 transition-all disabled:bg-bocado-gray disabled:text-white flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path
@@ -114,9 +115,9 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
           </button>
 
           <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-bocado-border"></div>
-            <span className="text-xs text-bocado-gray font-medium">O</span>
-            <div className="flex-1 h-px bg-bocado-border"></div>
+            <div className="flex-1 h-px bg-bocado-border dark:bg-gray-700"></div>
+            <span className="text-xs text-bocado-gray dark:text-gray-500 font-medium">O</span>
+            <div className="flex-1 h-px bg-bocado-border dark:bg-gray-700"></div>
           </div>
 
           <button
@@ -129,15 +130,15 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
         </div>
 
         {error && (
-          <p className="text-red-500 text-sm text-center bg-red-50 p-2 rounded-lg mt-4">
+          <p className="text-red-500 dark:text-red-400 text-sm text-center bg-red-50 dark:bg-red-900/20 p-2 rounded-lg mt-4">
             {error}
           </p>
         )}
 
-        <div className="mt-6 text-center pt-4 border-t border-bocado-border">
+        <div className="mt-6 text-center pt-4 border-t border-bocado-border dark:border-gray-700">
           <button
             onClick={handleGoBack}
-            className="text-xs text-bocado-gray hover:text-bocado-dark-gray transition-colors"
+            className="text-xs text-bocado-gray dark:text-gray-400 hover:text-bocado-dark-gray dark:hover:text-gray-300 transition-colors"
             disabled={isLoading}
           >
             {t("home.backToHome") || "Volver al inicio"}
