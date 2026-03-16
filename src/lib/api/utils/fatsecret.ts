@@ -58,25 +58,27 @@ export async function getFatSecretToken() {
 }
 
 /**
- * Search for food items
+ * Search for food items using FatSecret API v1
+ * New endpoint: https://platform.fatsecret.com/rest/foods/search/v1
  */
 export async function searchFatSecretIngredients(query: string, maxResults = 50, region?: string, language?: string) {
   const startTime = Date.now();
   const token = await getFatSecretToken();
   
-  // Premium Free tier: only basic params supported
   const params: any = {
-    method: 'foods.search',
     search_expression: query,
     format: 'json',
+    max_results: Math.min(maxResults, 50), // API max is 50
   };
   
-  // Note: region and language may not be supported in Premium Free tier
-  // Omit them to use default behavior
+  // Add region/language if provided (supported in v1)
+  if (region) params.region = region;
+  if (language) params.language = language;
 
   console.log(`[FatSecret] Searching: "${query}"`);
 
-  const res = await fetch(`https://platform.fatsecret.com/rest/server.api?${stringifyParams(params)}`, {
+  const queryString = stringifyParams(params);
+  const res = await fetch(`https://platform.fatsecret.com/rest/foods/search/v1?${queryString}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -103,20 +105,22 @@ export async function searchFatSecretIngredients(query: string, maxResults = 50,
     return [];
   }
   
-  const results = data.foods?.food || [];
+  const results = data.food || [];
   const duration = Date.now() - startTime;
   console.log(`[FatSecret] Search "${query}" returned ${results.length} results in ${duration}ms`);
   return results;
 }
 
 /**
- * Get detailed food information
+ * Get detailed food information using FatSecret API v5
+ * Endpoint: https://platform.fatsecret.com/rest/food/v5
+ * 
+ * Returns detailed nutritional information with standard serving sizes
  */
 export async function getFatSecretFood(foodId: string, region?: string, language?: string) {
   const startTime = Date.now();
   const token = await getFatSecretToken();
   const params: any = {
-    method: 'food.get.v4', // Using v4 as requested in some docs, or keep consistency
     food_id: foodId,
     format: 'json',
   };
@@ -126,7 +130,8 @@ export async function getFatSecretFood(foodId: string, region?: string, language
 
   console.log(`[FatSecret] Getting food details: ID ${foodId}`);
 
-  const res = await fetch(`https://platform.fatsecret.com/rest/server.api?${stringifyParams(params)}`, {
+  const queryString = stringifyParams(params);
+  const res = await fetch(`https://platform.fatsecret.com/rest/food/v5?${queryString}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -143,7 +148,7 @@ export async function getFatSecretFood(foodId: string, region?: string, language
   
   const duration = Date.now() - startTime;
   console.log(`[FatSecret] Food details retrieved in ${duration}ms`);
-  return data.food;
+  return data;
 }
 
 /**
