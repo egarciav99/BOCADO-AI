@@ -57,6 +57,127 @@ export class NutritionEnricher {
   }
 
   /**
+   * Traduce ingredientes comunes de español a inglés para búsqueda en FatSecret
+   */
+  private static translateToEnglish(spanish: string): string {
+    const translations: Record<string, string> = {
+      // Proteínas
+      'pollo': 'chicken',
+      'carne': 'beef',
+      'res': 'beef',
+      'pescado': 'fish',
+      'atún': 'tuna',
+      'salmón': 'salmon',
+      'huevos': 'eggs',
+      'huevo': 'egg',
+      'pavo': 'turkey',
+      'cerdo': 'pork',
+      'camarón': 'shrimp',
+      'camarones': 'shrimp',
+      
+      // Lácteos
+      'leche': 'milk',
+      'queso': 'cheese',
+      'yogur': 'yogurt',
+      'mantequilla': 'butter',
+      'crema': 'cream',
+      'requesón': 'cottage cheese',
+      
+      // Vegetales
+      'tomate': 'tomato',
+      'jitomate': 'tomato',
+      'jitomates': 'tomatoes',
+      'cebolla': 'onion',
+      'ajo': 'garlic',
+      'zanahoria': 'carrot',
+      'papa': 'potato',
+      'brócoli': 'broccoli',
+      'espinaca': 'spinach',
+      'espinacas': 'spinach',
+      'lechuga': 'lettuce',
+      'pimiento': 'pepper',
+      'chile': 'pepper',
+      'calabaza': 'squash',
+      'aguacate': 'avocado',
+      'pepino': 'cucumber',
+      'ejotes': 'green beans',
+      'chícharo': 'peas',
+      'apio': 'celery',
+      
+      // Frutas
+      'manzana': 'apple',
+      'plátano': 'banana',
+      'naranja': 'orange',
+      'fresa': 'strawberry',
+      'fresas': 'strawberries',
+      'limón': 'lemon',
+      'uva': 'grape',
+      'sandía': 'watermelon',
+      'melón': 'melon',
+      'piña': 'pineapple',
+      'mango': 'mango',
+      'pera': 'pear',
+      
+      // Granos y legumbres
+      'arroz': 'rice',
+      'frijol': 'beans',
+      'frijoles': 'beans',
+      'lentejas': 'lentils',
+      'garbanzos': 'chickpeas',
+      'avena': 'oats',
+      'quinoa': 'quinoa',
+      'amaranto': 'amaranth',
+      'maíz': 'corn',
+      'trigo': 'wheat',
+      'pasta': 'pasta',
+      'pan': 'bread',
+      'tortilla': 'tortilla',
+      
+      // Aceites y grasas
+      'aceite': 'oil',
+      'oliva': 'olive',
+      'manteca': 'lard',
+      
+      // Frutos secos
+      'almendra': 'almond',
+      'almendras': 'almonds',
+      'nuez': 'walnut',
+      'cacahuate': 'peanut',
+      'pistacho': 'pistachio',
+      
+      // Especias y condimentos
+      'sal': 'salt',
+      'pimienta': 'pepper',
+      'azúcar': 'sugar',
+      'canela': 'cinnamon',
+      'orégano': 'oregano',
+      'comino': 'cumin',
+      'cilantro': 'cilantro',
+      'perejil': 'parsley',
+      'albahaca': 'basil',
+      'jengibre': 'ginger',
+      'vainilla': 'vanilla',
+      'vinagre': 'vinegar',
+      'mostaza': 'mustard',
+      'salsa': 'sauce',
+      'caldo': 'broth',
+      
+      // Otros
+      'agua': 'water',
+      'harina': 'flour',
+      'miel': 'honey',
+      'chocolate': 'chocolate',
+      'café': 'coffee',
+      'té': 'tea',
+    };
+    
+    // Traducir cada palabra
+    const words = spanish.toLowerCase().split(' ');
+    const translated = words.map(word => translations[word] || word);
+    return translated.join(' ');
+  }
+
+  /**
    * Limpia el nombre del ingrediente para búsqueda
    * Ej: "200g de pollo" -> "pollo"
    */
@@ -91,9 +212,12 @@ export class NutritionEnricher {
       const cleanName = this.cleanIngredientName(ingredient);
       if (!cleanName || cleanName.length < 2) return null;
 
-      console.log(`[Nutrition] Searching FatSecret: "${cleanName}"`);
+      // Traducir a inglés para búsqueda en FatSecret US
+      const englishName = this.translateToEnglish(cleanName);
+
+      console.log(`[Nutrition] Searching FatSecret: "${cleanName}" → "${englishName}"`);
       
-      const results = await searchFatSecretIngredients(cleanName, 10, region, language);
+      const results = await searchFatSecretIngredients(englishName, 10, region, 'en');
       
       if (!results || results.length === 0) {
         console.log(`[Nutrition] No results for "${cleanName}"`);
