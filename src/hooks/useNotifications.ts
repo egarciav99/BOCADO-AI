@@ -327,11 +327,12 @@ export const useNotifications = (
     });
   }, [isSupported, permission, daysSinceLastPantryUpdate, pendingRatingsCount, daysSinceLastAppUse]);
 
-  // Interval Loop
+  // Interval Loop - DISABLED: Backend FCM handles notification sending
+  // Client-side polling was causing duplicate notifications (3x)
   useEffect(() => {
     if (!isSupported || permission !== "granted") return;
-    intervalRef.current = setInterval(checkNotifications, 60000);
-    checkNotifications();
+    // intervalRef.current = setInterval(checkNotifications, 60000);
+    // checkNotifications(); // Initial check disabled - rely on FCM push
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };

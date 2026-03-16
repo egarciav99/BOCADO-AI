@@ -458,11 +458,13 @@ export const onForegroundMessage = (callback: (payload: any) => void) => {
           });
           
           // Mostrar notificación si el usuario tiene permisos
-          if (Notification.permission === "granted") {
-            new Notification(payload.notification?.title || "Bocado", {
-              body: payload.notification?.body,
+          if (Notification.permission === "granted" && payload.notification) {
+            new Notification(payload.notification.title || "Bocado", {
+              body: payload.notification.body,
               icon: "/icons/icon-192x192.png",
               badge: "/icons/icon-72x72.png",
+              tag: payload.data?.scheduleId || payload.data?.type || "bocado-notification", // Dedup tag
+              requireInteraction: false,
             });
           }
         });

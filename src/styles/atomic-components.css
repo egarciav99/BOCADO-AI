@@ -38,6 +38,7 @@
          bg-bocado-green hover:bg-bocado-dark-green
          shadow-bocado cursor-pointer
          border-2 border-white dark:border-gray-700;
+  margin-top: -6px; /* Center 20px thumb on 8px track */
 }
 
 .quick-recipe-range-slider::-webkit-slider-thumb:active {

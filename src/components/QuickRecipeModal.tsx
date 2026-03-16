@@ -425,7 +425,7 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
               {/* Fine-tune Slider */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-bocado-gray dark:text-gray-400">{t("quickRecipe.customizeLabel") || "Personalizar:"}:</span>
+                  <span className="text-xs text-bocado-gray dark:text-gray-400">{t("quickRecipe.customizeLabel") || "Personalizar:"}</span>
                   <span className="text-sm font-bold text-bocado-green">{cookingTime || 20} min</span>
                 </div>
                 <input
