@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /plan
+
+Sitemap: https://bocado-ai.vercel.app/sitemap.xml

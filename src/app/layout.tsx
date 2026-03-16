@@ -6,8 +6,34 @@ import NetworkStatusToast from "@/components/NetworkStatusToast";
 
 export const metadata: Metadata = {
     title: "Bocado - Smart Nutrition",
-    description: "Bocado - Tu guía nutricional inteligente con recomendaciones personalizadas",
+    description: "Bocado - Tu guía nutricional inteligente. Descubre recetas personalizadas y restaurantes locales adaptados a tu estilo de vida con IA.",
     manifest: "/manifest.json",
+    metadataBase: new URL("https://bocado-ai.vercel.app"),
+    alternates: {
+        canonical: "/",
+    },
+    openGraph: {
+        title: "Bocado - Smart Nutrition",
+        description: "Descubre recetas personalizadas y restaurantes locales adaptados a tu estilo de vida con IA.",
+        url: "https://bocado-ai.vercel.app",
+        siteName: "Bocado",
+        locale: "es_MX",
+        type: "website",
+        images: [
+            {
+                url: "/Bocado-logo.png",
+                width: 512,
+                height: 512,
+                alt: "Bocado - Smart Nutrition Logo",
+            },
+        ],
+    },
+    twitter: {
+        card: "summary",
+        title: "Bocado - Smart Nutrition",
+        description: "Descubre recetas personalizadas y restaurantes locales adaptados a tu estilo de vida con IA.",
+        images: ["/Bocado-logo.png"],
+    },
     appleWebApp: {
         capable: true,
         statusBarStyle: "default",
