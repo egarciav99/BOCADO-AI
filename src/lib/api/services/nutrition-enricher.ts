@@ -61,10 +61,22 @@ export class NutritionEnricher {
    * Ej: "200g de pollo" -> "pollo"
    */
   private static cleanIngredientName(ingredient: string): string {
-    return ingredient
-      .replace(/(\d+\.?\d*)\s*(g|kg|ml|l|oz|tazas?|cucharadas?|piezas?|unidades?)/gi, '')
-      .replace(/\bde\b|\ba\b|\bcon\b/gi, '')
+    let cleaned = ingredient
+      // Eliminar cantidades y unidades
+      .replace(/(\d+\.?\d*)\s*(g|kg|ml|l|oz|tazas?|cucharadas?|cucharaditas?|piezas?|unidades?|ramas?)/gi, '')
+      // Eliminar preposiciones comunes
+      .replace(/\b(de|a|con|en|al|del|la|el|los|las)\b/gi, '')
+      // Eliminar preparaciones específicas (queremos el ingrediente base)
+      .replace(/\b(picad[oa]s?|cortad[oa]s?|rallad[oa]s?|cocid[oa]s?|desmenuzad[oa]s?|filetead[oa]s?|vapor|plancha|frit[oa]s?|hojuelas|rodajas|floretes)\b/gi, '')
+      // Eliminar fracciones
+      .replace(/\d+\/\d+/g, '')
+      // Normalizar espacios
+      .replace(/\s+/g, ' ')
       .trim();
+    
+    // Tomar solo la primera palabra o primeras 2 palabras (más genérico)
+    const words = cleaned.split(' ').filter(w => w.length > 2);
+    return words.slice(0, 2).join(' ');
   }
 
   /**
@@ -195,14 +207,15 @@ export class NutritionEnricher {
     }
 
     // Mapeo de país a region code de FatSecret
+    // Usar 'US' por defecto ya que tiene la base de datos más completa
     const regionMap: Record<string, string> = {
-      MX: 'MX',
+      MX: 'US', // México: usar DB de US (más completa)
       US: 'US',
-      ES: 'ES',
-      AR: 'AR',
-      CO: 'CO',
-      CL: 'CL',
-      PE: 'PE',
+      ES: 'US', // España: usar DB de US
+      AR: 'US', // Argentina: usar DB de US
+      CO: 'US', // Colombia: usar DB de US
+      CL: 'US', // Chile: usar DB de US
+      PE: 'US', // Perú: usar DB de US
     };
     const region = regionMap[country] || 'US';
 
