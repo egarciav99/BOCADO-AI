@@ -35,6 +35,14 @@ export async function getFatSecretToken() {
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+    
+    if (res.status === 403) {
+      console.error('[FatSecret] ⚠️ IP BLOCKED - This IP may not be whitelisted in FatSecret settings');
+      console.error('[FatSecret] Token error:', errorData);
+      console.error('[FatSecret] Solution: Add your IP to FatSecret app settings at https://platform.fatsecret.com/api/');
+      throw new Error('FatSecret IP not whitelisted (HTTP 403)');
+    }
+    
     console.error('[FatSecret] Token error:', errorData);
     throw new Error('FatSecret token fetch failed');
   }
@@ -81,7 +89,17 @@ export async function searchFatSecretIngredients(query: string, maxResults = 50,
   
   // Check for API errors
   if (data.error) {
-    console.error(`[FatSecret] API error for "${query}":`, data.error);
+    const errorCode = data.error?.code;
+    
+    if (errorCode === 21) {
+      console.error(`[FatSecret] ❌ IP BLOCKING ERROR (code 21) for "${query}": ${data.error.message}`);
+      console.error('[FatSecret] ⚠️ Your IP is not whitelisted at FatSecret');
+      console.error('[FatSecret] 💡 Fix: Add your IP range to FatSecret app settings at https://platform.fatsecret.com/api/');
+      console.error('[FatSecret] 🔄 Fallback: Using Gemini macros instead');
+    } else {
+      console.error(`[FatSecret] API error for "${query}":`, data.error);
+    }
+    
     return [];
   }
   
@@ -117,6 +135,12 @@ export async function getFatSecretFood(foodId: string, region?: string, language
     throw new Error('FatSecret food.get failed');
   }
   const data = await res.json();
+  
+  if (data.error?.code === 21) {
+    console.error(`[FatSecret] ❌ IP BLOCKING ERROR (code 21) for food.get: ${data.error.message}`);
+    throw new Error('FatSecret IP not whitelisted');
+  }
+  
   const duration = Date.now() - startTime;
   console.log(`[FatSecret] Food details retrieved in ${duration}ms`);
   return data.food;
@@ -149,6 +173,12 @@ export async function analyzeNaturalLanguage(userInput: string, region = 'US', l
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
+    
+    if (errorData.error?.code === 21) {
+      console.error('[FatSecret] ❌ IP BLOCKING ERROR (code 21) in NLP:', errorData.error.message);
+      throw new Error('FatSecret IP not whitelisted');
+    }
+    
     console.error('[FatSecret] NLP error:', errorData);
     throw new Error(`FatSecret NLP analysis failed: ${JSON.stringify(errorData)}`);
   }
@@ -157,5 +187,63 @@ export async function analyzeNaturalLanguage(userInput: string, region = 'US', l
   const duration = Date.now() - startTime;
   console.log(`[FatSecret] NLP completed in ${duration}ms, found ${data.food_response?.length || 0} foods`);
   return data.food_response || [];
+}
+
+/**
+ * Diagnostic function to check if FatSecret is accessible
+ */
+export async function checkFatSecretConnection() {
+  const diagnostics = {
+    credentialsConfigured: !!FATSECRET_KEY && !!FATSECRET_SECRET,
+    keyLength: FATSECRET_KEY?.length || 0,
+    secretLength: FATSECRET_SECRET?.length || 0,
+    tokenAttempt: null as any,
+    searchAttempt: null as any,
+    errors: [] as string[],
+  };
+
+  try {
+    console.log('[FatSecret] 🔍 Starting diagnostics...');
+    
+    // Check credentials
+    if (!diagnostics.credentialsConfigured) {
+      diagnostics.errors.push('Missing FATSECRET_KEY or FATSECRET_SECRET in environment');
+      return diagnostics;
+    }
+
+    // Try to get token
+    try {
+      const token = await getFatSecretToken();
+      diagnostics.tokenAttempt = { success: true, tokenLength: token.length };
+      console.log('[FatSecret] ✅ Token fetch successful');
+    } catch (err: any) {
+      diagnostics.tokenAttempt = { success: false, error: err.message };
+      diagnostics.errors.push(`Token fetch failed: ${err.message}`);
+      
+      if (err.message.includes('IP not whitelisted') || err.message.includes('HTTP 403')) {
+        diagnostics.errors.push('💡 ACTION REQUIRED: Whitelist your IP at https://platform.fatsecret.com/api/');
+      }
+      return diagnostics;
+    }
+
+    // Try a simple search
+    try {
+      const results = await searchFatSecretIngredients('apple', 1);
+      diagnostics.searchAttempt = { success: true, resultsCount: results.length };
+      console.log('[FatSecret] ✅ Search successful');
+    } catch (err: any) {
+      diagnostics.searchAttempt = { success: false, error: err.message };
+      diagnostics.errors.push(`Search failed: ${err.message}`);
+      
+      if (err.message.includes('code 21')) {
+        diagnostics.errors.push('💡 ACTION REQUIRED: Whitelist your IP at https://platform.fatsecret.com/api/');
+      }
+    }
+
+    return diagnostics;
+  } catch (err: any) {
+    diagnostics.errors.push(`Unexpected error: ${err.message}`);
+    return diagnostics;
+  }
 }
 
