@@ -3,6 +3,7 @@ import "@/index.css";
 import { Providers } from "./providers";
 import PWABanner from "@/components/PWABanner";
 import NetworkStatusToast from "@/components/NetworkStatusToast";
+import WebVitals from "@/components/WebVitals";
 
 export const metadata: Metadata = {
     title: "Bocado - Smart Nutrition",
@@ -57,6 +58,7 @@ export default function RootLayout({
         <html lang="es" suppressHydrationWarning>
             <body className="bg-bocado-cream dark:bg-gray-900">
                 <Providers>
+                    <WebVitals />
                     <div className="min-h-[100dvh] bg-bocado-cream dark:bg-gray-900 flex justify-center items-start md:items-center md:p-8 lg:p-10 2xl:p-12">
                         <div
                             className="w-full h-[100dvh] md:h-[min(900px,calc(100dvh-4rem))] md:min-h-[640px] bg-bocado-background dark:bg-gray-800 

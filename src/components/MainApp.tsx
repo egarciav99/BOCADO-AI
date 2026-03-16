@@ -8,7 +8,7 @@ import SavedRestaurantsScreen from "./SavedRestaurantsScreen";
 import TutorialModal from "./TutorialModal";
 import QuickRecipeButton from "./QuickRecipeButton";
 import ErrorBoundary from "./ErrorBoundary";
-import { auth, trackEvent } from "../firebaseConfig";
+import { auth, trackEvent, setAnalyticsUser } from "../firebaseConfig";
 import { updateProfile } from "firebase/auth";
 import { useAuthStore } from "../stores/authStore";
 import { useUserProfile } from "../hooks/useUser";
@@ -52,7 +52,24 @@ const MainApp: React.FC<MainAppProps> = ({
     });
   }, [user, isLoading, isAuthenticated]);
 
-  useUserProfile(user?.uid);
+  const { data: userProfile } = useUserProfile(user?.uid);
+
+  // Set cohort properties for analytics segmentation
+  useEffect(() => {
+    if (!user?.uid || !userProfile) return;
+    setAnalyticsUser(user.uid, {
+      signup_method: user.providerData?.[0]?.providerId || "unknown",
+      country: userProfile.country || "unknown",
+      has_allergies: (userProfile.allergies?.length || 0) > 0 ? "yes" : "no",
+      dietary_goals: userProfile.nutritionalGoal?.join(",") || "none",
+      account_age_days: (() => {
+        if (!userProfile.createdAt) return 0;
+        const ts = userProfile.createdAt as any;
+        const ms = ts.seconds ? ts.seconds * 1000 : new Date(ts).getTime();
+        return Math.floor((Date.now() - ms) / 86400000);
+      })(),
+    });
+  }, [user?.uid, userProfile]);
 
   const userName = user?.displayName?.split(" ")[0] || "";
   const userUid = user?.uid || null;
@@ -60,6 +77,20 @@ const MainApp: React.FC<MainAppProps> = ({
   useEffect(() => {
     trackEvent("tab_changed", { tab_name: activeTab });
   }, [activeTab]);
+
+  // Track session duration on unmount/tab close
+  useEffect(() => {
+    const sessionStart = Date.now();
+    const handleUnload = () => {
+      const durationSec = Math.round((Date.now() - sessionStart) / 1000);
+      trackEvent("session_duration", { duration_seconds: durationSec });
+    };
+    window.addEventListener("beforeunload", handleUnload);
+    return () => {
+      handleUnload();
+      window.removeEventListener("beforeunload", handleUnload);
+    };
+  }, []);
 
   const handleTutorialClose = () => {
     trackEvent("tutorial_closed");
