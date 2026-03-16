@@ -31,7 +31,11 @@
     "login": "Iniciar sesión",
     "logoutButton": "Cerrar sesión",
     "backToHome": "← Volver al inicio",
-    "changeLanguage": "Cambiar idioma"
+    "changeLanguage": "Cambiar idioma",
+    "titleHighlight": "tu nutrición inteligente",
+    "startButton": "Comenzar",
+    "loginButton": "Ya tengo cuenta",
+    "enterButton": "Entrar a Bocado"
   },
   "profile": {
     "title": "Mi Perfil",
@@ -152,7 +156,8 @@
       "linkGoogle": "Vincular Google",
       "linking": "Vinculando...",
       "cannotUnlink": "No puedes desvincular Google porque es tu único método de inicio de sesión."
-    }
+    },
+    "deleteDataDesc": "Eliminar todos tus datos y cuenta permanentemente."
   },
   "tabs": {
     "home": "Inicio",
@@ -171,6 +176,10 @@
       "cancelled": "Registro cancelado",
       "network": "Error de red. Verifica tu conexión.",
       "googleGeneric": "Error al registrarse con Google"
+    },
+    "placeholders": {
+      "email": "tu@correo.com",
+      "password": "••••••••"
     }
   },
   "login": {
@@ -217,7 +226,8 @@
       "emailResent": "Correo de verificación reenviado. Revisa tu bandeja de entrada.",
       "resetEmailSent": "Se ha enviado un correo a {email} con instrucciones.",
       "profileIncomplete": "Perfil incompleto. Por favor contacta soporte."
-    }
+    },
+    "emailSuggestions": "Sugerencias de correo"
   },
   "savedRestaurants": {
     "title": "Restaurantes guardados",

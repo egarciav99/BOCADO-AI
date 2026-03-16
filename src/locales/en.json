@@ -28,7 +28,11 @@
     "subtitle": "Discover healthy recipes and local restaurants tailored to your lifestyle.",
     "getStarted": "Get Started",
     "alreadyAccount": "Already have an account?",
-    "login": "Log In"
+    "login": "Log In",
+    "titleHighlight": "your smart nutrition",
+    "startButton": "Get Started",
+    "loginButton": "I have an account",
+    "enterButton": "Enter Bocado"
   },
   "profile": {
     "title": "My Profile",
@@ -149,7 +153,8 @@
       "linkGoogle": "Link Google",
       "linking": "Linking...",
       "cannotUnlink": "You cannot unlink Google because it is your only login method."
-    }
+    },
+    "deleteDataDesc": "Permanently delete all your data and account."
   },
   "tabs": {
     "home": "Home",
@@ -168,6 +173,10 @@
       "cancelled": "Registration cancelled",
       "network": "Network error. Check your connection.",
       "googleGeneric": "Error registering with Google"
+    },
+    "placeholders": {
+      "email": "your@email.com",
+      "password": "••••••••"
     }
   },
   "login": {
@@ -214,7 +223,8 @@
       "emailResent": "Verification email resent. Check your inbox.",
       "resetEmailSent": "An email has been sent to {email} with instructions.",
       "profileIncomplete": "Incomplete profile. Please contact support."
-    }
+    },
+    "emailSuggestions": "Email suggestions"
   },
   "savedRestaurants": {
     "title": "Saved Restaurants",

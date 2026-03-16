@@ -108,13 +108,13 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Texto */}
         <div className="text-center mb-8">
           <h1 className="text-xl font-bold text-bocado-dark-gray dark:text-gray-200 mb-2">
-            {t("home.title")}{" "}
+            {t("home.title") || "Bocado"}{" "}
             <span className="underline decoration-bocado-green decoration-4 underline-offset-4">
-              {t("home.titleHighlight")}
+              {t("home.titleHighlight") || "tu nutrición inteligente"}
             </span>
           </h1>
           <p className="text-base text-bocado-dark-gray dark:text-gray-400">
-            {t("home.subtitle")}
+            {t("home.subtitle") || "Descubre recetas nutritivas y restaurantes locales adaptados a tu estilo de vida."}
           </p>
         </div>
 
@@ -127,14 +127,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 onClick={handleEnterApp}
                 className="w-full bg-bocado-green text-white font-bold py-3 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all duration-200 hover:scale-[1.02]"
               >
-                {t("home.enterButton")}
+                {t("home.enterButton") || "Entrar a Bocado"}
               </button>
               <button
                 data-testid="logout-button"
                 onClick={handleLogout}
                 className="w-full bg-white dark:bg-gray-800 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3 px-8 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-700 active:scale-95 transition-all duration-200 hover:scale-[1.02]"
               >
-                {t("home.logoutButton")}
+                {t("home.logoutButton") || "Cerrar sesión"}
               </button>
             </>
           ) : (
@@ -144,14 +144,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
                 onClick={handleStartRegistration}
                 className="w-full bg-bocado-green text-white font-bold py-3 px-8 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all duration-200 hover:scale-[1.02]"
               >
-                {t("home.startButton")}
+                {t("home.startButton") || "Comenzar"}
               </button>
               <button
                 data-testid="login-button"
                 onClick={handleGoToLogin}
                 className="w-full bg-white dark:bg-gray-800 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3 px-8 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-700 active:scale-95 transition-all duration-200 hover:scale-[1.02]"
               >
-                {t("home.loginButton")}
+                {t("home.loginButton") || "Ya tengo cuenta"}
               </button>
             </>
           )}
