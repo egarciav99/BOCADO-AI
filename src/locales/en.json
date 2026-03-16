@@ -162,7 +162,13 @@
     "title": "Create account",
     "subtitle": "Choose how you want to sign up",
     "continueWithGoogle": "Continue with Google",
-    "continueWithEmail": "Continue with Email"
+    "continueWithEmail": "Continue with Email",
+    "errors": {
+      "alreadyRegistered": "This account is already registered. Please sign in.",
+      "cancelled": "Registration cancelled",
+      "network": "Network error. Check your connection.",
+      "googleGeneric": "Error registering with Google"
+    }
   },
   "login": {
     "title": "Sign In",
@@ -197,7 +203,12 @@
       "resendFailed": "Could not resend email. Try again later.",
       "emailRequired": "Please enter your email address.",
       "userNotFound": "No user found with this email address.",
-      "resetFailed": "There was a problem sending the email. Please try again."
+      "resetFailed": "There was a problem sending the email. Please try again.",
+      "completeRegistration": "Please complete your registration first",
+      "profileNotFound": "Profile not found. Please register.",
+      "cancelled": "Sign in cancelled",
+      "network": "Network error. Check your connection.",
+      "googleGeneric": "Error signing in with Google"
     },
     "success": {
       "emailResent": "Verification email resent. Check your inbox.",
@@ -371,7 +382,12 @@
       "passwordUpdated": "Password updated!",
       "emailUpdated": "Email updated! Verify your email.",
       "fileDownloaded": "File downloaded!"
-    }
+    },
+    "notFound": "Page not found",
+    "notFoundDesc": "The page you are looking for does not exist or was moved.",
+    "goHome": "Go to homepage",
+    "unexpected": "Something went wrong",
+    "unexpectedDesc": "An unexpected error occurred. Please try again."
   },
   "mainApp": {
     "loading": "Syncing Bocado...",

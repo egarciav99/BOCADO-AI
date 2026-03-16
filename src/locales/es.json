@@ -165,7 +165,13 @@
     "title": "Crear cuenta",
     "subtitle": "Elige cómo quieres registrarte",
     "continueWithGoogle": "Continuar con Google",
-    "continueWithEmail": "Continuar con Email"
+    "continueWithEmail": "Continuar con Email",
+    "errors": {
+      "alreadyRegistered": "Esta cuenta ya está registrada. Por favor inicia sesión.",
+      "cancelled": "Registro cancelado",
+      "network": "Error de red. Verifica tu conexión.",
+      "googleGeneric": "Error al registrarse con Google"
+    }
   },
   "login": {
     "title": "Iniciar Sesión",
@@ -200,7 +206,12 @@
       "resendFailed": "No se pudo reenviar el correo. Inténtalo más tarde.",
       "emailRequired": "Por favor, introduce tu correo electrónico.",
       "userNotFound": "No se encontró ningún usuario con este correo electrónico.",
-      "resetFailed": "Hubo un problema al enviar el correo. Por favor, inténtalo de nuevo."
+      "resetFailed": "Hubo un problema al enviar el correo. Por favor, inténtalo de nuevo.",
+      "completeRegistration": "Por favor completa tu registro primero",
+      "profileNotFound": "Perfil no encontrado. Por favor regístrate.",
+      "cancelled": "Inicio de sesión cancelado",
+      "network": "Error de red. Verifica tu conexión.",
+      "googleGeneric": "Error al iniciar sesión con Google"
     },
     "success": {
       "emailResent": "Correo de verificación reenviado. Revisa tu bandeja de entrada.",
@@ -374,7 +385,12 @@
       "passwordUpdated": "¡Contraseña actualizada!",
       "emailUpdated": "¡Correo actualizado! Verifica tu email.",
       "fileDownloaded": "¡Archivo descargado!"
-    }
+    },
+    "notFound": "Página no encontrada",
+    "notFoundDesc": "La página que buscas no existe o fue movida.",
+    "goHome": "Volver al inicio",
+    "unexpected": "Algo salió mal",
+    "unexpectedDesc": "Ocurrió un error inesperado. Por favor intenta de nuevo."
   },
   "mainApp": {
     "loading": "Sincronizando Bocado...",

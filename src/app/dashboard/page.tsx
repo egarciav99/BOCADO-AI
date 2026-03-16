@@ -23,7 +23,11 @@ function DashboardContent() {
 
 export default function DashboardPage() {
     return (
-        <Suspense fallback={null}>
+        <Suspense fallback={
+            <div className="min-h-full flex items-center justify-center bg-bocado-cream dark:bg-gray-900">
+                <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin" />
+            </div>
+        }>
             <DashboardContent />
         </Suspense>
     );

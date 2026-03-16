@@ -243,7 +243,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
 
       if (result.isNewUser) {
         // Usuario nuevo - necesita completar perfil
-        setError("Por favor completa tu registro primero");
+        setError(t("login.errors.completeRegistration"));
         auth.signOut();
         setIsLoading(false);
         return;
@@ -267,7 +267,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         onLoginSuccess();
       } else {
         trackEvent("login_google_missing_profile", { userId: result.uid });
-        setError("Perfil no encontrado. Por favor regístrate.");
+        setError(t("login.errors.profileNotFound"));
         auth.signOut();
       }
     } catch (err: any) {
@@ -275,11 +275,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       trackEvent("login_google_error", { error_code: err.code || "unknown" });
 
       if (err.code === "auth/popup-closed-by-user") {
-        setError("Inicio de sesión cancelado");
+        setError(t("login.errors.cancelled"));
       } else if (err.code === "auth/network-request-failed") {
-        setError("Error de red. Verifica tu conexión.");
+        setError(t("login.errors.network"));
       } else {
-        setError("Error al iniciar sesión con Google");
+        setError(t("login.errors.googleGeneric"));
       }
     } finally {
       setIsLoading(false);

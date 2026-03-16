@@ -34,7 +34,7 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
 
       if (!result.isNewUser) {
         // Usuario ya existe
-        setError("Esta cuenta ya está registrada. Por favor inicia sesión.");
+        setError(t("registration.errors.alreadyRegistered"));
         setIsLoading(false);
         return;
       }
@@ -48,11 +48,11 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
       });
 
       if (err.code === "auth/popup-closed-by-user") {
-        setError("Registro cancelado");
+        setError(t("registration.errors.cancelled"));
       } else if (err.code === "auth/network-request-failed") {
-        setError("Error de red. Verifica tu conexión.");
+        setError(t("registration.errors.network"));
       } else {
-        setError("Error al registrarse con Google");
+        setError(t("registration.errors.googleGeneric"));
       }
     } finally {
       setIsLoading(false);
