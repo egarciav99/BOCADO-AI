@@ -19,8 +19,8 @@ export async function getFatSecretToken() {
   }
 
   const startTime = Date.now();
-  // Scopes requested: basic for search, nlp for natural language processing
-  const scope = 'basic nlp premier barcode localization';
+  // Scopes: only 'basic' for Premium Free tier (nlp, premier, barcode require paid plans)
+  const scope = 'basic';
 
   const res = await fetch('https://oauth.fatsecret.com/connect/token', {
     method: 'POST',
