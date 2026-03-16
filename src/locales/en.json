@@ -1088,6 +1088,12 @@
       "benefit": "No pantry filling, no waiting: recipes in seconds",
       "gotItButton": "Got it!",
       "dontShowButton": "Don't show"
-    }
+    },
+    "ingredientCount": "{count} ingredient(s) selected",
+    "ingredientCountSingular": "1 ingredient selected",
+    "ingredientCountPlural": "{count} ingredients selected",
+    "cookingTimeLabel": "Cooking time",
+    "cookingTimeValue": "{time} min max",
+    "customizeLabel": "Customize:"
   }
 }

@@ -70,8 +70,7 @@ const QuickRecipeButton: React.FC<QuickRecipeButtonProps> = ({
             {/* Triangle pointer */}
             <div
               className="
-              absolute w-0 h-0
-              right-full top-1/2 -translate-y-1/2
+              absolute left-full top-1/2 -translate-y-1/2
               border-t-4 border-b-4 border-l-4
               border-t-transparent border-b-transparent border-l-bocado-dark-gray
             "

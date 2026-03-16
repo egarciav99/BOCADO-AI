@@ -383,7 +383,9 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
               ))}
             </div>
             <p className="text-xs text-bocado-gray dark:text-gray-400 font-medium">
-              {selectedIngredients.length} {selectedIngredients.length === 1 ? "ingrediente" : "ingredientes"} seleccionados
+              {selectedIngredients.length === 1
+                ? t("quickRecipe.ingredientCountSingular") || "1 ingrediente seleccionado"
+                : t("quickRecipe.ingredientCountPlural", { count: selectedIngredients.length }) || `${selectedIngredients.length} ingredientes seleccionados`}
             </p>
           </div>
         )}
@@ -394,7 +396,9 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
             onClick={() => setShowTimeSlider(!showTimeSlider)}
             className="w-full flex justify-between items-center text-sm font-bold text-bocado-dark-gray dark:text-white hover:opacity-80 transition"
           >
-            <span>⏱️ {cookingTime ? `${cookingTime} min máximo` : "Tiempo de cocción"}</span>
+            <span>⏱️ {cookingTime
+              ? t("quickRecipe.cookingTimeValue", { time: cookingTime }) || `${cookingTime} min máximo`
+              : t("quickRecipe.cookingTimeLabel") || "Tiempo de cocción"}</span>
             <span className={`text-lg transition-transform ${showTimeSlider ? "rotate-180" : ""}`}>▼</span>
           </button>
 
@@ -411,7 +415,7 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
                       cookingTime === min
                         ? "bg-bocado-green text-white shadow-md"
                         : "bg-white dark:bg-gray-600 text-bocado-dark-gray dark:text-gray-200 border border-bocado-border dark:border-gray-500 hover:border-bocado-green dark:hover:border-bocado-green"
-                    }"`}
+                    }`}
                   >
                     {min}m
                   </button>
@@ -421,7 +425,7 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
               {/* Fine-tune Slider */}
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-bocado-gray dark:text-gray-400">Personalizar:</span>
+                  <span className="text-xs text-bocado-gray dark:text-gray-400">{t("quickRecipe.customizeLabel") || "Personalizar:"}:</span>
                   <span className="text-sm font-bold text-bocado-green">{cookingTime || 20} min</span>
                 </div>
                 <input

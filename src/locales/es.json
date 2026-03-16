@@ -1223,6 +1223,12 @@
       "benefit": "Sin llenar despensa, sin esperar: recetas en segundos",
       "gotItButton": "¡Entendido!",
       "dontShowButton": "No mostrar"
-    }
+    },
+    "ingredientCount": "{count} ingrediente(s) seleccionados",
+    "ingredientCountSingular": "1 ingrediente seleccionado",
+    "ingredientCountPlural": "{count} ingredientes seleccionados",
+    "cookingTimeLabel": "Tiempo de cocción",
+    "cookingTimeValue": "{time} min máximo",
+    "customizeLabel": "Personalizar:"
   }
 }
