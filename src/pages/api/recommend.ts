@@ -21,6 +21,7 @@ import { filterIngredientes } from '../../lib/api/services/ingredient-filter';
 
 import { historyCache } from '../../lib/api/utils/cache';
 import { getFatSecretIngredientsWithCache } from '../../lib/api/utils/fatsecret-logic';
+import { NutritionEnricher } from '../../lib/api/services/nutrition-enricher';
 
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
@@ -1214,6 +1215,24 @@ export default async function handler(req: any, res: any) {
       throw new Error(
         "La respuesta del modelo no cumple con el formato esperado",
       );
+    }
+
+    // ============================================
+    // ENRIQUECIMIENTO NUTRICIONAL CON FATSECRET
+    // ============================================
+    if ((type === "En casa" || type === "Receta Rápida") && parsedData.receta?.recetas) {
+      try {
+        safeLog("log", `[Nutrition] Starting enrichment for ${parsedData.receta.recetas.length} recipes`);
+        parsedData.receta.recetas = await NutritionEnricher.enrichRecipes(
+          parsedData.receta.recetas,
+          user.country || 'MX',
+          request.language || 'es',
+          true, // enabled
+        );
+      } catch (enrichError) {
+        // No fallar la request si FatSecret falla, solo loggear
+        safeLog("warn", "⚠️ Nutrition enrichment failed, using Gemini macros", enrichError);
+      }
     }
 
     // ============================================
