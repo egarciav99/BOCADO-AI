@@ -91,6 +91,7 @@ export async function getFatSecretIngredientsWithCache(
   }
   // Deduplicar
   const uniqueFoods = [...new Set(allFoods)];
+  safeLog('log', `[FatSecret] ✅ Búsqueda completada: ${uniqueFoods.length} ingredientes únicos encontrados`);
   const result = {
     priorityList: uniqueFoods.slice(0, 40).join(', '),
     marketList: uniqueFoods.slice(40, 80).join(', '),
@@ -102,6 +103,7 @@ export async function getFatSecretIngredientsWithCache(
       result,
       cachedAt: FieldValue.serverTimestamp(),
     });
+    safeLog('log', '[FatSecret] Cache guardado exitosamente');
   } catch (e) {
     safeLog('warn', '[FatSecret] Error guardando caché', e);
   }
