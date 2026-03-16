@@ -27,25 +27,25 @@ const REQUIRED_PROFILE_FIELDS = [
  * @param profile - Perfil del usuario desde Firestore
  * @returns true si el perfil está completo y listo usar
  */
-export const isProfileComplete = (profile: UserProfile | null | undefined): boolean => {
+export const isProfileComplete = (
+  profile: UserProfile | null | undefined,
+): boolean => {
   if (!profile) {
-    logger.warn("[profileValidation] No profile provided");
+    // Es normal no tener perfil si no hay login o durante el registro.
     return false;
   }
 
-  // Verificar que TODOS los campos obligatorios existan y tengan valor
+  // Verificar campos base obligatorios
   for (const field of REQUIRED_PROFILE_FIELDS) {
     const value = (profile as any)[field];
 
     // Es undefined, null, o string vacío
     if (value === undefined || value === null || value === "") {
-      logger.warn(`[profileValidation] Missing required field: ${field}`);
       return false;
     }
 
     // Es un string pero está vacío
     if (typeof value === "string" && value.trim() === "") {
-      logger.warn(`[profileValidation] Empty required field: ${field}`);
       return false;
     }
 

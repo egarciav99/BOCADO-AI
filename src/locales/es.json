@@ -24,12 +24,11 @@
     "required": "obligatorio"
   },
   "home": {
-    "title": "¿Qué comer hoy?",
-    "titleHighlight": "Ya no es problema",
-    "subtitle": "Sé parte de Bocado, donde tú decides y la IA te acompaña.",
-    "enterButton": "Entrar",
-    "startButton": "Empezar",
-    "loginButton": "Iniciar sesión",
+    "title": "Bocado",
+    "subtitle": "Descubre recetas nutritivas y restaurantes locales adaptados a tu estilo de vida.",
+    "getStarted": "Comenzar",
+    "alreadyAccount": "¿Ya tienes cuenta?",
+    "login": "Iniciar sesión",
     "logoutButton": "Cerrar sesión",
     "backToHome": "← Volver al inicio",
     "changeLanguage": "Cambiar idioma"
@@ -551,7 +550,11 @@
     "creating": "...",
     "createAccount": "Crear cuenta",
     "next": "Siguiente",
-    "backToHome": "Volver al inicio"
+    "backToHome": "Volver al inicio",
+    "mustAcceptTerms": "Debes aceptar los Términos y Condiciones para continuar.",
+    "termsPrefix": "Acepto los ",
+    "termsLink": "Términos y Condiciones",
+    "termsSuffix": "de uso de BOCADO."
   },
   "step1": {
     "firstName": "Nombre *",
@@ -576,6 +579,7 @@
     "city": "Ciudad *",
     "cityPlaceholder": "Tu ciudad...",
     "cityDisabled": "Elige país primero",
+    "locationHelp": "Usamos tu ubicación para sugerirte restaurantes y precios locales.",
     "email": "Email *",
     "password": "Contraseña *",
     "passwordPlaceholder": "8+ caracteres",

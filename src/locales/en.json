@@ -24,15 +24,11 @@
     "required": "required"
   },
   "home": {
-    "title": "What to eat today?",
-    "titleHighlight": "No longer a problem",
-    "subtitle": "Join Bocado, where you decide and AI guides you.",
-    "enterButton": "Enter",
-    "startButton": "Get Started",
-    "loginButton": "Sign In",
-    "logoutButton": "Sign Out",
-    "backToHome": "← Back to Home",
-    "changeLanguage": "Change language"
+    "title": "Bocado",
+    "subtitle": "Discover healthy recipes and local restaurants tailored to your lifestyle.",
+    "getStarted": "Get Started",
+    "alreadyAccount": "Already have an account?",
+    "login": "Log In"
   },
   "profile": {
     "title": "My Profile",
@@ -507,7 +503,11 @@
     "creating": "...",
     "createAccount": "Create account",
     "next": "Next",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "mustAcceptTerms": "You must accept the Terms and Conditions to continue.",
+    "termsPrefix": "I accept the ",
+    "termsLink": "Terms and Conditions",
+    "termsSuffix": "of BOCADO."
   },
   "step1": {
     "firstName": "First Name *",
@@ -532,6 +532,7 @@
     "city": "City *",
     "cityPlaceholder": "Your city...",
     "cityDisabled": "Choose country first",
+    "locationHelp": "We use your location to suggest local restaurants and products.",
     "email": "Email *",
     "password": "Password *",
     "passwordPlaceholder": "8+ characters",

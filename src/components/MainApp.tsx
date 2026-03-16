@@ -71,10 +71,14 @@ const MainApp: React.FC<MainAppProps> = ({
     try {
       trackEvent("logout_started", { userId: userUid });
       await auth.signOut();
+      // onAuthStateChanged(null) se encargará de navegar a "home",
+      // pero llamamos onLogoutComplete por si el listener es lento
       onLogoutComplete();
     } catch (error) {
       logger.error("Error al cerrar sesión:", error);
       trackEvent("logout_error");
+      // Forzar navegación aunque signOut haya fallado
+      onLogoutComplete();
     }
   };
 

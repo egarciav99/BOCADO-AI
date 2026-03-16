@@ -494,8 +494,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               ))}
             </div>
           )}
-          {errors.city && (
+          {errors.city ? (
             <p className="text-red-500 text-2xs mt-1">{errors.city}</p>
+          ) : (
+            <p className="text-bocado-gray text-2xs mt-1 italic">
+              {t("step1.locationHelp") || "Usamos tu ubicación para sugerirte restaurantes y precios locales."}
+            </p>
           )}
         </div>
       </div>

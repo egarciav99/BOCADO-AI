@@ -85,8 +85,12 @@ function AppContent() {
   const [currentScreen, setCurrentScreen] = React.useState<AppScreen>("home");
   const [planId, setPlanId] = React.useState<string | null>(null);
   const [isNewUser, setIsNewUser] = React.useState(false);
+  // ✅ Bug 6: rastrear si el usuario viene del flujo de Google (para omitir step email/password)
+  const [isGoogleRegistration, setIsGoogleRegistration] = React.useState(false);
   const [authTimeout, setAuthTimeout] = React.useState(false);
   const [renderError, setRenderError] = React.useState<Error | null>(null);
+  // ✅ Bug 2 fix: solo navegar automáticamente en el startup inicial, no en cada cambio de estado
+  const isInitialAuthCheckRef = React.useRef(true);
 
   const setUser = useAuthStore((state) => state.setUser);
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -201,48 +205,55 @@ function AppContent() {
             recordTokenRefresh();
             trackEvent("session_restored", { userId: user.uid });
 
-            // ✅ CRÍTICO: Validar que el usuario tiene un perfil COMPLETO
-            try {
-              const profileRef = doc(db, "users", user.uid);
-              const profileSnap = await getDoc(profileRef);
-              
-              if (profileSnap.exists()) {
-                const profile = profileSnap.data();
-                const hasCompleteProfile = isProfileComplete(profile as any);
+            // ✅ Bug 2 fix: solo navegar en el primer disparo (startup/reload).
+            // Si el usuario ya está navegando de forma interactiva (login manual,
+            // registro, etc.), no sobreescribir la pantalla actual.
+            if (isInitialAuthCheckRef.current) {
+              isInitialAuthCheckRef.current = false;
 
-                debugLog("info", "Profile Status Check", {
-                  uid: user.uid.substring(0, 8) + "...",
-                  hasProfile: true,
-                  isComplete: hasCompleteProfile,
-                });
+              // ✅ Bug 1 implica que aquí sí debemos navegar en startup
+              try {
+                const profileRef = doc(db, "users", user.uid);
+                const profileSnap = await getDoc(profileRef);
 
-                // Decidir navegación basado en si el perfil está completo
-                if (hasCompleteProfile) {
-                  setCurrentScreen("recommendation");
+                if (profileSnap.exists()) {
+                  const profile = profileSnap.data();
+                  const hasCompleteProfile = isProfileComplete(profile as any);
+
+                  debugLog("info", "Profile Status Check", {
+                    uid: user.uid.substring(0, 8) + "...",
+                    hasProfile: true,
+                    isComplete: hasCompleteProfile,
+                  });
+
+                  if (hasCompleteProfile) {
+                    setCurrentScreen("recommendation");
+                  } else {
+                    setCurrentScreen("completeProfile");
+                  }
                 } else {
-                  // Perfil incompleto → permitir que lo complete
+                  debugLog("warn", "User has no profile document", {
+                    uid: user.uid.substring(0, 8) + "...",
+                  });
                   setCurrentScreen("completeProfile");
                 }
-              } else {
-                // Usuario sin perfil → debe completarlo
-                debugLog("warn", "User has no profile document", {
-                  uid: user.uid.substring(0, 8) + "...",
+              } catch (profileError) {
+                debugLog("error", "Error checking profile", {
+                  error: (profileError as any)?.message || String(profileError),
                 });
-
                 setCurrentScreen("completeProfile");
               }
-            } catch (profileError) {
-              debugLog("error", "Error checking profile", {
-                error: (profileError as any)?.message || String(profileError),
+            } else {
+              debugLog("info", "Auth state changed during active session — skipping auto-navigation", {
+                currentScreen,
               });
-
-              // En caso de error, ir a completeProfile (es más seguro que recommendation)
-              setCurrentScreen("completeProfile");
             }
           } else {
             debugLog("warn", "No Session Found", {
               count: authStateChangedCount,
             });
+            // Al cerrar sesión siempre regresar al home, independiente del flag
+            isInitialAuthCheckRef.current = true;
             setCurrentScreen("home");
           }
 
@@ -369,11 +380,16 @@ function AppContent() {
             <Suspense fallback={<ScreenLoadingFallback />}>
               <RegistrationMethodScreen
                 onGoogleSuccess={(uid, email) => {
-                  // Usuario se registró con Google, ir al flujo de completar perfil
+                  // ✅ Bug 6: marcar que viene de Google para que RegistrationFlow
+                  // omita email/password y use auth.currentUser
                   setIsNewUser(true);
+                  setIsGoogleRegistration(true);
                   setCurrentScreen("register");
                 }}
-                onChooseEmail={() => setCurrentScreen("register")}
+                onChooseEmail={() => {
+                  setIsGoogleRegistration(false);
+                  setCurrentScreen("register");
+                }}
                 onGoHome={() => setCurrentScreen("home")}
               />
             </Suspense>
@@ -382,11 +398,17 @@ function AppContent() {
           return (
             <Suspense fallback={<ScreenLoadingFallback />}>
               <RegistrationFlow
+                isGoogleUser={isGoogleRegistration}
                 onRegistrationComplete={() => {
+                  isInitialAuthCheckRef.current = false;
                   setIsNewUser(true);
+                  setIsGoogleRegistration(false);
                   setCurrentScreen("recommendation");
                 }}
-                onGoHome={() => setCurrentScreen("home")}
+                onGoHome={() => {
+                  setIsGoogleRegistration(false);
+                  setCurrentScreen("home");
+                }}
               />
             </Suspense>
           );
@@ -395,7 +417,12 @@ function AppContent() {
             <Suspense fallback={<ScreenLoadingFallback />}>
               <LoginScreen
                 onLoginSuccess={() => {
+                  // ✅ Bug 1 fix: navegar inmediatamente después de login exitoso.
+                  // LoginScreen ya verificó que el perfil existe antes de llamar aquí.
+                  // Marcar el auth check como no-inicial para no sobreescribir esta navegación.
+                  isInitialAuthCheckRef.current = false;
                   setIsNewUser(false);
+                  setCurrentScreen("recommendation");
                 }}
                 onGoHome={() => setCurrentScreen("home")}
               />
@@ -405,7 +432,13 @@ function AppContent() {
           return (
             <Suspense fallback={<ScreenLoadingFallback />}>
               <CompleteProfileScreen
-                onStartCompletion={() => setCurrentScreen("register")}
+                onStartCompletion={() => {
+                  // ✅ Bug 5 fix: usuario autenticado con perfil incompleto debe ir a MainApp
+                  // (que muestra ProfileScreen en modo edición), NO al flujo de nuevo registro
+                  // que llama createUserWithEmailAndPassword y rompería su cuenta.
+                  isInitialAuthCheckRef.current = false;
+                  setCurrentScreen("recommendation");
+                }}
                 onLogout={() => setCurrentScreen("home")}
               />
             </Suspense>

@@ -5,7 +5,7 @@ import PWABanner from "@/components/PWABanner";
 import NetworkStatusToast from "@/components/NetworkStatusToast";
 
 export const metadata: Metadata = {
-    title: "Bocado - Guía Nutricional",
+    title: "Bocado - Smart Nutrition",
     description: "Bocado - Tu guía nutricional inteligente con recomendaciones personalizadas",
     manifest: "/manifest.json",
     appleWebApp: {

@@ -39,11 +39,13 @@ const TOTAL_STEPS = 3;
 interface RegistrationFlowProps {
   onRegistrationComplete: () => void;
   onGoHome: () => void;
+  isGoogleUser?: boolean; // ✅ Bug 6: usuario que ya se autenticó con Google
 }
 
 const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   onRegistrationComplete,
   onGoHome,
+  isGoogleUser = false,
 }) => {
   const { t } = useTranslation();
   const [currentStep, setCurrentStep] = useState(1);
@@ -52,6 +54,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const [submissionError, setSubmissionError] = useState("");
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  // ✅ Bug 7: checkbox de términos y condiciones (obligatorio en el último paso)
+  const [acceptTerms, setAcceptTerms] = useState(false);
   const queryClient = useQueryClient();
 
   const [cityOptions, setCityOptions] = useState<PlacePrediction[]>([]);
@@ -97,7 +101,18 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     let result;
 
     if (currentStep === 1) {
-      result = step1Schema.safeParse(formData);
+      if (isGoogleUser) {
+        // Para usuarios de Google, validar solo nombre/apellido/género/edad/país/ciudad
+        // sin email ni contraseña (ya autenticados)
+        const googleStep1Schema = step1Schema.omit({
+          email: true,
+          password: true,
+          confirmPassword: true,
+        } as any);
+        result = googleStep1Schema.safeParse(formData);
+      } else {
+        result = step1Schema.safeParse(formData);
+      }
     } else if (currentStep === 2) {
       result = step2Schema.safeParse(formData);
     } else if (currentStep === 3) {
@@ -128,17 +143,36 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     try {
       const { auth: authData, profile } = separateUserData(formData);
 
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        authData.email,
-        authData.password!,
-      );
-      const user = userCredential.user;
-      // Clear sensitive data immediately after use
-      updateFormData({ password: "", confirmPassword: "" });
+      let user;
 
-      const displayName = `${authData.firstName} ${authData.lastName}`;
-      await updateProfile(user, { displayName });
+      if (isGoogleUser) {
+        // ✅ Bug 6: usuario de Google ya está autenticado, solo guardar perfil
+        const currentUser = auth.currentUser;
+        if (!currentUser) {
+          setSubmissionError("Sesión de Google no encontrada. Intenta de nuevo.");
+          setIsLoading(false);
+          return;
+        }
+        user = currentUser;
+        // Actualizar displayName si cambió en el formulario
+        const displayName = `${authData.firstName} ${authData.lastName}`;
+        if (currentUser.displayName !== displayName) {
+          await updateProfile(currentUser, { displayName });
+        }
+      } else {
+        // Flujo estándar: crear usuario con email/password
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          authData.email,
+          authData.password!,
+        );
+        user = userCredential.user;
+        // Clear sensitive data immediately after use
+        updateFormData({ password: "", confirmPassword: "" });
+
+        const displayName = `${authData.firstName} ${authData.lastName}`;
+        await updateProfile(user, { displayName });
+      }
 
       // Obtener coordenadas de la ciudad si hay placeId
       let location = undefined;
@@ -190,12 +224,13 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         console.log("✅ Perfil guardado para uid:", user.uid.substring(0, 8) + "...");
       }
 
-      // Invalidate so the next read fetches fresh data from Firestore.
-      // DO NOT setQueryData here — cleanedProfile contains unresolved
-      // serverTimestamp sentinels that corrupt the cache for subsequent reads.
       queryClient.invalidateQueries({ queryKey: ["userProfile", user.uid] });
 
-      await sendEmailVerification(user);
+      // Solo enviar verificación de email si no es usuario de Google
+      // (Google ya verifica emails automáticamente)
+      if (!isGoogleUser) {
+        await sendEmailVerification(user);
+      }
 
       trackEvent("registration_complete", {
         nutritional_goal: profile.nutritionalGoal.join(", "),
@@ -206,8 +241,14 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       isCompletedRef.current = true;
 
       clearDraft();
-      setRegisteredEmail(authData.email);
-      setShowVerificationModal(true);
+
+      if (isGoogleUser) {
+        // Usuario de Google: no necesita verificar email, ir directo
+        onRegistrationComplete();
+      } else {
+        setRegisteredEmail(authData.email);
+        setShowVerificationModal(true);
+      }
     } catch (error: any) {
       logger.error("Error en registro:", error);
       trackEvent("registration_failed", {
@@ -233,6 +274,13 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   };
 
   const nextStep = async () => {
+    if (currentStep === TOTAL_STEPS && !acceptTerms) {
+      setSubmissionError(
+        t("registrationFlow.mustAcceptTerms") ||
+          "Debes aceptar los Términos y Condiciones para continuar.",
+      );
+      return;
+    }
     if (await validateStep()) {
       if (currentStep < TOTAL_STEPS) {
         setCurrentStep(currentStep + 1);
@@ -290,6 +338,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         return (
           <Step1
             {...commonProps}
+            hidePasswordFields={isGoogleUser}
+            disableEmail={isGoogleUser}
             cityOptions={cityOptions}
             isSearchingCity={isSearchingCity}
             onSearchCity={handleSearchCity}
@@ -371,6 +421,35 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         </div>
 
         <div className="mt-4 space-y-3 pb-safe">
+          {/* ✅ Bug 7: checkbox de Términos y Condiciones — solo en el último paso */}
+          {currentStep === TOTAL_STEPS && (
+            <label className="flex items-start gap-3 cursor-pointer group px-1">
+              <input
+                type="checkbox"
+                id="accept-terms"
+                checked={acceptTerms}
+                onChange={(e) => {
+                  setAcceptTerms(e.target.checked);
+                  if (e.target.checked) setSubmissionError("");
+                }}
+                className="mt-0.5 w-4 h-4 accent-bocado-green flex-shrink-0 cursor-pointer"
+              />
+              <span className="text-xs text-bocado-dark-gray dark:text-gray-300 leading-relaxed group-hover:text-bocado-text">
+                {t("registrationFlow.termsPrefix") || "Acepto los "}
+                <a
+                  href="/terminos"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-bocado-green font-semibold underline hover:text-bocado-dark-green"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {t("registrationFlow.termsLink") || "Términos y Condiciones"}
+                </a>
+                {" "}{t("registrationFlow.termsSuffix") || "de uso de BOCADO."}
+              </span>
+            </label>
+          )}
+
           <div className="flex justify-between gap-3">
             <button
               onClick={prevStep}
@@ -384,8 +463,12 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                 currentStep === TOTAL_STEPS ? "submit-button" : "next-button"
               }
               onClick={nextStep}
-              className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray"
-              disabled={isLoading}
+              className={`flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all ${
+                currentStep === TOTAL_STEPS && !acceptTerms
+                  ? "opacity-50 cursor-not-allowed"
+                  : "disabled:bg-bocado-gray"
+              }`}
+              disabled={isLoading || (currentStep === TOTAL_STEPS && !acceptTerms)}
             >
               {isLoading
                 ? t("registrationFlow.creating")

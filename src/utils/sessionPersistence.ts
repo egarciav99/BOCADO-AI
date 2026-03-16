@@ -15,9 +15,11 @@ const PERSISTENCE_KEY = "__bocado_session_restored";
 export const hasSessionInStorage = (): boolean => {
   if (typeof window === "undefined") return false;
   try {
-    // Verificar si Firebase Auth tiene tokens guardados
-    const firebaseAuth = localStorage.getItem("firebase:authUser:*");
-    return !!firebaseAuth;
+    // Firebase guarda la sesión como "firebase:authUser:{API_KEY}:{app_name}"
+    // No buscar la cadena literal "*" — escanear las claves dinámicamente
+    return Object.keys(localStorage).some((k) =>
+      k.startsWith("firebase:authUser:"),
+    );
   } catch (e) {
     logger.warn("[SessionPersistence] Error checking session:", e);
     return false;
