@@ -24,6 +24,10 @@ import { getFatSecretIngredientsWithCache } from '../../lib/api/utils/fatsecret-
 import { NutritionEnricher } from '../../lib/api/services/nutrition-enricher';
 import { filterFatSecretResults, processFatSecretResults } from '../../lib/api/services/fatsecret-filters';
 
+// Phase 2 Integration
+import RecipeHistoryManager from '../../lib/api/services/recipe-history';
+import IngredientScorer from '../../lib/api/services/ingredient-scorer';
+
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
 // ============================================
@@ -932,69 +936,81 @@ export default async function handler(req: any, res: any) {
     // 💰 FINOPS: Usar cache de perfil en lugar de lectura directa
     const user = await dataService.getUserProfile(userId);
 
+    // PHASE 2: Usar RecipeHistoryManager para mejor gestión de historial
     let historyContext = "";
+    let forbiddenTitles: string[] = [];
     try {
-      // 💰 FINOPS FIX #4: Query sin orderBy y sort en memoria (deduplica read)
-      // Antes: 2 queries si falta índice (con orderBy + fallback sin orderBy)
-      // Después: 1 query siempre (sin orderBy + sort en memoria)
-      const firestoreTimeout = (ms: number) =>
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Firestore timeout")), ms),
-        );
-
-      // Query única sin orderBy (más rápido, no requiere índice)
-      const historySnap = (await Promise.race([
-        db
-          .collection(historyCol)
-          .where("user_id", "==", userId)
-          .limit(20) // Traer más para compensar el sort en memoria
-          .get(),
-        firestoreTimeout(8000), // 8 segundos timeout
-      ])) as FirebaseFirestore.QuerySnapshot;
-
-      if (!historySnap.empty) {
-        // Sort en memoria por fecha_creacion
-        interface HistoryDoc {
-          id: string;
-          data: any;
-          timestamp: number;
-        }
-        const sortedDocs: HistoryDoc[] = historySnap.docs
-          .map((doc: any) => {
-            const data = doc.data();
-            const timestamp = data?.fecha_creacion?.toMillis?.() || 0;
-            return { id: doc.id, data, timestamp };
-          })
-          .sort((a, b) => b.timestamp - a.timestamp) // Desc (más recientes primero)
-          .slice(0, 5); // Top 5
-
-        // ✅ FIX: Validar doc.data() antes de acceder a propiedades
-        const recent = sortedDocs
-          .map((doc: HistoryDoc) => {
-            const d = doc.data;
-            if (!d) return null; // Documento borrado o sin data
-
-            if (type === "En casa") {
-              const recetas = d.receta?.recetas || [];
-              return Array.isArray(recetas)
-                ? recetas.map((r: any) => r?.titulo).filter(Boolean)
-                : [];
-            } else {
-              const recs = d.recomendaciones || [];
-              return Array.isArray(recs)
-                ? recs.map((r: any) => r?.nombre_restaurante).filter(Boolean)
-                : [];
-            }
-          })
-          .filter(Boolean)
-          .flat();
-
-        if (recent.length > 0) {
-          historyContext = `### 🧠 MEMORIA (NO REPETIR): Recientemente recomendaste: ${recent.join(", ")}. INTENTA VARIAR Y NO REPETIR ESTOS NOMBRES.`;
-        }
+      const historyManager = new RecipeHistoryManager(db);
+      const previousRecipes = await historyManager.getPreviousRecipes(userId, 5);
+      const historyResult = await historyManager.buildHistoryContext(previousRecipes);
+      historyContext = historyResult.historyInstruction;
+      forbiddenTitles = historyResult.forbiddenTitles;
+      
+      if (forbiddenTitles.length > 0) {
+        safeLog("log", `✅ RecipeHistoryManager: Bloqueando ${forbiddenTitles.length} títulos anteriores`);
       }
     } catch (e: any) {
-      safeLog("log", "No se pudo obtener historial", e);
+      safeLog("warn", "❌ RecipeHistoryManager failed, falling back to basic history query", e);
+      
+      // FALLBACK: Implementar query manual si RecipeHistoryManager falla
+      try {
+        const firestoreTimeout = (ms: number) =>
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Firestore timeout")), ms),
+          );
+
+        const historySnap = (await Promise.race([
+          db
+            .collection(historyCol)
+            .where("user_id", "==", userId)
+            .limit(20)
+            .get(),
+          firestoreTimeout(8000),
+        ])) as FirebaseFirestore.QuerySnapshot;
+
+        if (!historySnap.empty) {
+          interface HistoryDoc {
+            id: string;
+            data: any;
+            timestamp: number;
+          }
+          const sortedDocs: HistoryDoc[] = historySnap.docs
+            .map((doc: any) => {
+              const data = doc.data();
+              const timestamp = data?.fecha_creacion?.toMillis?.() || 0;
+              return { id: doc.id, data, timestamp };
+            })
+            .sort((a, b) => b.timestamp - a.timestamp)
+            .slice(0, 5);
+
+          const recent = sortedDocs
+            .map((doc: HistoryDoc) => {
+              const d = doc.data;
+              if (!d) return null;
+
+              if (type === "En casa") {
+                const recetas = d.receta?.recetas || [];
+                return Array.isArray(recetas)
+                  ? recetas.map((r: any) => r?.titulo).filter(Boolean)
+                  : [];
+              } else {
+                const recs = d.recomendaciones || [];
+                return Array.isArray(recs)
+                  ? recs.map((r: any) => r?.nombre_restaurante).filter(Boolean)
+                  : [];
+              }
+            })
+            .filter(Boolean)
+            .flat();
+
+          if (recent.length > 0) {
+            forbiddenTitles = recent;
+            historyContext = `### 🧠 MEMORIA (NO REPETIR): Recientemente recomendaste: ${recent.join(", ")}. INTENTA VARIAR Y NO REPETIR ESTOS NOMBRES.`;
+          }
+        }
+      } catch (fallbackError: any) {
+        safeLog("warn", "Fallback history query also failed", fallbackError);
+      }
     }
 
     let feedbackContext = "";
@@ -1040,6 +1056,7 @@ export default async function handler(req: any, res: any) {
 
     let finalPrompt = "";
     let parsedData: any;
+    let ingredientStats = { fromPantry: 0, needToBuy: 0, pantryMatchPercentage: 0 };  // PHASE 2: Declare globally for metadata
 
     if (type === "En casa") {
       // 1. Obtener datos (con cache)
@@ -1047,11 +1064,29 @@ export default async function handler(req: any, res: any) {
       const filteredItems = filterIngredientes(allIngredients, user);
       const pantryItems = await dataService.getPantryItems(userId);
 
-      // 2. Puntuar ingredientes
+      // 2a. Puntuar ingredientes (mantener RecommendationScorer por compatibilidad)
       const { priorityList, marketList, hasPantryItems } = RecommendationScorer.scoreIngredients(
         filteredItems,
         pantryItems,
       );
+
+      // 2b. PHASE 2: Mejorar scoring con IngredientScorer (fuzzy matching + categorización)
+      let inventoryContext = "";
+      try {
+        const ingredientNames = filteredItems.map((i: any) => i.name || i.food_name);
+        const pantryNames = pantryItems.map((p: any) => p.name || p.food_name);
+        
+        const scoredIngredients = IngredientScorer.scoreIngredients(ingredientNames, pantryNames);
+        inventoryContext = IngredientScorer.generateIngredientContext(scoredIngredients);
+        ingredientStats = scoredIngredients.stats;
+        
+        safeLog("log", `✅ IngredientScorer: ${ingredientStats.pantryMatchPercentage}% desde despensa`, {
+          fromPantry: ingredientStats.fromPantry,
+          needToBuy: ingredientStats.needToBuy
+        });
+      } catch (e: any) {
+        safeLog("warn", "⚠️ IngredientScorer failed, using basic scoring", e);
+      }
 
       // 3. Preparar contexto
       const diseases = ensureArray(user.diseases);
@@ -1141,12 +1176,29 @@ export default async function handler(req: any, res: any) {
       const medicalContextOut = [...ensureArray(user.diseases), ...ensureArray(user.allergies), user.otherAllergies || ""].filter(Boolean).join(", ");
       const dislikedContextOut = [...ensureArray(user.dislikedFoods), ...ensureArray(request.dislikedFoods)].filter(Boolean).join(", ");
 
+      // PHASE 2: Agregar IngredientScorer para ingredientes que el usuario podrían cocinar en casa
+      let inventoryContextOut = "";
+      try {
+        const pantryItems = await dataService.getPantryItems(userId);
+        const pantryNames = pantryItems.map((p: any) => p.name || p.food_name);
+        
+        // Sugerir qué ingredientes el usuario podría ya tener en casa para complementar el restaurante
+        if (pantryNames.length > 0) {
+          const pantryContext = `Si desea preparar algo similar en casa, tiene estos ingredientes disponibles: ${pantryNames.slice(0, 5).join(", ")}`;
+          inventoryContextOut = pantryContext;
+        }
+      } catch (e: any) {
+        safeLog("warn", "⚠️ Could not load pantry for Fuera context", e);
+      }
+
       // 4. Construir Prompt (Anti-Injection)
       finalPrompt = PromptBuilder.buildRestaurantPrompt({
         type: "Fuera",
         dietaryGoal: Array.isArray(user.nutritionalGoal) ? user.nutritionalGoal.join(", ") : (user.nutritionalGoal || "saludable"),
         medicalContext: PromptBuilder.escapeUserInput(medicalContextOut),
         dislikedFoodsContext: PromptBuilder.escapeUserInput(dislikedContextOut),
+        historyContext,  // PHASE 2: Agregar histórico de restaurantes
+        pantryContext: inventoryContextOut || undefined,  // PHASE 2: Sugerir complementos para casa
         city: user.city || "su ubicación actual",
         mealType: request.cravings as string || "Cualquiera saludable",
         language: request.language
@@ -1219,6 +1271,42 @@ export default async function handler(req: any, res: any) {
     }
 
     // ============================================
+    // PHASE 2: QA VALIDATION - Repetition & Variety Checks
+    // ============================================
+    try {
+      if (type === "En casa" || type === "Receta Rápida") {
+        // Validate no repetition
+        const generatedTitles = parsedData.receta?.recetas?.map((r: any) => r.titulo) || [];
+        const hasRepetition = forbiddenTitles.some(forbidden => 
+          generatedTitles.some((generated: string) => 
+            generated?.toLowerCase().includes(forbidden.toLowerCase()) ||
+            forbidden.toLowerCase().includes(generated?.toLowerCase() || '')
+          )
+        );
+
+        if (hasRepetition) {
+          safeLog("warn", "⚠️ QA: Generated recipe may repeat forbidden titles", {
+            forbidden: forbiddenTitles,
+            generated: generatedTitles
+          });
+        }
+
+        // Validate ingredient variety
+        const allIngredients = generatedTitles.flatMap((titulo: string) => titulo.split(/[,;]/));
+        const varietyCheck = IngredientScorer.validateIngredientsVariety(allIngredients);
+        if (!varietyCheck.valid) {
+          safeLog("warn", "⚠️ QA: Ingredient variety issues detected", {
+            issues: varietyCheck.issues,
+            stats: varietyCheck.stats
+          });
+        }
+      }
+    } catch (qaError: any) {
+      safeLog("warn", "⚠️ QA validation error (non-blocking)", qaError);
+      // Non-blocking error - log but continue
+    }
+
+    // ============================================
     // ENRIQUECIMIENTO NUTRICIONAL CON FATSECRET
     // ============================================
     if ((type === "En casa" || type === "Receta Rápida") && parsedData.receta?.recetas) {
@@ -1252,6 +1340,31 @@ export default async function handler(req: any, res: any) {
     // This allows PlanScreen to fetch directly by docId without query overhead
     const historyRef = db.collection(historyCol).doc(interactionId);
     
+    // PHASE 2: Build comprehensive metadata for audit trail
+    const metadataToStore = {
+      // History context
+      historial: {
+        previous_recipes_count: forbiddenTitles?.length || 0,
+        forbidden_titles: forbiddenTitles || [],
+        is_new_recipe: type !== "Fuera" 
+          ? !forbiddenTitles?.some((t) => parsedData.receta?.recetas?.[0]?.titulo?.includes(t))
+          : true, // Always "new" for restaurants (different context)
+      },
+      
+      // Ingredient utilization (En casa only)
+      ingredientes_metadata: type === "En casa" ? {
+        from_pantry: ingredientStats?.fromPantry || 0,
+        need_to_buy: ingredientStats?.needToBuy || 0,
+        pantry_match_percentage: ingredientStats?.pantryMatchPercentage || 0,
+      } : undefined,
+      
+      // Timestamps for analytics
+      timestamps: {
+        generated_at: new Date().toISOString(),
+        user_timezone: user.timezone || 'UTC',
+      },
+    };
+
     // ✅ DEBUG: Log what we're about to save
     const historyData = cleanForFirestore({
       user_id: userId,
@@ -1259,6 +1372,7 @@ export default async function handler(req: any, res: any) {
       fecha_creacion: FieldValue.serverTimestamp(),
       tipo: type,
       ...parsedData,
+      metadata: metadataToStore,  // PHASE 2: Add complete audit trail
     });
     
     safeLog("log", `📝 Guardando en ${historyCol}:`, {
@@ -1269,6 +1383,7 @@ export default async function handler(req: any, res: any) {
       hasInteractionId: !!historyData.interaction_id,
       hasReceta: !!historyData.receta,
       hasRecomendaciones: !!historyData.recomendaciones,
+      metadataIncluded: !!historyData.metadata,
       dataSize: JSON.stringify(historyData).length,
     });
 
