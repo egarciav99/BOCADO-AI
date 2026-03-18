@@ -252,3 +252,119 @@ export async function checkFatSecretConnection() {
   }
 }
 
+/**
+ * Search for restaurants/foods by location
+ * This is a placeholder for geographic search functionality
+ *
+ * NOTE: FatSecret API v1 doesn't have native location-based search
+ * This function would need to:
+ * 1. Use Google Maps API to find nearby restaurants
+ * 2. Then search FatSecret for their menus (if API integration exists)
+ * 3. Or use restaurant name + cuisine type as search terms
+ *
+ * @param lat User latitude
+ * @param lng User longitude
+ * @param radius Search radius in km
+ * @param mealType Optional: type of meal (breakfast, lunch, dinner, etc)
+ */
+export async function searchFatSecretByLocation(
+  lat: number,
+  lng: number,
+  radius: number = 15,
+  mealType?: string,
+): Promise<any[]> {
+  console.log(
+    `[FatSecret] Location search request: lat=${lat}, lng=${lng}, radius=${radius}km, mealType=${mealType}`,
+  );
+
+  try {
+    // PHASE 1: Use cached recommendations if available
+    // In a production system, you'd:
+    // 1. Query a database of restaurants by location
+    // 2. Use Google Places API to find nearby restaurants
+    // 3. Cache results for 24 hours
+
+    // For now, return empty array - will be enhanced with real implementation
+    console.warn(
+      '[FatSecret] Location search not yet fully implemented. Use mealType-based search instead.',
+    );
+
+    // FALLBACK: Search by meal type instead of location
+    if (mealType) {
+      return await searchFatSecretIngredients(mealType, 50, 'MX', 'es');
+    }
+
+    return [];
+  } catch (error) {
+    console.error('[FatSecret] Location search failed:', error);
+    return [];
+  }
+}
+
+/**
+ * Search FatSecret using natural language meal descriptions
+ * Example: "Quiero algo mexicano saludable bajo en sodio"
+ *
+ * This bridges the gap between user intent and FatSecret searches
+ */
+export async function searchMealByDescription(
+  description: string,
+  preferences?: {
+    dietary?: string; // "vegan", "vegetarian", etc
+    cuisine?: string; // "mexican", "italian", etc
+    restriction?: string; // "low-sodium", "low-sugar", etc
+  },
+): Promise<any[]> {
+  console.log(`[FatSecret] Searching meals by description: "${description}"`);
+
+  try {
+    const token = await getFatSecretToken();
+
+    // Build search terms from description + preferences
+    const searchTerms: string[] = [];
+
+    // Extract keywords from description
+    const descriptionLower = description.toLowerCase();
+    if (descriptionLower.includes('mexicano')) searchTerms.push('mexican food');
+    if (descriptionLower.includes('italiano')) searchTerms.push('italian food');
+    if (descriptionLower.includes('saludable')) searchTerms.push('healthy');
+    if (descriptionLower.includes('rápido')) searchTerms.push('fast');
+    if (descriptionLower.includes('ligero')) searchTerms.push('light');
+
+    // Add preferences
+    if (preferences?.dietary) searchTerms.push(preferences.dietary);
+    if (preferences?.cuisine) searchTerms.push(preferences.cuisine);
+    if (preferences?.restriction) searchTerms.push(preferences.restriction);
+
+    // Fallback if no terms extracted
+    if (searchTerms.length === 0) {
+      searchTerms.push(description);
+    }
+
+    // Perform searches for each term and combine results
+    const allResults: any[] = [];
+    const seenIds = new Set<string>();
+
+    for (const term of searchTerms.slice(0, 3)) {
+      // Limit to 3 terms to avoid rate limiting
+      try {
+        const results = await searchFatSecretIngredients(term, 30, 'MX', 'es');
+        for (const result of results) {
+          if (!seenIds.has(result.food_id)) {
+            allResults.push(result);
+            seenIds.add(result.food_id);
+          }
+        }
+      } catch (e) {
+        console.warn(`[FatSecret] Search for "${term}" failed, continuing...`);
+      }
+    }
+
+    console.log(`[FatSecret] Found ${allResults.length} unique meals matching description`);
+    return allResults;
+  } catch (error) {
+    console.error('[FatSecret] Description search failed:', error);
+    return [];
+  }
+}
+

@@ -3,10 +3,11 @@
 ## Problema
 FatSecret rechaza requests desde IPs dinámicas de Vercel con error code 21: "Invalid IP address detected"
 
-Ejemplos de IPs vistas:
+Ejemplos de IPs vistas en BOCADO-AI:
 - `54.226.219.65`
 - `54.90.112.24`
 - `3.234.221.213`
+- `98.92.255.39`
 
 Cada deploy puede generar una IP diferente. **No es un bug, es una restricción de seguridad de FatSecret**.
 

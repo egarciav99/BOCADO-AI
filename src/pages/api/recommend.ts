@@ -22,6 +22,7 @@ import { filterIngredientes } from '../../lib/api/services/ingredient-filter';
 import { historyCache } from '../../lib/api/utils/cache';
 import { getFatSecretIngredientsWithCache } from '../../lib/api/utils/fatsecret-logic';
 import { NutritionEnricher } from '../../lib/api/services/nutrition-enricher';
+import { filterFatSecretResults, processFatSecretResults } from '../../lib/api/services/fatsecret-filters';
 
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
