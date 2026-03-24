@@ -1,6 +1,6 @@
 // hooks/usePantry.ts - OPTIMIZADO: Polling en lugar de onSnapshot
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, runTransaction } from "firebase/firestore";
 import { db, serverTimestamp, trackEvent } from "../firebaseConfig";
 import { KitchenItem } from "../types";
 import { useVisibilityAwarePolling } from "./usePaginatedFirestoreQuery";
@@ -17,20 +17,25 @@ const fetchPantry = async (userUid: string): Promise<KitchenItem[]> => {
   return [];
 };
 
-// Save pantry items to Firebase
+// Save pantry items to Firebase using transaction
+// 🔒 FIXED: Use transaction to prevent race conditions
 const savePantry = async (
   userUid: string,
   items: KitchenItem[],
 ): Promise<KitchenItem[]> => {
   const docRef = doc(db, "user_pantry", userUid);
-  await setDoc(
-    docRef,
-    {
+  
+  await runTransaction(db, async (transaction) => {
+    // Read current state
+    const doc = await transaction.get(docRef);
+    
+    // Write new state
+    transaction.set(docRef, {
       items,
       lastUpdated: serverTimestamp(),
-    },
-    { merge: true },
-  );
+    }, { merge: true });
+  });
+  
   return items;
 };
 

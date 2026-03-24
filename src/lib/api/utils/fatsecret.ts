@@ -3,6 +3,8 @@ function stringifyParams(params: Record<string, any>): string {
   return new URLSearchParams(params).toString();
 }
 
+import { fatSecretCircuitBreaker } from './circuit-breaker';
+
 const FATSECRET_KEY = process.env.FATSECRET_KEY || '';
 const FATSECRET_SECRET = process.env.FATSECRET_SECRET || '';
 
@@ -69,6 +71,7 @@ async function fetchWithTimeout(
 /**
  * Gets a valid OAuth 2.0 token for FatSecret API
  * Scopes: basic, nlp, premier (if available)
+ * Protected by circuit breaker
  */
 export async function getFatSecretToken() {
   if (fatSecretToken && fatSecretToken.expires_at > Date.now()) {
@@ -80,39 +83,42 @@ export async function getFatSecretToken() {
   // Scopes: only 'basic' for Premium Free tier (nlp, premier, barcode require paid plans)
   const scope = 'basic';
 
-  const res = await fetchWithTimeout('https://oauth.fatsecret.com/connect/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: stringifyParams({
-      grant_type: 'client_credentials',
-      scope: scope,
-      client_id: FATSECRET_KEY,
-      client_secret: FATSECRET_SECRET,
-    }),
-  });
+  // Wrap in circuit breaker
+  return fatSecretCircuitBreaker.execute(async () => {
+    const res = await fetchWithTimeout('https://oauth.fatsecret.com/connect/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: stringifyParams({
+        grant_type: 'client_credentials',
+        scope: scope,
+        client_id: FATSECRET_KEY,
+        client_secret: FATSECRET_SECRET,
+      }),
+    });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    
-    if (res.status === 403) {
-      console.error('[FatSecret] ⚠️ IP BLOCKED - This IP may not be whitelisted in FatSecret settings');
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      
+      if (res.status === 403) {
+        console.error('[FatSecret] ⚠️ IP BLOCKED - This IP may not be whitelisted in FatSecret settings');
+        console.error('[FatSecret] Token error:', errorData);
+        console.error('[FatSecret] Solution: Add your IP to FatSecret app settings at https://platform.fatsecret.com/api/');
+        throw new Error('FatSecret IP not whitelisted (HTTP 403)');
+      }
+      
       console.error('[FatSecret] Token error:', errorData);
-      console.error('[FatSecret] Solution: Add your IP to FatSecret app settings at https://platform.fatsecret.com/api/');
-      throw new Error('FatSecret IP not whitelisted (HTTP 403)');
+      throw new Error('FatSecret token fetch failed');
     }
-    
-    console.error('[FatSecret] Token error:', errorData);
-    throw new Error('FatSecret token fetch failed');
-  }
 
-  const data = await res.json();
-  fatSecretToken = {
-    access_token: data.access_token,
-    expires_at: Date.now() + (data.expires_in - 60) * 1000, // 1 min buffer
-  };
-  const duration = Date.now() - startTime;
-  console.log(`[FatSecret] Token fetched in ${duration}ms`);
-  return fatSecretToken.access_token;
+    const data = await res.json();
+    fatSecretToken = {
+      access_token: data.access_token,
+      expires_at: Date.now() + (data.expires_in - 60) * 1000, // 1 min buffer
+    };
+    const duration = Date.now() - startTime;
+    console.log(`[FatSecret] Token fetched in ${duration}ms`);
+    return fatSecretToken.access_token;
+  });
 }
 
 /**

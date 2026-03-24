@@ -64,6 +64,15 @@ const rateLimiter = new UserRateLimiter(db);
 // ============================================
 
 import { z } from "zod";
+import { 
+  TIMEOUTS, 
+  RATE_LIMITS, 
+  CACHE, 
+  SEARCH, 
+  AI_LIMITS, 
+  VALIDATION_LIMITS, 
+  ALLOWED_ORIGINS as ALLOWED_ORIGINS_CONFIG 
+} from "../../config/apiConstants";
 
 // ✅ FIX: Schema más estricto para validar datos
 const RequestBodySchema = z.object({
@@ -155,10 +164,10 @@ interface PantryItemForEnrichment {
 // Schemas para validar respuesta de Gemini
 // 🔒 SECURITY: Strict validation to prevent garbage data in Firestore
 const MacroSchema = z.object({
-  kcal: z.number().min(0).max(50000).default(0),
-  proteinas_g: z.number().min(0).max(5000).default(0),
-  carbohidratos_g: z.number().min(0).max(5000).default(0),
-  grasas_g: z.number().min(0).max(5000).default(0),
+  kcal: z.number().min(0).max(VALIDATION_LIMITS.MAX_KCAL).default(0),
+  proteinas_g: z.number().min(0).max(VALIDATION_LIMITS.MAX_MACROS_G).default(0),
+  carbohidratos_g: z.number().min(0).max(VALIDATION_LIMITS.MAX_MACROS_G).default(0),
+  grasas_g: z.number().min(0).max(VALIDATION_LIMITS.MAX_MACROS_G).default(0),
 });
 
 const RecipeSchema = z.object({
@@ -168,12 +177,12 @@ const RecipeSchema = z.object({
   dificultad: z.enum(["Fácil", "Media", "Difícil"]).optional(),
   coincidencia_despensa: z.string().max(100).optional(),
   ingredientes: z.array(z.string().min(1).max(200)).min(1).max(50),  // 🔒 At least 1 ingredient
-  pasos_preparacion: z.array(z.string().min(1).max(1000)).min(1).max(50),  // 🔒 At least 1 step
+  pasos_preparacion: z.array(z.string().min(1).max(VALIDATION_LIMITS.MAX_STEP_LENGTH)).min(1).max(VALIDATION_LIMITS.MAX_STEPS),  // 🔒 At least 1 step
   macros_por_porcion: MacroSchema.optional(),
 });
 
 const RecipeResponseSchema = z.object({
-  saludo_personalizado: z.string().min(1).max(1000),  // 🔒 min(1) prevents empty greeting
+  saludo_personalizado: z.string().min(1).max(VALIDATION_LIMITS.MAX_GREETING_LENGTH),  // 🔒 min(1) prevents empty greeting
   receta: z.object({
     recetas: z.array(RecipeSchema).min(1).max(10),  // 🔒 At least 1 recipe
   }),
@@ -185,12 +194,12 @@ const RestaurantSchema = z.object({
   tipo_comida: z.string().min(1).max(100),
   direccion_aproximada: z.string().min(1).max(500),
   plato_sugerido: z.string().min(1).max(200),
-  por_que_es_bueno: z.string().min(1).max(1000),
+  por_que_es_bueno: z.string().min(1).max(VALIDATION_LIMITS.MAX_GREETING_LENGTH),
   hack_saludable: z.string().max(500).optional(),  // Optional, can be empty
 });
 
 const RestaurantResponseSchema = z.object({
-  saludo_personalizado: z.string().min(1).max(1000),
+  saludo_personalizado: z.string().min(1).max(VALIDATION_LIMITS.MAX_GREETING_LENGTH),
   ubicacion_detectada: z.string().max(200).optional(),
   recomendaciones: z.array(RestaurantSchema).min(1).max(10),  // 🔒 At least 1 recommendation
 });
@@ -216,9 +225,9 @@ const RestaurantResponseSchema = z.object({
 
 class IPRateLimiter {
   private config = {
-    windowMs: 60 * 1000, // 1 minuto
-    maxRequests: 30, // 30 requests por minuto por IP
-    blockDurationMs: 5 * 60 * 1000, // 5 minutos de bloqueo si excede
+    windowMs: RATE_LIMITS.IP_WINDOW_MS,
+    maxRequests: RATE_LIMITS.IP_MAX_REQUESTS,
+    blockDurationMs: RATE_LIMITS.IP_BLOCK_DURATION_MS,
   };
 
   async checkIPLimit(
@@ -284,7 +293,7 @@ const ipRateLimiter = new IPRateLimiter();
 // ============================================
 
 // Rango de búsqueda en metros (8km)
-const SEARCH_RADIUS_METERS = 8000;
+const SEARCH_RADIUS_METERS = SEARCH.RADIUS_METERS;
 
 // ============================================
 // 8. AIRTABLE INTEGRATION HELPERS
@@ -383,7 +392,7 @@ async function getCountryCodeFromCoords(
 ): Promise<string | null> {
   // ✅ FIX: Timeout para evitar bloqueo indefinido
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 segundos
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUTS.GOOGLE_MAPS_REVERSE_GEOCODE);
 
   try {
     if (!GOOGLE_MAPS_API_KEY) {
@@ -612,7 +621,7 @@ async function searchNearbyRestaurants(
     .substring(0, 20)}`;
 
   // 1. Intentar caché (TTL: 2 horas)
-  const PLACES_CACHE_TTL_MS = 2 * 60 * 60 * 1000;
+  const PLACES_CACHE_TTL_MS = CACHE.PLACES_TTL_MS;
   try {
     const cacheRef = db.collection("places_search_cache").doc(cacheKey);
     const cached = await cacheRef.get();
@@ -658,7 +667,7 @@ async function searchNearbyRestaurants(
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+  const timeoutId = setTimeout(() => controller.abort(), TIMEOUTS.GEMINI_GENERATION);
 
   try {
     safeLog(
@@ -732,7 +741,7 @@ async function searchNearbyRestaurants(
         searchQuery: normalizedQuery,
         coords: { lat: coords.lat, lng: coords.lng },
         cachedAt: FieldValue.serverTimestamp(),
-        expiresAt: new Date(Date.now() + PLACES_CACHE_TTL_MS + 60 * 60 * 1000), // +1h buffer
+        expiresAt: new Date(Date.now() + PLACES_CACHE_TTL_MS + CACHE.PLACES_BUFFER_MS),
       });
     } catch (cacheError) {
       safeLog("warn", "[Places] Cache write error", cacheError);
@@ -1057,7 +1066,7 @@ export default async function handler(req: any, res: any) {
             .where("user_id", "==", userId)
             .limit(20)
             .get(),
-          firestoreTimeout(8000),
+          firestoreTimeout(TIMEOUTS.FIRESTORE_HISTORY_QUERY),
         ])) as FirebaseFirestore.QuerySnapshot;
 
         if (!historySnap.empty) {
@@ -1457,7 +1466,7 @@ export default async function handler(req: any, res: any) {
         // ✅ ANTI-ALUCINACIÓN: temperature baja = respuestas más precisas y factuales
         temperature: type === "En casa" ? 0.4 : 0.2,
         // ✅ OPTIMIZACIÓN: Reducir tokens máximos según tipo (ahorro ~20%)
-        maxOutputTokens: type === "En casa" ? 2800 : 2200,
+        maxOutputTokens: type === "En casa" ? AI_LIMITS.TOKENS_RECIPES : AI_LIMITS.TOKENS_RESTAURANTS,
         responseMimeType: "application/json",
         // ✅ ANTI-ALUCINACIÓN: topP más bajo para restaurantes (más determinístico)
         topP: type === "En casa" ? 0.9 : 0.8,
@@ -1694,7 +1703,7 @@ export default async function handler(req: any, res: any) {
         await interactionRef.update({
           status: "error",
           error: error.message,
-          errorDetails: error.stack?.substring(0, 1000) || "",
+          errorDetails: error.stack?.substring(0, VALIDATION_LIMITS.MAX_ERROR_STACK_LENGTH) || "",
           errorAt: FieldValue.serverTimestamp(),
         });
       } catch (e) {
