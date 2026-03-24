@@ -22,7 +22,7 @@ import { filterIngredientes } from '../../lib/api/services/ingredient-filter';
 import { historyCache } from '../../lib/api/utils/cache';
 import { getFatSecretIngredientsWithCache } from '../../lib/api/utils/fatsecret-logic';
 import { NutritionEnricher } from '../../lib/api/services/nutrition-enricher';
-import { filterFatSecretResults, processFatSecretResults } from '../../lib/api/services/fatsecret-filters';
+// Removed unused imports: filterFatSecretResults, processFatSecretResults
 
 // Phase 2 Integration
 import RecipeHistoryManager from '../../lib/api/services/recipe-history';
@@ -127,6 +127,30 @@ const RequestBodySchema = z.object({
 });
 
 type RequestBody = z.infer<typeof RequestBodySchema>;
+
+// 🔒 TYPES: Ingredient interfaces to replace 'any'
+interface FilteredIngredient {
+  name: string;
+  food_name?: string;
+  food_id?: string;
+  airtableId?: string;
+}
+
+// Renamed to avoid conflict with imported PantryItem from recommendation-scorer
+interface LocalPantryItem {
+  name: string;
+  food_name?: string;
+  airtableId?: string;
+  quantity?: number;
+  unit?: string;
+}
+
+interface PantryItemForEnrichment {
+  name: string;
+  airtableId?: string;
+  quantity?: number;
+  unit?: string;
+}
 
 // Schemas para validar respuesta de Gemini
 // 🔒 SECURITY: Strict validation to prevent garbage data in Firestore
@@ -1141,8 +1165,8 @@ export default async function handler(req: any, res: any) {
       // 2b. PHASE 2: Mejorar scoring con IngredientScorer (fuzzy matching + categorización)
       let inventoryContext = "";
       try {
-        const ingredientNames = filteredItems.map((i: any) => i.name || i.food_name);
-        const pantryNames = pantryItems.map((p: any) => p.name || p.food_name);
+        const ingredientNames = filteredItems.map((i: FilteredIngredient) => i.name || i.food_name).filter((n): n is string => !!n);
+        const pantryNames = pantryItems.map((p: LocalPantryItem) => p.name || p.food_name).filter((n): n is string => !!n);
         
         const scoredIngredients = IngredientScorer.scoreIngredients(ingredientNames, pantryNames);
         inventoryContext = IngredientScorer.generateIngredientContext(scoredIngredients);
@@ -1172,8 +1196,8 @@ export default async function handler(req: any, res: any) {
         );
         
         // Preparar items de despensa para enriquecimiento
-        const pantryForEnrichment = pantryItems.map((p: any) => ({
-          name: p.name || p.food_name,
+        const pantryForEnrichment: PantryItemForEnrichment[] = (pantryItems as LocalPantryItem[]).map((p) => ({
+          name: p.name || p.food_name || '',
           airtableId: p.airtableId,
           quantity: p.quantity,
           unit: p.unit,

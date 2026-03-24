@@ -8,30 +8,62 @@ const FATSECRET_SECRET = process.env.FATSECRET_SECRET || '';
 
 // API timeout configuration (5 seconds to prevent hanging)
 const FATSECRET_TIMEOUT_MS = 5000;
+const FATSECRET_MAX_RETRIES = 2;
+const FATSECRET_RETRY_DELAY_MS = 1000;
 
 let fatSecretToken: { access_token: string, expires_at: number } | null = null;
 
 /**
- * Helper to create a fetch with timeout
+ * Helper to create a fetch with timeout and retry logic
+ * Implements exponential backoff for transient failures
  */
-async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = FATSECRET_TIMEOUT_MS): Promise<Response> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+async function fetchWithTimeout(
+  url: string, 
+  options: RequestInit, 
+  timeoutMs: number = FATSECRET_TIMEOUT_MS,
+  retries: number = FATSECRET_MAX_RETRIES
+): Promise<Response> {
+  let lastError: Error | null = null;
   
-  try {
-    const response = await fetch(url, {
-      ...options,
-      signal: controller.signal,
-    });
-    return response;
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
-      throw new Error(`FatSecret request timed out after ${timeoutMs}ms`);
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      
+      // Retry on 5xx server errors (but not 4xx client errors)
+      if (response.status >= 500 && attempt < retries) {
+        const delay = FATSECRET_RETRY_DELAY_MS * Math.pow(2, attempt);
+        console.log(`[FatSecret] Server error ${response.status}, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
+      
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      lastError = error;
+      
+      if (error.name === 'AbortError') {
+        lastError = new Error(`FatSecret request timed out after ${timeoutMs}ms`);
+      }
+      
+      // Retry on timeout or network errors
+      if (attempt < retries) {
+        const delay = FATSECRET_RETRY_DELAY_MS * Math.pow(2, attempt);
+        console.log(`[FatSecret] ${error.name || 'Error'}, retrying in ${delay}ms (attempt ${attempt + 1}/${retries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+        continue;
+      }
     }
-    throw error;
-  } finally {
-    clearTimeout(timeoutId);
   }
+  
+  throw lastError || new Error('FatSecret request failed after retries');
 }
 
 /**

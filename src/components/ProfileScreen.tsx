@@ -65,16 +65,7 @@ interface ProfileScreenProps {
   userUid: string;
 }
 
-const stripEmoji = (str: string) => {
-  if (!str) return str;
-  const emojiRegex =
-    /^(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff])/;
-  const parts = str.split(" ");
-  if (parts.length > 0 && emojiRegex.test(parts[0])) {
-    return parts.slice(1).join(" ");
-  }
-  return str;
-};
+import { stripLeadingEmoji } from "../utils/emojiUtils";
 
 // Strip registration-time sentinel values so the profile editor starts clean.
 // The recommend API uses ["Ninguna"] / ["Ninguno"] as a placeholder when the
@@ -235,25 +226,37 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const debouncedCityQuery = useDebouncedValue(cityQuery, { delay: 500 });
 
   useEffect(() => {
-    if (debouncedCityQuery.trim().length >= 3) {
-      fetchCities(debouncedCityQuery);
-    } else {
-      setCityOptions([]);
-    }
-  }, [debouncedCityQuery]);
-
-  const fetchCities = async (query: string) => {
-    setIsSearchingCity(true);
-    try {
-      const countryCode = (formData.country || "MX").toUpperCase();
-      const predictions = await searchCities(query, countryCode);
-      setCityOptions(predictions);
-    } catch (error) {
-      safeLog("error", "Error buscando ciudades", error);
-    } finally {
-      setIsSearchingCity(false);
-    }
-  };
+    let isMounted = true;
+    
+    const fetchCitiesAsync = async () => {
+      if (debouncedCityQuery.trim().length >= 3) {
+        setIsSearchingCity(true);
+        try {
+          const countryCode = (formData.country || "MX").toUpperCase();
+          const predictions = await searchCities(debouncedCityQuery, countryCode);
+          if (isMounted) {
+            setCityOptions(predictions);
+          }
+        } catch (error) {
+          if (isMounted) {
+            safeLog("error", "Error buscando ciudades", error);
+          }
+        } finally {
+          if (isMounted) {
+            setIsSearchingCity(false);
+          }
+        }
+      } else {
+        setCityOptions([]);
+      }
+    };
+    
+    fetchCitiesAsync();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [debouncedCityQuery, formData.country]);
 
   // Wrapper para mantener compatibilidad con el componente existente
   const handleCitySearch = (query: string) => {
@@ -823,7 +826,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       Otro: "other",
     };
     // Remover emoji primero
-    const textOnly = stripEmoji(level);
+    const textOnly = stripLeadingEmoji(level);
     const key = map[textOnly];
     return key ? t(`activityLevels.${key}`) : level;
   };

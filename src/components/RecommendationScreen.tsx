@@ -28,22 +28,13 @@ import { useTranslation } from "../contexts/I18nContext";
 import { NotificationOnboarding } from "./NotificationOnboarding";
 import { NotificationSettings } from "./NotificationSettings";
 
+import { stripEmoji } from "../utils/emojiUtils";
+
 interface RecommendationScreenProps {
   userName: string;
   onPlanGenerated: (interactionId: string) => void;
   isNewUser?: boolean; // Nuevo prop para detectar usuarios recién registrados
 }
-
-const stripEmoji = (str: string) => {
-  if (!str) return str;
-  // Regex mejorada para emoji
-  return str
-    .replace(
-      /(\u00a9|\u00ae|[\u2000-\u3300]|\ud83c[\ud000-\udfff]|\ud83d[\ud000-\udfff]|\ud83e[\ud000-\udfff]|\s)+/g,
-      " ",
-    )
-    .trim();
-};
 
 // Helper para traducir comidas manteniendo el emoji original
 const translateMealWithEmoji = (
