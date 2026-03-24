@@ -46,6 +46,16 @@ import {
   isAirtableConfigured,
 } from '../../lib/api/services/airtableService';
 
+// Location service
+import { 
+  getUserCoordinates, 
+  formatCoordinates, 
+  getCountryCodeFromCoords,
+  detectLocationContext,
+  type Coordinates,
+  type LocationContext
+} from '../../lib/api/services/location-service';
+
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
 // ============================================
@@ -344,174 +354,14 @@ function formatHydratedNutrition(nutritionMap: Map<string, HydratedNutrition>): 
   return lines.join('\n');
 }
 
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
+// ============================================
+// 4. FILTROS DE SEGURIDAD ALIMENTARIA
+// ============================================
 
-/**
- * Determina las coordenadas a usar para la búsqueda de restaurantes
- * Prioridad: 1) userLocation del request, 2) location del perfil, 3) null
- */
-function getSearchCoordinates(
-  request: RequestBody,
-  user: UserProfile,
-): Coordinates | null {
-  // 1. Primero intentar usar la geolocalización del usuario (si dio permiso)
-  if (request.userLocation?.lat && request.userLocation?.lng) {
-    return {
-      lat: request.userLocation.lat,
-      lng: request.userLocation.lng,
-    };
-  }
+// Ingredient filtering moved to services/ingredient-filter.ts
 
-  // 2. Fallback: usar la ubicación guardada del perfil (de la ciudad registrada)
-  if (user.location?.lat && user.location?.lng) {
-    return {
-      lat: user.location.lat,
-      lng: user.location.lng,
-    };
-  }
-
-  return null;
-}
-
-/**
- * Formatea las coordenadas para mostrar en el prompt
- */
-function formatCoordinates(coords: Coordinates): string {
-  return `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`;
-}
-
-/**
- * Obtiene el código de país desde coordenadas GPS usando reverse geocoding
- * Llama al proxy interno de Google Maps con timeout de 5s
- */
-async function getCountryCodeFromCoords(
-  coords: Coordinates,
-): Promise<string | null> {
-  // ✅ FIX: Timeout para evitar bloqueo indefinido
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), TIMEOUTS.GOOGLE_MAPS_REVERSE_GEOCODE);
-
-  try {
-    if (!GOOGLE_MAPS_API_KEY) {
-      safeLog(
-        "warn",
-        "⚠️ GOOGLE_MAPS_API_KEY no configurada para reverse geocode",
-      );
-      return null;
-    }
-
-    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${coords.lat},${coords.lng}&language=es&key=${GOOGLE_MAPS_API_KEY}`;
-    const response = await fetch(url, { signal: controller.signal });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      safeLog("warn", `⚠️ Reverse geocode HTTP ${response.status}`);
-      return null;
-    }
-
-    const data = await response.json();
-    if (data.status !== "OK" || !data.results?.[0]) {
-      safeLog(
-        "warn",
-        `⚠️ Reverse geocode sin resultados: ${data.status || "unknown"}`,
-      );
-      return null;
-    }
-
-    const result = data.results[0];
-    const components = result.address_components || [];
-    const countryComponent = components.find(
-      (component: any) =>
-        Array.isArray(component.types) && component.types.includes("country"),
-    );
-    return countryComponent?.short_name || null;
-  } catch (error: any) {
-    clearTimeout(timeoutId);
-    if (error.name === "AbortError") {
-      safeLog("warn", "⚠️ Reverse geocode timeout (5s) - usando fallback");
-      return null;
-    }
-    safeLog("error", "❌ Error en reverse geocoding:", error);
-    return null;
-  }
-}
-
-/**
- * Detecta si el usuario está viajando (GPS location != perfil location)
- * Considera que está viajando si las ciudades son diferentes
- */
-interface LocationContext {
-  isTraveling: boolean;
-  homeCurrency: string;
-  activeCurrency: string;
-  homeCountryCode: string;
-  activeCountryCode: string | null;
-  locationLabel: string; // "en Madrid" o "aprovechando que estás en Tokio"
-}
-
-async function detectTravelContext(
-  searchCoords: Coordinates | null,
-  request: RequestBody,
-  user: UserProfile,
-): Promise<LocationContext> {
-  // ✅ FIX: Usar ?? para preservar strings vacíos válidos
-  const homeCountryCode = user.country ?? "MX"; // fallback a México
-  const homeCurrency = COUNTRY_TO_CURRENCY[homeCountryCode] ?? "USD";
-
-  // Si no hay GPS activo, usar ubicación de casa
-  if (!request.userLocation || !searchCoords) {
-    return {
-      isTraveling: false,
-      homeCurrency,
-      activeCurrency: homeCurrency,
-      homeCountryCode,
-      activeCountryCode: null,
-      locationLabel: `en ${user.city ?? "tu ciudad"}`,
-    };
-  }
-
-  // Detectar país desde coordenadas GPS
-  const activeCountryCode = await getCountryCodeFromCoords(searchCoords);
-
-  if (!activeCountryCode) {
-    // Si falla reverse geocoding, asumir que está en casa
-    return {
-      isTraveling: false,
-      homeCurrency,
-      activeCurrency: homeCurrency,
-      homeCountryCode,
-      activeCountryCode: null,
-      locationLabel: `en ${user.city ?? "tu ciudad"}`,
-    };
-  }
-
-  // ✅ FIX: Usar ?? con logging si no se encuentra moneda
-  const activeCurrency = COUNTRY_TO_CURRENCY[activeCountryCode];
-  if (!activeCurrency) {
-    safeLog(
-      "warn",
-      `⚠️ Currency not found for country: ${activeCountryCode}, fallback to home currency`,
-    );
-  }
-  const finalActiveCurrency = activeCurrency ?? homeCurrency;
-
-  const isTraveling = activeCountryCode !== homeCountryCode;
-
-  return {
-    isTraveling,
-    homeCurrency,
-    activeCurrency: finalActiveCurrency,
-    homeCountryCode,
-    activeCountryCode,
-    locationLabel: isTraveling
-      ? `aprovechando que estás de visita`
-      : `en ${user.city ?? "tu ciudad"}`,
-  };
-}
+// ============================================
+// 6. RATE LIMITING POR IP (Protección contra abuso)
 
 /**
  * Genera instrucción de presupuesto con conversión de moneda si es necesario
@@ -1418,14 +1268,17 @@ export default async function handler(req: any, res: any) {
       // 🔴 FIX #11: Mover searchCoords ANTES de usarlo en validación
       // Determinar coordenadas para búsqueda de restaurantes
       // 1. Determinar coordenadas
-      const searchCoords = getSearchCoordinates(request, user);
+      const searchCoords = getUserCoordinates(
+        { userLocation: request.userLocation || undefined },
+        { location: user.location }
+      );
       if (!user.city && !searchCoords) {
         throw new Error("Ubicación no disponible.");
       }
 
       // 2. Contexto de viaje
-      const travelContext = await detectTravelContext(searchCoords, request, user);
-      const budgetInstruction = getBudgetInstruction(request, travelContext);
+      const locationContext = await detectLocationContext(searchCoords, user.country, user.currency);
+      const budgetInstruction = getBudgetInstruction(request, locationContext);
 
       // 3. Preparar contexto
       const medicalContextOut = [...ensureArray(user.diseases), ...ensureArray(user.allergies), user.otherAllergies || ""].filter(Boolean).join(", ");
