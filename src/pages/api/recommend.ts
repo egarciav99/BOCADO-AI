@@ -46,6 +46,15 @@ import {
   isAirtableConfigured,
 } from '../../lib/api/services/airtableService';
 
+// Middleware & Validation
+import { 
+  handleCORS, 
+  validateAuthToken, 
+  validateRequestBody, 
+  RecommendationRequestSchema, 
+  type ValidatedRecommendationRequest 
+} from '../../lib/api/middleware/validation-middleware';
+
 // Location service
 import { 
   getUserCoordinates, 
@@ -67,7 +76,7 @@ const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
 
 // Initialize Services
 const dataService = new RecommendationDataService(db);
-const rateLimiter = new UserRateLimiter(db);
+const userRateLimiter = new UserRateLimiter(db);
 
 // ============================================
 // 2. VALIDACIÓN CON ZOD
@@ -80,72 +89,10 @@ import {
   CACHE, 
   SEARCH, 
   AI_LIMITS, 
-  VALIDATION_LIMITS, 
-  ALLOWED_ORIGINS as ALLOWED_ORIGINS_CONFIG 
+  VALIDATION_LIMITS
 } from "../../config/apiConstants";
 
-// ✅ FIX: Schema más estricto para validar datos
-const RequestBodySchema = z.object({
-  userId: z.string().min(1).max(128),
-  type: z.enum(["En casa", "Fuera", "Receta Rápida"]),
-  mealType: z.string().max(50).optional().nullable(),
-  // ✅ NUEVO: Ingredientes para Receta Rápida
-  ingredientes: z.array(z.string().max(100)).max(20).optional().default([]),
-  // ✅ Validación estricta: solo números o strings numéricos
-  cookingTime: z
-    .union([
-      z.string().regex(/^\d+$/, "Cooking time debe ser un número válido"),
-      z.number().int().min(1).max(180),
-    ])
-    .optional()
-    .nullable()
-    .transform((val) => {
-      if (val === null || val === undefined) return null;
-      const num = typeof val === "string" ? parseInt(val, 10) : val;
-      return isNaN(num) ? null : num;
-    }),
-  cravings: z
-    .union([z.string(), z.array(z.string())])
-    .optional()
-    .nullable(),
-  // ✅ Validación de budget: solo valores específicos o 'sin límite'
-  budget: z
-    .string()
-    .max(50)
-    .refine(
-      (val) =>
-        !val || val === "sin límite" || ["low", "medium", "high"].includes(val),
-      { message: "Budget debe ser low, medium, high o sin límite" },
-    )
-    .optional()
-    .nullable(),
-  // ✅ Validación de currency: códigos ISO válidos
-  currency: z
-    .string()
-    .max(10)
-    .regex(
-      /^[A-Z]{3}$/,
-      "Currency debe ser código ISO de 3 letras (ej: USD, EUR, MXN)",
-    )
-    .optional()
-    .nullable(),
-  dislikedFoods: z.array(z.string().max(100)).max(50).optional().default([]),
-  onlyPantryIngredients: z.boolean().optional().default(false),
-  _id: z.string().max(128).optional(),
-  // Idioma para las recomendaciones
-  language: z.enum(["es", "en"]).optional().default("es"),
-  // Ubicación del usuario (opcional - geolocalización del navegador)
-  userLocation: z
-    .object({
-      lat: z.number().min(-90).max(90),
-      lng: z.number().min(-180).max(180),
-      accuracy: z.number().positive().optional(),
-    })
-    .optional()
-    .nullable(),
-});
-
-type RequestBody = z.infer<typeof RequestBodySchema>;
+// Import ValidatedRecommendationRequest type from middleware
 
 // 🔒 TYPES: Ingredient interfaces to replace 'any'
 interface FilteredIngredient {
@@ -367,7 +314,7 @@ function formatHydratedNutrition(nutritionMap: Map<string, HydratedNutrition>): 
  * Genera instrucción de presupuesto con conversión de moneda si es necesario
  */
 function getBudgetInstruction(
-  request: RequestBody,
+  request: ValidatedRecommendationRequest,
   context: LocationContext,
 ): string {
   const budgetValue = request.budget ?? "sin límite";
@@ -691,45 +638,6 @@ const sanitizeRecommendation = (rec: any, city: string) => {
 // ============================================
 
 // ============================================
-// 8. CORS CONFIGURATION
-// ============================================
-
-const ALLOWED_ORIGINS = [
-  // Producción
-  "https://bocado-ai.vercel.app",
-  "https://bocado.app",
-  "https://www.bocado.app",
-  "https://app.bocado.app",
-  // Desarrollo
-  "http://localhost:3000",
-  "http://localhost:5173",
-  "http://127.0.0.1:3000",
-  "http://127.0.0.1:5173",
-];
-
-const isOriginAllowed = (origin: string | undefined): boolean => {
-  // En producción, NO permitir peticiones sin origin header
-  // (Solo same-origin requests pueden venir sin origin)
-  // Sin embargo, algunos clientes legítimos (curl, mobile apps) pueden omitirlo
-  // Solución: Permitir sin origin, pero requerir válido token JWT
-  
-  // Si viene con origin, validar que sea conocido
-  if (origin) {
-    // Permitir localhost en desarrollo
-    if (
-      origin.startsWith("http://localhost:") ||
-      origin.startsWith("http://127.0.0.1:")
-    ) {
-      return true;
-    }
-    return ALLOWED_ORIGINS.includes(origin);
-  }
-
-  // Sin origin: permitir, pero JWT debe ser válido (validado después)
-  return true;
-};
-
-// ============================================
 // 9. HANDLER PRINCIPAL
 // ============================================
 
@@ -737,74 +645,25 @@ export default async function handler(req: any, res: any) {
   if (!adminApp || !db) {
     return res.status(500).json({ error: "Firebase Admin not initialized. Check your environment variables." });
   }
-  const origin = req.headers.origin;
-
-  // Verificar origen permitido
-  if (!isOriginAllowed(origin)) {
-    return res.status(403).json({ error: "Origin not allowed" });
-  }
-
-  // Si no hay origin (same-origin), usar el primer origen de producción
-  // NOTA: wildcard '*' es incompatible con credentials: true según spec CORS
-  const allowedOrigin = origin || ALLOWED_ORIGINS[0];
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin);
-  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-
-  // ============================================
-  // RATE LIMITING POR IP (anti-abuso)
-  // ============================================
-  const clientIP = (
-    req.headers["x-forwarded-for"] ||
-    req.socket?.remoteAddress ||
-    "unknown"
-  )
-    .toString()
-    .split(",")[0]
-    .trim();
-  const ipCheck = await ipRateLimiter.checkIPLimit(clientIP);
-
-  if (!ipCheck.allowed) {
-    return res.status(429).json({
-      error: "Demasiadas solicitudes desde esta IP. Inténtalo más tarde.",
-      retryAfter: ipCheck.retryAfter,
-      code: "IP_RATE_LIMITED",
-    });
-  }
-
-  const authHeader =
-    req.headers?.authorization || req.headers?.Authorization || "";
-  const tokenMatch =
-    typeof authHeader === "string"
-      ? authHeader.match(/^Bearer\s+(.+)$/i)
-      : null;
-  const idToken = tokenMatch?.[1];
-
-  if (!idToken) {
-    return res.status(401).json({ error: "Auth token requerido" });
-  }
-
-  let authUserId: string;
-  try {
-    const decoded = await getAdminAuth().verifyIdToken(idToken);
-    authUserId = decoded.uid;
-  } catch (err) {
-    return res.status(401).json({ error: "Auth token inválido" });
-  }
 
   // ============================================
   // GET /api/recommend?userId=xxx - Status del rate limit
   // ============================================
   if (req.method === "GET") {
-    const status = await rateLimiter.getStatus(authUserId);
+    // Handle CORS and auth for GET requests
+    if (!handleCORS(req, res)) return;
+    
+    const authResult = await validateAuthToken(req);
+    if (!authResult.success) {
+      return res.status(401).json({ error: authResult.error });
+    }
+
+    const status = await userRateLimiter.getStatus(authResult.userId!);
     if (!status) {
       return res.status(200).json({
         canRequest: true,
         requestsInWindow: 0,
-        remainingRequests: 5,
+        remainingRequests: 2, // Updated from constants
       });
     }
 
@@ -816,40 +675,37 @@ export default async function handler(req: any, res: any) {
     });
   }
 
-  if (req.method !== "POST")
+  // POST /api/recommend - Main recommendation endpoint
+  if (req.method !== "POST") {
     return res.status(405).json({ error: "Método no permitido" });
+  }
 
+  // Handle CORS for POST
+  if (!handleCORS(req, res)) return;
+
+  // Validate auth
+  const authResult = await validateAuthToken(req);
+  if (!authResult.success) {
+    return res.status(401).json({ error: authResult.error });
+  }
+
+  const userId = authResult.userId!;
+
+  // Validate request body
+  const bodyValidation = validateRequestBody(req.body, RecommendationRequestSchema);
+  if (!bodyValidation.success) {
+    return res.status(400).json({ error: bodyValidation.error });
+  }
+
+  // Verify userId matches auth
+  if (bodyValidation.data.userId !== userId) {
+    return res.status(403).json({ error: "userId no coincide con el token de autenticación" });
+  }
+
+  const request = bodyValidation.data;
   let interactionRef: FirebaseFirestore.DocumentReference | null = null;
-  let userId: string | null = null;
 
   try {
-    // Validar body con Zod
-    const parseResult = RequestBodySchema.safeParse(req.body);
-    if (!parseResult.success) {
-      const issues = parseResult.error.issues
-        .map((i) => `${i.path.join(".")}: ${i.message}`)
-        .join(", ");
-      // ✅ FIX: Log de errores de validación para debugging
-      // 🔴 FIX #15: Validar JSON.stringify antes de .substring()
-      const bodyStr = req.body ? JSON.stringify(req.body) : "undefined";
-      safeLog("warn", "⚠️ Request validation failed:", {
-        userId: authUserId,
-        issues,
-        body: bodyStr.substring(0, 200),
-      });
-      return res
-        .status(400)
-        .json({ error: "Invalid request body", details: issues });
-    }
-
-    const request: RequestBody = parseResult.data;
-
-    // ✅ FIX: Log de requests exitosos (solo campos clave)
-
-    userId = authUserId;
-    if (request.userId && request.userId !== authUserId) {
-      return res.status(403).json({ error: "userId no coincide con el token" });
-    }
     const { type, _id } = request;
     const interactionId = _id || `int_${Date.now()}`;
 
@@ -857,20 +713,6 @@ export default async function handler(req: any, res: any) {
       "log",
       `🚀 Nueva solicitud: type=${type}, userId=${userId?.substring(0, 8)}...`,
     );
-
-    if (!userId) return res.status(400).json({ error: "userId requerido" });
-
-    // ============================================
-    // RATE LIMITING V2 - Transacción atómica
-    // ============================================
-    const rateCheck = await rateLimiter.checkRateLimit(userId);
-    if (!rateCheck.allowed) {
-      return res.status(429).json({
-        error: rateCheck.error,
-        retryAfter: rateCheck.secondsLeft,
-        remainingRequests: rateCheck.remainingRequests,
-      });
-    }
 
     interactionRef = db.collection("user_interactions").doc(interactionId);
     await interactionRef!.set({
@@ -1511,7 +1353,7 @@ export default async function handler(req: any, res: any) {
     // ============================================
     // ÉXITO: Marcar proceso como completado
     // ============================================
-    await rateLimiter.completeProcess(userId);
+    await userRateLimiter.completeProcess(userId);
 
     return res.status(200).json(parsedData);
   } catch (error: any) {
@@ -1545,7 +1387,7 @@ export default async function handler(req: any, res: any) {
     // ============================================
     if (userId) {
       try {
-        await rateLimiter.failProcess(userId, error.message);
+        await userRateLimiter.failProcess(userId, error.message);
       } catch (rlError) {
         safeLog("error", "Error actualizando rate limit", rlError);
       }
