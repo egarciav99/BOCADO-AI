@@ -28,6 +28,24 @@ import { filterFatSecretResults, processFatSecretResults } from '../../lib/api/s
 import RecipeHistoryManager from '../../lib/api/services/recipe-history';
 import IngredientScorer from '../../lib/api/services/ingredient-scorer';
 
+// Phase 3: Airtable Integration - Master Index + FatSecret Hydration
+import {
+  filterIngredientsBySafety,
+  hydrateIngredientsNutrition,
+  getSafeIngredientsWithNutrition,
+  findIngredientsByNames,
+  UserDietaryProfile,
+  HydratedNutrition,
+  // NEW: Full enrichment flow
+  enrichPantryWithNutrition,
+  buildExtendedMedicalProfile,
+  calculateRecipeMacros,
+  EnrichedIngredient,
+  ExtendedMedicalProfile,
+  EnrichedPantryResult,
+  isAirtableConfigured,
+} from '../../lib/api/services/airtableService';
+
 // ============================================
 // 1. INICIALIZACIÓN DE FIREBASE
 // ============================================
@@ -242,6 +260,55 @@ const ipRateLimiter = new IPRateLimiter();
 
 // Rango de búsqueda en metros (8km)
 const SEARCH_RADIUS_METERS = 8000;
+
+// ============================================
+// 8. AIRTABLE INTEGRATION HELPERS
+// ============================================
+
+/**
+ * Convierte el perfil del usuario a formato de restricciones dietéticas de Airtable
+ * Mapea diseases/allergies a flags booleanos para filtrado de seguridad clínica
+ */
+function userProfileToDietaryProfile(user: UserProfile): UserDietaryProfile {
+  const diseases = ensureArray(user.diseases).map(d => d.toLowerCase());
+  const allergies = ensureArray(user.allergies).map(a => a.toLowerCase());
+  const otherAllergies = (user.otherAllergies || '').toLowerCase();
+  const eatingHabit = (user.eatingHabit || '').toLowerCase();
+  
+  return {
+    celiaco: diseases.includes('celíaco') || 
+             diseases.includes('celiaco') || 
+             diseases.includes('enfermedad celíaca') ||
+             allergies.includes('gluten'),
+    vegano: eatingHabit.includes('vegano') || eatingHabit === 'vegan',
+    vegetariano: eatingHabit.includes('vegetariano') || 
+                 eatingHabit.includes('vegano') || 
+                 eatingHabit === 'vegetarian',
+    intoleranteLactosa: diseases.includes('intolerancia a la lactosa') || 
+                        allergies.includes('lactosa') ||
+                        allergies.includes('lácteos') ||
+                        otherAllergies.includes('lactosa'),
+    alergicoFrutosSecos: allergies.includes('frutos secos') || 
+                         allergies.includes('nueces') ||
+                         allergies.includes('almendras') ||
+                         otherAllergies.includes('frutos secos'),
+  };
+}
+
+/**
+ * Formatea datos nutricionales hidratados para incluir en el prompt de Gemini
+ */
+function formatHydratedNutrition(nutritionMap: Map<string, HydratedNutrition>): string {
+  if (nutritionMap.size === 0) return '';
+  
+  const lines: string[] = ['### 📊 DATOS NUTRICIONALES (FatSecret v5):'];
+  
+  for (const [name, nutrition] of nutritionMap) {
+    lines.push(`- ${name}: ${nutrition.calories}kcal, P:${nutrition.protein}g, C:${nutrition.carbohydrate}g, G:${nutrition.fat}g (por ${nutrition.servingSize}${nutrition.servingUnit})`);
+  }
+  
+  return lines.join('\n');
+}
 
 interface Coordinates {
   lat: number;
@@ -1088,6 +1155,84 @@ export default async function handler(req: any, res: any) {
         safeLog("warn", "⚠️ IngredientScorer failed, using basic scoring", e);
       }
 
+      // 2c. PHASE 3: Enriquecimiento COMPLETO con Airtable + FatSecret v5
+      // Flujo: Despensa → Airtable (validación médica) → FatSecret (hidratación) → Prompt Enriquecido
+      let enrichedPantryResult: EnrichedPantryResult | null = null;
+      let airtableSafetyContext = "";
+      let hydratedNutritionContext = "";
+      
+      try {
+        // Construir perfil médico extendido del usuario
+        const extendedMedicalProfile = buildExtendedMedicalProfile(
+          ensureArray(user.diseases),
+          ensureArray(user.allergies),
+          user.otherAllergies || '',
+          user.eatingHabit || ''
+        );
+        
+        // Preparar items de despensa para enriquecimiento
+        const pantryForEnrichment = pantryItems.map((p: any) => ({
+          name: p.name || p.food_name,
+          airtableId: p.airtableId,
+          quantity: p.quantity,
+          unit: p.unit,
+        }));
+        
+        // 🚀 ENRIQUECIMIENTO COMPLETO
+        // - Cruza con Índice Maestro de Airtable (obtiene FatSecret_ID)
+        // - Valida restricciones médicas (Celíaco, Diabetes, Hipertensión, etc.)
+        // - Hidrata datos nutricionales de FatSecret v5 (kcal, proteína, sodio, etc.)
+        // - Genera contexto formateado para Gemini
+        enrichedPantryResult = await enrichPantryWithNutrition(
+          pantryForEnrichment,
+          extendedMedicalProfile,
+          'MX',
+          'es'
+        );
+        
+        // El contexto enriquecido incluye:
+        // - Perfil médico del usuario
+        // - Ingredientes con datos nutricionales exactos
+        // - Ingredientes filtrados por seguridad
+        // - Instrucciones nutricionales obligatorias
+        hydratedNutritionContext = enrichedPantryResult.promptContext;
+        
+        safeLog("log", `🚀 Airtable Enrichment Complete:`, {
+          enriched: enrichedPantryResult.ingredientesEnriquecidos.length,
+          filtered: enrichedPantryResult.ingredientesFiltrados.length,
+          unknown: enrichedPantryResult.ingredientesDesconocidos.length,
+          withNutrition: enrichedPantryResult.resumenNutricional.conDatosNutricionales,
+        });
+        
+        // Context de ingredientes filtrados para logging
+        if (enrichedPantryResult.ingredientesFiltrados.length > 0) {
+          airtableSafetyContext = enrichedPantryResult.ingredientesFiltrados
+            .map(f => `${f.nombre}: ${f.razon}`)
+            .join('; ');
+        }
+      } catch (e: any) {
+        safeLog("warn", "⚠️ Airtable enrichment failed, using fallback", e);
+        
+        // FALLBACK: Usar el método anterior simplificado
+        try {
+          const ingredientNames = filteredItems.map((i: any) => i.name || i.food_name);
+          const userDietaryProfile = userProfileToDietaryProfile(user);
+          const safetyResult = await filterIngredientsBySafety(ingredientNames, userDietaryProfile);
+          
+          if (safetyResult.unsafe.length > 0) {
+            airtableSafetyContext = safetyResult.unsafe.join(", ");
+          }
+          
+          const ingredientsToHydrate = safetyResult.safe.slice(0, 15);
+          if (ingredientsToHydrate.length > 0) {
+            const nutritionMap = await hydrateIngredientsNutrition(ingredientsToHydrate, 'MX', 'es');
+            hydratedNutritionContext = formatHydratedNutrition(nutritionMap);
+          }
+        } catch (fallbackError) {
+          safeLog("warn", "⚠️ Fallback also failed, continuing without Airtable", fallbackError);
+        }
+      }
+
       // 3. Preparar contexto
       const diseases = ensureArray(user.diseases);
       const allergies = ensureArray(user.allergies);
@@ -1124,7 +1269,10 @@ export default async function handler(req: any, res: any) {
         country: user.country,
         language: request.language,
         difficultyHint,
-        pantryRule
+        pantryRule,
+        // PHASE 3: Contextos de Airtable (Seguridad Clínica + Nutrición Hidratada)
+        airtableSafetyContext,
+        hydratedNutritionContext,
       });
     } else if (type === "Receta Rápida") {
       // ✅ NUEVO: Lógica para Receta Rápida
@@ -1148,7 +1296,77 @@ export default async function handler(req: any, res: any) {
         ...ensureArray(request.dislikedFoods),
       ].filter(Boolean).join(", ");
 
-      // 3. Construir Prompt para Receta Rápida (usando ingredientes normalizados)
+      // 2b. PHASE 3: Enriquecimiento con Airtable + FatSecret para Receta Rápida
+      // Los ingredientes del usuario se validan contra su perfil médico y se enriquecen con datos nutricionales
+      let quickRecipeEnrichment: EnrichedPantryResult | null = null;
+      let quickRecipeSafetyContext = "";
+      let quickRecipeNutritionContext = "";
+      
+      try {
+        // Construir perfil médico extendido
+        const extendedMedicalProfile = buildExtendedMedicalProfile(
+          diseases,
+          allergies,
+          otherAllergiesText,
+          user.eatingHabit || ''
+        );
+        
+        // Preparar ingredientes del usuario para enriquecimiento
+        const ingredientsForEnrichment = normalizedIngredientes.map(name => ({
+          name,
+          quantity: 100, // Default quantity
+          unit: 'g',
+        }));
+        
+        // 🚀 Enriquecer ingredientes con Airtable + FatSecret
+        quickRecipeEnrichment = await enrichPantryWithNutrition(
+          ingredientsForEnrichment,
+          extendedMedicalProfile,
+          'MX',
+          'es'
+        );
+        
+        // Usar el contexto enriquecido completo
+        quickRecipeNutritionContext = quickRecipeEnrichment.promptContext;
+        
+        // Registrar ingredientes filtrados
+        if (quickRecipeEnrichment.ingredientesFiltrados.length > 0) {
+          quickRecipeSafetyContext = quickRecipeEnrichment.ingredientesFiltrados
+            .map(f => `${f.nombre}: ${f.razon}`)
+            .join('; ');
+          
+          safeLog("warn", `⚠️ Receta Rápida: ${quickRecipeEnrichment.ingredientesFiltrados.length} ingredientes del usuario filtrados por seguridad`, {
+            filtered: quickRecipeEnrichment.ingredientesFiltrados
+          });
+        }
+        
+        safeLog("log", `🚀 Receta Rápida - Airtable Enrichment:`, {
+          enriched: quickRecipeEnrichment.ingredientesEnriquecidos.length,
+          filtered: quickRecipeEnrichment.ingredientesFiltrados.length,
+          unknown: quickRecipeEnrichment.ingredientesDesconocidos.length,
+        });
+      } catch (e: any) {
+        safeLog("warn", "⚠️ Receta Rápida - Airtable enrichment failed, using basic flow", e);
+        
+        // FALLBACK: Usar método simplificado
+        try {
+          const userDietaryProfile = userProfileToDietaryProfile(user);
+          const safetyResult = await filterIngredientsBySafety(normalizedIngredientes, userDietaryProfile);
+          
+          if (safetyResult.unsafe.length > 0) {
+            quickRecipeSafetyContext = safetyResult.unsafe.join(", ");
+          }
+          
+          if (safetyResult.safe.length > 0) {
+            const nutritionMap = await hydrateIngredientsNutrition(safetyResult.safe, 'MX', 'es');
+            quickRecipeNutritionContext = formatHydratedNutrition(nutritionMap);
+          }
+        } catch (fallbackError) {
+          safeLog("warn", "⚠️ Receta Rápida - Fallback also failed", fallbackError);
+        }
+      }
+
+      // 3. Construir Prompt para Receta Rápida (con datos enriquecidos)
       finalPrompt = PromptBuilder.buildQuickRecipePrompt({
         type: "Receta Rápida",
         ingredientes: normalizedIngredientes,
@@ -1158,6 +1376,9 @@ export default async function handler(req: any, res: any) {
         city: user.city,
         cookingTime: request.cookingTime as number,
         language: request.language,
+        // PHASE 3: Contextos de Airtable
+        airtableSafetyContext: quickRecipeSafetyContext,
+        hydratedNutritionContext: quickRecipeNutritionContext,
       });
     } else {
       // 🔴 FIX #11: Mover searchCoords ANTES de usarlo en validación

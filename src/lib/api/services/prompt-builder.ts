@@ -20,6 +20,9 @@ export interface PromptOptions {
     constraints?: string[];
     // ✅ NUEVO: Para Receta Rápida
     ingredientes?: string[];
+    // ✅ PHASE 3: Contextos de Airtable (Seguridad Clínica + Nutrición)
+    airtableSafetyContext?: string;
+    hydratedNutritionContext?: string;
 }
 
 /**
@@ -43,6 +46,8 @@ export class PromptBuilder {
             difficultyHint,
             pantryRule,
             language,
+            airtableSafetyContext,
+            hydratedNutritionContext,
         } = options;
 
         return `Eres nutricionista experto. Tu objetivo es generar exactamente 3 recetas saludables.
@@ -61,6 +66,8 @@ export class PromptBuilder {
 
 ${historyContext ? `\n### MEMORIA RECIENTE ###\n${historyContext.slice(0, 300)}\n### FIN MEMORIA ###` : ""}
 ${feedbackContext ? `\n### FEEDBACK DEL USUARIO ###\n${feedbackContext.slice(0, 300)}\n### FIN FEEDBACK ###` : ""}
+${airtableSafetyContext ? `\n${airtableSafetyContext}\n` : ""}
+${hydratedNutritionContext ? `\n${hydratedNutritionContext}\n` : ""}
 
 ### DISPONIBILIDAD DE INGREDIENTES ###
 ${pantryContext ? `- DESPENSA (Priorizada): ${pantryContext}` : ""}
@@ -75,6 +82,8 @@ ${marketList && !onlyPantryIngredients ? `- MERCADO (Disponible): ${marketList}`
 5. PROHIBIDO inventar ingredientes exóticos o difíciles de conseguir.
 6. PRIORIZA ingredientes marcados como (URGENTE: Próximo a vencer) para reducir el desperdicio.
 7. Las cantidades deben ser realistas.
+${airtableSafetyContext ? "8. RESPETA ESTRICTAMENTE los ingredientes filtrados por seguridad clínica. NUNCA uses ingredientes marcados como inseguros." : ""}
+${hydratedNutritionContext ? "9. Usa los datos nutricionales proporcionados para calcular macros precisos por porción." : ""}
 ### FIN REGLAS ###
 
 Responde EXCLUSIVAMENTE en ${language === "en" ? "INGLÉS" : "ESPAÑOL"}.
@@ -132,6 +141,9 @@ Personaliza el saludo_personalizado para hacerlo motivador y amable.`;
             city,
             cookingTime,
             language,
+            // PHASE 3: Contextos de Airtable
+            airtableSafetyContext,
+            hydratedNutritionContext,
         } = options;
 
         // 🛡️ Sanitize each ingredient to prevent prompt injection
@@ -152,9 +164,10 @@ Personaliza el saludo_personalizado para hacerlo motivador y amable.`;
 - Ubicación: ${city || "Desconocida"}
 ### FIN CONTEXTO USUARIO ###
 
-### INGREDIENTES DISPONIBLES (USA EXACTAMENTE ESTOS) ###
+${hydratedNutritionContext ? `${hydratedNutritionContext}\n` : `### INGREDIENTES DISPONIBLES (USA EXACTAMENTE ESTOS) ###
 ${ingredientesFormatted}
-### FIN INGREDIENTES ###
+### FIN INGREDIENTES ###`}
+${airtableSafetyContext ? `\n### ⛔ INGREDIENTES PROHIBIDOS POR SEGURIDAD:\n${airtableSafetyContext}\n` : ""}
 
 ### PARÁMETROS ###
 ${cookingTime ? `- Tiempo máximo: ${cookingTime} minutos` : "- Tiempo máximo: 20 minutos (rápida)"}
@@ -168,6 +181,8 @@ ${cookingTime ? `- Tiempo máximo: ${cookingTime} minutos` : "- Tiempo máximo: 
 5. La receta debe ser realista y preparable con exactamente lo que el usuario tiene.
 6. Las cantidades deben ser realistas para 1-2 porciones.
 7. NO inventar ingredientes que no estén en la lista.
+${airtableSafetyContext ? "8. NUNCA uses ingredientes marcados como prohibidos por seguridad clínica." : ""}
+${hydratedNutritionContext ? "9. USA los datos nutricionales proporcionados para calcular macros EXACTOS." : ""}
 ### FIN REGLAS ###
 
 Responde EXCLUSIVAMENTE en ${language === "en" ? "INGLÉS" : "ESPAÑOL"}.
