@@ -1,11 +1,17 @@
 import { RateLimiter, RateLimitConfig, RateLimitResult } from "./rate-limiter-base";
 import { FieldValue } from "firebase-admin/firestore";
 
+// 🔒 SECURITY: Reduced rate limits to prevent API cost explosion
+// Previously: 5 req/10min = potential $360/hr with 1000 users
+// Now: 2 req/10min + daily quota = much lower risk
 const DEFAULT_CONFIG: RateLimitConfig = {
   windowMs: 10 * 60 * 1000, // 10 minutes
-  maxRequests: 5, // 5 requests per 10 minutes
-  cooldownMs: 30 * 1000, // 30s minimum between requests
+  maxRequests: 2, // 🔒 Reduced from 5 to 2 requests per 10 minutes
+  cooldownMs: 60 * 1000, // 🔒 Increased from 30s to 60s minimum between requests
 };
+
+// Daily quota to prevent abuse (per user)
+const DAILY_QUOTA_LIMIT = 20; // Max 20 requests per day per user
 
 /**
  * User-based rate limiter (for authenticated endpoints).

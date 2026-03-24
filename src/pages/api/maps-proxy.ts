@@ -19,6 +19,7 @@ const db = adminApp ? getFirestore() : null;
 // CONFIGURACIÓN
 // ============================================
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_TIMEOUT_MS = 5000; // 5 second timeout for all Google Maps API calls
 
 if (!GOOGLE_MAPS_API_KEY) {
   console.error("❌ GOOGLE_MAPS_API_KEY no está configurada");
@@ -27,6 +28,30 @@ if (!GOOGLE_MAPS_API_KEY) {
 // Rate limiting simple por IP
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto
 const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests por minuto
+
+// ============================================
+// FETCH CON TIMEOUT
+// ============================================
+
+/**
+ * Fetch wrapper with timeout to prevent hanging requests
+ */
+async function fetchWithTimeout(url: string, timeoutMs: number = GOOGLE_MAPS_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, { signal: controller.signal });
+    return response;
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new Error(`Google Maps request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 // ============================================
 // DETECCIÓN DE UBICACIÓN POR IP
@@ -65,11 +90,8 @@ async function detectLocationByIP(
 
   try {
     // Usar ipapi.co (gratuito, no requiere API key para uso básico)
-    const response = await fetch(`https://ipapi.co/${cleanIP}/json/`, {
-      headers: {
-        "User-Agent": "BocadoApp/1.0",
-      },
-    });
+    // 3s timeout for IP lookup (not critical path)
+    const response = await fetchWithTimeout(`https://ipapi.co/${cleanIP}/json/`, 3000);
 
     if (!response.ok) {
       console.warn(`[IP Detection] Error: ${response.status}`);
@@ -344,7 +366,7 @@ async function handleAutocomplete(
     params.query,
   )}&types=(cities)&language=es${components}&key=${GOOGLE_MAPS_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
   const data = await response.json();
 
   if (data.status !== "OK" && data.status !== "ZERO_RESULTS") {
@@ -388,7 +410,7 @@ async function handlePlaceDetails(
 
   const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${params.placeId}&fields=geometry,formatted_address,address_components&language=es&key=${GOOGLE_MAPS_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
   const data = await response.json();
 
   if (data.status !== "OK" || !data.result) {
@@ -443,7 +465,7 @@ async function handleGeocode(res: any, params: z.infer<typeof GeocodeSchema>) {
     params.address,
   )}&language=es&key=${GOOGLE_MAPS_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
   const data = await response.json();
 
   if (data.status !== "OK" || !data.results?.[0]) {
@@ -492,7 +514,7 @@ async function handleReverseGeocode(
   // No cacheamos reverse geocode (coordenadas son únicas)
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${params.lat},${params.lng}&language=es&key=${GOOGLE_MAPS_API_KEY}`;
 
-  const response = await fetch(url);
+  const response = await fetchWithTimeout(url);
   const data = await response.json();
 
   if (data.status !== "OK" || !data.results?.[0]) {

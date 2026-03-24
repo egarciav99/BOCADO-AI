@@ -6,7 +6,33 @@ function stringifyParams(params: Record<string, any>): string {
 const FATSECRET_KEY = process.env.FATSECRET_KEY || '';
 const FATSECRET_SECRET = process.env.FATSECRET_SECRET || '';
 
+// API timeout configuration (5 seconds to prevent hanging)
+const FATSECRET_TIMEOUT_MS = 5000;
+
 let fatSecretToken: { access_token: string, expires_at: number } | null = null;
+
+/**
+ * Helper to create a fetch with timeout
+ */
+async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number = FATSECRET_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } catch (error: any) {
+    if (error.name === 'AbortError') {
+      throw new Error(`FatSecret request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 /**
  * Gets a valid OAuth 2.0 token for FatSecret API
@@ -22,7 +48,7 @@ export async function getFatSecretToken() {
   // Scopes: only 'basic' for Premium Free tier (nlp, premier, barcode require paid plans)
   const scope = 'basic';
 
-  const res = await fetch('https://oauth.fatsecret.com/connect/token', {
+  const res = await fetchWithTimeout('https://oauth.fatsecret.com/connect/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: stringifyParams({
@@ -78,7 +104,7 @@ export async function searchFatSecretIngredients(query: string, maxResults = 50,
   console.log(`[FatSecret] Searching: "${query}"`);
 
   const queryString = stringifyParams(params);
-  const res = await fetch(`https://platform.fatsecret.com/rest/foods/search/v1?${queryString}`, {
+  const res = await fetchWithTimeout(`https://platform.fatsecret.com/rest/foods/search/v1?${queryString}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -131,7 +157,7 @@ export async function getFatSecretFood(foodId: string, region?: string, language
   console.log(`[FatSecret] Getting food details: ID ${foodId}`);
 
   const queryString = stringifyParams(params);
-  const res = await fetch(`https://platform.fatsecret.com/rest/food/v5?${queryString}`, {
+  const res = await fetchWithTimeout(`https://platform.fatsecret.com/rest/food/v5?${queryString}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
 
@@ -167,7 +193,7 @@ export async function analyzeNaturalLanguage(userInput: string, region = 'US', l
 
   console.log(`[FatSecret] NLP analysis: "${userInput.substring(0, 50)}..." (region: ${region})`);
 
-  const res = await fetch('https://platform.fatsecret.com/rest/natural-language-processing/v1', {
+  const res = await fetchWithTimeout('https://platform.fatsecret.com/rest/natural-language-processing/v1', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${token}`,

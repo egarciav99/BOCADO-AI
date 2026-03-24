@@ -129,45 +129,46 @@ const RequestBodySchema = z.object({
 type RequestBody = z.infer<typeof RequestBodySchema>;
 
 // Schemas para validar respuesta de Gemini
+// 🔒 SECURITY: Strict validation to prevent garbage data in Firestore
 const MacroSchema = z.object({
-  kcal: z.number().max(50000).default(0),
-  proteinas_g: z.number().max(5000).default(0),
-  carbohidratos_g: z.number().max(5000).default(0),
-  grasas_g: z.number().max(5000).default(0),
+  kcal: z.number().min(0).max(50000).default(0),
+  proteinas_g: z.number().min(0).max(5000).default(0),
+  carbohidratos_g: z.number().min(0).max(5000).default(0),
+  grasas_g: z.number().min(0).max(5000).default(0),
 });
 
 const RecipeSchema = z.object({
   id: z.union([z.number(), z.string()]),
-  titulo: z.string().max(200),
+  titulo: z.string().min(1).max(200),  // 🔒 min(1) prevents empty titles
   tiempo_estimado: z.string().max(50).optional(),
   dificultad: z.enum(["Fácil", "Media", "Difícil"]).optional(),
   coincidencia_despensa: z.string().max(100).optional(),
-  ingredientes: z.array(z.string().max(200)).max(50),
-  pasos_preparacion: z.array(z.string().max(1000)).max(50),
+  ingredientes: z.array(z.string().min(1).max(200)).min(1).max(50),  // 🔒 At least 1 ingredient
+  pasos_preparacion: z.array(z.string().min(1).max(1000)).min(1).max(50),  // 🔒 At least 1 step
   macros_por_porcion: MacroSchema.optional(),
 });
 
 const RecipeResponseSchema = z.object({
-  saludo_personalizado: z.string().max(1000),
+  saludo_personalizado: z.string().min(1).max(1000),  // 🔒 min(1) prevents empty greeting
   receta: z.object({
-    recetas: z.array(RecipeSchema).max(10),
+    recetas: z.array(RecipeSchema).min(1).max(10),  // 🔒 At least 1 recipe
   }),
 });
 
 const RestaurantSchema = z.object({
   id: z.union([z.number(), z.string()]),
-  nombre_restaurante: z.string().max(200),
-  tipo_comida: z.string().max(100),
-  direccion_aproximada: z.string().max(500),
-  plato_sugerido: z.string().max(200),
-  por_que_es_bueno: z.string().max(1000),
-  hack_saludable: z.string().max(500),
+  nombre_restaurante: z.string().min(1).max(200),  // 🔒 min(1) prevents empty names
+  tipo_comida: z.string().min(1).max(100),
+  direccion_aproximada: z.string().min(1).max(500),
+  plato_sugerido: z.string().min(1).max(200),
+  por_que_es_bueno: z.string().min(1).max(1000),
+  hack_saludable: z.string().max(500).optional(),  // Optional, can be empty
 });
 
 const RestaurantResponseSchema = z.object({
-  saludo_personalizado: z.string().max(1000),
+  saludo_personalizado: z.string().min(1).max(1000),
   ubicacion_detectada: z.string().max(200).optional(),
-  recomendaciones: z.array(RestaurantSchema).max(10),
+  recomendaciones: z.array(RestaurantSchema).min(1).max(10),  // 🔒 At least 1 recommendation
 });
 
 

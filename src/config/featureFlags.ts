@@ -49,7 +49,13 @@ export const FEATURE_FLAGS_CONFIG = {
 } as const;
 
 // Admin allowlist (UIDs) for internal panels
-export const ADMIN_UIDS = ["2kHglJK7HuZ4YxsZCgJps3hnNLF2"];
+// 🔒 SECURITY: Use environment variable to avoid exposing admin UIDs in frontend bundle
+// In production, set NEXT_PUBLIC_ADMIN_UIDS as a comma-separated list
+// Example: NEXT_PUBLIC_ADMIN_UIDS=uid1,uid2,uid3
+const adminUidsEnv = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_ADMIN_UIDS;
+export const ADMIN_UIDS: string[] = adminUidsEnv 
+  ? adminUidsEnv.split(',').map(uid => uid.trim()).filter(Boolean)
+  : [];
 
 /**
  * Colecciones y documentos de Firestore para feature flags.
