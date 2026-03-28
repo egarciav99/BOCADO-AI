@@ -118,6 +118,41 @@ interface PantryItemForEnrichment {
   unit?: string;
 }
 
+// ============================================
+// TIMEOUT HELPER - Prevents hanging on slow external APIs
+// ============================================
+/**
+ * Wraps a promise with a timeout. If the promise doesn't resolve within
+ * the specified time, it rejects with a timeout error.
+ * 
+ * @param promise The promise to wrap
+ * @param timeoutMs Timeout in milliseconds
+ * @param operationName Name for logging purposes
+ * @returns The resolved value or throws on timeout
+ */
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  operationName: string
+): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`${operationName} timeout after ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId!);
+    throw error;
+  }
+}
+
 // Schemas para validar respuesta de Gemini
 // 🔒 SECURITY: Strict validation to prevent garbage data in Firestore
 const MacroSchema = z.object({
@@ -904,16 +939,20 @@ export default async function handler(req: any, res: any) {
           unit: p.unit,
         }));
         
-        // 🚀 ENRIQUECIMIENTO COMPLETO
+        // 🚀 ENRIQUECIMIENTO COMPLETO (con timeout para evitar hang)
         // - Cruza con Índice Maestro de Airtable (obtiene FatSecret_ID)
         // - Valida restricciones médicas (Celíaco, Diabetes, Hipertensión, etc.)
         // - Hidrata datos nutricionales de FatSecret v5 (kcal, proteína, sodio, etc.)
         // - Genera contexto formateado para Gemini
-        enrichedPantryResult = await enrichPantryWithNutrition(
-          pantryForEnrichment,
-          extendedMedicalProfile,
-          'MX',
-          'es'
+        enrichedPantryResult = await withTimeout(
+          enrichPantryWithNutrition(
+            pantryForEnrichment,
+            extendedMedicalProfile,
+            'MX',
+            'es'
+          ),
+          TIMEOUTS.AIRTABLE_ENRICHMENT,
+          'Airtable enrichment'
         );
         
         // El contexto enriquecido incluye:
@@ -937,26 +976,9 @@ export default async function handler(req: any, res: any) {
             .join('; ');
         }
       } catch (e: any) {
-        safeLog("warn", "⚠️ Airtable enrichment failed, using fallback", e);
-        
-        // FALLBACK: Usar el método anterior simplificado
-        try {
-          const ingredientNames = filteredItems.map((i: any) => i.name || i.food_name);
-          const userDietaryProfile = userProfileToDietaryProfile(user);
-          const safetyResult = await filterIngredientsBySafety(ingredientNames, userDietaryProfile);
-          
-          if (safetyResult.unsafe.length > 0) {
-            airtableSafetyContext = safetyResult.unsafe.join(", ");
-          }
-          
-          const ingredientsToHydrate = safetyResult.safe.slice(0, 15);
-          if (ingredientsToHydrate.length > 0) {
-            const nutritionMap = await hydrateIngredientsNutrition(ingredientsToHydrate, 'MX', 'es');
-            hydratedNutritionContext = formatHydratedNutrition(nutritionMap);
-          }
-        } catch (fallbackError) {
-          safeLog("warn", "⚠️ Fallback also failed, continuing without Airtable", fallbackError);
-        }
+        safeLog("warn", "⚠️ Airtable enrichment failed/timeout, using fallback", e?.message || e);
+        // FALLBACK: Continuar SIN enriquecimiento para no bloquear
+        // El prompt de Gemini funcionará sin datos nutricionales exactos
       }
 
       // 3. Preparar contexto
@@ -1045,11 +1067,16 @@ export default async function handler(req: any, res: any) {
         }));
         
         // 🚀 Enriquecer ingredientes con Airtable + FatSecret
-        quickRecipeEnrichment = await enrichPantryWithNutrition(
-          ingredientsForEnrichment,
-          extendedMedicalProfile,
-          'MX',
-          'es'
+        // 🚀 Enriquecer ingredientes con Airtable + FatSecret (con timeout)
+        quickRecipeEnrichment = await withTimeout(
+          enrichPantryWithNutrition(
+            ingredientsForEnrichment,
+            extendedMedicalProfile,
+            'MX',
+            'es'
+          ),
+          TIMEOUTS.AIRTABLE_ENRICHMENT,
+          'Quick recipe enrichment'
         );
         
         // Usar el contexto enriquecido completo
@@ -1072,24 +1099,8 @@ export default async function handler(req: any, res: any) {
           unknown: quickRecipeEnrichment.ingredientesDesconocidos.length,
         });
       } catch (e: any) {
-        safeLog("warn", "⚠️ Receta Rápida - Airtable enrichment failed, using basic flow", e);
-        
-        // FALLBACK: Usar método simplificado
-        try {
-          const userDietaryProfile = userProfileToDietaryProfile(user);
-          const safetyResult = await filterIngredientsBySafety(normalizedIngredientes, userDietaryProfile);
-          
-          if (safetyResult.unsafe.length > 0) {
-            quickRecipeSafetyContext = safetyResult.unsafe.join(", ");
-          }
-          
-          if (safetyResult.safe.length > 0) {
-            const nutritionMap = await hydrateIngredientsNutrition(safetyResult.safe, 'MX', 'es');
-            quickRecipeNutritionContext = formatHydratedNutrition(nutritionMap);
-          }
-        } catch (fallbackError) {
-          safeLog("warn", "⚠️ Receta Rápida - Fallback also failed", fallbackError);
-        }
+        safeLog("warn", "⚠️ Receta Rápida - Airtable enrichment failed/timeout, continuing without", e?.message || e);
+        // Continuar sin enriquecimiento - Gemini funcionará sin datos nutricionales exactos
       }
 
       // 3. Construir Prompt para Receta Rápida (con datos enriquecidos)
@@ -1257,20 +1268,29 @@ export default async function handler(req: any, res: any) {
     }
 
     // ============================================
-    // ENRIQUECIMIENTO NUTRICIONAL CON FATSECRET
+    // ENRIQUECIMIENTO NUTRICIONAL CON FATSECRET (con timeout)
     // ============================================
     if ((type === "En casa" || type === "Receta Rápida") && parsedData.receta?.recetas) {
       try {
-        safeLog("log", `[Nutrition] Starting enrichment for ${parsedData.receta.recetas.length} recipes`);
-        parsedData.receta.recetas = await NutritionEnricher.enrichRecipes(
-          parsedData.receta.recetas,
-          user.country || 'MX',
-          request.language || 'es',
-          true, // enabled
+        safeLog("log", `[Nutrition] Starting enrichment for ${parsedData.receta.recetas.length} recipes (timeout: ${TIMEOUTS.NUTRITION_ENRICHMENT}ms)`);
+        
+        // Wrap with timeout to prevent hanging on slow FatSecret calls
+        const enrichedRecipes = await withTimeout(
+          NutritionEnricher.enrichRecipes(
+            parsedData.receta.recetas,
+            user.country || 'MX',
+            request.language || 'es',
+            true, // enabled
+          ),
+          TIMEOUTS.NUTRITION_ENRICHMENT,
+          'Nutrition enrichment'
         );
-      } catch (enrichError) {
-        // No fallar la request si FatSecret falla, solo loggear
-        safeLog("warn", "⚠️ Nutrition enrichment failed, using Gemini macros", enrichError);
+        
+        parsedData.receta.recetas = enrichedRecipes;
+        safeLog("log", `[Nutrition] ✅ Enrichment completed successfully`);
+      } catch (enrichError: any) {
+        // No fallar la request si FatSecret falla o hace timeout, usar macros de Gemini
+        safeLog("warn", `⚠️ Nutrition enrichment failed/timeout, using Gemini macros: ${enrichError?.message || enrichError}`);
       }
     }
 

@@ -18,6 +18,12 @@ export const TIMEOUTS = {
   
   /** Timeout for FatSecret API calls (defined in fatsecret.ts) */
   FATSECRET_API: 5000, // 5s
+  
+  /** Timeout for Airtable pantry enrichment (pre-Gemini) */
+  AIRTABLE_ENRICHMENT: 8000, // 8s - fail fast, use fallback
+  
+  /** Timeout for post-Gemini nutrition enrichment */
+  NUTRITION_ENRICHMENT: 10000, // 10s - non-blocking, use Gemini macros on timeout
 } as const;
 
 // ============================================
