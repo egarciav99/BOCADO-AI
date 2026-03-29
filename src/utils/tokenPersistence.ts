@@ -3,6 +3,8 @@
  * 
  * Explicitly saves and restores Firebase Auth tokens
  * to workaround potential persistence configuration issues
+ * 
+ * Uses sessionStorage for security: data is cleared when browser tab closes
  */
 
 import { User, onAuthStateChanged } from "firebase/auth";
@@ -29,6 +31,7 @@ interface SavedAuthToken {
 /**
  * Guarda explícitamente los datos del usuario para poder restaurarlo
  * NO guarda credenciales - solo info pública del usuario
+ * Usa sessionStorage: se borra al cerrar la pestaña
  */
 export const saveUserDataForOffline = (user: User | null): void => {
   if (typeof window === "undefined") return;
@@ -54,11 +57,11 @@ export const saveUserDataForOffline = (user: User | null): void => {
         savedAt: Date.now(),
       };
 
-      localStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokenData));
-      logger.info("[TokenPersistence] User data saved for offline");
+      sessionStorage.setItem(TOKEN_STORAGE_KEY, JSON.stringify(tokenData));
+      logger.info("[TokenPersistence] User data saved for session");
     } else {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      localStorage.removeItem(REFRESH_KEY);
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
+      sessionStorage.removeItem(REFRESH_KEY);
       logger.info("[TokenPersistence] User data cleared");
     }
   } catch (e) {
@@ -67,21 +70,21 @@ export const saveUserDataForOffline = (user: User | null): void => {
 };
 
 /**
- * Restaura los datos del usuario desde el almacenamiento offline
+ * Restaura los datos del usuario desde el almacenamiento de sesión
  * Útil para mostrar información de usuario mientras se restaura la sesión desde Firebase
  */
 export const getOfflineUserData = (): SavedAuthToken | null => {
   if (typeof window === "undefined") return null;
 
   try {
-    const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
+    const stored = sessionStorage.getItem(TOKEN_STORAGE_KEY);
     if (!stored) return null;
 
     const data = JSON.parse(stored) as SavedAuthToken;
 
-    // Si los datos tienen más de 30 días, descartar
-    if (Date.now() - data.savedAt > 30 * 24 * 60 * 60 * 1000) {
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    // Si los datos tienen más de 24 horas, descartar (sessionStorage ya limpia al cerrar, pero por si acaso)
+    if (Date.now() - data.savedAt > 24 * 60 * 60 * 1000) {
+      sessionStorage.removeItem(TOKEN_STORAGE_KEY);
       return null;
     }
 
@@ -100,7 +103,7 @@ export const getLastTokenRefreshTime = (): number | null => {
   if (typeof window === "undefined") return null;
 
   try {
-    const stored = localStorage.getItem(REFRESH_KEY);
+    const stored = sessionStorage.getItem(REFRESH_KEY);
     return stored ? parseInt(stored, 10) : null;
   } catch {
     return null;
@@ -114,14 +117,14 @@ export const recordTokenRefresh = (): void => {
   if (typeof window === "undefined") return;
 
   try {
-    localStorage.setItem(REFRESH_KEY, Date.now().toString());
+    sessionStorage.setItem(REFRESH_KEY, Date.now().toString());
   } catch (e) {
     logger.warn("[TokenPersistence] Failed to record refresh:", e);
   }
 };
 
 /**
- * Diagnóstico: Verifica si hay tokens de Firebase en localStorage
+ * Diagnóstico: Verifica si hay tokens de Firebase en storage
  */
 export const getFirebaseTokenDiagnostics = (): {
   hasTokens: boolean;
@@ -138,7 +141,9 @@ export const getFirebaseTokenDiagnostics = (): {
   }
 
   try {
-    const tokenKeys = Object.keys(localStorage).filter(
+    // Firebase uses localStorage for its own tokens (we can't change that)
+    // But we check both storages for diagnostic purposes
+    const localStorageKeys = Object.keys(localStorage).filter(
       (k) =>
         k.includes("firebase:authUser") ||
         k.includes("firebase:authIdToken") ||
@@ -146,9 +151,9 @@ export const getFirebaseTokenDiagnostics = (): {
     );
 
     return {
-      hasTokens: tokenKeys.length > 0,
-      tokenKeys,
-      offlineDataExists: !!localStorage.getItem(TOKEN_STORAGE_KEY),
+      hasTokens: localStorageKeys.length > 0,
+      tokenKeys: localStorageKeys,
+      offlineDataExists: !!sessionStorage.getItem(TOKEN_STORAGE_KEY),
       lastRefresh: getLastTokenRefreshTime() || undefined,
     };
   } catch (e) {

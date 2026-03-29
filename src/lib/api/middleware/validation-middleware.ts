@@ -60,7 +60,7 @@ export function handleCORS(req: NextApiRequest, res: NextApiResponse): boolean {
 
   // Handle preflight
   if (req.method === "OPTIONS") {
-    res.status(200).end();
+    res.status(204).end();
     return false;
   }
 
@@ -106,21 +106,38 @@ export async function validateAuthToken(req: NextApiRequest): Promise<AuthResult
 // Zod schemas for common request types
 export const RecommendationRequestSchema = z.object({
   userId: z.string().min(1, "userId es requerido"),
-  type: z.enum(["En casa", "Fuera", "Receta Rápida"]),
-  mealType: z.string().max(50).optional().nullable(),
-  ingredientes: z.array(z.string().min(1, "Ingrediente no puede estar vacío")),
-  cookingTime: z.number().nullable(),
+  type: z.enum(["En casa", "Fuera", "Receta Rápida"], {
+    error: "Tipo de recomendación inválido",
+  }),
+  mealType: z.string().max(50, "Tipo de comida demasiado largo").optional().nullable(),
+  ingredientes: z.array(
+    z.string()
+      .min(1, "Ingrediente no puede estar vacío")
+      .max(100, "Nombre de ingrediente demasiado largo")
+  )
+    .min(1, "Debes incluir al menos un ingrediente")
+    .max(50, "Máximo 50 ingredientes permitidos"),
+  cookingTime: z.number({
+    error: "El tiempo de cocción debe ser un número",
+  })
+    .min(1, "El tiempo debe ser mayor a 0")
+    .max(480, "El tiempo máximo es 480 minutos")
+    .nullable(),
   cravings: z.union([z.string(), z.array(z.string())]).optional().nullable(),
-  dislikedFoods: z.array(z.string()),
-  onlyPantryIngredients: z.boolean(),
-  language: z.enum(["es", "en"]),
-  context: z.string().optional(),
-  budget: z.string().optional(),
-  currency: z.string().optional(),
+  dislikedFoods: z.array(z.string().max(100, "Alimento no deseado demasiado largo")),
+  onlyPantryIngredients: z.boolean({
+    error: "onlyPantryIngredients debe ser booleano",
+  }),
+  language: z.enum(["es", "en"], {
+    error: "Idioma debe ser 'es' o 'en'",
+  }),
+  context: z.string().max(500, "Contexto demasiado largo").optional(),
+  budget: z.string().max(50, "Presupuesto inválido").optional(),
+  currency: z.string().max(10, "Moneda inválida").optional(),
   _id: z.string().optional(),
   userLocation: z.object({
-    lat: z.number(),
-    lng: z.number(),
+    lat: z.number({ error: "Latitud debe ser un número" }),
+    lng: z.number({ error: "Longitud debe ser un número" }),
     accuracy: z.number().optional(),
   }).nullable().optional(),
 });

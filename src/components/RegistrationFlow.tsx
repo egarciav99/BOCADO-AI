@@ -54,6 +54,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const [submissionError, setSubmissionError] = useState("");
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
+  const [verificationError, setVerificationError] = useState("");
+  const [isCheckingVerification, setIsCheckingVerification] = useState(false);
   // ✅ Bug 7: checkbox de términos y condiciones (obligatorio en el último paso)
   const [acceptTerms, setAcceptTerms] = useState(false);
   const queryClient = useQueryClient();
@@ -267,10 +269,50 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     }
   };
 
-  const handleVerificationComplete = () => {
-    trackEvent("registration_email_verified_click");
-    setShowVerificationModal(false);
-    onRegistrationComplete();
+  const handleVerificationComplete = async () => {
+    setVerificationError("");
+    setIsCheckingVerification(true);
+    
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        setVerificationError(t("registrationFlow.verificationSessionExpired") || "Sesión expirada. Por favor, inicia sesión de nuevo.");
+        return;
+      }
+      
+      // Reload user to get fresh emailVerified status from Firebase
+      await user.reload();
+      
+      if (!user.emailVerified) {
+        trackEvent("registration_email_not_verified_attempt", { userId: user.uid });
+        setVerificationError(t("registrationFlow.emailNotVerifiedYet") || "Aún no has verificado tu correo. Revisa tu bandeja de entrada y haz clic en el enlace de verificación.");
+        return;
+      }
+      
+      trackEvent("registration_email_verified_success", { userId: user.uid });
+      setShowVerificationModal(false);
+      onRegistrationComplete();
+    } catch (error) {
+      logger.error("Error checking email verification", error);
+      setVerificationError(t("registrationFlow.verificationCheckError") || "Error al verificar. Intenta de nuevo.");
+    } finally {
+      setIsCheckingVerification(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setVerificationError("");
+    try {
+      const user = auth.currentUser;
+      if (user && !user.emailVerified) {
+        await sendEmailVerification(user);
+        trackEvent("registration_verification_resent", { userId: user.uid });
+        setVerificationError(t("registrationFlow.verificationResent") || "Correo de verificación reenviado.");
+      }
+    } catch (error) {
+      logger.error("Error resending verification email", error);
+      setVerificationError(t("registrationFlow.resendError") || "Error al reenviar. Intenta en unos minutos.");
+    }
   };
 
   const nextStep = async () => {
@@ -392,11 +434,35 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
               {registeredEmail}
             </strong>
           </p>
+          {verificationError && (
+            <p className={`text-xs p-3 rounded-xl mb-4 animate-fade-in ${
+              verificationError.includes("reenviado") || verificationError.includes("Resent")
+                ? "text-bocado-green bg-green-50"
+                : "text-red-500 bg-red-50"
+            }`}>
+              {verificationError}
+            </p>
+          )}
           <button
             onClick={handleVerificationComplete}
-            className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+            disabled={isCheckingVerification}
+            className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t("registrationFlow.alreadyVerified")}
+            {isCheckingVerification ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                {t("registrationFlow.checking") || "Verificando..."}
+              </span>
+            ) : (
+              t("registrationFlow.alreadyVerified")
+            )}
+          </button>
+          <button
+            onClick={handleResendVerification}
+            disabled={isCheckingVerification}
+            className="w-full mt-3 text-bocado-green font-medium py-2 px-6 text-sm hover:underline disabled:opacity-50"
+          >
+            {t("registrationFlow.resendVerification") || "Reenviar correo de verificación"}
           </button>
         </div>
       </div>

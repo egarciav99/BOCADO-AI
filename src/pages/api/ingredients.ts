@@ -3,10 +3,15 @@
  * 
  * Devuelve lista de ingredientes disponibles para autocomplete en Receta Rápida.
  * Cache: 1 hora (ingredientes son relativamente estáticos)
+ * 
+ * Requires: Firebase Auth token in Authorization header
  */
 
+import { NextApiRequest, NextApiResponse } from "next";
+import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
 import { initFirebaseAdmin } from "../../lib/api/firebase-admin";
+import { isOriginAllowed, ALLOWED_ORIGINS_LIST } from "../../lib/api/cors-utils";
 
 const adminApp = initFirebaseAdmin();
 const db = adminApp ? getFirestore() : null;
@@ -16,27 +21,49 @@ let ingredientsCache: any[] | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hora
 
-export default async function handler(req: any, res: any) {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!db) {
     return res.status(500).json({ error: "Firebase not initialized" });
   }
 
+  // CORS headers with origin validation
+  const origin = req.headers.origin as string | undefined;
+  const allowedOrigin = isOriginAllowed(origin) ? origin : ALLOWED_ORIGINS_LIST[0];
+  
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin || ALLOWED_ORIGINS_LIST[0]);
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
+
+  // Handle OPTIONS preflight requests
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
+
+  // Only GET is allowed
+  if (req.method !== "GET") {
+    return res.status(405).json({ error: "Método no permitido" });
+  }
+
+  // Validate Firebase Auth token
+  const authHeader = req.headers.authorization || "";
+  const tokenMatch = typeof authHeader === "string" 
+    ? authHeader.match(/^Bearer\s+(.+)$/i) 
+    : null;
+  const idToken = tokenMatch?.[1];
+
+  if (!idToken) {
+    return res.status(401).json({ error: "Authorization header required" });
+  }
+
   try {
-    // CORS headers - ALWAYS SET before method checks
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    await getAuth().verifyIdToken(idToken);
+  } catch (err) {
+    console.warn("[Ingredients] Invalid auth token");
+    return res.status(401).json({ error: "Invalid auth token" });
+  }
 
-    // Handle OPTIONS preflight requests before method validation
-    if (req.method === "OPTIONS") {
-      return res.status(200).end();
-    }
-
-    // Only GET is allowed from here
-    if (req.method !== "GET") {
-      return res.status(405).json({ error: "Método no permitido" });
-    }
-
+  try {
     // Verificar caché
     const now = Date.now();
     if (ingredientsCache && now - cacheTimestamp < CACHE_TTL_MS) {

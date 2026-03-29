@@ -682,6 +682,15 @@ export default async function handler(req: any, res: any) {
   }
 
   // ============================================
+  // CORS Preflight - Handle OPTIONS first
+  // ============================================
+  if (req.method === "OPTIONS") {
+    if (!handleCORS(req, res)) return;
+    // handleCORS already responded with 204 for OPTIONS
+    return;
+  }
+
+  // ============================================
   // GET /api/recommend?userId=xxx - Status del rate limit
   // ============================================
   if (req.method === "GET") {

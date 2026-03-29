@@ -62,7 +62,21 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
   useEffect(() => {
     const loadIngredients = async () => {
       try {
-        const response = await fetch("/api/ingredients", { method: "GET" });
+        // Get auth token for API request
+        if (!user) {
+          logger.warn("No authenticated user for ingredients fetch");
+          setAllIngredients([]);
+          setLoading(false);
+          return;
+        }
+        
+        const token = await user.getIdToken();
+        const response = await fetch("/api/ingredients", { 
+          method: "GET",
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
         if (!response.ok) throw new Error("Failed to fetch ingredients");
         const data = await response.json();
         setAllIngredients(data.ingredients || []);
@@ -76,7 +90,7 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
     };
 
     loadIngredients();
-  }, []);
+  }, [user]);
 
   // 2. Actualizar sugerencias mientras el usuario escribe
   const handleInputChange = (value: string) => {

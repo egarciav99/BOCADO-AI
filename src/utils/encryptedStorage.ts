@@ -1,4 +1,7 @@
-// Encrypted storage utility for sensitive data in localStorage
+// Encrypted storage utility for sensitive data in sessionStorage
+// Uses sessionStorage instead of localStorage for better security:
+// - Data is cleared when browser tab closes
+// - Not persisted across sessions (reduces attack surface)
 // Uses a simple XOR encryption - NOT for highly sensitive data like passwords
 // For production apps with truly sensitive data, use a proper encryption library
 
@@ -7,18 +10,18 @@ import { logger } from "./logger";
 // Check if we're in a browser environment
 const isBrowser = typeof window !== "undefined";
 
-// ✅ FIX #10: Check if localStorage is actually available (can be disabled in iOS private mode)
-const isLocalStorageAvailable = (() => {
+// ✅ FIX #10: Check if sessionStorage is actually available (can be disabled in iOS private mode)
+const isSessionStorageAvailable = (() => {
   if (!isBrowser) return false;
 
   try {
-    const test = "__localStorage_test__";
-    window.localStorage.setItem(test, test);
-    window.localStorage.removeItem(test);
+    const test = "__sessionStorage_test__";
+    window.sessionStorage.setItem(test, test);
+    window.sessionStorage.removeItem(test);
     return true;
   } catch (e) {
     logger.warn(
-      "[encryptedStorage] localStorage not available (private mode or disabled):",
+      "[encryptedStorage] sessionStorage not available (private mode or disabled):",
       e,
     );
     return false;
@@ -162,15 +165,15 @@ const xorDecrypt = (encoded: string, key: string): string | null => {
 
 export const encryptedStorage = {
   getItem: (key: string): string | null => {
-    if (!isLocalStorageAvailable) {
+    if (!isSessionStorageAvailable) {
       logger.warn(
-        "[encryptedStorage] localStorage not available, returning null",
+        "[encryptedStorage] sessionStorage not available, returning null",
       );
       return null;
     }
 
     try {
-      const encrypted = localStorage.getItem(key);
+      const encrypted = sessionStorage.getItem(key);
       if (!encrypted) return null;
 
       // Check if data is encrypted (starts with 'enc:')
@@ -189,9 +192,9 @@ export const encryptedStorage = {
   },
 
   setItem: (key: string, value: string): void => {
-    if (!isLocalStorageAvailable) {
+    if (!isSessionStorageAvailable) {
       logger.warn(
-        "[encryptedStorage] localStorage not available, skipping write",
+        "[encryptedStorage] sessionStorage not available, skipping write",
       );
       return;
     }
@@ -199,65 +202,65 @@ export const encryptedStorage = {
     try {
       const key_str = getEncryptionKey();
       const encrypted = "enc:" + xorEncrypt(value, key_str);
-      localStorage.setItem(key, encrypted);
+      sessionStorage.setItem(key, encrypted);
     } catch (e) {
       logger.error("Error writing to encrypted storage", e);
     }
   },
 
   removeItem: (key: string): void => {
-    if (!isLocalStorageAvailable) {
+    if (!isSessionStorageAvailable) {
       logger.warn(
-        "[encryptedStorage] localStorage not available, skipping remove",
+        "[encryptedStorage] sessionStorage not available, skipping remove",
       );
       return;
     }
 
     try {
-      localStorage.removeItem(key);
+      sessionStorage.removeItem(key);
     } catch (e) {
       logger.error("Error removing from encrypted storage", e);
     }
   },
 };
 
-// Storage wrapper that falls back to regular localStorage if encryption fails
-// ✅ FIX #10: Also checks if localStorage is available
+// Storage wrapper that falls back to regular sessionStorage if encryption fails
+// ✅ FIX #10: Also checks if sessionStorage is available
 export const safeStorage = {
   getItem: (key: string): string | null => {
-    if (!isBrowser || !isLocalStorageAvailable) return null;
+    if (!isBrowser || !isSessionStorageAvailable) return null;
 
     try {
       return encryptedStorage.getItem(key);
     } catch {
       try {
-        return localStorage.getItem(key);
+        return sessionStorage.getItem(key);
       } catch {
         return null;
       }
     }
   },
   setItem: (key: string, value: string): void => {
-    if (!isBrowser || !isLocalStorageAvailable) return;
+    if (!isBrowser || !isSessionStorageAvailable) return;
 
     try {
       encryptedStorage.setItem(key, value);
     } catch {
       try {
-        localStorage.setItem(key, value);
+        sessionStorage.setItem(key, value);
       } catch {
         logger.warn("[safeStorage] Failed to write to storage");
       }
     }
   },
   removeItem: (key: string): void => {
-    if (!isBrowser || !isLocalStorageAvailable) return;
+    if (!isBrowser || !isSessionStorageAvailable) return;
 
     try {
       encryptedStorage.removeItem(key);
     } catch {
       try {
-        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
       } catch {
         logger.warn("[safeStorage] Failed to remove from storage");
       }
