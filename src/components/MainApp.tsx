@@ -32,14 +32,11 @@ const MainApp: React.FC<MainAppProps> = ({
 }) => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>(initialTab);
-  const [isTutorialOpen, setIsTutorialOpen] = useState(showTutorial);
-
-  // Sincronizar estado del tutorial cuando cambia la prop
-  useEffect(() => {
-    setIsTutorialOpen(showTutorial);
-  }, [showTutorial]);
+  // Tutorial state - parent controls visibility
+  const isTutorialOpen = showTutorial;
 
   const { user, isLoading, isAuthenticated } = useAuthStore();
+  const updateDisplayName = useAuthStore((state) => state.updateDisplayName);
 
   // Logging para depurar bloqueos — solo en desarrollo
   useEffect(() => {
@@ -71,30 +68,35 @@ const MainApp: React.FC<MainAppProps> = ({
     });
   }, [user?.uid, userProfile]);
 
-  const userName = user?.displayName?.split(" ")[0] || "";
+  const userName = user?.displayName?.split(" ")[0] || t("mainApp.defaultUserName");
   const userUid = user?.uid || null;
 
   useEffect(() => {
     trackEvent("tab_changed", { tab_name: activeTab });
   }, [activeTab]);
 
-  // Track session duration on unmount/tab close
+  // Track session duration on browser/tab close only
   useEffect(() => {
     const sessionStart = Date.now();
+    
     const handleUnload = () => {
       const durationSec = Math.round((Date.now() - sessionStart) / 1000);
-      trackEvent("session_duration", { duration_seconds: durationSec });
+      trackEvent("session_duration", { 
+        duration_seconds: durationSec,
+        trigger: "beforeunload"
+      });
     };
+
     window.addEventListener("beforeunload", handleUnload);
+    
     return () => {
-      handleUnload();
       window.removeEventListener("beforeunload", handleUnload);
+      // Do NOT call handleUnload here — component unmount is not a session end
     };
   }, []);
 
   const handleTutorialClose = () => {
     trackEvent("tutorial_closed");
-    setIsTutorialOpen(false);
     onTutorialFinished();
   };
 
@@ -114,14 +116,13 @@ const MainApp: React.FC<MainAppProps> = ({
   };
 
   const handleProfileUpdate = async (newDisplayName: string) => {
-    if (user) {
-      try {
-        await updateProfile(user, { displayName: newDisplayName });
-        useAuthStore.getState().setUser({ ...user, displayName: newDisplayName } as typeof user);
-        trackEvent("display_name_updated");
-      } catch (error) {
-        logger.error("Error actualizando nombre:", error);
-      }
+    if (!user) return;
+    try {
+      await updateProfile(user, { displayName: newDisplayName });
+      updateDisplayName(newDisplayName);
+      trackEvent("display_name_updated");
+    } catch (error) {
+      logger.error("Error actualizando nombre:", error);
     }
   };
 
@@ -144,7 +145,10 @@ const MainApp: React.FC<MainAppProps> = ({
         <div className="text-center">
           <p className="text-bocado-gray mb-4">{t("mainApp.sessionInvalid")}</p>
           <button
-            onClick={() => window.location.reload()}
+            onClick={() => {
+              onLogoutComplete();
+              setTimeout(() => window.location.reload(), 100);
+            }}
             className="bg-bocado-green text-white px-6 py-3 rounded-full font-bold"
           >
             {t("mainApp.reload")}
@@ -162,8 +166,7 @@ const MainApp: React.FC<MainAppProps> = ({
       )}
 
       {/* Contenido - ocupa todo el espacio restante */}
-      {/* pb-36 (144px) = reservar espacio para FAB (56px) + BottomTabBar (~70px) + safe area (~20px) */}
-      <main className="flex-1 overflow-y-auto min-h-0 pb-36 flex flex-col no-scrollbar">
+      <main className="flex-1 overflow-y-auto min-h-0 pb-bottom-nav flex flex-col no-scrollbar">
         <div className="min-h-full w-full max-w-md md:max-w-4xl lg:max-w-5xl mx-auto flex flex-col px-4 md:px-8">
           <ErrorBoundary>
             {activeTab === "recommendation" && (

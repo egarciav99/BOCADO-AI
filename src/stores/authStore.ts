@@ -24,6 +24,7 @@ interface AuthState {
   // Actions
   setUser: (user: User | null) => void;
   setLoading: (loading: boolean) => void;
+  updateDisplayName: (name: string) => void;
   logout: () => void;
 }
 
@@ -51,6 +52,10 @@ export const useAuthStore = create<AuthState>()(
       },
 
       setLoading: (loading) => set({ isLoading: loading }),
+
+      updateDisplayName: (name) => set((state) => ({
+        user: state.user ? { ...state.user, displayName: name } : null
+      })),
 
       logout: () => {
         setAnalyticsUser(null);

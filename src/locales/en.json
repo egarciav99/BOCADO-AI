@@ -34,7 +34,9 @@
     "titleHighlight": "your smart nutrition",
     "startButton": "Get Started",
     "loginButton": "I have an account",
-    "enterButton": "Enter Bocado"
+    "enterButton": "Enter Bocado",
+    "logoutButton": "Logout",
+    "changeLanguage": "Change language"
   },
   "profile": {
     "title": "My Profile",
@@ -411,7 +413,8 @@
   "mainApp": {
     "loading": "Syncing Bocado...",
     "sessionInvalid": "Invalid session. Redirecting...",
-    "reload": "Reload"
+    "reload": "Reload",
+    "defaultUserName": "there"
   },
   "recommendation": {
     "welcome": "Hello, {userName}! 👋",
@@ -499,7 +502,10 @@
     "ingredients": "Ingredients",
     "preparation": "Preparation",
     "wentToPlace": "📍 Went to the place",
-    "cooked": "🍳 Cooked it"
+    "cooked": "🍳 Cooked it",
+    "popupBlocked": "Please allow popups to open Google Maps",
+    "copyFailed": "Could not copy. Address: {{address}}",
+    "foodType": "Food type"
   },
   "plan": {
     "loadingMessages": {
@@ -639,7 +645,7 @@
     "title": "Complete Your Profile",
     "subtitle": "We need a little more information to personalize your experience",
     "progress": "Progress",
-    "missingFieldsCount": "Missing fields",
+    "missingFieldsCount": "{{count}} field(s) remaining",
     "info": "With this information we can give you personalized meal recommendations and nutrition plans tailored to you.",
     "continueButton": "Complete Profile",
     "logoutButton": "Logout",

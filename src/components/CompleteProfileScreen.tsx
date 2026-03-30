@@ -10,6 +10,8 @@ import {
   getProfileCompleteness,
   getMissingProfileFields,
 } from "../utils/profileValidation";
+import { User, MapPin, Scale, Ruler, Info } from "./icons";
+import { Calendar, Activity, Target } from "lucide-react";
 
 interface CompleteProfileScreenProps {
   onStartCompletion: () => void;
@@ -36,6 +38,21 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = ({
 
   const completeness = getProfileCompleteness(profile);
   const missingFields = getMissingProfileFields(profile);
+
+  // Icon mapping for missing fields
+  const fieldIcons: Record<string, React.ReactNode> = {
+    firstName: <User className="w-3.5 h-3.5" />,
+    lastName: <User className="w-3.5 h-3.5" />,
+    age: <Calendar className="w-3.5 h-3.5" />,
+    gender: <User className="w-3.5 h-3.5" />,
+    country: <MapPin className="w-3.5 h-3.5" />,
+    city: <MapPin className="w-3.5 h-3.5" />,
+    weight: <Scale className="w-3.5 h-3.5" />,
+    height: <Ruler className="w-3.5 h-3.5" />,
+    activityLevel: <Activity className="w-3.5 h-3.5" />,
+    nutritionalGoal: <Target className="w-3.5 h-3.5" />,
+    eatingHabit: <Target className="w-3.5 h-3.5" />,
+  };
 
   const handleCompleteProfile = () => {
     trackEvent("complete_profile_clicked", {
@@ -71,11 +88,10 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = ({
             <BocadoLogo className="w-full" />
           </div>
           <h1 className="text-2xl font-bold text-bocado-dark-green dark:text-gray-200 mb-2">
-            {t("completeProfile.title") || "Completa tu Perfil"}
+            {t("completeProfile.title")}
           </h1>
           <p className="text-sm text-bocado-gray dark:text-gray-400">
-            {t("completeProfile.subtitle") ||
-              "Necesitamos un poco más de información para personalizar tu experiencia"}
+            {t("completeProfile.subtitle")}
           </p>
         </div>
 
@@ -83,7 +99,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = ({
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-bocado-dark-gray dark:text-gray-300 uppercase tracking-wider">
-              {t("completeProfile.progress") || "Progreso"}
+              {t("completeProfile.progress")}
             </span>
             <span className="text-xs font-bold text-bocado-green">
               {completeness}%
@@ -91,7 +107,7 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = ({
           </div>
           <div className="w-full h-3 bg-bocado-background dark:bg-gray-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-bocado-green to-bocado-orange transition-all duration-500"
+              className="h-full bg-bocado-green transition-all duration-500"
               style={{ width: `${completeness}%` }}
             />
           </div>
@@ -100,35 +116,28 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = ({
         {/* Missing Fields */}
         <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-900/30 rounded-2xl p-4">
           <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-3 flex items-center gap-2">
-            <span className="text-lg">ℹ️</span>
-            {t("completeProfile.missingFieldsCount") ||
-              `Faltan ${missingFields.length} campo(s)`}
+            <Info className="w-4 h-4" />
+            {t("completeProfile.missingFieldsCount", { count: missingFields.length })}
           </p>
           <ul className="space-y-2">
-            {missingFields.slice(0, 5).map((field) => (
+            {missingFields.map((field) => (
               <li
                 key={field}
                 className="flex items-center gap-2 text-xs text-yellow-700 dark:text-yellow-300"
               >
-                <span className="text-xl">📝</span>
+                {fieldIcons[field] || <Info className="w-3.5 h-3.5" />}
                 <span className="capitalize">
                   {t(`form.fields.${field}`) || field}
                 </span>
               </li>
             ))}
-            {missingFields.length > 5 && (
-              <li className="text-xs text-yellow-600 dark:text-yellow-400 italic">
-                +{missingFields.length - 5} más
-              </li>
-            )}
           </ul>
         </div>
 
         {/* Info Message */}
         <div className="mb-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-900/30 rounded-2xl p-4">
           <p className="text-xs text-blue-800 dark:text-blue-200 leading-relaxed">
-            {t("completeProfile.info") ||
-              "Con esta información podemos darte recomendaciones personalizadas de comidas y planes nutricionales adaptados a ti."}
+            {t("completeProfile.info")}
           </p>
         </div>
 
@@ -136,27 +145,24 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = ({
         <div className="space-y-3">
           <button
             onClick={handleCompleteProfile}
-            className="w-full bg-bocado-green text-white font-bold py-4 px-6 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all duration-200 hover:scale-[1.02]"
+            className="w-full bg-bocado-green text-white font-bold py-4 px-6 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all duration-200"
           >
-            {t("completeProfile.continueButton") || "Completar Perfil"}
+            {t("completeProfile.continueButton")}
           </button>
 
           <button
             onClick={handleLogout}
             disabled={isLoggingOut}
-            className="w-full bg-white dark:bg-gray-700 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3 px-6 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-600 active:scale-95 transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-white dark:bg-gray-700 text-bocado-green dark:text-bocado-green-light border-2 border-bocado-green font-bold py-3 px-6 rounded-full text-base hover:bg-bocado-background dark:hover:bg-gray-600 active:scale-95 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isLoggingOut
-              ? t("common.loading") || "Cargando..."
-              : t("completeProfile.logoutButton") || "Cerrar Sesión"}
+            {isLoggingOut ? t("common.loading") : t("completeProfile.logoutButton")}
           </button>
         </div>
 
         {/* Footer Info */}
         <div className="mt-6 pt-4 border-t border-bocado-border dark:border-gray-700">
           <p className="text-xs text-bocado-gray dark:text-gray-500 text-center">
-            {t("completeProfile.footer") ||
-              "Tu información está segura y protegida por encriptación."}
+            {t("completeProfile.footer")}
           </p>
         </div>
       </div>

@@ -415,6 +415,7 @@
     "loading": "Sincronizando Bocado...",
     "sessionInvalid": "Sesión no válida. Redirigiendo...",
     "reload": "Recargar",
+    "defaultUserName": "tú",
     "sync": {
       "syncing": "Sincronizando...",
       "success": "Sincronizado",
@@ -512,7 +513,10 @@
     "ingredients": "Ingredientes",
     "preparation": "Preparación",
     "wentToPlace": "📍 Fui al lugar",
-    "cooked": "🍳 La preparé"
+    "cooked": "🍳 La preparé",
+    "popupBlocked": "Por favor permite ventanas emergentes para abrir Google Maps",
+    "copyFailed": "No se pudo copiar. Dirección: {{address}}",
+    "foodType": "Tipo de comida"
   },
   "plan": {
     "title": "Tu plan semanal",
@@ -700,7 +704,7 @@
     "title": "Completa tu Perfil",
     "subtitle": "Necesitamos un poco más de información para personalizar tu experiencia",
     "progress": "Progreso",
-    "missingFieldsCount": "Campos faltantes",
+    "missingFieldsCount": "Faltan {{count}} campo(s) por completar",
     "info": "Con esta información podemos darte recomendaciones personalizadas de comidas y planes nutricionales adaptados a ti.",
     "continueButton": "Completar Perfil",
     "logoutButton": "Cerrar Sesión",

@@ -24,6 +24,8 @@ interface MealCardProps {
 // UTILIDADES MEMOIZADAS (definidas fuera del componente)
 // ============================================
 
+// Keys are Spanish ingredient names — backend always returns data in Spanish.
+// Do not translate these keys.
 const EMOJI_MAP: Record<string, string> = {
   pollo: "🍗",
   pescado: "🐟",
@@ -45,6 +47,8 @@ const getSmartEmoji = (title: string): string => {
   return "🍽️";
 };
 
+// Keys are Spanish difficulty names — backend always returns data in Spanish.
+// Do not translate these keys.
 const DIFFICULTY_STYLES: Record<string, string> = {
   Fácil: "bg-bocado-green/15 text-bocado-green font-semibold",
   Media: "bg-amber-100 text-amber-800 font-semibold",
@@ -58,16 +62,10 @@ const getDifficultyStyle = (difficulty: string): string => {
   );
 };
 
-const translateDifficulty = (
-  difficulty: string,
-  t: (key: string) => string,
-): string => {
-  const map: Record<string, string> = {
-    Fácil: t("difficulty.easy"),
-    Media: t("difficulty.medium"),
-    Difícil: t("difficulty.hard"),
-  };
-  return map[difficulty] || difficulty;
+const DIFFICULTY_TRANSLATION_KEYS: Record<string, string> = {
+  "Fácil":   "difficulty.easy",
+  "Media":   "difficulty.medium",
+  "Difícil": "difficulty.hard",
 };
 
 // ============================================
@@ -210,6 +208,9 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
   const [copiedAddress, setCopiedAddress] = useState(false);
   const [showMacros, setShowMacros] = useState(false);
 
+  // Ref para timeout cleanup
+  const copyTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // Estado para escalar porciones (solo recetas, no restaurantes)
   const [servings, setServings] = useState(2);
   const baseServings = useMemo(() => detectBaseServings(recipe), [recipe]);
@@ -243,7 +244,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
   );
 
   // Calculamos el "multiplicador aparente" para mostrar info al usuario
-  const displayMultiplier = servings / baseServings;
+  const _displayMultiplier = servings / baseServings;
 
   // Hooks de autenticación y datos
   const { user } = useAuthStore();
@@ -262,6 +263,13 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
     () => recipe.savingsMatch && recipe.savingsMatch !== "Ninguno",
     [recipe.savingsMatch],
   );
+
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+    };
+  }, []);
 
   // ============================================
   // HANDLERS MEMOIZADOS CON useCallback
@@ -357,11 +365,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
           newWindow.closed ||
           typeof newWindow.closed === "undefined"
         ) {
-          showToast(
-            "Por favor permite ventanas emergentes para abrir Google Maps",
-            "warning",
-            4000,
-          );
+          showToast(t("mealCard.popupBlocked"), "warning", 4000);
           logger.warn("[MealCard] window.open blocked by popup blocker");
         }
       }
@@ -402,11 +406,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
         newWindow.closed ||
         typeof newWindow.closed === "undefined"
       ) {
-        showToast(
-          "Por favor permite ventanas emergentes para abrir Google Maps",
-          "warning",
-          4000,
-        );
+        showToast(t("mealCard.popupBlocked"), "warning", 4000);
         logger.warn("[MealCard] Maps search blocked by popup blocker");
       }
     },
@@ -432,7 +432,8 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
           address: recipe.direccion_aproximada,
         });
 
-        setTimeout(() => setCopiedAddress(false), 2000);
+        if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+        copyTimeoutRef.current = setTimeout(() => setCopiedAddress(false), 2000);
       } catch (clipboardError) {
         logger.warn("Clipboard API failed, trying fallback:", clipboardError);
 
@@ -455,7 +456,8 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
             trackEvent("restaurant_address_copied_fallback", {
               restaurant: recipe.title,
             });
-            setTimeout(() => setCopiedAddress(false), 2000);
+            if (copyTimeoutRef.current) clearTimeout(copyTimeoutRef.current);
+            copyTimeoutRef.current = setTimeout(() => setCopiedAddress(false), 2000);
           } else {
             // 🟡 FIX #7: Agregar logging cuando execCommand falla
             logger.warn("[MealCard] execCommand copy returned false");
@@ -464,11 +466,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
         } catch (fallbackError) {
           logger.error("All copy methods failed:", fallbackError);
           // ✅ FIX #1: Use toast instead of alert() for better UX on mobile
-          showToast(
-            `No se pudo copiar. Dirección: ${textToCopy}`,
-            "error",
-            5000,
-          );
+          showToast(t("mealCard.copyFailed", { address: textToCopy }), "error", 5000);
         }
       }
     },
@@ -522,7 +520,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
                     <span
                       className={`px-2 py-1 rounded-lg font-medium ${getDifficultyStyle(recipe.difficulty)}`}
                     >
-                      {translateDifficulty(recipe.difficulty, t)}
+                      {t(DIFFICULTY_TRANSLATION_KEYS[recipe.difficulty] ?? "") || recipe.difficulty}
                     </span>
                   )}
               </div>
@@ -701,8 +699,6 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
           {/* Botón de feedback */}
           <button
             onClick={handleFeedbackOpen}
-            onMouseDown={(e) => e.stopPropagation()}
-            onTouchStart={(e) => e.stopPropagation()}
             className="w-full py-3 rounded-xl bg-bocado-dark-green text-white font-semibold text-sm shadow-bocado hover:bg-bocado-green active:scale-[0.98] transition-all"
             type="button"
           >

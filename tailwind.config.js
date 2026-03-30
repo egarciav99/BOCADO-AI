@@ -39,6 +39,7 @@ export default {
       spacing: {
         18: "4.5rem",
         88: "22rem",
+        "bottom-nav": "9rem", // FAB 56px + TabBar ~70px + safe area ~18px
       },
       borderRadius: {
         "4xl": "2rem",

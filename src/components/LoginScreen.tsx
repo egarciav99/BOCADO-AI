@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import BocadoLogo from "./BocadoLogo";
-import { db, auth, trackEvent } from "../firebaseConfig"; // ✅ Importado trackEvent
+import { db, auth, trackEvent } from "../firebaseConfig";
 import { EMAIL_DOMAINS } from "../constants";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   sendEmailVerification,
+  User,
 } from "firebase/auth";
 import { useQueryClient } from "@tanstack/react-query";
-import { sanitizeProfileData } from "../utils/profileSanitizer";
 import { UserProfile } from "../types";
 import { logger } from "../utils/logger";
 import { useTranslation } from "../contexts/I18nContext";
@@ -35,7 +35,12 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const [view, setView] = useState<"login" | "reset">("login");
   const [needsVerification, setNeedsVerification] = useState(false);
-  const [unverifiedUser, setUnverifiedUser] = useState<any>(null);
+
+  // ✅ FIX: tipado correcto en vez de any
+  const [unverifiedUser, setUnverifiedUser] = useState<User | null>(null);
+
+  // ✅ FIX: acción del store en vez de getState() imperativo
+  const setUser = useAuthStore((state) => state.setUser);
 
   const queryClient = useQueryClient();
 
@@ -53,9 +58,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     const lowercasedEmail = email.toLowerCase();
 
     try {
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Login] Intentando signInWithEmailAndPassword...");
-      }
       const userCredential = await signInWithEmailAndPassword(
         auth,
         lowercasedEmail,
@@ -64,7 +66,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       const user = userCredential.user;
 
       if (!user.emailVerified) {
-        // ✅ ANALÍTICA: Intento de login con correo no verificado
         trackEvent("login_unverified_attempt", { userId: user.uid });
         setNeedsVerification(true);
         setUnverifiedUser(user);
@@ -73,9 +74,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       }
 
       const userDocRef = doc(db, "users", user.uid);
-      if (process.env.NODE_ENV === "development") {
-        console.log("[Login] Auth OK, obteniendo perfil de Firestore...");
-      }
       const userDoc = await getDoc(userDocRef);
 
       if (userDoc.exists()) {
@@ -84,25 +82,22 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           await updateDoc(userDocRef, { emailVerified: true });
         }
 
-        // Invalidate so React Query fetches fresh from Firestore.
-        // Avoid setQueryData with locally-sanitized data — null fallbacks
-        // can mask real profile fields and confuse subsequent components.
         queryClient.invalidateQueries({ queryKey: ["userProfile", user.uid] });
 
-        // Update store immediately to avoid delay waiting for onAuthStateChanged
-        useAuthStore.getState().setUser(user);
+        // ✅ FIX: usar acción del store correctamente
+        setUser(user);
         trackEvent("login_success", { userId: user.uid });
         onLoginSuccess();
       } else {
         trackEvent("login_missing_profile", { userId: user.uid });
         setError(t("login.success.profileIncomplete"));
-        auth.signOut();
+        // ✅ FIX: await en signOut
+        await auth.signOut();
       }
     } catch (err: any) {
       const errorCode = err.code || (err.message ? "custom-error" : "unknown");
       logger.error("Error logging in:", errorCode, err);
 
-      // ✅ ANALÍTICA: Error en login
       trackEvent("login_error", {
         error_code: errorCode,
         email_provided: email.includes("@"),
@@ -122,8 +117,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       ) {
         setError(t("login.errors.invalidCredentials"));
       } else {
-        // Mostrar mensaje más detallado en desarrollo
-        if (typeof process !== "undefined" && process.env.NODE_ENV === "development") {
+        if (process.env.NODE_ENV === "development") {
           setError(`${t("login.errors.genericError")} (${errorCode}: ${err.message})`);
         } else {
           setError(t("login.errors.genericError"));
@@ -140,11 +134,9 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     setIsLoading(true);
     try {
       await sendEmailVerification(unverifiedUser);
-      // ✅ ANALÍTICA: Reenvío de verificación
       trackEvent("login_resend_verification_success");
       setSuccessMessage(t("login.success.emailResent"));
     } catch (err) {
-      // ✅ ANALÍTICA: Error al reenviar
       trackEvent("login_resend_verification_error");
       setError(t("login.errors.resendFailed"));
     } finally {
@@ -152,9 +144,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     }
   };
 
-  const handleLogoutUnverified = () => {
-    trackEvent("login_unverified_switch_account"); // ✅ Analítica
-    auth.signOut();
+  const handleLogoutUnverified = async () => {
+    trackEvent("login_unverified_switch_account");
+    // ✅ FIX: await en signOut
+    await auth.signOut();
     setNeedsVerification(false);
     setUnverifiedUser(null);
     setError("");
@@ -173,12 +166,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     setIsLoading(true);
     try {
       await sendPasswordResetEmail(auth, email);
-      // ✅ ANALÍTICA: Solicitud de reset exitosa
       trackEvent("password_reset_requested", { success: true });
       setSuccessMessage(t("login.success.resetEmailSent", { email }));
     } catch (err: any) {
       logger.error("Error sending password reset email:", err.code);
-      // ✅ ANALÍTICA: Error en solicitud de reset
       trackEvent("password_reset_requested", {
         success: false,
         error: err.code,
@@ -205,7 +196,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
     if (atIndex > -1) {
       const textBeforeAt = value.substring(0, atIndex);
       const textAfterAt = value.substring(atIndex + 1);
-
       const filtered = EMAIL_DOMAINS.filter((domain) =>
         domain.startsWith(textAfterAt),
       ).map((domain) => `${textBeforeAt}@${domain}`);
@@ -218,14 +208,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
   };
 
   const handleEmailSuggestionClick = (suggestion: string) => {
-    // ✅ ANALÍTICA: Uso de sugerencia de dominio
     trackEvent("login_email_suggestion_used");
     setEmail(suggestion);
     setShowEmailSuggestions(false);
   };
 
   const handleGoBack = () => {
-    trackEvent("login_go_home_click"); // ✅ Analítica
+    trackEvent("login_go_home_click");
     onGoHome();
   };
 
@@ -242,14 +231,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
       });
 
       if (result.isNewUser) {
-        // Usuario nuevo - necesita completar perfil
         setError(t("login.errors.completeRegistration"));
-        auth.signOut();
+        // ✅ FIX: await en signOut
+        await auth.signOut();
         setIsLoading(false);
         return;
       }
 
-      // Usuario existente - verificar perfil en Firestore
       const userDocRef = doc(db, "users", result.uid);
       const userDoc = await getDoc(userDocRef);
 
@@ -258,17 +246,17 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           queryKey: ["userProfile", result.uid],
         });
 
-        // Update store immediately to avoid delay waiting for onAuthStateChanged
-        // This prevents the "Sincronizando Bocado" hang in MainApp
+        // ✅ FIX: usar acción del store correctamente
         if (auth.currentUser) {
-          useAuthStore.getState().setUser(auth.currentUser);
+          setUser(auth.currentUser);
         }
 
         onLoginSuccess();
       } else {
         trackEvent("login_google_missing_profile", { userId: result.uid });
         setError(t("login.errors.profileNotFound"));
-        auth.signOut();
+        // ✅ FIX: await en signOut
+        await auth.signOut();
       }
     } catch (err: any) {
       logger.error("Error con Google Sign-In:", err.code);
@@ -305,7 +293,10 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
               />
             </svg>
           </div>
+
+          {/* ✅ FIX: h2 tenía contenido vacío */}
           <h2 className="text-xl font-bold text-bocado-dark-green dark:text-green-300 mb-2">
+            {t("login.verificationRequiredTitle")}
           </h2>
           <p className="text-base text-bocado-dark-gray dark:text-gray-300 mb-4">
             {t("login.verificationRequired")}
@@ -354,48 +345,48 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <h1 className="text-xl font-bold text-bocado-dark-green dark:text-green-300">
           {t("login.title")}
         </h1>
-        <p className="text-sm text-bocado-gray dark:text-gray-400 mt-1">{t("login.subtitle")}</p>
+        <p className="text-sm text-bocado-gray dark:text-gray-400 mt-1">
+          {t("login.subtitle")}
+        </p>
       </div>
 
+      {/* ✅ FIX: ocultar SVG de Google mientras carga */}
       <button
         onClick={handleGoogleSignIn}
         disabled={isLoading}
-        aria-label={t("login.continueWithGoogle") || "Continuar con Google"}
+        aria-label={t("login.continueWithGoogle")}
         className="w-full bg-white dark:bg-gray-700 border-2 border-bocado-border dark:border-gray-600 text-bocado-text dark:text-gray-200 font-bold py-3 px-4 rounded-full text-base shadow-sm hover:bg-bocado-background dark:hover:bg-gray-600 hover:border-bocado-dark-gray active:scale-95 transition-all disabled:bg-bocado-gray disabled:text-white flex items-center justify-center gap-2 mb-4"
       >
-        <svg className="w-5 h-5" viewBox="0 0 24 24">
-          <path
-            fill="#4285F4"
-            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-          />
-          <path
-            fill="#34A853"
-            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-          />
-          <path
-            fill="#FBBC05"
-            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-          />
-          <path
-            fill="#EA4335"
-            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-          />
-        </svg>
-        {t("login.continueWithGoogle") || "Continuar con Google"}
+        {isLoading ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="w-4 h-4 border-2 border-bocado-border border-t-bocado-dark-gray rounded-full animate-spin" />
+            {t("common.loading")}
+          </span>
+        ) : (
+          <span className="flex items-center justify-center gap-2">
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+            </svg>
+            {t("login.continueWithGoogle")}
+          </span>
+        )}
       </button>
 
+      {/* ✅ FIX: separador traducido */}
       <div className="flex items-center gap-3 my-4">
         <div className="flex-1 h-px bg-bocado-border dark:bg-gray-700"></div>
-        <span className="text-xs text-bocado-gray dark:text-gray-500 font-medium">O</span>
+        <span className="text-xs text-bocado-gray dark:text-gray-500 font-medium">
+          {t("common.or")}
+        </span>
         <div className="flex-1 h-px bg-bocado-border dark:bg-gray-700"></div>
       </div>
 
       <form onSubmit={handleLogin} className="space-y-4">
         <div className="relative">
-          <label
-            htmlFor="email"
-            className="label-base"
-          >
+          <label htmlFor="email" className="label-base">
             {t("login.email")}
           </label>
           <input
@@ -436,10 +427,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="label-base"
-          >
+          <label htmlFor="password" className="label-base">
             {t("login.password")}
           </label>
           <input
@@ -478,7 +466,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
           <button
             type="button"
             onClick={() => {
-              trackEvent("login_forgot_password_click"); // ✅ Analítica
+              trackEvent("login_forgot_password_click");
               setView("reset");
             }}
             className="text-xs text-bocado-green font-semibold hover:underline"
@@ -496,7 +484,6 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
         <div className="w-32 mx-auto mb-2">
           <BocadoLogo className="w-full h-auto" />
         </div>
-
         <h1 className="text-xl font-bold text-bocado-dark-green dark:text-green-300">
           {t("login.resetPassword")}
         </h1>
@@ -519,7 +506,8 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="input-base"
-            placeholder="tu@correo.com"
+            // ✅ FIX: placeholder traducido en vez de hardcodeado
+            placeholder={t("login.placeholders.email")}
             disabled={isLoading}
             aria-label={t("login.email")}
           />
