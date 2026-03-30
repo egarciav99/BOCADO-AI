@@ -3,6 +3,8 @@
  *
  * TODAS las llamadas a Google Maps deben pasar por este proxy.
  * El frontend NUNCA debe tener acceso directo a la API key.
+ * 
+ * ✅ Fixed: Deployment issue - force rebuild 2026-03-30
  */
 
 import { getAuth } from "firebase-admin/auth";
@@ -204,7 +206,18 @@ function generateCacheKey(prefix: string, params: Record<string, any>): string {
 // ============================================
 
 export default async function handler(req: any, res: any) {
+  // ✅ Enhanced logging for deployment debugging
+  console.log("[maps-proxy] Handler started", {
+    method: req.method,
+    url: req.url,
+    timestamp: new Date().toISOString(),
+  });
+
   if (!adminApp || !db) {
+    console.error("[maps-proxy] Firebase not initialized", {
+      hasAdminApp: !!adminApp,
+      hasDb: !!db,
+    });
     return res.status(503).json({ error: "Service temporarily unavailable. Firebase not initialized." });
   }
   const origin = req.headers.origin;
