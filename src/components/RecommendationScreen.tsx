@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   EATING_HABITS,
+  EATING_HABIT_ICONS,
   MEALS,
   CRAVINGS,
   MEAL_TRANSLATION_KEYS,
@@ -96,6 +97,21 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
   // Prevenir clicks múltiples
   const isProcessingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Memoize translation helpers to prevent recreation on every render
+  const translateMeal = useCallback(
+    (meal: string) => translateMealWithEmoji(meal, t),
+    [t]
+  );
+  const translateCraving = useCallback(
+    (craving: string) => translateCravingWithEmoji(craving, t),
+    [t]
+  );
+  const translateBudget = useCallback(
+    (label: string, value: "low" | "medium" | "high") =>
+      translateBudgetLabel(label, value, t),
+    [t]
+  );
 
   const { user } = useAuthStore();
   const {
@@ -237,7 +253,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
 
     // Wait for pantry data to load for "En casa" recommendations
     if (recommendationType === "En casa" && isPantryLoading) {
-      setError(t("recommendation.loadingPantry") || "Cargando despensa...");
+      setError(t("recommendation.loadingPantry"));
       return;
     }
 
@@ -397,7 +413,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
           // Mostrar mensaje y refreschar status del rate limit
           const fallbackSeconds =
             typeof errorData.retryAfter === "number" ? errorData.retryAfter : 30;
-          const fallbackMessage = `Espera ${fallbackSeconds}s antes de generar otra recomendación.`;
+          const fallbackMessage = t("recommendation.waitSeconds", { seconds: fallbackSeconds });
           setError(errorData.error || fallbackMessage);
           refreshStatus();
           resetProcessingState();
@@ -480,17 +496,16 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
       <div className="flex-1 flex flex-col items-center justify-center px-4">
         <div className="text-center max-w-sm">
           <p className="text-red-500 text-lg mb-2">
-            ⚠️ No se encontró tu perfil
+            ⚠️ {t("recommendation.profileNotFound")}
           </p>
           <p className="text-bocado-gray text-sm mb-4">
-            Parece que hubo un problema al cargar tu perfil. Intenta recargar la
-            página o contacta soporte.
+            {t("recommendation.profileNotFoundDesc")}
           </p>
           <button
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-bocado-green text-white rounded-lg hover:bg-bocado-dark-green transition-colors"
           >
-            Recargar página
+            {t("common.reload")}
           </button>
         </div>
       </div>
@@ -512,7 +527,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
           <BocadoLogo className="w-full" />
         </div>
         <h1 className="text-xl font-bold text-bocado-dark-green">
-          {t("recommendation.welcome", { userName: userName || "Comensal" })}
+          {t("recommendation.welcome", { userName: userName || t("recommendation.defaultUserName") })}
         </h1>
         <p className="text-sm text-bocado-gray mt-1">
           {t("recommendation.subtitle")}
@@ -531,7 +546,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
             onClick={() => setError(null)}
             className="text-xs underline mt-1 hover:text-red-700"
           >
-            Cerrar
+            {t("common.close")}
           </button>
         </div>
       )}
@@ -562,7 +577,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                     trackEvent("notification_banner_activated");
                     setShowNotificationBanner(false);
                     // Abrir automáticamente el onboarding simple
-                    setTimeout(() => setShowNotificationOnboarding(true), 500);
+                    setShowNotificationOnboarding(true);
                   }
                 }}
                 className="text-xs bg-amber-600 text-white font-bold px-3 py-1.5 rounded-full hover:bg-amber-700 active:scale-95 transition-all whitespace-nowrap"
@@ -596,7 +611,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
               }`}
           >
             <span className="text-3xl mb-2">
-              {habit === "En casa" ? "🏡" : "🍽️"}
+              {EATING_HABIT_ICONS[habit] || "🍽️"}
             </span>
             <span className="font-bold text-sm text-center">
               {habit === "En casa"
@@ -636,7 +651,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                       : "bg-white text-bocado-dark-gray border-bocado-border"
                       }`}
                   >
-                    {translateMealWithEmoji(meal, t)}
+                    {translateMeal(meal)}
                   </button>
                 ))}
               </div>
@@ -735,7 +750,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                         : "bg-white text-bocado-dark-gray border-bocado-border"
                         }`}
                     >
-                      {translateCravingWithEmoji(craving, t)}
+                      {translateCraving(craving)}
                     </button>
                   ))}
                 </div>
@@ -764,7 +779,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                         }`}
                     >
                       <span>
-                        {translateBudgetLabel(option.label, option.value, t)}
+                        {translateBudget(option.label, option.value)}
                       </span>
                       {selectedBudget === option.value && <span>✓</span>}
                     </button>
@@ -777,7 +792,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 flex-1">
                     <Tooltip
-                      text="Ubica restaurantes más cercanos"
+                      text={t("recommendation.locationTooltip")}
                       position="right"
                     >
                       <MapPin
@@ -849,7 +864,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
               ) : isRateLimited ? (
                 <>
                   <span className="text-lg">⏱️</span>
-                  <span>Espera {formattedTimeLeft}s</span>
+                  <span>{t("recommendation.waitSeconds", { seconds: formattedTimeLeft })}</span>
                 </>
               ) : (
                 t("recommendation.generateRecommendation")

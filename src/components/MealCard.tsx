@@ -243,9 +243,6 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
     [recipe, isRestaurant],
   );
 
-  // Calculamos el "multiplicador aparente" para mostrar info al usuario
-  const _displayMultiplier = servings / baseServings;
-
   // Hooks de autenticación y datos
   const { user } = useAuthStore();
   const toggleMutation = useToggleSavedItem();
@@ -485,7 +482,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
             <span
               className="text-2xl shrink-0 leading-none"
               role="img"
-              aria-label="Tipo de comida"
+              aria-label={t("mealCard.foodType")}
             >
               {emoji}
             </span>

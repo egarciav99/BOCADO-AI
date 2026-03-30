@@ -77,10 +77,10 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
             <BocadoLogo className="w-full" />
           </div>
           <h1 className="text-xl font-bold text-bocado-dark-green dark:text-green-300">
-            {t("registration.title") || "Crear cuenta"}
+            {t("registration.title")}
           </h1>
           <p className="text-sm text-bocado-gray dark:text-gray-400 mt-1">
-            {t("registration.subtitle") || "Elige cómo quieres registrarte"}
+            {t("registration.subtitle")}
           </p>
         </div>
 
@@ -88,7 +88,7 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
           <button
             onClick={handleGoogleSignIn}
             disabled={isLoading}
-            aria-label={t("registration.continueWithGoogle") || "Continuar con Google"}
+            aria-label={t("registration.continueWithGoogle")}
             className="w-full bg-white dark:bg-gray-700 border-2 border-bocado-border dark:border-gray-600 text-bocado-text dark:text-gray-200 font-bold py-3 px-4 rounded-full text-base shadow-sm hover:bg-bocado-background dark:hover:bg-gray-600 hover:border-bocado-dark-gray active:scale-95 transition-all disabled:bg-bocado-gray disabled:text-white flex items-center justify-center gap-2"
           >
             {isLoading ? (
@@ -116,7 +116,7 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
                     d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                   />
                 </svg>
-                {t("registration.continueWithGoogle") || "Continuar con Google"}
+                {t("registration.continueWithGoogle")}
               </span>
             )}
           </button>
@@ -132,7 +132,7 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
             disabled={isLoading}
             className="w-full bg-bocado-green text-white font-bold py-3 px-4 rounded-full text-base shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:bg-bocado-gray"
           >
-            {t("registration.continueWithEmail") || "Continuar con Email"}
+            {t("registration.continueWithEmail")}
           </button>
         </div>
 
@@ -147,7 +147,7 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
             onClick={handleGoBack}
             className="text-xs text-bocado-gray dark:text-gray-400 hover:text-bocado-dark-gray dark:hover:text-gray-300 transition-colors"
           >
-            {t("home.backToHome") || "Volver al inicio"}
+            {t("home.backToHome")}
           </button>
         </div>
       </div>

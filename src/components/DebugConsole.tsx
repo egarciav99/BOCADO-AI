@@ -3,8 +3,7 @@
  * Muestra los logs guardados de debugging
  * Accesible solo en desarrollo o con query param especial
  */
-
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { getDebugLogs, clearDebugLogs, exportDebugLogs } from "../utils/debugLogger";
 
 interface DebugLog {
@@ -14,14 +13,36 @@ interface DebugLog {
   data?: any;
 }
 
+const TYPE_STYLES: Record<DebugLog["type"], string> = {
+  info:  "text-blue-400",
+  warn:  "text-yellow-400",
+  error: "text-red-400",
+  state: "text-green-400 font-bold",
+};
+
 export const DebugConsole: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [logs, setLogs] = useState<DebugLog[]>([]);
+  // ✅ FIX: ref para el intervalo de polling
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const handleOpen = () => {
+  // ✅ FIX: polling mientras el panel está abierto para mostrar logs en tiempo real
+  useEffect(() => {
+    if (!isOpen) {
+      if (pollRef.current) clearInterval(pollRef.current);
+      return;
+    }
+
     setLogs(getDebugLogs());
-    setIsOpen(true);
-  };
+
+    pollRef.current = setInterval(() => {
+      setLogs(getDebugLogs());
+    }, 1000);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, [isOpen]);
 
   const handleClear = () => {
     clearDebugLogs();
@@ -34,14 +55,16 @@ export const DebugConsole: React.FC = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "debug-logs.json";
+    a.download = `debug-logs-${Date.now()}.json`;
     a.click();
+    // ✅ FIX: revocar la URL para evitar memory leak
+    setTimeout(() => URL.revokeObjectURL(url), 100);
   };
 
   if (!isOpen) {
     return (
       <button
-        onClick={handleOpen}
+        onClick={() => setIsOpen(true)}
         className="fixed bottom-4 right-4 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-purple-700 z-50"
         title="Debug Console (Development Only)"
       >
@@ -53,6 +76,7 @@ export const DebugConsole: React.FC = () => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end">
       <div className="bg-slate-900 text-white w-full max-h-96 flex flex-col rounded-t-lg shadow-2xl">
+
         {/* Header */}
         <div className="flex justify-between items-center bg-slate-800 px-4 py-3 border-b border-slate-700">
           <h3 className="font-bold text-lg flex items-center gap-2">
@@ -60,6 +84,8 @@ export const DebugConsole: React.FC = () => {
             <span className="text-xs bg-slate-700 px-2 py-1 rounded">
               {logs.length} logs
             </span>
+            {/* ✅ indicador visual de polling activo */}
+            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" title="Live" />
           </h3>
           <div className="flex gap-2">
             <button
@@ -90,17 +116,11 @@ export const DebugConsole: React.FC = () => {
           ) : (
             logs.map((log, idx) => {
               const date = new Date(log.timestamp).toLocaleTimeString();
-              const typeStyles = {
-                info: "text-blue-400",
-                warn: "text-yellow-400",
-                error: "text-red-400",
-                state: "text-green-400 font-bold",
-              };
-
               return (
-                <div key={idx} className="text-slate-300">
+                // ✅ FIX: key más estable que solo idx
+                <div key={`${log.timestamp}-${idx}`} className="text-slate-300">
                   <span className="text-slate-500">[{date}]</span>
-                  <span className={`ml-2 ${typeStyles[log.type]}`}>
+                  <span className={`ml-2 ${TYPE_STYLES[log.type]}`}>
                     {log.type.toUpperCase()}
                   </span>
                   <span className="ml-2">{log.message}</span>
@@ -115,9 +135,9 @@ export const DebugConsole: React.FC = () => {
           )}
         </div>
 
-        {/* Instructions */}
+        {/* Footer */}
         <div className="bg-slate-800 border-t border-slate-700 px-4 py-2 text-xs text-slate-400">
-          💡 Usa este panel para debuggear. Export para compartir logs.
+          💡 Live updates every 1s. Export to share logs.
         </div>
       </div>
     </div>

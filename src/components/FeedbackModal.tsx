@@ -20,12 +20,13 @@ interface FeedbackModalProps {
   itemTitle: string;
   type: "home" | "away";
   originalData: Recipe;
+  // ✅ FIX: prop opcional para el delay de cierre post-éxito
+  successCloseDelay?: number;
 }
 
 const MAX_COMMENT_LENGTH = 500;
-const SUCCESS_CLOSE_DELAY = 2000;
+const DEFAULT_SUCCESS_CLOSE_DELAY = 2000;
 
-// ✅ FIX #2: Use Context instead of global variable to prevent race conditions
 interface ModalContextType {
   activeModalId: string | null;
   setActiveModalId: (id: string | null) => void;
@@ -33,7 +34,7 @@ interface ModalContextType {
 
 const ModalContext = createContext<ModalContextType>({
   activeModalId: null,
-  setActiveModalId: () => { },
+  setActiveModalId: () => {},
 });
 
 export const FeedbackModalProvider: React.FC<{ children: React.ReactNode }> = ({
@@ -51,19 +52,17 @@ const sanitizeComment = (text: string): string => {
   return text.trim().replace(/[<>]/g, "").substring(0, MAX_COMMENT_LENGTH);
 };
 
-/**
- * Componente StarButton - Botón de estrella individual memoizado
- * Previene re-renders innecesarios al interactuar con una estrella
- */
 interface StarButtonProps {
   star: number;
   isActive: boolean;
   onClick: (star: number) => void;
   isDisabled: boolean;
+  // ✅ FIX: recibir el label traducido como prop
+  ariaLabel: string;
 }
 
 const StarButton: React.FC<StarButtonProps> = React.memo(
-  ({ star, isActive, onClick, isDisabled }) => {
+  ({ star, isActive, onClick, isDisabled, ariaLabel }) => {
     const handleClick = useCallback(
       (e: React.MouseEvent | React.TouchEvent) => {
         e.preventDefault();
@@ -78,15 +77,17 @@ const StarButton: React.FC<StarButtonProps> = React.memo(
         onClick={handleClick}
         onTouchEnd={handleClick}
         disabled={isDisabled}
-        className={`text-4xl sm:text-3xl transition-all active:scale-125 disabled:opacity-50 select-none cursor-pointer ${isActive
-          ? "grayscale-0 scale-110"
-          : "grayscale opacity-40 hover:opacity-70"
-          }`}
+        className={`text-4xl sm:text-3xl transition-all active:scale-125 disabled:opacity-50 select-none cursor-pointer ${
+          isActive
+            ? "grayscale-0 scale-110"
+            : "grayscale opacity-40 hover:opacity-70"
+        }`}
         style={{
           touchAction: "manipulation",
           WebkitTapHighlightColor: "transparent",
         }}
-        aria-label={`Calificar con ${star} estrellas`}
+        // ✅ FIX: aria-label traducido
+        aria-label={ariaLabel}
         type="button"
       >
         ⭐
@@ -97,33 +98,22 @@ const StarButton: React.FC<StarButtonProps> = React.memo(
 
 StarButton.displayName = "StarButton";
 
-/**
- * FeedbackModal - Modal de calificación con actualizaciones optimistas
- *
- * Mejoras de rendimiento implementadas:
- * 1. Uso de useMutation de TanStack Query para operaciones async
- * 2. Actualizaciones optimistas - feedback instantáneo al usuario
- * 3. Componentes memoizados para prevenir re-renders
- * 4. Cleanup de timers y callbacks al desmontar
- * 5. Debounce en la entrada de texto
- */
 const FeedbackModal: React.FC<FeedbackModalProps> = ({
   isOpen,
   onClose,
   itemTitle,
   type,
   originalData,
+  successCloseDelay = DEFAULT_SUCCESS_CLOSE_DELAY,
 }) => {
   const { t } = useTranslation();
   const modalInstanceId = useId();
   const { activeModalId, setActiveModalId } = useContext(ModalContext);
 
-  // Estado local del formulario
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   const [localError, setLocalError] = useState("");
 
-  // Refs para cleanup
   const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isSubmittingRef = useRef(false);
 
@@ -137,7 +127,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     reset,
   } = useFeedbackMutation();
 
-  // Cleanup de timeouts al desmontar
   useEffect(() => {
     return () => {
       if (successTimeoutRef.current) {
@@ -146,42 +135,42 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     };
   }, []);
 
-  // Ref always pointing to the latest handleClose — lets the isSuccess
-  // effect call it without being declared before handleClose.
-  const handleCloseRef = useRef<(isFromSuccess?: boolean) => void>(() => { });
+  const handleCloseRef = useRef<(isFromSuccess?: boolean) => void>(() => {});
 
-  // ✅ FIX #2: Use context to manage modal state properly
+  // ✅ FIX: separar efectos por responsabilidad
+
+  // Efecto 1: manejo del Context de modal activo
   useEffect(() => {
     if (isOpen) {
       if (activeModalId === null) {
         setActiveModalId(modalInstanceId);
       }
-
-      if (activeModalId !== modalInstanceId) {
-        return;
-      }
-
-      setRating(0);
-      setComment("");
-      setLocalError("");
-      reset();
-      isSubmittingRef.current = false;
-
-      // Prevenir scroll en el body cuando el modal está abierto
-      const originalOverflow = document.body.style.overflow;
-      document.body.style.overflow = "hidden";
-
-      return () => {
-        document.body.style.overflow = originalOverflow;
-      };
-    }
-
-    if (activeModalId === modalInstanceId) {
+    } else if (activeModalId === modalInstanceId) {
       setActiveModalId(null);
     }
-  }, [isOpen, reset, modalInstanceId, activeModalId, setActiveModalId]);
+  }, [isOpen, modalInstanceId, activeModalId, setActiveModalId]);
 
-  // Cleanup al desmontar
+  // Efecto 2: reset del formulario solo cuando el modal se abre
+  useEffect(() => {
+    if (!isOpen || activeModalId !== modalInstanceId) return;
+    setRating(0);
+    setComment("");
+    setLocalError("");
+    reset();
+    isSubmittingRef.current = false;
+  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps — reset solo al abrir
+
+  // Efecto 3: bloqueo del scroll del body
+  useEffect(() => {
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isOpen]);
+
+  // Efecto 4: cleanup al desmontar
   useEffect(() => {
     return () => {
       if (activeModalId === modalInstanceId) {
@@ -190,12 +179,9 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     };
   }, [modalInstanceId, activeModalId, setActiveModalId]);
 
-  // Handler de calificación - memoizado para prevenir re-renders
   const handleRatingClick = useCallback(
     (selectedRating: number) => {
       setRating(selectedRating);
-
-      // Tracking de interacción (no bloqueante)
       trackEvent("rating_selected", {
         item_title: itemTitle,
         rating: selectedRating,
@@ -205,7 +191,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     [itemTitle, type],
   );
 
-  // Handler de cambio de comentario
   const handleCommentChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       const value = e.target.value;
@@ -216,16 +201,15 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     [],
   );
 
-  // Handler de submit con optimistic updates
   const handleSubmit = useCallback(() => {
-    // Validaciones
+    // ✅ FIX: errores de validación traducidos
     if (rating === 0) {
-      setLocalError("Por favor selecciona una calificación");
+      setLocalError(t("feedback.errors.ratingRequired"));
       return;
     }
 
     if (!isAuthenticated || !user) {
-      setLocalError("Debes iniciar sesión para enviar feedback");
+      setLocalError(t("feedback.errors.authRequired"));
       return;
     }
 
@@ -233,7 +217,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     isSubmittingRef.current = true;
     setLocalError("");
 
-    // Enviar feedback - La UI se actualiza inmediatamente (optimistic)
     submitFeedback(
       {
         userId: user.uid,
@@ -261,16 +244,13 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     comment,
     originalData,
     submitFeedback,
+    t,
   ]);
 
-  // Handler de cierre
   const handleClose = useCallback(
     (isFromSuccess = false) => {
       if (!isFromSuccess && rating === 0 && !isSuccess) {
-        trackEvent("skip_feedback", {
-          item_title: itemTitle,
-          type,
-        });
+        trackEvent("skip_feedback", { item_title: itemTitle, type });
       }
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
@@ -281,39 +261,25 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     [onClose, rating, isSuccess, itemTitle, type],
   );
 
-  // Keep ref in sync so the isSuccess effect always calls the latest version
-  // (declared up here, after handleClose, to avoid "used before declaration")
   handleCloseRef.current = handleClose;
 
-  // Manejar cierre automático después de éxito
-  // Uses ref to avoid forward-reference and stale closure simultaneously
   useEffect(() => {
     if (!isSuccess) return;
+    // ✅ FIX: usar prop successCloseDelay en vez de constante hardcodeada
     successTimeoutRef.current = setTimeout(() => {
       handleCloseRef.current(true);
-    }, SUCCESS_CLOSE_DELAY);
+    }, successCloseDelay);
     return () => {
       if (successTimeoutRef.current) {
         clearTimeout(successTimeoutRef.current);
         successTimeoutRef.current = null;
       }
     };
-  }, [isSuccess]); // ref is always current — no need for handleClose in deps
+  }, [isSuccess, successCloseDelay]);
 
-  // ✅ FIX #4: Ensure backdrop click works on both desktop and mobile
-  const handleBackdropPointerDown = useCallback(
-    (e: React.PointerEvent | React.MouseEvent | React.TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    [],
-  );
-
+  // ✅ FIX: backdrop simplificado — un solo handler por evento
   const handleBackdropClick = useCallback(
-    (e: React.MouseEvent | React.TouchEvent | React.PointerEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-
+    (e: React.MouseEvent) => {
       if (e.target === e.currentTarget && !isPending) {
         handleClose();
       }
@@ -321,39 +287,29 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
     [handleClose, isPending],
   );
 
-  // No renderizar si no está abierto o si ya hay otro modal abierto globalmente
+  const stopPropagation = useCallback((e: React.SyntheticEvent) => {
+    e.stopPropagation();
+  }, []);
+
   if (!isOpen) return null;
 
-  // ✅ FIX #2: Claim ownership using context instead of global variable
-  // Validación para evitar múltiples instancias del modal
   if (activeModalId !== null && activeModalId !== modalInstanceId) {
     return null;
   }
 
-  // Determinar mensaje de error a mostrar
   const errorMessage =
     localError || (isError && error instanceof Error ? error.message : "");
 
   return createPortal(
     <>
-      {/* Backdrop dedicado que bloquea todos los eventos */}
+      {/* ✅ FIX: backdrop simplificado a 2 handlers */}
       <div
         className="fixed inset-0 z-[2147483646] bg-black/60 backdrop-blur-sm"
-        style={{
-          touchAction: "none",
-          pointerEvents: "auto",
-        }}
-        onPointerDownCapture={handleBackdropPointerDown}
-        onClickCapture={handleBackdropPointerDown}
-        onTouchStartCapture={handleBackdropPointerDown}
-        onTouchEndCapture={handleBackdropPointerDown}
-        onPointerDown={handleBackdropPointerDown}
+        style={{ touchAction: "none" }}
         onClick={handleBackdropClick}
-        onTouchEnd={handleBackdropClick}
         aria-hidden="true"
       />
 
-      {/* Contenedor del modal con z-index superior */}
       <div
         className="fixed inset-0 z-[2147483647] flex items-end sm:items-center justify-center px-safe py-4 animate-fade-in"
         style={{ pointerEvents: "none" }}
@@ -361,42 +317,42 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
         <div
           className="bg-white rounded-t-3xl sm:rounded-3xl shadow-2xl w-full max-w-sm p-6 text-center transform transition-transform duration-300 translate-y-0"
           style={{ pointerEvents: "auto" }}
-          onClick={(e) => e.stopPropagation()}
-          onPointerDown={(e) => e.stopPropagation()}
+          onClick={stopPropagation}
+          onPointerDown={stopPropagation}
           role="dialog"
           aria-modal="true"
           aria-labelledby="feedback-title"
         >
-          {/* Indicador de arrastre (mobile) */}
           <div className="w-12 h-1 bg-gray-200 rounded-full mx-auto mb-6 sm:hidden" />
 
           {!isSuccess ? (
             <>
-              {/* Header */}
               <div className="text-4xl mb-4">
                 {type === "home" ? "🍳" : "📍"}
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-bocado-dark-green">
+              <h3
+                id="feedback-title"
+                className="text-lg sm:text-xl font-bold text-bocado-dark-green"
+              >
                 {type === "home"
                   ? t("feedback.titleHome")
                   : t("feedback.titleAway")}
               </h3>
               <p className="text-sm text-bocado-gray mt-1 mb-6 line-clamp-2">
-                {t("feedback.subtitle")} <br className="hidden sm:block" />
+                {t("feedback.subtitle")}{" "}
+                <br className="hidden sm:block" />
                 <strong className="text-bocado-dark-gray">{itemTitle}</strong>
               </p>
 
-              {/* Error message */}
               {errorMessage && (
                 <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-xl animate-fade-in">
                   {errorMessage}
                 </p>
               )}
 
-              {/* Star Rating - Componentes memoizados */}
               <div
                 className="flex justify-center gap-3 sm:gap-2 mb-6"
-                onClick={(e) => e.stopPropagation()}
+                onClick={stopPropagation}
               >
                 {[1, 2, 3, 4, 5].map((star) => (
                   <StarButton
@@ -405,16 +361,17 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
                     isActive={rating >= star}
                     onClick={handleRatingClick}
                     isDisabled={isPending}
+                    // ✅ FIX: aria-label traducido pasado como prop
+                    ariaLabel={t("feedback.starLabel", { count: star })}
                   />
                 ))}
               </div>
 
-              {/* Comment textarea */}
               <div className="relative mb-6">
                 <textarea
                   value={comment}
                   onChange={handleCommentChange}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={stopPropagation}
                   placeholder={t("feedback.commentsLabel")}
                   disabled={isPending}
                   className="w-full p-4 bg-bocado-background border-none rounded-2xl text-sm focus:ring-2 focus:ring-bocado-green/30 resize-none text-bocado-text placeholder-bocado-gray/50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -426,7 +383,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
                 </span>
               </div>
 
-              {/* Action buttons */}
               <div className="flex gap-3 pb-safe">
                 <button
                   onClick={(e) => {
@@ -458,7 +414,6 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({
               </div>
             </>
           ) : (
-            /* Success state */
             <div className="py-8">
               <div className="w-16 h-16 sm:w-20 sm:h-20 bg-green-100 text-bocado-green rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
                 <svg

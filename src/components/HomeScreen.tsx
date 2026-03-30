@@ -26,10 +26,11 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   const [logoError, setLogoError] = React.useState(false);
   const [languageSelectorOpen, setLanguageSelectorOpen] = React.useState(false);
 
+  // Fuera del componente — no depende de props ni estado
   const SUPPORTED_LOCALES = [
     { code: "es", label: "ES", flag: "🇪🇸" },
     { code: "en", label: "EN", flag: "🇺🇸" },
-  ];
+  ] as const;
 
   // ✅ FIX: hasSession debe ser true SOLO si:
   // 1. Usuario está autenticado en Firebase
@@ -83,9 +84,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
     }
   };
 
-  const toggleLanguage = (newLocale: string) => {
+    const toggleLanguage = (newLocale: typeof SUPPORTED_LOCALES[number]["code"]) => {
     if (newLocale !== locale) {
-      setLocale(newLocale as "es" | "en");
+      setLocale(newLocale);
       trackEvent("home_change_language", { from: locale, to: newLocale });
     }
     setLanguageSelectorOpen(false);

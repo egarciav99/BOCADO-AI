@@ -15,6 +15,7 @@ import { Plan, Meal } from "../types";
 import MealCard from "./MealCard";
 import BottomTabBar, { Tab } from "./BottomTabBar";
 import { useTranslation } from "../contexts/I18nContext";
+import { logger } from "../utils/logger";
 
 interface PlanScreenProps {
   planId: string;
@@ -22,109 +23,7 @@ interface PlanScreenProps {
   onNavigateTab?: (tab: Tab) => void;
 }
 
-// --- PROCESAMIENTO DE RECETAS (EN CASA) ---
-const processFirestoreDoc = (doc: DocumentSnapshot): Plan | null => {
-  try {
-    const data = doc.data();
-    if (!data) return null;
-    const interactionId = data.interaction_id || data.user_interactions;
-    const rawDate = data.fecha_creacion || data.createdAt;
-    let recipesArray: any[] = [];
-    let greeting = data.saludo_personalizado || "Aquí tienes tu plan";
-
-    if (data.receta && Array.isArray(data.receta.recetas)) {
-      recipesArray = data.receta.recetas;
-      if (data.saludo_personalizado) greeting = data.saludo_personalizado;
-    } else if (Array.isArray(data.recetas)) {
-      recipesArray = data.recetas;
-    }
-    if (recipesArray.length === 0) return null;
-
-    const meals: Meal[] = recipesArray.map((rec: any, index: number) => ({
-      mealType: `Opción ${index + 1}`,
-      recipe: {
-        title: rec.titulo ?? rec.nombre ?? "Receta",
-        time: rec.tiempo_estimado ?? rec.tiempo_preparacion ?? "N/A",
-        difficulty: rec.dificultad ?? "N/A",
-        calories: rec.macros_por_porcion?.kcal ?? rec.kcal ?? "N/A",
-        savingsMatch: rec.coincidencia_despensa ?? "Ninguno",
-        ingredients: Array.isArray(rec.ingredientes) ? rec.ingredientes : [],
-        instructions: Array.isArray(rec.pasos_preparacion)
-          ? rec.pasos_preparacion
-          : Array.isArray(rec.instrucciones)
-            ? rec.instrucciones
-            : [],
-        // Macros completos
-        protein_g: rec.macros_por_porcion?.proteinas_g,
-        carbs_g: rec.macros_por_porcion?.carbohidratos_g,
-        fat_g: rec.macros_por_porcion?.grasas_g,
-      },
-    }));
-
-    return {
-      planTitle: "Recetas Sugeridas",
-      greeting,
-      meals,
-      _id: doc.id,
-      _createdAt: rawDate,
-      interaction_id: interactionId,
-    };
-  } catch (e) {
-    return null;
-  }
-};
-
-// --- PROCESAMIENTO DE RESTAURANTES (FUERA) ---
-const processRecommendationDoc = (doc: DocumentSnapshot): Plan | null => {
-  try {
-    const data = doc.data();
-    if (!data) return null;
-    // ✅ FIX: Usar ?? para preservar valores falsy válidos
-    const interactionId = data.interaction_id ?? data.user_interactions;
-    const rawDate = data.fecha_creacion ?? data.createdAt;
-
-    let items =
-      data.recomendaciones?.recomendaciones ?? data.recomendaciones ?? [];
-    let greeting = data.saludo_personalizado ?? "Opciones fuera de casa";
-    if (!Array.isArray(items) || items.length === 0) return null;
-
-    const meals: Meal[] = items.map((rec: any, index: number) => ({
-      mealType: `Sugerencia ${index + 1}`,
-      recipe: {
-        title: rec.nombre_restaurante ?? rec.nombre ?? "Restaurante",
-        cuisine: rec.tipo_comida ?? rec.cuisine ?? rec.tipo ?? "Gastronomía",
-        time: "N/A",
-        difficulty: "Restaurante",
-        calories: "N/A",
-        savingsMatch: "Ninguno",
-
-        // Campos separados para restaurantes
-        link_maps: rec.link_maps ?? null,
-        direccion_aproximada: rec.direccion_aproximada ?? null,
-        plato_sugerido: rec.plato_sugerido ?? null,
-        por_que_es_bueno: rec.por_que_es_bueno ?? null,
-        hack_saludable: rec.hack_saludable ?? null,
-
-        // Arrays vacíos para restaurantes
-        ingredients: [],
-        instructions: [],
-      },
-    }));
-
-    return {
-      planTitle: "Lugares Recomendados",
-      greeting,
-      meals,
-      _id: doc.id,
-      _createdAt: rawDate,
-      interaction_id: interactionId,
-    };
-  } catch (e) {
-    return null;
-  }
-};
-
-// --- HELPER: Retry con delay para fallback query ---
+// ✅ FIX: retryQuery movido a utils/ idealmente, pero extraído del componente
 const retryQuery = async (
   fn: () => Promise<any>,
   maxRetries: number = 2,
@@ -143,10 +42,126 @@ const retryQuery = async (
   return null;
 };
 
-// --- HOOK DE CONSULTA ---
+// ✅ FIX: funciones de procesamiento reciben t() para traducir strings
+// que van a la UI — planTitle y greeting son strings de fallback visibles
+const processFirestoreDoc = (
+  docSnap: DocumentSnapshot,
+  t: (key: string) => string,
+): Plan | null => {
+  try {
+    const data = docSnap.data();
+    if (!data) return null;
+
+    const interactionId = data.interaction_id ?? data.user_interactions;
+    const rawDate = data.fecha_creacion ?? data.createdAt;
+    let recipesArray: any[] = [];
+    // ✅ FIX: greeting fallback traducido
+    let greeting = data.saludo_personalizado ?? t("plan.defaultGreeting");
+
+    if (data.receta && Array.isArray(data.receta.recetas)) {
+      recipesArray = data.receta.recetas;
+      if (data.saludo_personalizado) greeting = data.saludo_personalizado;
+    } else if (Array.isArray(data.recetas)) {
+      recipesArray = data.recetas;
+    }
+
+    if (recipesArray.length === 0) return null;
+
+    const meals: Meal[] = recipesArray.map((rec: any, index: number) => ({
+      mealType: `Opción ${index + 1}`,
+      recipe: {
+        title: rec.titulo ?? rec.nombre ?? t("plan.defaultRecipeTitle"),
+        time: rec.tiempo_estimado ?? rec.tiempo_preparacion ?? "N/A",
+        difficulty: rec.dificultad ?? "N/A",
+        calories: rec.macros_por_porcion?.kcal ?? rec.kcal ?? "N/A",
+        savingsMatch: rec.coincidencia_despensa ?? "Ninguno",
+        ingredients: Array.isArray(rec.ingredientes) ? rec.ingredientes : [],
+        instructions: Array.isArray(rec.pasos_preparacion)
+          ? rec.pasos_preparacion
+          : Array.isArray(rec.instrucciones)
+            ? rec.instrucciones
+            : [],
+        protein_g: rec.macros_por_porcion?.proteinas_g,
+        carbs_g: rec.macros_por_porcion?.carbohidratos_g,
+        fat_g: rec.macros_por_porcion?.grasas_g,
+      },
+    }));
+
+    return {
+      // ✅ FIX: planTitle traducido
+      planTitle: t("plan.recipesPlanTitle"),
+      greeting,
+      meals,
+      _id: docSnap.id,
+      _createdAt: rawDate,
+      interaction_id: interactionId,
+    };
+  } catch (e) {
+    // ✅ FIX: loguear el error en vez de silenciarlo
+    logger.error("[PlanScreen] Error processing recipe doc:", e);
+    return null;
+  }
+};
+
+const processRecommendationDoc = (
+  docSnap: DocumentSnapshot,
+  t: (key: string) => string,
+): Plan | null => {
+  try {
+    const data = docSnap.data();
+    if (!data) return null;
+
+    const interactionId = data.interaction_id ?? data.user_interactions;
+    const rawDate = data.fecha_creacion ?? data.createdAt;
+
+    let items =
+      data.recomendaciones?.recomendaciones ?? data.recomendaciones ?? [];
+    // ✅ FIX: greeting fallback traducido
+    let greeting = data.saludo_personalizado ?? t("plan.defaultGreetingAway");
+
+    if (!Array.isArray(items) || items.length === 0) return null;
+
+    const meals: Meal[] = items.map((rec: any, index: number) => ({
+      mealType: `Sugerencia ${index + 1}`,
+      recipe: {
+        title: rec.nombre_restaurante ?? rec.nombre ?? t("plan.defaultRestaurantTitle"),
+        cuisine: rec.tipo_comida ?? rec.cuisine ?? rec.tipo ?? t("plan.defaultCuisine"),
+        time: "N/A",
+        difficulty: "Restaurante",
+        calories: "N/A",
+        savingsMatch: "Ninguno",
+        link_maps: rec.link_maps ?? null,
+        direccion_aproximada: rec.direccion_aproximada ?? null,
+        plato_sugerido: rec.plato_sugerido ?? null,
+        por_que_es_bueno: rec.por_que_es_bueno ?? null,
+        hack_saludable: rec.hack_saludable ?? null,
+        ingredients: [],
+        instructions: [],
+      },
+    }));
+
+    return {
+      // ✅ FIX: planTitle traducido
+      planTitle: t("plan.restaurantsPlanTitle"),
+      greeting,
+      meals,
+      _id: docSnap.id,
+      _createdAt: rawDate,
+      interaction_id: interactionId,
+    };
+  } catch (e) {
+    // ✅ FIX: loguear el error en vez de silenciarlo
+    logger.error("[PlanScreen] Error processing recommendation doc:", e);
+    return null;
+  }
+};
+
+// ✅ FIX: t() pasado como parámetro al hook para que las funciones
+// de procesamiento puedan traducir strings de fallback
 const usePlanQuery = (
   planId: string | undefined,
   userId: string | undefined,
+  t: (key: string) => string,
 ) => {
   return useQuery({
     queryKey: ["plan", planId, userId],
@@ -155,23 +170,22 @@ const usePlanQuery = (
         throw new Error("Faltan parámetros");
       }
 
-      // 1) Direct docId lookup (most reliable - docId == interactionId since API v2)
       const [recipesDoc, recsDoc] = await Promise.all([
         getDoc(doc(db, "historial_recetas", planId)),
         getDoc(doc(db, "historial_recomendaciones", planId)),
       ]);
 
       if (recipesDoc.exists()) {
-        const plan = processFirestoreDoc(recipesDoc);
+        const plan = processFirestoreDoc(recipesDoc, t);
         if (plan) return plan;
       }
 
       if (recsDoc.exists()) {
-        const plan = processRecommendationDoc(recsDoc);
+        const plan = processRecommendationDoc(recsDoc, t);
         if (plan) return plan;
       }
 
-      // 2) Fallback: Legacy query by interaction_id (for older docs)
+      // Fallback: legacy query por interaction_id
       const result = await retryQuery(async () => {
         const [recipesSnap, recsSnap] = await Promise.all([
           getDocs(
@@ -192,15 +206,13 @@ const usePlanQuery = (
           ),
         ]);
 
-        if (!recipesSnap.empty && recipesSnap.docs.length > 0) {
-          const docSnap = recipesSnap.docs[0];
-          const plan = processFirestoreDoc(docSnap);
+        if (!recipesSnap.empty) {
+          const plan = processFirestoreDoc(recipesSnap.docs[0], t);
           if (plan) return plan;
         }
 
-        if (!recsSnap.empty && recsSnap.docs.length > 0) {
-          const docSnap = recsSnap.docs[0];
-          const plan = processRecommendationDoc(docSnap);
+        if (!recsSnap.empty) {
+          const plan = processRecommendationDoc(recsSnap.docs[0], t);
           if (plan) return plan;
         }
 
@@ -209,7 +221,7 @@ const usePlanQuery = (
 
       if (result) return result;
 
-      throw new Error("No se encontró el plan");
+      throw new Error(t("plan.notFound"));
     },
     enabled: !!planId && !!userId,
     staleTime: 1000 * 60 * 5,
@@ -224,8 +236,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  // Memoize so the array reference is stable — without this, loadingMessages
-  // gets a new reference on every render, which restarts the interval below
   const loadingMessages = React.useMemo(
     () => [
       t("plan.loadingMessages.chefs"),
@@ -239,16 +249,19 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
   );
 
   const [currentLoadingMessage, setCurrentLoadingMessage] = useState(
-    () => loadingMessages[0] ?? "Cargando...",
+    () => loadingMessages[0] ?? t("common.loading"),
   );
+
   const user = auth.currentUser;
+
+  // ✅ FIX: t pasado al hook para traducir fallbacks en procesamiento
   const {
     data: selectedPlan,
     isLoading,
     isError,
     error,
     refetch,
-  } = usePlanQuery(planId, user?.uid);
+  } = usePlanQuery(planId, user?.uid, t);
 
   useEffect(() => {
     if (selectedPlan) {
@@ -273,22 +286,17 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
     if (!isLoading) return;
     const intervalId = setInterval(() => {
       setCurrentLoadingMessage((prev) => {
-        // 🟠 FIX #4: Validar indexOf antes de usar en array access
         const idx = loadingMessages.indexOf(prev);
         const nextIdx = idx >= 0 ? (idx + 1) % loadingMessages.length : 0;
-        return loadingMessages[nextIdx] || loadingMessages[0] || "Cargando...";
+        return loadingMessages[nextIdx] ?? loadingMessages[0] ?? t("common.loading");
       });
     }, 4000);
     return () => clearInterval(intervalId);
-  }, [isLoading, loadingMessages]); // loadingMessages is memoized — stable ref
+  }, [isLoading, loadingMessages, t]);
 
-  // NOTA: MealCard ya ejecuta toggleMutation internamente en handleSaveClick.
-  // Este handler solo registra el evento de analytics desde PlanScreen.
-  // NO debe hacer una segunda mutación para evitar doble guardado/borrado.
   const handleToggleSave = (meal: Meal) => {
     if (!user) return;
     const isRestaurant = meal.recipe.difficulty === "Restaurante";
-
     trackEvent("plan_item_saved", {
       item_title: meal.recipe.title,
       type: isRestaurant ? "restaurant" : "recipe",
@@ -303,7 +311,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
   if (isLoading) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-6">
-        <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin mb-4" />
         <h2 className="text-lg font-bold text-bocado-dark-green mb-2">
           {t("plan.preparingTable")}
         </h2>
@@ -339,7 +347,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
   }
 
   return (
-    // ✅ Estructura flex para contener todo incluido BottomTabBar
     <div className="flex flex-col h-full min-h-0">
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto px-4 py-4 no-scrollbar min-h-0">
@@ -357,7 +364,8 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
         <div className="space-y-3 max-w-2xl mx-auto">
           {selectedPlan.meals.map((meal: Meal, index: number) => (
             <MealCard
-              key={index}
+              // ✅ FIX: key más estable que index
+              key={`${meal.recipe.title}-${index}`}
               meal={meal}
               onInteraction={(type) => {
                 if (type === "save") handleToggleSave(meal);
@@ -366,12 +374,12 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
           ))}
         </div>
 
-        {/* Espacio al final para evitar que BottomTabBar tape contenido */}
-        <div className="h-32"></div>
+        {/* ✅ FIX: espacio inferior usando CSS var en vez de h-32 hardcodeado */}
+        <div style={{ height: "var(--bottom-nav-clearance, 8rem)" }} />
       </div>
 
-      {/* ✅ Botón fijo encima del BottomTabBar */}
-      <div className="fixed bottom-20 left-0 right-0 px-4 pb-4 pointer-events-none z-40">
+      {/* ✅ FIX: botón sticky en vez de fixed para evitar problemas de layout */}
+      <div className="sticky bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-bocado-background to-transparent pointer-events-none z-40">
         <div className="max-w-2xl mx-auto pointer-events-auto">
           <button
             onClick={handleStartNew}
@@ -382,13 +390,10 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
         </div>
       </div>
 
-      {/* ✅ BottomTabBar - fixed en la parte inferior */}
       <BottomTabBar
         activeTab="recommendation"
         onTabChange={(tab) => {
-          if (onNavigateTab) {
-            onNavigateTab(tab);
-          }
+          if (onNavigateTab) onNavigateTab(tab);
         }}
       />
     </div>

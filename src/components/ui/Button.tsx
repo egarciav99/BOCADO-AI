@@ -1,28 +1,16 @@
 import * as React from "react";
 import { Loader2 } from "lucide-react";
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  /** Variante visual del botón */
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
-  /** Tamaño del botón */
   size?: "sm" | "md" | "lg";
-  /** Mostrar estado de carga */
   isLoading?: boolean;
-  /** Icono opcional a la izquierda del texto */
   leftIcon?: React.ReactNode;
-  /** Icono opcional a la derecha del texto */
   rightIcon?: React.ReactNode;
-  /** Ancho completo */
   fullWidth?: boolean;
 }
 
-/**
- * Componente Button - Botón principal de la aplicación Bocado
- *
- * @example
- * <Button variant="primary" size="md">Click me</Button>
- * <Button variant="outline" isLoading>Loading...</Button>
- */
 export const Button: React.FC<ButtonProps> = ({
   children,
   variant = "primary",
@@ -35,8 +23,9 @@ export const Button: React.FC<ButtonProps> = ({
   className = "",
   ...props
 }) => {
+  // ✅ FIX: hover:scale removido — solo active:scale para mobile-first
   const baseStyles =
-    "inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 disabled:hover:scale-100 active:scale-[0.98] hover:scale-[1.02] min-w-0";
+    "inline-flex items-center justify-center font-bold rounded-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 active:scale-[0.98] min-w-0";
 
   const variants = {
     primary:
@@ -45,8 +34,10 @@ export const Button: React.FC<ButtonProps> = ({
       "bg-bocado-cream text-bocado-dark-gray hover:bg-bocado-border focus:ring-2 focus:ring-bocado-gray focus:ring-offset-2 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 dark:focus:ring-gray-500",
     outline:
       "border-2 border-bocado-green text-bocado-green hover:bg-bocado-green hover:text-white focus:ring-2 focus:ring-bocado-green focus:ring-offset-2 dark:border-bocado-green dark:text-bocado-green",
-    ghost: "text-bocado-dark-gray hover:bg-bocado-cream focus:ring-2 focus:ring-bocado-gray focus:ring-offset-2 dark:text-gray-200 dark:hover:bg-gray-700",
-    danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-red-700 dark:hover:bg-red-800",
+    ghost:
+      "text-bocado-dark-gray hover:bg-bocado-cream focus:ring-2 focus:ring-bocado-gray focus:ring-offset-2 dark:text-gray-200 dark:hover:bg-gray-700",
+    danger:
+      "bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:bg-red-700 dark:hover:bg-red-800",
   };
 
   const sizes = {
@@ -72,5 +63,8 @@ export const Button: React.FC<ButtonProps> = ({
     </button>
   );
 };
+
+// ✅ FIX: displayName para React DevTools
+Button.displayName = "Button";
 
 export default Button;

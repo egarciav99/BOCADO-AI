@@ -3,6 +3,7 @@
     "loading": "Loading Bocado...",
     "error": "Error",
     "retry": "Retry",
+    "tryAgain": "Try again",
     "cancel": "Cancel",
     "save": "Save",
     "close": "Close",
@@ -23,7 +24,8 @@
     "optional": "optional",
     "required": "required",
     "undo": "Undo",
-    "or": "OR"
+    "or": "OR",
+    "reload": "Reload page"
   },
   "home": {
     "title": "Bocado",
@@ -36,7 +38,8 @@
     "loginButton": "I have an account",
     "enterButton": "Enter Bocado",
     "logoutButton": "Logout",
-    "changeLanguage": "Change language"
+    "changeLanguage": "Change language",
+    "backToHome": "Back to home"
   },
   "profile": {
     "title": "My Profile",
@@ -99,7 +102,7 @@
       "sessionExpiredShort": "Session expired.",
       "wrongPassword": "Current password is incorrect.",
       "updateError": "Error updating.",
-      "wrongPasswordShort": "Incorrect password.",
+      "wrongPasswordShort": "Wrong password",
       "emailInUse": "Email already in use.",
       "sameEmail": "The email is the same as the current one.",
       "exportError": "Error exporting data. Please try again.",
@@ -111,14 +114,25 @@
       "specifyAllergy": "Specify your allergy",
       "selectActivityLevel": "Select your activity level",
       "selectActivityFrequency": "Select your activity frequency",
-      "describeActivityLevel": "Describe your activity level"
+      "describeActivityLevel": "Describe your activity level",
+      "requiresRecentLogin": "For security, please sign out and sign in again before deleting your account",
+      "popupClosed": "Reauthentication cancelled",
+      "deleteGeneric": "Error deleting account. Please contact support",
+      "credentialInUse": "This Google account is already in use by another user",
+      "providerAlreadyLinked": "Google is already linked to this account",
+      "linkCancelled": "Linking cancelled",
+      "linkGeneric": "Error linking Google. Please try again",
+      "noSuchProvider": "Google is not linked to this account",
+      "unlinkGeneric": "Error unlinking Google. Please try again"
     },
     "success": {
       "profileUpdated": "Profile updated!",
       "changesSaved": "Changes saved!",
       "passwordUpdated": "Password updated!",
       "emailUpdated": "Email updated! Please verify your email.",
-      "downloadComplete": "File downloaded!"
+      "downloadComplete": "File downloaded!",
+      "googleLinked": "Google account linked successfully",
+      "googleUnlinked": "Google unlinked successfully"
     },
     "dataIncludes": {
       "profile": "Your profile and all preferences",
@@ -163,16 +177,20 @@
       "unlinking": "Unlinking...",
       "linkGoogle": "Link Google",
       "linking": "Linking...",
-      "cannotUnlink": "You cannot unlink Google because it is your only login method."
+      "cannotUnlink": "You cannot unlink Google because it is your only login method.",
+      "confirmUnlink": "Confirm unlink"
     },
+    "exportSections": "Your file includes {{count}} data sections",
     "deleteDataDesc": "Permanently delete all your data and account."
   },
   "tabs": {
     "home": "Home",
     "pantry": "Pantry",
     "recipes": "Recipes",
-    "restaurants": "Restaurants",
-    "profile": "Profile"
+    "restaurants": "Places",
+    "profile": "Profile",
+    "navLabel": "Main navigation",
+    "primaryNav": "Primary navigation"
   },
   "registration": {
     "title": "Create account",
@@ -426,7 +444,7 @@
     "defaultUserName": "there"
   },
   "recommendation": {
-    "welcome": "Hello, {userName}! 👋",
+    "welcome": "Hello, {{userName}}! 👋",
     "subtitle": "Where and what do you want to eat today?",
     "homeButton": "At home",
     "outButton": "Eat out",
@@ -445,7 +463,7 @@
     "onlyMyIngredientsHelp": "✓ We'll use only what you have",
     "onlyMyIngredientsHelpOff": "If you don't enable this, we'll also recommend ingredients to buy",
     "whatCraving": "What are you craving?",
-    "budget": "Budget ({currency})",
+    "budget": "Budget ({{currency}})",
     "locationActive": "📍 Location active",
     "locationDenied": "Location denied",
     "gettingLocation": "Getting location...",
@@ -462,7 +480,13 @@
     "waitForLocation": "Wait for your location to be detected before continuing.",
     "connectionError": "Connection error. Try again.",
     "aiDisclaimer": "Bocado AI may make mistakes. Verify important information.",
-    "generateAria": "Generate recommendation"
+    "generateAria": "Generate recommendation",
+    "profileNotFound": "Your profile was not found",
+    "profileNotFoundDesc": "It seems there was a problem loading your profile. Try reloading the page or contact support.",
+    "defaultUserName": "Guest",
+    "locationTooltip": "Find nearest restaurants",
+    "waitSeconds": "Wait {{seconds}}s before generating another recommendation.",
+    "loadingPantry": "Loading pantry..."
   },
   "mealCard": {
     "actions": {
@@ -525,6 +549,14 @@
       "magic": "✨ Adding a touch of magic...",
       "final": "🎉 Almost ready!"
     },
+    "defaultGreeting": "Here's your plan",
+    "defaultGreetingAway": "Options away from home",
+    "defaultRecipeTitle": "Recipe",
+    "defaultRestaurantTitle": "Restaurant",
+    "defaultCuisine": "Cuisine",
+    "recipesPlanTitle": "Suggested Recipes",
+    "restaurantsPlanTitle": "Recommended Places",
+    "notFound": "Plan not found",
     "preparingTable": "Preparing your table... 🧑‍🍳",
     "errorTitle": "Something went wrong",
     "errorMessage": "Could not load the plan",
@@ -549,8 +581,8 @@
     "verifyEmailTitle": "Verify your email!",
     "sentTo": "Sent to",
     "alreadyVerified": "I already verified my email",
-    "resendVerification": "Resend verification",
-    "emailNotVerifiedYet": "You haven't verified your email yet",
+    "resendVerification": "Resend verification email",
+    "emailNotVerifiedYet": "You haven't verified your email yet. Check your inbox.",
     "previous": "Previous",
     "creating": "...",
     "createAccount": "Create account",
@@ -559,7 +591,14 @@
     "mustAcceptTerms": "You must accept the Terms and Conditions to continue.",
     "termsPrefix": "I accept the ",
     "termsLink": "Terms and Conditions",
-    "termsSuffix": "of BOCADO."
+    "termsSuffix": "of use of BOCADO.",
+    "googleSessionNotFound": "Google session not found. Please try again.",
+    "createAccountError": "Error creating account. Please try again.",
+    "checking": "Verifying...",
+    "verificationSessionExpired": "Session expired. Please sign in again.",
+    "verificationCheckError": "Verification error. Please try again.",
+    "verificationResent": "Verification email resent.",
+    "resendError": "Error resending. Please try again in a few minutes."
   },
   "step1": {
     "firstName": "First Name *",
@@ -661,8 +700,11 @@
     "footer": "Your information is safe and protected by encryption."
   },
   "tutorial": {
-    "welcome": "Welcome{userName}!",
+    "welcome": "Welcome{{userName}}!",
     "subtitle": "Your intelligent nutrition assistant. Here's what you need to know.",
+    "previous": "Previous",
+    "stepsNavigation": "Steps navigation",
+    "goToStep": "Go to step {{step}}",
     "slides": {
       "rateLimit": {
         "title": "⏱️ Rate Limiting",
@@ -690,7 +732,12 @@
     "saving": "Saving...",
     "confirm": "Confirm",
     "successTitle": "Thank you!",
-    "successMessage": "Bocado will learn from this for your next suggestions."
+    "successMessage": "Bocado will learn from this for your next suggestions.",
+    "starLabel": "Rate with {{count}} stars",
+    "errors": {
+      "ratingRequired": "Please select a rating",
+      "authRequired": "You must be logged in to send feedback"
+    }
   },
   "network": {
     "offline": "No internet connection",
@@ -698,12 +745,14 @@
   },
   "portions": {
     "title": "How many servings?",
-    "baseRecipe": "Base recipe: {baseServings}",
-    "moreOptions": "More options:"
+    "baseRecipe": "Base recipe: {{baseServings}}",
+    "moreOptions": "More options:",
+    "option": "{{count}} servings"
   },
   "pantry": {
     "title": "My Kitchen",
     "subtitle": "Ingredients control",
+    "loadError": "Could not load your pantry",
     "urgentBadge": "🚨",
     "urgentTitle": "Expiring soon",
     "saving": "Saving...",
@@ -1113,6 +1162,7 @@
     "invalidIngredient": "Enter a valid ingredient",
     "ingredientTooLong": "Maximum 50 characters",
     "willBeRemoved": "will be removed",
+    "removeIngredient": "Remove {{name}}",
     "userNotFound": "User not found",
     "connectionError": "Connection error, please try again",
     "rateLimited": "Too many requests, please try later",

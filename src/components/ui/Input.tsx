@@ -1,32 +1,16 @@
-import React, { forwardRef } from "react";
+import React, { forwardRef, useId } from "react";
 
-export interface InputProps extends Omit<
-  React.InputHTMLAttributes<HTMLInputElement>,
-  "size"
-> {
-  /** Etiqueta del campo */
+export interface InputProps
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "size"> {
   label?: string;
-  /** Texto de ayuda */
   helperText?: string;
-  /** Mensaje de error */
   error?: string;
-  /** Tamaño del input */
   size?: "sm" | "md" | "lg";
-  /** Icono a la izquierda */
   leftIcon?: React.ReactNode;
-  /** Icono a la derecha */
   rightIcon?: React.ReactNode;
-  /** Ancho completo */
   fullWidth?: boolean;
 }
 
-/**
- * Componente Input - Campo de entrada de texto
- *
- * @example
- * <Input label="Email" placeholder="ejemplo@correo.com" />
- * <Input label="Contraseña" type="password" error="Contraseña requerida" />
- */
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   (
     {
@@ -44,10 +28,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref,
   ) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
+    // ✅ FIX: useId() en vez de Math.random() — ID estable entre renders
+    const generatedId = useId();
+    const inputId = id || generatedId;
 
+    // ✅ FIX: focus:scale removido — evita saltos de layout en formularios
     const baseStyles =
-      "block w-full rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:border-bocado-green focus:scale-[1.01] disabled:bg-bocado-cream disabled:cursor-not-allowed min-w-0 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-400";
+      "block w-full rounded-lg border transition-all duration-200 focus:outline-none focus:ring-2 focus:border-bocado-green disabled:bg-bocado-cream disabled:cursor-not-allowed min-w-0 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100 dark:placeholder:text-gray-400";
 
     const sizes = {
       sm: "px-3 py-2 text-sm",
@@ -73,7 +60,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {label && (
           <label
             htmlFor={inputId}
-            className="block text-xs font-bold text-bocado-dark-gray mb-2.5"
+            className="block text-xs font-bold text-bocado-dark-gray dark:text-gray-300 mb-2.5"
           >
             {label}
           </label>
@@ -82,7 +69,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {leftIcon && (
             <div
               className={`absolute left-3 top-1/2 -translate-y-1/2 text-bocado-gray pointer-events-none
-            ${size === "sm" ? "text-sm" : size === "md" ? "text-base" : "text-lg"}`}
+                ${size === "sm" ? "text-sm" : size === "md" ? "text-base" : "text-lg"}`}
             >
               {leftIcon}
             </div>
@@ -101,7 +88,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           {rightIcon && (
             <div
               className={`absolute right-3 top-1/2 -translate-y-1/2 text-bocado-gray pointer-events-none
-            ${size === "sm" ? "text-sm" : size === "md" ? "text-base" : "text-lg"}`}
+                ${size === "sm" ? "text-sm" : size === "md" ? "text-base" : "text-lg"}`}
             >
               {rightIcon}
             </div>
@@ -110,7 +97,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         {(helperText || error) && (
           <p
             id={`${inputId}-help`}
-            className={`mt-2 text-sm ${hasError ? "text-red-600" : "text-bocado-dark-gray"}`}
+            className={`mt-2 text-sm ${hasError ? "text-red-600 dark:text-red-400" : "text-bocado-dark-gray dark:text-gray-400"}`}
           >
             {error || helperText}
           </p>
@@ -121,5 +108,4 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 );
 
 Input.displayName = "Input";
-
 export default Input;

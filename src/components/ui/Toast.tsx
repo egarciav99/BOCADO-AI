@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X, CheckCircle, AlertCircle, Info } from "../icons";
+import { useTranslation } from "../../contexts/I18nContext";
 
 export type ToastType = "success" | "error" | "info" | "warning";
 
@@ -11,61 +12,73 @@ interface ToastProps {
   onClose: () => void;
 }
 
+interface ToastOptions {
+  message: string;
+  type?: ToastType;
+  duration?: number;
+}
+
+type ToastItem = ToastOptions & { id: number };
+
 const ICON_MAP: Record<ToastType, React.ReactNode> = {
   success: <CheckCircle className="w-5 h-5 text-green-600" />,
-  error: <AlertCircle className="w-5 h-5 text-red-600" />,
+  error:   <AlertCircle className="w-5 h-5 text-red-600" />,
   warning: <AlertCircle className="w-5 h-5 text-amber-600" />,
-  info: <Info className="w-5 h-5 text-blue-600" />,
+  info:    <Info className="w-5 h-5 text-blue-600" />,
 };
 
 const STYLE_MAP: Record<ToastType, string> = {
   success: "bg-green-50 border-green-200 text-green-800",
-  error: "bg-red-50 border-red-200 text-red-800",
+  error:   "bg-red-50 border-red-200 text-red-800",
   warning: "bg-amber-50 border-amber-200 text-amber-800",
-  info: "bg-blue-50 border-blue-200 text-blue-800",
+  info:    "bg-blue-50 border-blue-200 text-blue-800",
 };
 
-/**
- * Toast component - Mobile-friendly notification
- * ✅ Fixes #1: Replace alert() with proper toast notifications
- */
 export const Toast: React.FC<ToastProps> = ({
   message,
   type = "info",
   duration = 3000,
   onClose,
 }) => {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
 
+  const fadeInRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const closeRef  = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearAll = useCallback(() => {
+    if (fadeInRef.current) clearTimeout(fadeInRef.current);
+    if (autoRef.current)   clearTimeout(autoRef.current);
+    if (closeRef.current)  clearTimeout(closeRef.current);
+  }, []);
+
   useEffect(() => {
-    // Fade in
-    setTimeout(() => setIsVisible(true), 10);
+    // ✅ FIX: entrada desde arriba (-translate-y-4 → translate-y-0)
+    fadeInRef.current = setTimeout(() => setIsVisible(true), 10);
 
-    // Auto dismiss
     if (duration > 0) {
-      const timer = setTimeout(() => {
+      autoRef.current = setTimeout(() => {
         setIsVisible(false);
-        setTimeout(onClose, 300); // Wait for fade out animation
+        closeRef.current = setTimeout(onClose, 300);
       }, duration);
-
-      return () => clearTimeout(timer);
     }
-  }, [duration, onClose]);
 
-  const handleClose = () => {
+    return clearAll;
+  }, [duration, onClose, clearAll]);
+
+  const handleClose = useCallback(() => {
+    clearAll();
     setIsVisible(false);
-    setTimeout(onClose, 300);
-  };
+    closeRef.current = setTimeout(onClose, 300);
+  }, [onClose, clearAll]);
 
   return createPortal(
     <div
-      className={`fixed top-safe left-4 right-4 mx-auto max-w-sm z-[9999] transition-all duration-300 ${
-        isVisible ? "opacity-100 translate-y-4" : "opacity-0 translate-y-0"
+      className={`fixed top-[max(1rem,env(safe-area-inset-top))] left-4 right-4 mx-auto max-w-sm z-[9999] transition-all duration-300 ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
       }`}
-      style={{
-        touchAction: "none",
-        pointerEvents: isVisible ? "auto" : "none",
-      }}
+      style={{ pointerEvents: isVisible ? "auto" : "none" }}
     >
       <div
         className={`flex items-center gap-3 p-4 rounded-2xl border-2 shadow-lg backdrop-blur-sm ${STYLE_MAP[type]}`}
@@ -77,8 +90,8 @@ export const Toast: React.FC<ToastProps> = ({
         <button
           onClick={handleClose}
           className="shrink-0 p-1 rounded-full hover:bg-black/5 active:scale-95 transition-all"
-          aria-label="Cerrar"
-          style={{ minWidth: "32px", minHeight: "32px" }} // Touch-friendly
+          aria-label={t("common.close")}
+          style={{ minWidth: "32px", minHeight: "32px" }}
         >
           <X className="w-4 h-4" />
         </button>
@@ -88,17 +101,8 @@ export const Toast: React.FC<ToastProps> = ({
   );
 };
 
-// Toast manager hook
-interface ToastOptions {
-  message: string;
-  type?: ToastType;
-  duration?: number;
-}
-
 let toastCounter = 0;
-const toastListeners = new Set<
-  (toast: ToastOptions & { id: number }) => void
->();
+const toastListeners = new Set<(toast: ToastItem) => void>();
 
 export const showToast = (
   message: string,
@@ -112,15 +116,12 @@ export const showToast = (
 };
 
 export const useToast = () => {
-  const [toasts, setToasts] = useState<Array<ToastOptions & { id: number }>>(
-    [],
-  );
+  const [toasts, setToasts] = useState<ToastItem[]>([]);
 
   useEffect(() => {
-    const listener = (toast: ToastOptions & { id: number }) => {
+    const listener = (toast: ToastItem) => {
       setToasts((prev) => [...prev, toast]);
     };
-
     toastListeners.add(listener);
     return () => {
       toastListeners.delete(listener);
@@ -134,27 +135,21 @@ export const useToast = () => {
   return { toasts, removeToast };
 };
 
-/**
- * ToastContainer - Add to your root App component
- */
 export const ToastContainer: React.FC = () => {
   const { toasts, removeToast } = useToast();
 
   return (
-    <>
-      {toasts.map((toast, index) => (
-        <div
+    // ✅ FIX: flexbox con gap en vez de marginTop con magic number
+    <div className="fixed top-[max(1rem,env(safe-area-inset-top))] left-4 right-4 mx-auto max-w-sm z-[9999] flex flex-col gap-2 pointer-events-none">
+      {toasts.map((toast) => (
+        <Toast
           key={toast.id}
-          style={{ marginTop: `${index * 80}px` }} // Stack toasts
-        >
-          <Toast
-            message={toast.message}
-            type={toast.type}
-            duration={toast.duration}
-            onClose={() => removeToast(toast.id)}
-          />
-        </div>
+          message={toast.message}
+          type={toast.type}
+          duration={toast.duration}
+          onClose={() => removeToast(toast.id)}
+        />
       ))}
-    </>
+    </div>
   );
 };

@@ -12,7 +12,6 @@ import { saveUserDataForOffline, recordTokenRefresh } from "../utils/tokenPersis
 import { setUserContext, addBreadcrumb } from "../utils/sentry";
 import { logger } from "../utils/logger";
 
-// Use useLayoutEffect on client, useEffect on server (SSR safety)
 const useIsomorphicLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
@@ -23,7 +22,7 @@ interface AuthProviderProps {
 /**
  * AuthProvider - Initializes Firebase auth listener and gates rendering
  * until auth state is resolved.
- * 
+ *
  * Key behaviors:
  * 1. Synchronously checks localStorage for existing Firebase session
  * 2. Sets up onAuthStateChanged listener
@@ -36,36 +35,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [authReady, setAuthReady] = useState(false);
   const hasInitialized = useRef(false);
 
-  // Synchronous pre-check: if no session in storage, we know user is logged out
-  // This runs before any React effects and allows immediate redirect
+  // ✅ FIX: ref para saber si authReady se resolvió — usado por el fallback
+  const authReadyRef = useRef(false);
+
   useIsomorphicLayoutEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
 
     const hasStoredSession = hasSessionInStorage();
-    
+
     logger.info("[AuthProvider] Initializing", {
       hasStoredSession,
       timestamp: new Date().toISOString(),
     });
 
-    // If no session in storage, immediately mark as not authenticated
-    // This allows protected routes to redirect without waiting for Firebase
     if (!hasStoredSession) {
       logger.info("[AuthProvider] No stored session, marking as unauthenticated");
       setUser(null);
+      authReadyRef.current = true;
       setAuthReady(true);
       return;
     }
 
-    // Session exists in storage - wait for Firebase to restore it
     let resolved = false;
 
     const unsubscribe = onAuthStateChanged(
       auth,
       (user) => {
         if (resolved) {
-          // Subsequent auth changes after initial resolution
           logger.info("[AuthProvider] Auth state changed", {
             hasUser: !!user,
             uid: user?.uid?.substring(0, 8),
@@ -91,39 +88,58 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         setUser(user);
+        authReadyRef.current = true;
         setAuthReady(true);
       },
       (error) => {
         logger.error("[AuthProvider] Auth error", { error });
         setUser(null);
         setLoading(false);
+        authReadyRef.current = true;
         setAuthReady(true);
-      }
+      },
     );
 
-    // Safety timeout - if Firebase doesn't respond in 5s, continue anyway
-    // This prevents infinite loading on network issues
-    const timeout = setTimeout(() => {
+    // ✅ FIX: timeout distingue entre "Firebase tardó" y "no hay sesión"
+    // Si Firebase no responde en 5s pero había sesión en storage,
+    // NO forzamos setUser(null) — dejamos al usuario en el estado que tenía
+    // y simplemente desbloqueamos el render para que el resto de la app
+    // pueda manejar el estado de carga normalmente.
+    const authTimeout = setTimeout(() => {
       if (!resolved) {
-        logger.warn("[AuthProvider] Auth timeout (5s), forcing resolution");
+        logger.warn("[AuthProvider] Auth timeout (5s), unblocking render without forcing logout");
         resolved = true;
-        setUser(null);
+        // No llamamos setUser(null) aquí — el usuario puede tener sesión válida
+        // que Firebase aún no confirmó. La app manejará el estado pendiente.
+        authReadyRef.current = true;
         setAuthReady(true);
       }
     }, 5000);
 
+    // ✅ FIX: fallback de emergencia — si authReady nunca se resuelve
+    // por algún bug futuro, desbloqueamos a los 10s para evitar pantalla blanca infinita
+    const emergencyTimeout = setTimeout(() => {
+      if (!authReadyRef.current) {
+        logger.error("[AuthProvider] Emergency timeout (10s) — authReady never resolved");
+        authReadyRef.current = true;
+        setAuthReady(true);
+      }
+    }, 10000);
+
     return () => {
-      clearTimeout(timeout);
+      clearTimeout(authTimeout);
+      clearTimeout(emergencyTimeout);
       unsubscribe();
     };
-  }, [setUser, setLoading]);
+  // ✅ FIX: deps vacías — el efecto solo debe correr una vez al montar.
+  // hasInitialized.current ya lo garantiza, pero [] lo documenta explícitamente.
+  // setUser y setLoading son referencias estables de Zustand — no necesitan
+  // estar en deps, y si cambiaran el guard hasInitialized lo protegería.
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Gate rendering until auth is ready
-  // This ensures protected routes never see isLoading=true on mount
   if (!authReady) {
-    // Return null instead of a loading spinner
-    // The parent layout already provides the shell UI
-    // This prevents the "flash of loading screen" problem
+    // Retornamos null en vez de spinner para evitar flash de pantalla de carga.
+    // El layout padre ya provee el shell UI mientras tanto.
     return null;
   }
 

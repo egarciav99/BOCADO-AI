@@ -1,27 +1,13 @@
 import React from "react";
 
 export interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
-  /** Variante visual de la tarjeta */
   variant?: "default" | "outlined" | "elevated";
-  /** Espaciado interno */
   padding?: "none" | "sm" | "md" | "lg";
-  /** Radio del borde */
   rounded?: "none" | "sm" | "md" | "lg" | "xl";
-  /** Habilitar hover effect */
   hover?: boolean;
-  /** Contenido de la tarjeta */
   children: React.ReactNode;
 }
 
-/**
- * Componente Card - Contenedor versátil para agrupar contenido
- *
- * @example
- * <Card variant="elevated" padding="lg">
- *   <h3>Título</h3>
- *   <p>Contenido de la tarjeta</p>
- * </Card>
- */
 export const Card: React.FC<CardProps> = ({
   children,
   variant = "default",
@@ -31,31 +17,33 @@ export const Card: React.FC<CardProps> = ({
   className = "",
   ...props
 }) => {
-  const baseStyles = "bg-white transition-all duration-200";
+  // ✅ FIX: dark mode en bg, hover sin translate (mobile-first)
+  const baseStyles = "bg-white dark:bg-gray-800 transition-all duration-200";
 
   const variants = {
-    default: "border border-bocado-border",
+    default:  "border border-bocado-border dark:border-gray-700",
     outlined: "border-2 border-bocado-green",
-    elevated: "shadow-bocado border border-transparent",
+    elevated: "shadow-bocado border border-transparent dark:border-gray-700",
   };
 
   const paddings = {
     none: "",
-    sm: "p-3",
-    md: "p-4",
-    lg: "p-6",
+    sm:   "p-3",
+    md:   "p-4",
+    lg:   "p-6",
   };
 
   const roundedStyles = {
     none: "",
-    sm: "rounded-lg",
-    md: "rounded-xl",
-    lg: "rounded-2xl",
-    xl: "rounded-3xl",
+    sm:   "rounded-lg",
+    md:   "rounded-xl",
+    lg:   "rounded-2xl",
+    xl:   "rounded-3xl",
   };
 
+  // ✅ FIX: solo sombra en hover, sin translate — funciona bien en móvil y desktop
   const hoverStyles = hover
-    ? "cursor-pointer hover:shadow-bocado-lg hover:-translate-y-1"
+    ? "cursor-pointer hover:shadow-bocado-lg"
     : "";
 
   return (
@@ -68,7 +56,8 @@ export const Card: React.FC<CardProps> = ({
   );
 };
 
-// Subcomponentes para estructurar el contenido de la tarjeta
+// ✅ FIX: displayName en todos los subcomponentes
+Card.displayName = "Card";
 
 export interface CardHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -83,8 +72,10 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
     {children}
   </div>
 );
+CardHeader.displayName = "CardHeader";
 
-export interface CardTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {
+export interface CardTitleProps
+  extends React.HTMLAttributes<HTMLHeadingElement> {
   children: React.ReactNode;
 }
 
@@ -93,12 +84,17 @@ export const CardTitle: React.FC<CardTitleProps> = ({
   className = "",
   ...props
 }) => (
-  <h3 className={`text-lg font-bold text-bocado-text ${className}`} {...props}>
+  <h3
+    className={`text-lg font-bold text-bocado-text dark:text-gray-100 ${className}`}
+    {...props}
+  >
     {children}
   </h3>
 );
+CardTitle.displayName = "CardTitle";
 
-export interface CardDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {
+export interface CardDescriptionProps
+  extends React.HTMLAttributes<HTMLParagraphElement> {
   children: React.ReactNode;
 }
 
@@ -107,12 +103,17 @@ export const CardDescription: React.FC<CardDescriptionProps> = ({
   className = "",
   ...props
 }) => (
-  <p className={`text-sm text-bocado-dark-gray mt-1 ${className}`} {...props}>
+  <p
+    className={`text-sm text-bocado-dark-gray dark:text-gray-400 mt-1 ${className}`}
+    {...props}
+  >
     {children}
   </p>
 );
+CardDescription.displayName = "CardDescription";
 
-export interface CardContentProps extends React.HTMLAttributes<HTMLDivElement> {
+export interface CardContentProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
 }
 
@@ -125,6 +126,7 @@ export const CardContent: React.FC<CardContentProps> = ({
     {children}
   </div>
 );
+CardContent.displayName = "CardContent";
 
 export interface CardFooterProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
@@ -136,11 +138,12 @@ export const CardFooter: React.FC<CardFooterProps> = ({
   ...props
 }) => (
   <div
-    className={`mt-4 pt-4 border-t border-bocado-border flex items-center gap-3 ${className}`}
+    className={`mt-4 pt-4 border-t border-bocado-border dark:border-gray-700 flex items-center gap-3 ${className}`}
     {...props}
   >
     {children}
   </div>
 );
+CardFooter.displayName = "CardFooter";
 
 export default Card;

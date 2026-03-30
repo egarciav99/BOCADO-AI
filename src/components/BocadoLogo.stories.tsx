@@ -8,14 +8,14 @@ const meta: Meta<typeof BocadoLogo> = {
   argTypes: {
     className: {
       control: "text",
-      description: "Clases CSS adicionales para personalizar el tamaño",
+      description: "Additional CSS classes to customize the size",
     },
   },
   parameters: {
     docs: {
       description: {
         component:
-          "Componente que muestra el logo oficial de Bocado AI. Utiliza una imagen cargada desde URL externa.",
+          "Official Bocado AI logo component. Renders an image loaded from an external URL.",
       },
     },
   },
@@ -24,9 +24,17 @@ const meta: Meta<typeof BocadoLogo> = {
 export default meta;
 type Story = StoryObj<typeof BocadoLogo>;
 
+// ✅ FIX: Default usa w-40 — tamaño más usado en la app (HomeScreen, LoginScreen)
 export const Default: Story = {
   args: {
-    className: "w-32",
+    className: "w-40",
+  },
+  parameters: {
+    docs: {
+      description: {
+        story: "Default size as used in most screens (w-40).",
+      },
+    },
   },
 };
 
@@ -37,7 +45,7 @@ export const Small: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Logo en tamaño pequeño, útil para headers compactos.",
+        story: "Small logo, useful for compact headers.",
       },
     },
   },
@@ -50,8 +58,7 @@ export const Medium: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Logo en tamaño medio, tamaño recomendado para la mayoría de usos.",
+        story: "Medium logo, recommended for most use cases.",
       },
     },
   },
@@ -64,8 +71,7 @@ export const Large: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Logo en tamaño grande, ideal para pantallas de bienvenida o login.",
+        story: "Large logo, ideal for welcome or login screens.",
       },
     },
   },
@@ -78,7 +84,7 @@ export const ExtraLarge: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Logo en tamaño extra grande para pantallas splash.",
+        story: "Extra large logo for splash screens.",
       },
     },
   },
@@ -87,30 +93,24 @@ export const ExtraLarge: Story = {
 export const AllSizes: Story = {
   render: () => (
     <div className="flex flex-col items-start gap-6">
-      <div className="flex items-center gap-4">
-        <BocadoLogo className="w-16" />
-        <span className="text-sm text-bocado-dark-gray">Small (w-16)</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <BocadoLogo className="w-32" />
-        <span className="text-sm text-bocado-dark-gray">Medium (w-32)</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <BocadoLogo className="w-48" />
-        <span className="text-sm text-bocado-dark-gray">Large (w-48)</span>
-      </div>
-      <div className="flex items-center gap-4">
-        <BocadoLogo className="w-64" />
-        <span className="text-sm text-bocado-dark-gray">
-          Extra Large (w-64)
-        </span>
-      </div>
+      {[
+        { className: "w-16",  label: "Small (w-16)"       },
+        { className: "w-32",  label: "Medium (w-32)"      },
+        { className: "w-40",  label: "Default (w-40)"     },
+        { className: "w-48",  label: "Large (w-48)"       },
+        { className: "w-64",  label: "Extra Large (w-64)" },
+      ].map(({ className, label }) => (
+        <div key={className} className="flex items-center gap-4">
+          <BocadoLogo className={className} />
+          <span className="text-sm text-bocado-dark-gray">{label}</span>
+        </div>
+      ))}
     </div>
   ),
   parameters: {
     docs: {
       description: {
-        story: "Todos los tamaños disponibles del logo de Bocado.",
+        story: "All available logo sizes side by side.",
       },
     },
   },

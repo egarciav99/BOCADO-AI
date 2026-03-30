@@ -9,6 +9,7 @@ import {
 import { db, trackEvent } from "../firebaseConfig";
 import { logger } from "../utils/logger";
 import { Bell } from "./icons";
+import { useTranslation } from "../contexts/I18nContext";
 
 interface NotificationTokensAdminProps {
   userUid: string;
@@ -33,16 +34,6 @@ interface SettingsRecord {
   reminders?: Array<{ id: string; enabled?: boolean }>;
 }
 
-const formatTimestamp = (value: any): string => {
-  if (!value) return "-";
-  try {
-    const date = value.toDate ? value.toDate() : new Date(value);
-    return date.toLocaleString("es");
-  } catch {
-    return "-";
-  }
-};
-
 const maskToken = (token: string): string => {
   if (token.length <= 16) return token;
   return `${token.slice(0, 8)}...${token.slice(-6)}`;
@@ -52,10 +43,28 @@ const NotificationTokensAdmin: React.FC<NotificationTokensAdminProps> = ({
   userUid,
   onBack,
 }) => {
+  // ✅ FIX: locale del contexto para formatear fechas
+  const { locale } = useTranslation();
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<SettingsRecord | null>(null);
   const [tokens, setTokens] = useState<TokenRecord[]>([]);
+  // ✅ FIX: feedback visual para copy
+  const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
+  // ✅ FIX: confirmación para delete
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  // ✅ FIX: formatTimestamp usa locale del contexto
+  const formatTimestamp = useCallback((value: any): string => {
+    if (!value) return "-";
+    try {
+      const date = value.toDate ? value.toDate() : new Date(value);
+      return date.toLocaleString(locale);
+    } catch {
+      return "-";
+    }
+  }, [locale]);
 
   const loadData = useCallback(async () => {
     if (!userUid) return;
@@ -89,17 +98,13 @@ const NotificationTokensAdmin: React.FC<NotificationTokensAdminProps> = ({
       });
 
       tokenItems.sort((a, b) => {
-        const aTime =
-          a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
-        const bTime =
-          b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
+        const aTime = a.updatedAt?.toMillis?.() || a.createdAt?.toMillis?.() || 0;
+        const bTime = b.updatedAt?.toMillis?.() || b.createdAt?.toMillis?.() || 0;
         return bTime - aTime;
       });
 
       setTokens(tokenItems);
-      trackEvent("notification_tokens_admin_loaded", {
-        count: tokenItems.length,
-      });
+      trackEvent("notification_tokens_admin_loaded", { count: tokenItems.length });
     } catch (err) {
       logger.error("Error cargando tokens de notificaciones:", err);
       setError("No se pudieron cargar los tokens.");
@@ -116,12 +121,19 @@ const NotificationTokensAdmin: React.FC<NotificationTokensAdminProps> = ({
     return settings?.reminders?.filter((r) => r.enabled).length || 0;
   }, [settings]);
 
+  // ✅ FIX: confirmación antes de eliminar
   const handleDeleteToken = async (tokenId: string) => {
+    if (confirmDeleteId !== tokenId) {
+      setConfirmDeleteId(tokenId);
+      return;
+    }
+
     try {
       await deleteDoc(
         doc(db, "notification_settings", userUid, "tokens", tokenId),
       );
       setTokens((prev) => prev.filter((t) => t.id !== tokenId));
+      setConfirmDeleteId(null);
       trackEvent("notification_token_deleted");
     } catch (err) {
       logger.error("Error eliminando token:", err);
@@ -129,9 +141,12 @@ const NotificationTokensAdmin: React.FC<NotificationTokensAdminProps> = ({
     }
   };
 
-  const handleCopyToken = async (tokenValue: string) => {
+  // ✅ FIX: feedback visual al copiar
+  const handleCopyToken = async (tokenId: string, tokenValue: string) => {
     try {
       await navigator.clipboard.writeText(tokenValue);
+      setCopiedTokenId(tokenId);
+      setTimeout(() => setCopiedTokenId(null), 2000);
       trackEvent("notification_token_copied");
     } catch {
       setError("No se pudo copiar el token.");
@@ -231,19 +246,43 @@ const NotificationTokensAdmin: React.FC<NotificationTokensAdminProps> = ({
                   </p>
                 </div>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 items-end">
+                {/* ✅ FIX: feedback visual al copiar */}
                 <button
-                  onClick={() => handleCopyToken(token.token)}
-                  className="text-xs font-semibold text-bocado-green hover:text-bocado-dark-green transition-colors duration-200"
+                  onClick={() => handleCopyToken(token.id, token.token)}
+                  className={`text-xs font-semibold transition-colors duration-200 ${
+                    copiedTokenId === token.id
+                      ? "text-bocado-green"
+                      : "text-bocado-gray hover:text-bocado-dark-green"
+                  }`}
                 >
-                  Copiar
+                  {copiedTokenId === token.id ? "✓ Copiado" : "Copiar"}
                 </button>
-                <button
-                  onClick={() => handleDeleteToken(token.id)}
-                  className="text-xs font-semibold text-red-600 hover:text-red-700 transition-colors duration-200"
-                >
-                  Eliminar
-                </button>
+
+                {/* ✅ FIX: confirmación de dos pasos antes de eliminar */}
+                {confirmDeleteId === token.id ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="text-xs font-semibold text-bocado-gray hover:text-bocado-dark-gray transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => handleDeleteToken(token.id)}
+                      className="text-xs font-semibold text-red-600 hover:text-red-700 transition-colors"
+                    >
+                      Confirmar
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleDeleteToken(token.id)}
+                    className="text-xs font-semibold text-red-400 hover:text-red-600 transition-colors duration-200"
+                  >
+                    Eliminar
+                  </button>
+                )}
               </div>
             </div>
           </div>

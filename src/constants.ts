@@ -4,6 +4,13 @@
 // Ver: docs/i18n-architecture.md
 
 export const EATING_HABITS = ["En casa", "Fuera"];
+
+// Mapeo de hábitos de alimentación a emojis
+export const EATING_HABIT_ICONS: Record<string, string> = {
+  "En casa": "🏡",
+  "Fuera": "🍽️",
+};
+
 export const CRAVINGS = [
   "🍕 Italiana / Pizza",
   "🍣 Japonesa / Sushi",

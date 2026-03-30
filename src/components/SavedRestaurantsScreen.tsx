@@ -17,7 +17,6 @@ const SavedRestaurantsScreen: React.FC = () => {
 
   const { user } = useAuthStore();
 
-  // ✅ TANSTACK QUERY + PAGINACIÓN
   const savedItems = useSavedItems(user?.uid, "restaurant");
   const restaurants = savedItems.data || [];
   const isLoading = savedItems.isLoading;
@@ -28,28 +27,21 @@ const SavedRestaurantsScreen: React.FC = () => {
 
   const toggleMutation = useToggleSavedItem();
 
-  // Fire screen_viewed once on mount only.
-  // restaurants.length was previously in deps, causing this to re-fire
-  // on every pagination load or polling refetch.
   useEffect(() => {
     if (user) {
-      trackEvent("saved_restaurants_screen_viewed", {
-        userId: user.uid,
-      });
+      trackEvent("saved_restaurants_screen_viewed", { userId: user.uid });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // mount-only
+  }, []);
 
-  // Mapear a Meal[] (preserva todos los campos incluyendo link_maps)
   const savedRestaurants: Meal[] = restaurants
     .filter((saved: any) => saved?.recipe?.title)
     .map((saved: any) => ({
       mealType: saved.mealType,
-      recipe: saved.recipe, // Ahora incluye link_maps, direccion_aproximada, etc.
+      recipe: saved.recipe,
     }));
 
   const handleDeleteRequest = (meal: Meal) => {
-    // ✅ ANALÍTICA: Intención de eliminar
     trackEvent("saved_restaurant_delete_initiated", {
       restaurant: meal.recipe.title,
     });
@@ -59,11 +51,6 @@ const SavedRestaurantsScreen: React.FC = () => {
   const confirmDelete = () => {
     if (!mealToConfirmDelete || !user) return;
 
-    const isSaved = restaurants.some(
-      (r: any) => r.recipe.title === mealToConfirmDelete.recipe.title,
-    );
-
-    // ✅ ANALÍTICA: Confirmación de eliminación
     trackEvent("saved_restaurant_deleted", {
       restaurant: mealToConfirmDelete.recipe.title,
     });
@@ -77,18 +64,6 @@ const SavedRestaurantsScreen: React.FC = () => {
     });
 
     setMealToConfirmDelete(null);
-  };
-
-  // ✅ Manejar expansión para analytics
-  const handleInteraction = (type: string, data?: any) => {
-    if (type === "expand" && data?.recipe) {
-      trackEvent("saved_restaurant_expanded", {
-        restaurant: data.recipe,
-      });
-    }
-    if (type === "save") {
-      handleDeleteRequest(data);
-    }
   };
 
   if (isLoading) {
@@ -123,13 +98,25 @@ const SavedRestaurantsScreen: React.FC = () => {
           <div className="space-y-3">
             {savedRestaurants.map((meal, index) => (
               <MealCard
-                key={meal.recipe.title + index}
+                // Using title+index as key — saved items don't expose a stable ID.
+                // TODO: expose saved item ID from useSavedItems hook for stable keys.
+                key={`${meal.recipe.title}-${index}`}
                 meal={meal}
-                onInteraction={handleInteraction}
+                onInteraction={(type, data) => {
+                  if (type === "expand" && data?.recipe) {
+                    trackEvent("saved_restaurant_expanded", {
+                      restaurant: data.recipe,
+                    });
+                  }
+                  // ✅ FIX: pasar meal directamente en vez de data
+                  // data en "save" es { recipe, isSaved, isRestaurant }, no un Meal
+                  if (type === "save") {
+                    handleDeleteRequest(meal);
+                  }
+                }}
               />
             ))}
 
-            {/* Botón Cargar Más */}
             {hasNextPage && (
               <div className="pt-4 pb-2">
                 <button
@@ -139,7 +126,7 @@ const SavedRestaurantsScreen: React.FC = () => {
                 >
                   {isFetchingNextPage ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin" />
                       <span className="text-sm">{t("saved.loading")}</span>
                     </>
                   ) : (
@@ -149,7 +136,6 @@ const SavedRestaurantsScreen: React.FC = () => {
               </div>
             )}
 
-            {/* Mensaje de fin */}
             {!hasNextPage && savedRestaurants.length > 0 && (
               <p className="text-center text-xs text-bocado-gray/60 py-4">
                 {t("saved.noMore")}
@@ -159,7 +145,6 @@ const SavedRestaurantsScreen: React.FC = () => {
         )}
       </div>
 
-      {/* Modal de confirmación */}
       {mealToConfirmDelete &&
         createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4 animate-fade-in">
@@ -173,7 +158,6 @@ const SavedRestaurantsScreen: React.FC = () => {
               <p className="text-sm text-bocado-gray mb-2">
                 "{mealToConfirmDelete.recipe.title}"
               </p>
-              {/* ✅ Mostrar dirección si existe para confirmar cuál es */}
               {mealToConfirmDelete.recipe.direccion_aproximada && (
                 <p className="text-xs text-bocado-gray/60 mb-6">
                   📍 {mealToConfirmDelete.recipe.direccion_aproximada}
@@ -182,16 +166,24 @@ const SavedRestaurantsScreen: React.FC = () => {
               <div className="flex gap-3">
                 <button
                   onClick={() => setMealToConfirmDelete(null)}
-                  className="flex-1 bg-bocado-background text-bocado-dark-gray font-bold py-3 rounded-full text-sm"
+                  className="flex-1 bg-bocado-background text-bocado-dark-gray font-bold py-3 rounded-full text-sm hover:bg-bocado-border transition-colors active:scale-95"
                 >
                   {t("saved.cancel")}
                 </button>
+                {/* ✅ FIX: spinner en vez de "..." durante el delete */}
                 <button
                   onClick={confirmDelete}
                   disabled={toggleMutation.isPending}
-                  className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm disabled:opacity-50"
+                  className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm hover:bg-red-600 active:scale-95 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {toggleMutation.isPending ? "..." : t("saved.delete")}
+                  {toggleMutation.isPending ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {t("common.loading")}
+                    </>
+                  ) : (
+                    t("saved.delete")
+                  )}
                 </button>
               </div>
             </div>

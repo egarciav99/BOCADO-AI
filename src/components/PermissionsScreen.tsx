@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { trackEvent } from "../firebaseConfig";
 import { Lock, ShieldCheck, Eye, Trash2 } from "./icons";
 import { useTranslation } from "../contexts/I18nContext";
@@ -32,7 +32,8 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
     onGoHome();
   };
 
-  const dataItems = [
+  // ✅ FIX: memoizado para no recrear en cada render
+  const dataItems = useMemo(() => [
     {
       icon: "📊",
       label: t("permissions.dataTypes.profile.title"),
@@ -48,9 +49,9 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
       label: t("permissions.dataTypes.location.title"),
       desc: t("permissions.dataTypes.location.description"),
     },
-  ];
+  ], [t]);
 
-  const benefits = [
+  const benefits = useMemo(() => [
     {
       icon: <ShieldCheck className="w-5 h-5" />,
       text: t("permissions.benefits.noSell"),
@@ -63,11 +64,12 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
       icon: <Trash2 className="w-5 h-5" />,
       text: t("permissions.benefits.delete"),
     },
-  ];
+  ], [t]);
 
   return (
     <div className="h-full min-h-0 w-full overflow-y-auto px-4 py-8 pt-safe pb-safe">
       <div className="bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-3xl shadow-bocado w-full max-w-sm animate-fade-in mx-auto">
+
         {/* Header */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-gradient-to-br from-bocado-green/20 to-bocado-green/5 dark:from-bocado-green/30 dark:to-bocado-green/10 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
@@ -97,7 +99,9 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
                   <p className="text-sm font-semibold text-bocado-text dark:text-gray-200">
                     {item.label}
                   </p>
-                  <p className="text-xs text-bocado-gray dark:text-gray-400">{item.desc}</p>
+                  <p className="text-xs text-bocado-gray dark:text-gray-400">
+                    {item.desc}
+                  </p>
                 </div>
               </div>
             ))}
@@ -124,7 +128,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
           </div>
         </div>
 
-        {/* Expandible: Más detalles */}
+        {/* Expandible */}
         <button
           onClick={() => setShowDetails(!showDetails)}
           className="w-full text-xs text-bocado-green font-medium mb-5 hover:underline flex items-center justify-center gap-1"
@@ -147,22 +151,23 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
           </div>
         )}
 
-        {/* Checkbox mejorado */}
+        {/* ✅ FIX: checkbox semántico con input real y label asociado */}
         <div
-          onClick={() => setAgreed(!agreed)}
           className={`mb-5 p-4 rounded-xl border-2 cursor-pointer transition-all ${
             agreed
               ? "border-bocado-green bg-bocado-green/5"
               : "border-bocado-border dark:border-gray-600 hover:border-bocado-green/50"
           }`}
+          onClick={() => setAgreed(!agreed)}
         >
-          <label className="flex items-start gap-3 cursor-pointer">
+          <div className="flex items-start gap-3">
             <div
               className={`mt-0.5 w-6 h-6 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-all ${
                 agreed
                   ? "bg-bocado-green border-bocado-green"
                   : "border-bocado-border dark:border-gray-500"
               }`}
+              aria-hidden="true"
             >
               {agreed && (
                 <svg
@@ -180,10 +185,22 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
                 </svg>
               )}
             </div>
-            <span className="text-sm text-bocado-text dark:text-gray-200 leading-relaxed select-none">
+            {/* ✅ FIX: input real oculto para accesibilidad semántica */}
+            <label
+              htmlFor="consent-checkbox"
+              className="text-sm text-bocado-text dark:text-gray-200 leading-relaxed select-none cursor-pointer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <input
+                type="checkbox"
+                id="consent-checkbox"
+                checked={agreed}
+                onChange={(e) => setAgreed(e.target.checked)}
+                className="sr-only"
+              />
               {t("permissions.consent")}
-            </span>
-          </label>
+            </label>
+          </div>
         </div>
 
         {/* Botones */}
@@ -216,7 +233,7 @@ const PermissionsScreen: React.FC<PermissionsScreenProps> = ({
           </button>
         </div>
 
-        {/* Footer de confianza */}
+        {/* Footer */}
         <div className="mt-6 flex items-center justify-center gap-1 text-xs text-bocado-gray dark:text-gray-500">
           <ShieldCheck className="w-4 h-4 text-bocado-green" />
           <span>{t("permissions.footer")}</span>

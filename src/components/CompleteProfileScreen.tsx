@@ -40,19 +40,22 @@ const CompleteProfileScreen: React.FC<CompleteProfileScreenProps> = ({
   const missingFields = getMissingProfileFields(profile);
 
   // Icon mapping for missing fields
-  const fieldIcons: Record<string, React.ReactNode> = {
-    firstName: <User className="w-3.5 h-3.5" />,
-    lastName: <User className="w-3.5 h-3.5" />,
-    age: <Calendar className="w-3.5 h-3.5" />,
-    gender: <User className="w-3.5 h-3.5" />,
-    country: <MapPin className="w-3.5 h-3.5" />,
-    city: <MapPin className="w-3.5 h-3.5" />,
-    weight: <Scale className="w-3.5 h-3.5" />,
-    height: <Ruler className="w-3.5 h-3.5" />,
-    activityLevel: <Activity className="w-3.5 h-3.5" />,
+const fieldIcons: Record<string, React.ReactNode> = React.useMemo(
+  () => ({
+    firstName:       <User className="w-3.5 h-3.5" />,
+    lastName:        <User className="w-3.5 h-3.5" />,
+    age:             <Calendar className="w-3.5 h-3.5" />,
+    gender:          <User className="w-3.5 h-3.5" />,
+    country:         <MapPin className="w-3.5 h-3.5" />,
+    city:            <MapPin className="w-3.5 h-3.5" />,
+    weight:          <Scale className="w-3.5 h-3.5" />,
+    height:          <Ruler className="w-3.5 h-3.5" />,
+    activityLevel:   <Activity className="w-3.5 h-3.5" />,
     nutritionalGoal: <Target className="w-3.5 h-3.5" />,
-    eatingHabit: <Target className="w-3.5 h-3.5" />,
-  };
+    eatingHabit:     <Target className="w-3.5 h-3.5" />,
+  }),
+  [],
+);
 
   const handleCompleteProfile = () => {
     trackEvent("complete_profile_clicked", {

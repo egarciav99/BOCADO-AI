@@ -16,7 +16,6 @@ const SavedRecipesScreen: React.FC = () => {
 
   const { user } = useAuthStore();
 
-  // ✅ TANSTACK QUERY + PAGINACIÓN
   const savedItems = useSavedItems(user?.uid, "recipe");
   const recipes = savedItems.data || [];
   const isLoading = savedItems.isLoading;
@@ -96,7 +95,9 @@ const SavedRecipesScreen: React.FC = () => {
           <div className="space-y-3">
             {savedMeals.map((meal, index) => (
               <MealCard
-                key={meal.recipe.title + index}
+                // Using title+index as key — saved items don't expose a stable ID.
+                // TODO: expose saved item ID from useSavedItems hook for stable keys.
+                key={`${meal.recipe.title}-${index}`}
                 meal={meal}
                 onInteraction={(type) => {
                   if (type === "save") handleDeleteRequest(meal);
@@ -114,7 +115,7 @@ const SavedRecipesScreen: React.FC = () => {
                 >
                   {isFetchingNextPage ? (
                     <>
-                      <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-bocado-green border-t-transparent rounded-full animate-spin" />
                       <span className="text-sm">
                         {t("savedRecipes.loading")}
                       </span>
@@ -161,12 +162,20 @@ const SavedRecipesScreen: React.FC = () => {
                 >
                   {t("savedRecipes.cancel")}
                 </button>
+                {/* ✅ FIX: spinner en vez de "..." durante el delete */}
                 <button
                   onClick={confirmDelete}
                   disabled={toggleMutation.isPending}
-                  className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm hover:bg-red-600 active:scale-95 transition-colors disabled:opacity-50"
+                  className="flex-1 bg-red-500 text-white font-bold py-3 rounded-full text-sm hover:bg-red-600 active:scale-95 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {toggleMutation.isPending ? "..." : t("savedRecipes.delete")}
+                  {toggleMutation.isPending ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      {t("common.loading")}
+                    </>
+                  ) : (
+                    t("savedRecipes.delete")
+                  )}
                 </button>
               </div>
             </div>

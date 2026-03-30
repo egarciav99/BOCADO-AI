@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { FormData, UserProfile } from "../types";
 import {
   User,
@@ -167,6 +167,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     useState(false);
 
   const { user } = useAuthStore();
+  const updateDisplayName = useAuthStore((state) => state.updateDisplayName);
   const { data: profile, isLoading: isProfileLoading } =
     useUserProfile(userUid);
   const updateProfileMutation = useUpdateUserProfile();
@@ -194,12 +195,23 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   // Estados para account linking
   const [isLinkingGoogle, setIsLinkingGoogle] = useState(false);
   const [isUnlinkingGoogle, setIsUnlinkingGoogle] = useState(false);
+  const [confirmUnlinkGoogle, setConfirmUnlinkGoogle] = useState(false);
 
   const [cityOptions, setCityOptions] = useState<PlacePrediction[]>([]);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>("");
   const [error, setError] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Ref for timeout cleanup
+  const successTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+    };
+  }, []);
 
   // ✅ ANALÍTICA: Trackeo de entrada a la pantalla
   useEffect(() => {
@@ -266,7 +278,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const handleSaveProfile = async () => {
     const currentUser = auth.currentUser;
     if (!currentUser || !userUid) {
-      setError("No se pudo verificar la sesión.");
+      setError(t("profile.errors.sessionExpired"));
       return;
     }
 
@@ -279,9 +291,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       const newDisplayName = `${authData.firstName} ${authData.lastName}`;
       if (currentUser.displayName !== newDisplayName) {
         await updateProfile(currentUser, { displayName: newDisplayName });
-        useAuthStore
-          .getState()
-          .setUser({ ...currentUser, displayName: newDisplayName });
+        updateDisplayName(newDisplayName);
       }
 
       // Obtener coordenadas de la ciudad si hay placeId seleccionado
@@ -355,7 +365,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       setSuccessMessage(t("profile.success.profileUpdated"));
       onProfileUpdate(newDisplayName.trim());
 
-      setTimeout(() => setSuccessMessage(""), 3000);
+      if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+      successTimeoutRef.current = setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
       safeLog("error", "Error updating profile:", err);
       // ✅ ANALÍTICA: Error en actualización
@@ -574,7 +585,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
     trackEvent("profile_export_data_download");
     setSuccessMessage(t("profile.success.downloadComplete"));
-    setTimeout(() => setSuccessMessage(""), 3000);
+    if (successTimeoutRef.current) clearTimeout(successTimeoutRef.current);
+    successTimeoutRef.current = setTimeout(() => setSuccessMessage(""), 3000);
   };
 
   // ============================================
@@ -677,17 +689,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       trackEvent("profile_delete_account_error", { code: err.code });
 
       if (err.code === "auth/wrong-password") {
-        setError("Contraseña incorrecta.");
+        setError(t("profile.errors.wrongPasswordShort"));
       } else if (err.code === "auth/requires-recent-login") {
-        setError(
-          "Por seguridad, cierra sesión y vuelve a iniciar sesión antes de eliminar tu cuenta.",
-        );
+        setError(t("profile.errors.requiresRecentLogin"));
       } else if (err.code === "auth/popup-closed-by-user") {
-        setError(
-          "Reautenticación cancelada. Debes confirmar tu identidad para eliminar la cuenta.",
-        );
+        setError(t("profile.errors.popupClosed"));
       } else {
-        setError("Error al eliminar la cuenta. Contacta a soporte.");
+        setError(t("profile.errors.deleteGeneric"));
       }
       setIsDeleting(false);
     }
@@ -713,7 +721,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       await linkWithPopup(currentUser, provider);
 
       trackEvent("profile_link_google_success");
-      setSuccessMessage("Cuenta de Google vinculada exitosamente.");
+      setSuccessMessage(t("profile.success.googleLinked"));
 
       // Refrescar el usuario para obtener los proveedores actualizados
       await currentUser.reload();
@@ -722,13 +730,13 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       trackEvent("profile_link_google_error", { code: err.code });
 
       if (err.code === "auth/credential-already-in-use") {
-        setError("Esta cuenta de Google ya está en uso por otro usuario.");
+        setError(t("profile.errors.credentialInUse"));
       } else if (err.code === "auth/provider-already-linked") {
-        setError("Google ya está vinculado a esta cuenta.");
+        setError(t("profile.errors.providerAlreadyLinked"));
       } else if (err.code === "auth/popup-closed-by-user") {
-        setError("Vinculación cancelada.");
+        setError(t("profile.errors.linkCancelled"));
       } else {
-        setError("Error al vincular Google. Intenta de nuevo.");
+        setError(t("profile.errors.linkGeneric"));
       }
     } finally {
       setIsLinkingGoogle(false);
@@ -753,15 +761,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       return;
     }
 
-    if (
-      !window.confirm(
-        "¿Estás seguro de que quieres desvincular Google? Podrás volver a vincularlo después.",
-      )
-    ) {
-      return;
-    }
-
     setIsUnlinkingGoogle(true);
+    setConfirmUnlinkGoogle(false);
 
     try {
       trackEvent("profile_unlink_google_start");
@@ -769,7 +770,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       await unlink(currentUser, "google.com");
 
       trackEvent("profile_unlink_google_success");
-      setSuccessMessage("Google desvinculado exitosamente.");
+      setSuccessMessage(t("profile.success.googleUnlinked"));
 
       // Refrescar el usuario
       await currentUser.reload();
@@ -778,22 +779,23 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       trackEvent("profile_unlink_google_error", { code: err.code });
 
       if (err.code === "auth/no-such-provider") {
-        setError("Google no está vinculado a esta cuenta.");
+        setError(t("profile.errors.noSuchProvider"));
       } else {
-        setError("Error al desvincular Google. Intenta de nuevo.");
+        setError(t("profile.errors.unlinkGeneric"));
       }
     } finally {
       setIsUnlinkingGoogle(false);
     }
   };
 
-  const translateGender = (gender: string): string => {
+  // Translation helper functions - memoized to prevent recreation every render
+  const translateGender = useCallback((gender: string): string => {
     if (gender === "Hombre") return t("gender.male");
     if (gender === "Mujer") return t("gender.female");
     return gender;
-  };
+  }, [t]);
 
-  const translateCookingAffinity = (affinity: string): string => {
+  const translateCookingAffinity = useCallback((affinity: string): string => {
     const map: Record<string, string> = {
       Nunca: "nunca",
       "A veces": "aveces",
@@ -802,9 +804,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     };
     const key = map[affinity];
     return key ? t(`cookingAffinity.${key}`) : affinity;
-  };
+  }, [t]);
 
-  const translateGoal = (goal: string): string => {
+  const translateGoal = useCallback((goal: string): string => {
     const map: Record<string, string> = {
       "Bajar de peso": "loseWeight",
       "Subir de peso": "gainWeight",
@@ -813,9 +815,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     };
     const key = map[goal];
     return key ? t(`goals.${key}`) : goal;
-  };
+  }, [t]);
 
-  const translateActivityLevel = (level: string): string => {
+  const translateActivityLevel = useCallback((level: string): string => {
     const map: Record<string, string> = {
       Sedentario: "sedentary",
       "Activo ligero": "lightlyActive",
@@ -829,9 +831,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     const textOnly = stripLeadingEmoji(level);
     const key = map[textOnly];
     return key ? t(`activityLevels.${key}`) : level;
-  };
+  }, [t]);
 
-  const translateActivityFrequency = (freq: string): string => {
+  const translateActivityFrequency = useCallback((freq: string): string => {
     const map: Record<string, string> = {
       Diario: "daily",
       "3-5 veces por semana": "frequent",
@@ -840,9 +842,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     };
     const key = map[freq];
     return key ? t(`activityFrequencies.${key}`) : freq;
-  };
+  }, [t]);
 
-  const translateDisease = (disease: string): string => {
+  const translateDisease = useCallback((disease: string): string => {
     const map: Record<string, string> = {
       Hipertensión: "hypertension",
       Diabetes: "diabetes",
@@ -853,9 +855,9 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     };
     const key = map[disease];
     return key ? t(`diseases.${key}`) : disease;
-  };
+  }, [t]);
 
-  const translateAllergy = (allergy: string): string => {
+  const translateAllergy = useCallback((allergy: string): string => {
     const map: Record<string, string> = {
       "Intolerante a la lactosa": "lactoseIntolerant",
       "Alergia a frutos secos": "nutAllergy",
@@ -866,15 +868,15 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     };
     const key = map[allergy];
     return key ? t(`allergies.${key}`) : allergy;
-  };
+  }, [t]);
 
-  const translateFood = (foodKey: string): string => {
+  const translateFood = useCallback((foodKey: string): string => {
     // Si el alimento está en las traducciones, usarlas
     // De lo contrario, retornar el key original (alimento personalizado)
     const translation = t(`foods.${foodKey}`);
     // Si la traducción retorna la clave completa, significa que no existe, retornar solo el foodKey
     return translation.startsWith("foods.") ? foodKey : translation;
-  };
+  }, [t]);
 
   const renderPhysicalData = () => {
     const parts: string[] = [];
@@ -1200,8 +1202,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     </p>
                   </div>
                   <p className="text-xs text-green-700">
-                    Tu archivo incluye {Object.keys(exportedData).length}{" "}
-                    secciones de datos.
+                    {t("profile.exportSections", { count: Object.keys(exportedData).length })}
                   </p>
                 </div>
 
@@ -1579,15 +1580,32 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                       </div>
                     </div>
                     {auth.currentUser?.providerData.length > 1 && (
-                      <button
-                        onClick={handleUnlinkGoogle}
-                        disabled={isUnlinkingGoogle}
-                        className="w-full mt-2 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                      >
-                        {isUnlinkingGoogle
-                          ? t("profile.loginMethods.unlinking")
-                          : t("profile.loginMethods.unlinkGoogle")}
-                      </button>
+                      confirmUnlinkGoogle ? (
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            onClick={() => setConfirmUnlinkGoogle(false)}
+                            className="flex-1 py-2 text-xs font-medium text-bocado-gray hover:bg-bocado-background rounded-lg transition-colors"
+                          >
+                            {t("common.cancel")}
+                          </button>
+                          <button
+                            onClick={handleUnlinkGoogle}
+                            disabled={isUnlinkingGoogle}
+                            className="flex-1 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {isUnlinkingGoogle
+                              ? t("profile.loginMethods.unlinking")
+                              : t("profile.loginMethods.confirmUnlink")}
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmUnlinkGoogle(true)}
+                          className="w-full mt-2 py-2 text-xs font-medium text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          {t("profile.loginMethods.unlinkGoogle")}
+                        </button>
+                      )
                     )}
                   </div>
                 ) : (

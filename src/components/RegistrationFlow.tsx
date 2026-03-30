@@ -240,7 +240,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         // ✅ Bug 6: usuario de Google ya está autenticado, solo guardar perfil
         const currentUser = auth.currentUser;
         if (!currentUser) {
-          setSubmissionError("Sesión de Google no encontrada. Intenta de nuevo.");
+          setSubmissionError(t("registrationFlow.googleSessionNotFound"));
           setIsLoading(false);
           return;
         }
@@ -351,7 +351,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         setSubmissionError(t("common.errors.emailAlreadyInUse"));
         setCurrentStep(1);
       } else {
-        setSubmissionError("Error al crear cuenta. Intenta de nuevo.");
+        setSubmissionError(t("registrationFlow.createAccountError"));
       }
     } finally {
       setIsLoading(false);
@@ -365,7 +365,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     try {
       const user = auth.currentUser;
       if (!user) {
-        setVerificationError(t("registrationFlow.verificationSessionExpired") || "Sesión expirada. Por favor, inicia sesión de nuevo.");
+        setVerificationError(t("registrationFlow.verificationSessionExpired"));
         return;
       }
       
@@ -374,7 +374,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       
       if (!user.emailVerified) {
         trackEvent("registration_email_not_verified_attempt", { userId: user.uid });
-        setVerificationError(t("registrationFlow.emailNotVerifiedYet") || "Aún no has verificado tu correo. Revisa tu bandeja de entrada y haz clic en el enlace de verificación.");
+        setVerificationError(t("registrationFlow.emailNotVerifiedYet"));
         return;
       }
       
@@ -383,7 +383,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       onRegistrationComplete();
     } catch (error) {
       logger.error("Error checking email verification", error);
-      setVerificationError(t("registrationFlow.verificationCheckError") || "Error al verificar. Intenta de nuevo.");
+      setVerificationError(t("registrationFlow.verificationCheckError"));
     } finally {
       setIsCheckingVerification(false);
     }
@@ -396,21 +396,18 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       if (user && !user.emailVerified) {
         await sendEmailVerification(user);
         trackEvent("registration_verification_resent", { userId: user.uid });
-        setVerificationError(t("registrationFlow.verificationResent") || "Correo de verificación reenviado.");
+        setVerificationError(t("registrationFlow.verificationResent"));
       }
     } catch (error) {
       logger.error("Error resending verification email", error);
-      setVerificationError(t("registrationFlow.resendError") || "Error al reenviar. Intenta en unos minutos.");
+      setVerificationError(t("registrationFlow.resendError"));
     }
   };
 
   const nextStep = async () => {
     // Check terms acceptance on last step
     if (currentStep === TOTAL_STEPS && !acceptTerms) {
-      setSubmissionError(
-        t("registrationFlow.mustAcceptTerms") ||
-          "Debes aceptar los Términos y Condiciones para continuar.",
-      );
+      setSubmissionError(t("registrationFlow.mustAcceptTerms"));
       return;
     }
 
@@ -566,7 +563,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
             {isCheckingVerification ? (
               <span className="flex items-center justify-center gap-2">
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                {t("registrationFlow.checking") || "Verificando..."}
+                {t("registrationFlow.checking")}
               </span>
             ) : (
               t("registrationFlow.alreadyVerified")
@@ -577,7 +574,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
             disabled={isCheckingVerification}
             className="w-full mt-3 text-bocado-green font-medium py-2 px-6 text-sm hover:underline disabled:opacity-50"
           >
-            {t("registrationFlow.resendVerification") || "Reenviar correo de verificación"}
+            {t("registrationFlow.resendVerification")}
           </button>
         </div>
       </div>
@@ -620,7 +617,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                 className="mt-0.5 w-4 h-4 accent-bocado-green flex-shrink-0 cursor-pointer"
               />
               <span className="text-xs text-bocado-dark-gray dark:text-gray-300 leading-relaxed group-hover:text-bocado-text">
-                {t("registrationFlow.termsPrefix") || "Acepto los "}
+                {t("registrationFlow.termsPrefix")}
                 <a
                   href="/terminos"
                   target="_blank"
@@ -628,9 +625,9 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
                   className="text-bocado-green font-semibold underline hover:text-bocado-dark-green"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {t("registrationFlow.termsLink") || "Términos y Condiciones"}
+                  {t("registrationFlow.termsLink")}
                 </a>
-                {" "}{t("registrationFlow.termsSuffix") || "de uso de BOCADO."}
+                {" "}{t("registrationFlow.termsSuffix")}
               </span>
             </label>
           )}
@@ -663,7 +660,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
               ) : isCheckingEmail ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                  {t("registrationFlow.checking") || "Verificando..."}
+                  {t("registrationFlow.checking")}
                 </span>
               ) : currentStep === TOTAL_STEPS ? (
                 t("registrationFlow.createAccount")

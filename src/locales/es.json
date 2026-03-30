@@ -3,6 +3,7 @@
     "loading": "Cargando Bocado...",
     "error": "Error",
     "retry": "Reintentar",
+    "tryAgain": "Intentar de nuevo",
     "cancel": "Cancelar",
     "save": "Guardar",
     "close": "Cerrar",
@@ -23,7 +24,8 @@
     "optional": "opcional",
     "required": "obligatorio",
     "undo": "Deshacer",
-    "or": "O"
+    "or": "O",
+    "reload": "Recargar página"
   },
   "home": {
     "title": "Bocado",
@@ -112,14 +114,25 @@
       "specifyAllergy": "Especifica tu alergia",
       "selectActivityLevel": "Selecciona tu nivel de actividad",
       "selectActivityFrequency": "Selecciona tu frecuencia de actividad",
-      "describeActivityLevel": "Describe tu nivel de actividad"
+      "describeActivityLevel": "Describe tu nivel de actividad",
+      "requiresRecentLogin": "Por seguridad, cierra sesión y vuelve a iniciar sesión antes de eliminar tu cuenta",
+      "popupClosed": "Reautenticación cancelada",
+      "deleteGeneric": "Error al eliminar la cuenta. Contacta a soporte",
+      "credentialInUse": "Esta cuenta de Google ya está en uso por otro usuario",
+      "providerAlreadyLinked": "Google ya está vinculado a esta cuenta",
+      "linkCancelled": "Vinculación cancelada",
+      "linkGeneric": "Error al vincular Google. Intenta de nuevo",
+      "noSuchProvider": "Google no está vinculado a esta cuenta",
+      "unlinkGeneric": "Error al desvincular Google. Intenta de nuevo"
     },
     "success": {
       "profileUpdated": "¡Perfil actualizado!",
       "changesSaved": "¡Cambios guardados!",
       "passwordUpdated": "¡Contraseña actualizada!",
       "emailUpdated": "¡Correo actualizado! Verifica tu email.",
-      "downloadComplete": "¡Archivo descargado!"
+      "downloadComplete": "¡Archivo descargado!",
+      "googleLinked": "Cuenta de Google vinculada exitosamente",
+      "googleUnlinked": "Google desvinculado exitosamente"
     },
     "dataIncludes": {
       "profile": "Tu perfil y todas tus preferencias",
@@ -164,16 +177,20 @@
       "unlinking": "Desvinculando...",
       "linkGoogle": "Vincular Google",
       "linking": "Vinculando...",
-      "cannotUnlink": "No puedes desvincular Google porque es tu único método de inicio de sesión."
+      "cannotUnlink": "No puedes desvincular Google porque es tu único método de inicio de sesión.",
+      "confirmUnlink": "Confirmar desvinculación"
     },
+    "exportSections": "Tu archivo incluye {{count}} secciones de datos",
     "deleteDataDesc": "Eliminar todos tus datos y cuenta permanentemente."
   },
   "tabs": {
     "home": "Inicio",
     "pantry": "Despensa",
     "recipes": "Recetas",
-    "restaurants": "Restaurantes",
-    "profile": "Perfil"
+    "restaurants": "Lugares",
+    "profile": "Perfil",
+    "navLabel": "Navegación principal",
+    "primaryNav": "Navegación primaria"
   },
   "registration": {
     "title": "Crear cuenta",
@@ -437,7 +454,7 @@
     }
   },
   "recommendation": {
-    "welcome": "¡Hola, {userName}! 👋",
+    "welcome": "¡Hola, {{userName}}! 👋",
     "subtitle": "¿Dónde y qué quieres comer hoy?",
     "homeButton": "En casa",
     "outButton": "Fuera",
@@ -456,7 +473,7 @@
     "onlyMyIngredientsHelp": "✓ Usaremos solo lo que tienes",
     "onlyMyIngredientsHelpOff": "Si no lo activas, recomendaremos también ingredientes a comprar",
     "whatCraving": "¿Qué se te antoja?",
-    "budget": "Presupuesto ({currency})",
+    "budget": "Presupuesto ({{currency}})",
     "locationActive": "📍 Ubicación activa",
     "locationDenied": "Ubicación denegada",
     "gettingLocation": "Obteniendo ubicación...",
@@ -473,7 +490,13 @@
     "waitForLocation": "Espera a que se detecte tu ubicación antes de continuar.",
     "connectionError": "Error de conexión. Intenta de nuevo.",
     "aiDisclaimer": "Bocado IA puede cometer errores. Verifica los datos importantes.",
-    "generateAria": "Generar recomendación"
+    "generateAria": "Generar recomendación",
+    "profileNotFound": "No se encontró tu perfil",
+    "profileNotFoundDesc": "Parece que hubo un problema al cargar tu perfil. Intenta recargar la página o contacta soporte.",
+    "defaultUserName": "Comensal",
+    "locationTooltip": "Ubica restaurantes más cercanos",
+    "waitSeconds": "Espera {{seconds}}s antes de generar otra recomendación.",
+    "loadingPantry": "Cargando despensa..."
   },
   "mealCard": {
     "actions": {
@@ -570,6 +593,14 @@
       "magic": "✨ Añadiendo un toque de magia...",
       "final": "🎉 ¡Casi listo!"
     },
+    "defaultGreeting": "Aquí tienes tu plan",
+    "defaultGreetingAway": "Opciones fuera de casa",
+    "defaultRecipeTitle": "Receta",
+    "defaultRestaurantTitle": "Restaurante",
+    "defaultCuisine": "Gastronomía",
+    "recipesPlanTitle": "Recetas Sugeridas",
+    "restaurantsPlanTitle": "Lugares Recomendados",
+    "notFound": "No se encontró el plan",
     "preparingTable": "Preparando tu mesa... 🧑‍🍳",
     "errorTitle": "Ocurrió un problema",
     "errorMessage": "No se pudo cargar el plan",
@@ -594,8 +625,8 @@
     "verifyEmailTitle": "¡Verifica tu correo!",
     "sentTo": "Enviado a",
     "alreadyVerified": "Ya verifiqué mi correo",
-    "resendVerification": "Reenviar verificación",
-    "emailNotVerifiedYet": "Todavía no verificaste tu correo",
+    "resendVerification": "Reenviar correo de verificación",
+    "emailNotVerifiedYet": "Aún no has verificado tu correo. Revisa tu bandeja de entrada.",
     "previous": "Anterior",
     "creating": "...",
     "createAccount": "Crear cuenta",
@@ -604,7 +635,14 @@
     "mustAcceptTerms": "Debes aceptar los Términos y Condiciones para continuar.",
     "termsPrefix": "Acepto los ",
     "termsLink": "Términos y Condiciones",
-    "termsSuffix": "de uso de BOCADO."
+    "termsSuffix": "de uso de BOCADO.",
+    "googleSessionNotFound": "Sesión de Google no encontrada. Intenta de nuevo.",
+    "createAccountError": "Error al crear cuenta. Intenta de nuevo.",
+    "checking": "Verificando...",
+    "verificationSessionExpired": "Sesión expirada. Por favor, inicia sesión de nuevo.",
+    "verificationCheckError": "Error al verificar. Intenta de nuevo.",
+    "verificationResent": "Correo de verificación reenviado.",
+    "resendError": "Error al reenviar. Intenta en unos minutos."
   },
   "step1": {
     "firstName": "Nombre *",
@@ -720,12 +758,15 @@
     "footer": "Tu información está segura y protegida por encriptación."
   },
   "tutorial": {
-    "welcome": "¡Bienvenido{userName}!",
+    "welcome": "¡Bienvenido{{userName}}!",
     "subtitle": "Tu asistente inteligente de nutrición. Te mostramos lo que necesitas saber.",
     "skip": "Saltar tutorial",
     "next": "Siguiente",
     "finish": "Comenzar",
     "start": "¡Comenzar!",
+    "previous": "Anterior",
+    "stepsNavigation": "Navegación de pasos",
+    "goToStep": "Ir al paso {{step}}",
     "steps": {
       "home": {
         "title": "Tu asistente personal",
@@ -785,7 +826,12 @@
     "thanks": "¡Gracias por tu feedback!",
     "successTitle": "¡Gracias!",
     "successMessage": "Bocado aprenderá de esto para tus próximas sugerencias.",
-    "error": "Error al enviar feedback"
+    "error": "Error al enviar feedback",
+    "starLabel": "Calificar con {{count}} estrellas",
+    "errors": {
+      "ratingRequired": "Por favor selecciona una calificación",
+      "authRequired": "Debes iniciar sesión para enviar feedback"
+    }
   },
   "network": {
     "offline": "Sin conexión a internet",
@@ -793,12 +839,14 @@
   },
   "portions": {
     "title": "¿Para cuántos?",
-    "baseRecipe": "Receta base: {baseServings}",
-    "moreOptions": "Más opciones:"
+    "baseRecipe": "Receta base: {{baseServings}}",
+    "moreOptions": "Más opciones:",
+    "option": "{{count}} porciones"
   },
   "pantry": {
     "title": "Mi Cocina",
     "subtitle": "Control de ingredientes",
+    "loadError": "No se pudo cargar tu despensa",
     "addItem": "Agregar ingrediente",
     "selectIcon": "Selecciona un icono",
     "addItemInCategory": "Agregar en {category}",
@@ -1246,6 +1294,7 @@
     "invalidIngredient": "Ingresa un ingrediente válido",
     "ingredientTooLong": "Máximo 50 caracteres",
     "willBeRemoved": "será eliminado",
+    "removeIngredient": "Remover {{name}}",
     "userNotFound": "Usuario no encontrado",
     "connectionError": "Error de conexión, intenta de nuevo",
     "rateLimited": "Demasiadas solicitudes, intenta más tarde",

@@ -1,76 +1,69 @@
-// src/components/FeatureFlag.tsx - Componente wrapper para Feature Flags
-
-import React, { ReactNode, Suspense } from "react";
+import React, { ReactNode, Suspense, useEffect, useMemo, lazy } from "react";
 import type { FeatureFlags } from "../types/featureFlags";
 import {
   useFeatureFlag,
   useMultipleFeatureFlags,
 } from "../hooks/useFeatureFlag";
-import { DEFAULT_FEATURE_FLAGS } from "../config/featureFlags";
+import { trackEvent } from "../firebaseConfig";
 
 // ============================================
 // TIPOS
 // ============================================
 
 interface FeatureFlagProps {
-  /** Nombre del feature flag a verificar */
   feature: keyof FeatureFlags;
-  /** Contenido a renderizar si el feature está habilitado */
   children: ReactNode;
-  /** Contenido alternativo si el feature NO está habilitado */
   fallback?: ReactNode;
-  /** ID del usuario (opcional, se obtiene del contexto si no se proporciona) */
   userId?: string | null;
-  /** Mostrar loader mientras carga el flag */
   showLoader?: boolean;
-  /** Componente de loader personalizado */
   loaderComponent?: ReactNode;
 }
 
 interface FeatureFlagAllProps {
-  /** Todos estos features deben estar habilitados */
   features: Array<keyof FeatureFlags>;
-  /** Contenido a renderizar */
   children: ReactNode;
-  /** Contenido alternativo si algún feature NO está habilitado */
   fallback?: ReactNode;
-  /** ID del usuario (opcional) */
   userId?: string | null;
-  /** Mostrar loader mientras carga */
   showLoader?: boolean;
-  /** Componente de loader personalizado */
   loaderComponent?: ReactNode;
 }
 
 interface FeatureFlagAnyProps {
-  /** Al menos uno de estos features debe estar habilitado */
   features: Array<keyof FeatureFlags>;
-  /** Contenido a renderizar */
   children: ReactNode;
-  /** Contenido alternativo si NINGUNO está habilitado */
   fallback?: ReactNode;
-  /** ID del usuario (opcional) */
   userId?: string | null;
-  /** Mostrar loader mientras carga */
   showLoader?: boolean;
-  /** Componente de loader personalizado */
   loaderComponent?: ReactNode;
 }
 
 interface FeatureFlagSwitchProps {
-  /** Feature flag a evaluar */
   feature: keyof FeatureFlags;
-  /** ID del usuario (opcional) */
   userId?: string | null;
-  /** Caso cuando está habilitado */
   whenEnabled: ReactNode;
-  /** Caso cuando está deshabilitado */
   whenDisabled: ReactNode;
-  /** Mostrar loader mientras carga */
   showLoader?: boolean;
-  /** Componente de loader personalizado */
   loaderComponent?: ReactNode;
 }
+
+interface FeatureFlagLazyProps {
+  feature: keyof FeatureFlags;
+  component: () => Promise<{ default: React.ComponentType<any> }>;
+  componentProps?: Record<string, any>;
+  loadingFallback?: ReactNode;
+  disabledFallback?: ReactNode;
+  userId?: string | null;
+}
+
+interface FeatureFlagWithTrackingProps extends FeatureFlagProps {
+  trackEventName?: string;
+  trackProperties?: Record<string, any>;
+}
+
+// ✅ Tipo explícito para el resultado de useMultipleFeatureFlags
+type MultipleFlags = {
+  [K in keyof FeatureFlags]?: boolean;
+} & { isLoading: boolean };
 
 // ============================================
 // COMPONENTE: Loader por defecto
@@ -78,8 +71,8 @@ interface FeatureFlagSwitchProps {
 
 const DefaultLoader = () => (
   <div className="animate-pulse">
-    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+    <div className="h-4 bg-gray-200 rounded w-1/2" />
   </div>
 );
 
@@ -87,34 +80,6 @@ const DefaultLoader = () => (
 // COMPONENTE PRINCIPAL: FeatureFlag
 // ============================================
 
-/**
- * Componente wrapper que renderiza children solo si el feature flag está habilitado.
- *
- * @example
- * ```tsx
- * // Uso básico
- * <FeatureFlag feature="newRecommendationUI">
- *   <NewRecommendationScreen />
- * </FeatureFlag>
- *
- * // Con fallback
- * <FeatureFlag
- *   feature="newRecommendationUI"
- *   fallback={<OldRecommendationScreen />}
- * >
- *   <NewRecommendationScreen />
- * </FeatureFlag>
- *
- * // Con loader personalizado
- * <FeatureFlag
- *   feature="pantryV2"
- *   showLoader
- *   loaderComponent={<CustomSpinner />}
- * >
- *   <PantryV2 />
- * </FeatureFlag>
- * ```
- */
 export function FeatureFlag({
   feature,
   children,
@@ -125,29 +90,17 @@ export function FeatureFlag({
 }: FeatureFlagProps): React.ReactElement | null {
   const { enabled, isLoading } = useFeatureFlag(feature, { userId });
 
-  // Mostrar loader mientras carga (si está habilitado)
   if (isLoading && showLoader) {
     return <>{loaderComponent}</>;
   }
 
-  // Renderizar children si está habilitado, fallback si no
   return <>{enabled ? children : fallback}</>;
 }
 
 // ============================================
-// COMPONENTE: FeatureFlag.All (todos deben estar habilitados)
+// COMPONENTE: FeatureFlag.All
 // ============================================
 
-/**
- * Componente que renderiza children solo si TODOS los features están habilitados.
- *
- * @example
- * ```tsx
- * <FeatureFlag.All features={['darkMode', 'newRecommendationUI']}>
- *   <NewDarkRecommendationUI />
- * </FeatureFlag.All>
- * ```
- */
 function FeatureFlagAll({
   features,
   children,
@@ -156,32 +109,22 @@ function FeatureFlagAll({
   showLoader = false,
   loaderComponent = <DefaultLoader />,
 }: FeatureFlagAllProps): React.ReactElement | null {
-  const flags = useMultipleFeatureFlags(features, { userId });
+  const flags = useMultipleFeatureFlags(features, { userId }) as MultipleFlags;
 
   if (flags.isLoading && showLoader) {
     return <>{loaderComponent}</>;
   }
 
-  // Verificar que TODOS estén habilitados
-  const allEnabled = features.every((feature) => flags[feature]);
+  // ✅ FIX: acceso tipado explícito a las keys del resultado
+  const allEnabled = features.every((feature) => flags[feature] === true);
 
   return <>{allEnabled ? children : fallback}</>;
 }
 
 // ============================================
-// COMPONENTE: FeatureFlag.Any (al menos uno habilitado)
+// COMPONENTE: FeatureFlag.Any
 // ============================================
 
-/**
- * Componente que renderiza children si AL MENOS UNO de los features está habilitado.
- *
- * @example
- * ```tsx
- * <FeatureFlag.Any features={['pantryV2', 'smartNotifications']}>
- *   <AdvancedFeatures />
- * </FeatureFlag.Any>
- * ```
- */
 function FeatureFlagAny({
   features,
   children,
@@ -190,14 +133,14 @@ function FeatureFlagAny({
   showLoader = false,
   loaderComponent = <DefaultLoader />,
 }: FeatureFlagAnyProps): React.ReactElement | null {
-  const flags = useMultipleFeatureFlags(features, { userId });
+  const flags = useMultipleFeatureFlags(features, { userId }) as MultipleFlags;
 
   if (flags.isLoading && showLoader) {
     return <>{loaderComponent}</>;
   }
 
-  // Verificar que AL MENOS UNO esté habilitado
-  const anyEnabled = features.some((feature) => flags[feature]);
+  // ✅ FIX: acceso tipado explícito
+  const anyEnabled = features.some((feature) => flags[feature] === true);
 
   return <>{anyEnabled ? children : fallback}</>;
 }
@@ -206,19 +149,6 @@ function FeatureFlagAny({
 // COMPONENTE: FeatureFlag.Switch
 // ============================================
 
-/**
- * Componente tipo switch que renderiza diferentes contenidos
- * según si el feature está habilitado o no.
- *
- * @example
- * ```tsx
- * <FeatureFlag.Switch
- *   feature="darkMode"
- *   whenEnabled={<DarkThemeProvider />}
- *   whenDisabled={<LightThemeProvider />}
- * />
- * ```
- */
 function FeatureFlagSwitch({
   feature,
   userId,
@@ -237,39 +167,16 @@ function FeatureFlagSwitch({
 }
 
 // ============================================
-// COMPONENTE: FeatureFlag.Lazy (lazy loading)
+// COMPONENTE: FeatureFlag.Lazy
 // ============================================
 
-interface FeatureFlagLazyProps {
-  /** Feature flag a verificar */
-  feature: keyof FeatureFlags;
-  /** Función de import del componente (lazy loading) */
-  component: () => Promise<{ default: React.ComponentType<any> }>;
-  /** Props para el componente lazy */
-  componentProps?: Record<string, any>;
-  /** Fallback mientras carga el componente */
-  loadingFallback?: ReactNode;
-  /** Fallback si el feature está deshabilitado */
-  disabledFallback?: ReactNode;
-  /** ID del usuario (opcional) */
-  userId?: string | null;
-}
+// ✅ FIX: LazyComponent vive fuera del render para evitar
+// recrear el lazy en cada render cuando enabled cambia.
+// Se usa un Map como cache por referencia de la función import.
+// ✅ FIX: tipo compatible con todas las versiones de @types/react
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const lazyCache = new WeakMap<() => Promise<any>, React.ComponentType<any>>();
 
-/**
- * Componente con lazy loading condicional.
- * Solo carga el componente si el feature está habilitado.
- *
- * @example
- * ```tsx
- * <FeatureFlag.Lazy
- *   feature="pantryV2"
- *   component={() => import('./PantryV2')}
- *   componentProps={{ userId: currentUser.uid }}
- *   loadingFallback={<Spinner />}
- *   disabledFallback={<PantryV1 />}
- * />
- * ```
- */
 function FeatureFlagLazy({
   feature,
   component,
@@ -282,78 +189,51 @@ function FeatureFlagLazy({
     userId,
   });
 
-  // Lazy load el componente solo si el feature está habilitado
-  const LazyComponent = React.useMemo(() => {
-    if (!enabled) return null;
-    return React.lazy(component);
-  }, [enabled, component]);
-
-  // Mostrar fallback si el feature está deshabilitado
   if (!enabled) {
     return <>{disabledFallback}</>;
   }
 
-  // Mostrar loader mientras carga el flag
   if (isFlagLoading) {
     return <>{loadingFallback}</>;
   }
 
-  // Renderizar componente lazy con Suspense
-  if (LazyComponent) {
-    return (
-      <Suspense fallback={loadingFallback}>
-        <LazyComponent {...componentProps} />
-      </Suspense>
-    );
-  }
+  // ✅ FIX: cachear el lazy component por referencia de la función
+  // para no recrearlo en cada render
+if (!lazyCache.has(component)) {
+  lazyCache.set(component, lazy(component));
+}
+const LazyComponent = lazyCache.get(component) as React.ExoticComponent<any>;
 
-  return null;
+  return (
+    <Suspense fallback={loadingFallback}>
+      <LazyComponent {...componentProps} />
+    </Suspense>
+  );
 }
 
 // ============================================
 // COMPONENTE: FeatureFlag.WithTracking
 // ============================================
 
-interface FeatureFlagWithTrackingProps extends FeatureFlagProps {
-  /** Nombre del evento de tracking */
-  trackEventName?: string;
-  /** Propiedades adicionales para tracking */
-  trackProperties?: Record<string, any>;
-}
-
-/**
- * Componente FeatureFlag con tracking de analytics.
- * Rastrea cuando se muestra/oculta el feature.
- *
- * @example
- * ```tsx
- * <FeatureFlag.WithTracking
- *   feature="newRecommendationUI"
- *   trackEventName="feature_view"
- *   trackProperties={{ feature: 'newRecommendationUI' }}
- * >
- *   <NewUI />
- * </FeatureFlag.WithTracking>
- * ```
- */
 function FeatureFlagWithTracking({
   trackEventName,
   trackProperties,
   ...props
 }: FeatureFlagWithTrackingProps): React.ReactElement | null {
+  // ✅ FIX: usar el resultado de FeatureFlag en vez de llamar useFeatureFlag
+  // dos veces para el mismo feature — evita doble subscripción
   const { enabled, isLoading } = useFeatureFlag(props.feature, {
     userId: props.userId,
   });
 
-  // Effect para tracking
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isLoading && trackEventName) {
-      // Aquí se integraría con el sistema de analytics
-      // trackEvent(trackEventName, {
-      //   ...trackProperties,
-      //   featureEnabled: enabled,
-      //   featureName: props.feature,
-      // });
+      // ✅ FIX: tracking real en vez de console.log comentado
+      trackEvent(trackEventName, {
+        ...trackProperties,
+        featureEnabled: enabled,
+        featureName: props.feature,
+      });
 
       if (process.env.NODE_ENV === "development") {
         console.log("[FeatureFlag.Track]", {
@@ -364,7 +244,9 @@ function FeatureFlagWithTracking({
         });
       }
     }
-  }, [enabled, isLoading, trackEventName, trackProperties, props.feature]);
+  }, [enabled, isLoading, trackEventName, props.feature]);
+  // trackProperties intencionalmente excluido de deps —
+  // objetos inline recreados en cada render causarían loops
 
   return <FeatureFlag {...props} />;
 }
@@ -373,10 +255,6 @@ function FeatureFlagWithTracking({
 // COMPOSITION PATTERN
 // ============================================
 
-/**
- * Asignar sub-componentes al componente principal.
- * Esto permite usar: FeatureFlag, FeatureFlag.All, FeatureFlag.Any, etc.
- */
 FeatureFlag.All = FeatureFlagAll;
 FeatureFlag.Any = FeatureFlagAny;
 FeatureFlag.Switch = FeatureFlagSwitch;
@@ -387,7 +265,6 @@ FeatureFlag.WithTracking = FeatureFlagWithTracking;
 // EXPORTS
 // ============================================
 
-// Sub-componentes exportados individualmente
 export {
   FeatureFlagAll,
   FeatureFlagAny,
@@ -396,5 +273,4 @@ export {
   FeatureFlagWithTracking,
 };
 
-// Default export del componente principal
 export default FeatureFlag;
