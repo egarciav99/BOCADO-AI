@@ -3,47 +3,11 @@ import { FormStepProps } from "./FormStepProps";
 import { DISEASES, ALLERGIES, GOALS } from "../../constants";
 import { trackEvent } from "../../firebaseConfig"; // ✅ Importado trackEvent
 import { useTranslation } from "../../contexts/I18nContext";
-
-// Funciones de traducción para las opciones
-const translateDisease = (
-  disease: string,
-  t: (key: string) => string,
-): string => {
-  const map: Record<string, string> = {
-    Hipertensión: t("diseases.hypertension"),
-    Diabetes: t("diseases.diabetes"),
-    Hipotiroidismo: t("diseases.hypothyroidism"),
-    Hipertiroidismo: t("diseases.hyperthyroidism"),
-    Colesterol: t("diseases.cholesterol"),
-    "Intestino irritable": t("diseases.ibs"),
-  };
-  return map[disease] || disease;
-};
-
-const translateAllergy = (
-  allergy: string,
-  t: (key: string) => string,
-): string => {
-  const map: Record<string, string> = {
-    "Intolerante a la lactosa": t("allergies.lactoseIntolerant"),
-    "Alergia a frutos secos": t("allergies.nutAllergy"),
-    Celíaco: t("allergies.celiac"),
-    Vegano: t("allergies.vegan"),
-    Vegetariano: t("allergies.vegetarian"),
-    Otro: t("allergies.other"),
-  };
-  return map[allergy] || allergy;
-};
-
-const translateGoal = (goal: string, t: (key: string) => string): string => {
-  const map: Record<string, string> = {
-    "Bajar de peso": t("goals.loseWeight"),
-    "Subir de peso": t("goals.gainWeight"),
-    "Generar músculo": t("goals.buildMuscle"),
-    "Salud y bienestar": t("goals.healthWellness"),
-  };
-  return map[goal] || goal;
-};
+import {
+  translateDisease,
+  translateAllergy,
+  translateGoal,
+} from "../../utils/profileTranslations";
 
 const MultiSelectButton: React.FC<{
   option: string;

@@ -40,87 +40,77 @@ interface UseNotificationsReturn {
   lastMessage: any | null;
 }
 
-const createDefaultSchedules = (
+// Config only — stable, no translation needed
+const DEFAULT_SCHEDULE_CONFIG: Omit<NotificationSchedule, 'title' | 'body'>[] = [
+  {
+    id: "breakfast",
+    type: "meal",
+    hour: 8,
+    minute: 0,
+    enabled: true,
+    condition: "always",
+    minDaysBetween: 1,
+  },
+  {
+    id: "lunch",
+    type: "meal",
+    hour: 13,
+    minute: 30,
+    enabled: true,
+    condition: "always",
+    minDaysBetween: 1,
+  },
+  {
+    id: "dinner",
+    type: "meal",
+    hour: 19,
+    minute: 30,
+    enabled: true,
+    condition: "always",
+    minDaysBetween: 1,
+  },
+  {
+    id: "pantry_update",
+    type: "pantry",
+    hour: 10,
+    minute: 0,
+    enabled: true,
+    condition: "pantry_empty",
+    minDaysBetween: 3,
+  },
+  {
+    id: "rate_recipes",
+    type: "rating",
+    hour: 15,
+    minute: 0,
+    enabled: true,
+    condition: "pending_ratings",
+    minDaysBetween: 2,
+  },
+  {
+    id: "come_back",
+    type: "engagement",
+    hour: 12,
+    minute: 0,
+    enabled: true,
+    condition: "inactive_user",
+    minDaysBetween: 7,
+  },
+];
+
+// Hydrate with translations at render time
+const hydrateSchedules = (
+  configs: typeof DEFAULT_SCHEDULE_CONFIG,
   t: (key: string) => string,
-): NotificationSchedule[] => [
-    // Recordatorios de comidas
-    {
-      id: "breakfast",
-      type: "meal",
-      title: t("notifications.settings.breakfast.title"),
-      body: t("notifications.settings.breakfast.body"),
-      hour: 8,
-      minute: 0,
-      enabled: true,
-      condition: "always",
-      minDaysBetween: 1,
-    },
-    {
-      id: "lunch",
-      type: "meal",
-      title: t("notifications.settings.lunch.title"),
-      body: t("notifications.settings.lunch.body"),
-      hour: 13,
-      minute: 30,
-      enabled: true,
-      condition: "always",
-      minDaysBetween: 1,
-    },
-    {
-      id: "dinner",
-      type: "meal",
-      title: t("notifications.settings.dinner.title"),
-      body: t("notifications.settings.dinner.body"),
-      hour: 19,
-      minute: 30,
-      enabled: true,
-      condition: "always",
-      minDaysBetween: 1,
-    },
-    // Recordatorios inteligentes
-    {
-      id: "pantry_update",
-      type: "pantry",
-      title: t("notifications.settings.pantryUpdate.title"),
-      body: t("notifications.settings.pantryUpdate.body"),
-      hour: 10,
-      minute: 0,
-      enabled: true,
-      condition: "pantry_empty",
-      minDaysBetween: 3,
-    },
-    {
-      id: "rate_recipes",
-      type: "rating",
-      title: t("notifications.settings.rateRecipes.title"),
-      body: t("notifications.settings.rateRecipes.body"),
-      hour: 15,
-      minute: 0,
-      enabled: true,
-      condition: "pending_ratings",
-      minDaysBetween: 2,
-    },
-    {
-      id: "come_back",
-      type: "engagement",
-      title: t("notifications.settings.comeBack.title"),
-      body: t("notifications.settings.comeBack.body"),
-      hour: 12,
-      minute: 0,
-      enabled: true,
-      condition: "inactive_user",
-      minDaysBetween: 7,
-    },
-  ];
+): NotificationSchedule[] =>
+  configs.map((config) => ({
+    ...config,
+    title: t(`notifications.settings.${config.id}.title`),
+    body: t(`notifications.settings.${config.id}.body`),
+  }));
 
 const STORAGE_KEY = "bocado_notification_schedules_v2";
 const LAST_ACTIVE_KEY = "bocado_last_active";
-const RATINGS_SHOWN_KEY = "bocado_ratings_shown";
-
-// Threshold constants
-const MIN_PANTRY_ITEMS = 3;
-const PANTRY_STALE_DAYS = 7;
-const EXPECTED_RATINGS = 3;
 
 export const useNotifications = (
   userUid: string | undefined,
@@ -129,8 +119,9 @@ export const useNotifications = (
   const [isSupported, setIsSupported] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [schedules, setSchedules] = useState<NotificationSchedule[]>(() =>
-    createDefaultSchedules(t),
+  // Store only config data, hydrate with translations when rendering
+  const [scheduleConfigs, setScheduleConfigs] = useState<Omit<NotificationSchedule, 'title' | 'body'>[]>(
+    DEFAULT_SCHEDULE_CONFIG,
   );
   const [isLoading, setIsLoading] = useState(false);
   const [lastMessage, setLastMessage] = useState<any>(null);
@@ -138,9 +129,12 @@ export const useNotifications = (
   const [daysSinceLastPantryUpdate, setDaysSinceLastPantryUpdate] = useState<number | null>(null);
   const [daysSinceLastAppUse, setDaysSinceLastAppUse] = useState(0);
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasLoadedSettingsRef = useRef(false);
+  const firestoreSyncedRef = useRef(false);
   const schedulesRef = useRef<NotificationSchedule[]>([]);
+
+  // Hydrate configs with current translations
+  const schedules = hydrateSchedules(scheduleConfigs, t);
 
   // Sync ref with state
   useEffect(() => {
@@ -185,13 +179,13 @@ export const useNotifications = (
     const loadSettings = async () => {
       // 1. Load from Local Storage first for speed
       const saved = localStorage.getItem(STORAGE_KEY);
-      let initialSchedules = createDefaultSchedules(t);
+      let initialConfigs = [...DEFAULT_SCHEDULE_CONFIG];
 
       if (saved) {
         try {
           const parsed = JSON.parse(saved);
-          initialSchedules = initialSchedules.map((def) => {
-            const found = parsed.find((s: NotificationSchedule) => s.id === def.id);
+          initialConfigs = initialConfigs.map((def) => {
+            const found = parsed.find((s: any) => s.id === def.id);
             return found ? { ...def, ...found } : def;
           });
         } catch (e) {
@@ -199,7 +193,8 @@ export const useNotifications = (
         }
       }
 
-      setSchedules(initialSchedules);
+      setScheduleConfigs(initialConfigs);
+      hasLoadedSettingsRef.current = true;
 
       // 2. Sync with Firestore if user is authenticated
       if (userUid) {
@@ -208,7 +203,7 @@ export const useNotifications = (
           if (docSnap.exists()) {
             const data = docSnap.data() as { schedules?: any[] };
             if (Array.isArray(data.schedules)) {
-              setSchedules((prev) =>
+              setScheduleConfigs((prev) =>
                 prev.map((def) => {
                   const saved = data.schedules?.find((s) => s.id === def.id);
                   return saved ? { ...def, ...saved } : def;
@@ -219,34 +214,37 @@ export const useNotifications = (
         } catch (error) {
           logger.warn("Error loading notification settings from Firestore:", error);
         }
+        // Mark Firestore sync as complete after the setScheduleConfigs call
+        firestoreSyncedRef.current = true;
+      } else {
+        // No user, so no Firestore sync needed
+        firestoreSyncedRef.current = true;
       }
-
-      hasLoadedSettingsRef.current = true;
     };
 
     loadSettings();
-  }, [userUid, t]);
+  }, [userUid]);
 
   // Save to Local Storage on change
   useEffect(() => {
     if (!hasLoadedSettingsRef.current) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(schedules));
-  }, [schedules]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(scheduleConfigs));
+  }, [scheduleConfigs]);
 
   // Save to Firestore on change (debounced/optimized)
   useEffect(() => {
-    if (!userUid || !hasLoadedSettingsRef.current) return;
+    if (!userUid || !hasLoadedSettingsRef.current || !firestoreSyncedRef.current) return;
 
     const timer = setTimeout(() => {
       // Save only configuration, not translated text
-      const configToSave = schedules.map(({ id, hour, minute, enabled, lastShown }) => ({
+      const configToSave = scheduleConfigs.map(({ id, hour, minute, enabled, lastShown }) => ({
         id, hour, minute, enabled, lastShown
       }));
       saveSettingsToFirestore({ schedules: configToSave });
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [schedules, userUid, saveSettingsToFirestore]);
+  }, [scheduleConfigs, userUid, saveSettingsToFirestore]);
 
   // Update activity tracking
   useEffect(() => {
@@ -317,7 +315,7 @@ export const useNotifications = (
           });
 
           // Update lastShown locally immediately to prevent double trigger
-          setSchedules(prev => prev.map(s =>
+          setScheduleConfigs(prev => prev.map(s =>
             s.id === schedule.id ? { ...s, lastShown: now.toISOString() } : s
           ));
 
@@ -327,16 +325,8 @@ export const useNotifications = (
     });
   }, [isSupported, permission, daysSinceLastPantryUpdate, pendingRatingsCount, daysSinceLastAppUse]);
 
-  // Interval Loop - DISABLED: Backend FCM handles notification sending
-  // Client-side polling was causing duplicate notifications (3x)
-  useEffect(() => {
-    if (!isSupported || permission !== "granted") return;
-    // intervalRef.current = setInterval(checkNotifications, 60000);
-    // checkNotifications(); // Initial check disabled - rely on FCM push
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isSupported, permission, checkNotifications]);
+  // Backend FCM handles notification sending - client-side polling disabled
+  // to prevent duplicate notifications
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (!isSupported) return false;
@@ -360,16 +350,19 @@ export const useNotifications = (
   }, [isSupported]);
 
   const updateSchedule = useCallback((id: string, updates: Partial<NotificationSchedule>) => {
-    setSchedules((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates } : s)));
-    trackEvent("notification_schedule_updated", { id, ...updates });
+    // Only update config fields, ignore title/body translations
+    const configUpdates = (({ title, body, ...rest }) => rest)(updates);
+    setScheduleConfigs((prev) => prev.map((s) => (s.id === id ? { ...s, ...configUpdates } : s)));
+    trackEvent("notification_schedule_updated", { id, ...configUpdates });
   }, []);
 
   const toggleSchedule = useCallback((id: string) => {
-    setSchedules((prev) => prev.map((s) => {
+    setScheduleConfigs((prev) => prev.map((s) => {
       if (s.id === id) {
         const newEnabled = !s.enabled;
         trackEvent("notification_schedule_toggled", { id, enabled: newEnabled });
-        return { ...s, enabled: newEnabled, lastShown: newEnabled ? undefined : s.lastShown };
+        // Fix: Don't reset lastShown when toggling
+        return { ...s, enabled: newEnabled };
       }
       return s;
     }));

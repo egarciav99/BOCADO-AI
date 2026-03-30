@@ -25,11 +25,15 @@ export interface GeolocationState {
   permission: "prompt" | "granted" | "denied" | "unknown";
 }
 
-/**
- * Hook para obtener la geolocalización del usuario
- * Solo funciona en HTTPS o localhost
- * ✅ FIX #9: Better Safari iOS detection and permission handling
- */
+// ✅ FIX: trackEvent wrapeado una sola vez para evitar repetición
+const safeTrackEvent = (name: string, props?: Record<string, any>) => {
+  try {
+    trackEvent(name, props);
+  } catch (error) {
+    logger.warn(`[useGeolocation] Analytics failed for ${name}:`, error);
+  }
+};
+
 export function useGeolocation() {
   const [state, setState] = useState<GeolocationState>({
     position: null,
@@ -39,15 +43,14 @@ export function useGeolocation() {
     permission: "unknown",
   });
 
-  // 🔴 FIX #22: Usar ref para evitar recreación de getCountryCodeForCurrency
   const detectedLocationRef = useRef<DetectedLocation | null>(null);
+  // ✅ FIX: ref para saber si ya tenemos ubicación GPS — evita que IP sobreescriba GPS
+  const hasGPSLocationRef = useRef(false);
 
-  // Actualizar ref cuando cambia detectedLocation
   useEffect(() => {
     detectedLocationRef.current = state.detectedLocation;
   }, [state.detectedLocation]);
 
-  // ✅ FIX #9: Detect Safari iOS for proper permission handling
   const isSafariIOS = useMemo(() => {
     if (typeof navigator === "undefined") return false;
     const ua = navigator.userAgent;
@@ -57,16 +60,10 @@ export function useGeolocation() {
     return iOS && webkit && !chrome;
   }, []);
 
-  // Verificar el estado del permiso
   const checkPermission = useCallback(async () => {
-    // ✅ FIX #9: Safari iOS doesn't support permissions API for geolocation
     if (isSafariIOS || !("permissions" in navigator)) {
-      logger.info(
-        "[useGeolocation] Safari iOS or no permissions API, returning prompt",
-      );
       return "prompt" as const;
     }
-
     try {
       const result = await navigator.permissions.query({
         name: "geolocation" as PermissionName,
@@ -78,49 +75,40 @@ export function useGeolocation() {
     }
   }, [isSafariIOS]);
 
-  // Solicitar ubicación
   const requestLocation = useCallback(async () => {
     if (!("geolocation" in navigator)) {
       setState((prev) => ({
         ...prev,
-        error: "Tu navegador no soporta geolocalización",
+        // ✅ FIX: clave i18n en vez de string hardcodeado en español
+        error: "geolocation.notSupported",
         permission: "denied",
       }));
-      trackEvent("geolocation_error", { reason: "not_supported" });
+      safeTrackEvent("geolocation_error", { reason: "not_supported" });
       return;
     }
 
     setState((prev) => ({ ...prev, loading: true, error: null }));
-    // 🟡 FIX #25: Wrap trackEvent en try-catch
-    try {
-      trackEvent("geolocation_request");
-    } catch (error) {
-      logger.warn("[useGeolocation] Analytics failed:", error);
-    }
+    safeTrackEvent("geolocation_request");
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        // 🟠 FIX #24: Validar que position.coords existe antes de acceder
         if (!position?.coords) {
-          logger.error(
-            "[useGeolocation] Invalid position object, missing coords",
-          );
+          logger.error("[useGeolocation] Invalid position object");
           setState((prev) => ({
             ...prev,
             loading: false,
-            error: "Ubicación inválida recibida del navegador",
+            error: "geolocation.invalidPosition",
           }));
           return;
         }
 
-        const newPosition = {
+        const newPosition: GeolocationPosition = {
           lat: position.coords.latitude,
           lng: position.coords.longitude,
           accuracy: position.coords.accuracy,
           timestamp: position.timestamp,
         };
 
-        // Hacer reverse geocoding para detectar el país/cuidad actual
         let detectedLocation: DetectedLocation | null = null;
         try {
           const geoResult = await reverseGeocode(
@@ -135,13 +123,15 @@ export function useGeolocation() {
               formattedAddress: geoResult.formattedAddress,
             };
             logger.info(
-              `📍 Ubicación detectada: ${geoResult.city}, ${geoResult.country} (${geoResult.countryCode})`,
+              `📍 GPS: ${geoResult.city}, ${geoResult.country} (${geoResult.countryCode})`,
             );
           }
         } catch (geoError) {
           logger.warn("Error en reverse geocoding:", geoError);
-          // No bloqueamos si el reverse geocoding falla
         }
+
+        // ✅ FIX: marcar que tenemos ubicación GPS antes de actualizar estado
+        hasGPSLocationRef.current = true;
 
         setState({
           position: newPosition,
@@ -151,50 +141,33 @@ export function useGeolocation() {
           permission: "granted",
         });
 
-        // 🟡 FIX #25: Wrap trackEvent en try-catch
-        try {
-          trackEvent("geolocation_success", {
-            accuracy: position.coords.accuracy,
-            lat: Math.round(position.coords.latitude * 100) / 100,
-            lng: Math.round(position.coords.longitude * 100) / 100,
-            country: detectedLocation?.countryCode,
-          });
-        } catch (error) {
-          logger.warn("[useGeolocation] Analytics failed:", error);
-        }
+        safeTrackEvent("geolocation_success", {
+          accuracy: position.coords.accuracy,
+          lat: Math.round(position.coords.latitude * 100) / 100,
+          lng: Math.round(position.coords.longitude * 100) / 100,
+          country: detectedLocation?.countryCode,
+        });
       },
       (error) => {
-        let errorMessage = "No se pudo obtener tu ubicación";
+        // ✅ FIX: claves i18n en vez de strings hardcodeados
+        let errorKey = "geolocation.unavailable";
         let permission: "denied" | "prompt" | "unknown" = "unknown";
 
         switch (error.code) {
           case error.PERMISSION_DENIED:
-            errorMessage = "Permiso de ubicación denegado";
+            errorKey = "geolocation.permissionDenied";
             permission = "denied";
-            // 🟡 FIX #25: Wrap trackEvent en try-catch
-            try {
-              trackEvent("geolocation_denied");
-            } catch (err) {
-              logger.warn("[useGeolocation] Analytics failed:", err);
-            }
+            safeTrackEvent("geolocation_denied");
             break;
           case error.POSITION_UNAVAILABLE:
-            errorMessage = "Ubicación no disponible";
+            errorKey = "geolocation.positionUnavailable";
             permission = "prompt";
-            try {
-              trackEvent("geolocation_error", { reason: "unavailable" });
-            } catch (err) {
-              logger.warn("[useGeolocation] Analytics failed:", err);
-            }
+            safeTrackEvent("geolocation_error", { reason: "unavailable" });
             break;
           case error.TIMEOUT:
-            errorMessage = "Tiempo de espera agotado";
+            errorKey = "geolocation.timeout";
             permission = "prompt";
-            try {
-              trackEvent("geolocation_error", { reason: "timeout" });
-            } catch (err) {
-              logger.warn("[useGeolocation] Analytics failed:", err);
-            }
+            safeTrackEvent("geolocation_error", { reason: "timeout" });
             break;
         }
 
@@ -202,45 +175,44 @@ export function useGeolocation() {
           position: null,
           detectedLocation: null,
           loading: false,
-          error: errorMessage,
+          error: errorKey,
           permission,
         });
       },
       {
-        enableHighAccuracy: false, // true consume más batería
+        enableHighAccuracy: false,
         timeout: 10000,
-        maximumAge: 5 * 60 * 1000, // Cache de 5 minutos
+        maximumAge: 5 * 60 * 1000,
       },
     );
   }, []);
 
-  // 🔴 FIX #21: Remover checkPermission de dependencies para evitar loop infinito
-  // Verificar permiso al montar
   useEffect(() => {
     checkPermission().then((permission) => {
       setState((prev) => ({ ...prev, permission }));
     });
-  }, []); // ✅ Solo ejecutar en mount
+  }, []);
 
-  // Intentar detectar ubicación por IP al montar (fallback silencioso)
   useEffect(() => {
     const detectIPLocation = async () => {
-      // Solo si no tenemos ya una ubicación detectada
-      if (state.detectedLocation) return;
-
       try {
         const ipLocation = await detectLocationByIP();
 
-        // ✅ FIX: Validar estructura completa antes de usar
         if (
-          ipLocation &&
-          ipLocation.city &&
-          ipLocation.country &&
-          ipLocation.countryCode
+          ipLocation?.city &&
+          ipLocation?.country &&
+          ipLocation?.countryCode
         ) {
+          // ✅ FIX: no sobreescribir si ya tenemos ubicación GPS más precisa
+          if (hasGPSLocationRef.current) {
+            logger.info("[useGeolocation] GPS already set, skipping IP detection");
+            return;
+          }
+
           logger.info(
-            `📍 Ubicación detectada por IP: ${ipLocation.city}, ${ipLocation.country} (${ipLocation.countryCode})`,
+            `📍 IP: ${ipLocation.city}, ${ipLocation.country} (${ipLocation.countryCode})`,
           );
+
           setState((prev) => ({
             ...prev,
             detectedLocation: {
@@ -250,24 +222,24 @@ export function useGeolocation() {
               formattedAddress: `${ipLocation.city}, ${ipLocation.country}`,
             },
           }));
-          trackEvent("geolocation_ip_detected", {
+
+          safeTrackEvent("geolocation_ip_detected", {
             country: ipLocation.countryCode,
             city: ipLocation.city,
           });
         } else {
-          logger.warn("IP location data incomplete, skipping:", ipLocation);
+          logger.warn("IP location data incomplete:", ipLocation);
         }
       } catch (error) {
-        // Silenciar errores de IP detection, es solo un fallback
         logger.debug("IP detection failed (expected in some cases):", error);
       }
     };
 
     detectIPLocation();
-  }, []); // Solo al montar
+  }, []);
 
-  // Limpiar posición
   const clearLocation = useCallback(() => {
+    hasGPSLocationRef.current = false;
     setState({
       position: null,
       detectedLocation: null,
@@ -275,19 +247,9 @@ export function useGeolocation() {
       error: null,
       permission: "unknown",
     });
-    // 🟡 FIX #25: Wrap trackEvent en try-catch
-    try {
-      trackEvent("geolocation_cleared");
-    } catch (error) {
-      logger.warn("[useGeolocation] Analytics failed:", error);
-    }
+    safeTrackEvent("geolocation_cleared");
   }, []);
 
-  /**
-   * 🔴 FIX #22: Usar ref para evitar loop infinito
-   * Obtiene el código de país para usar en la moneda/budget.
-   * Prioriza: 1) Ubicación detectada por geolocalización, 2) Fallback del parámetro
-   */
   const getCountryCodeForCurrency = useCallback(
     (fallbackCountryCode?: string): string => {
       if (detectedLocationRef.current?.countryCode) {
@@ -296,7 +258,7 @@ export function useGeolocation() {
       return fallbackCountryCode || "MX";
     },
     [],
-  ); // ✅ Sin dependencies, usa ref
+  );
 
   return {
     ...state,

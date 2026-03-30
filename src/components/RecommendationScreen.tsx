@@ -246,6 +246,11 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
       resetProcessingState();
       return;
     }
+    if (recommendationType === "Fuera" && locationError) {
+      setError(t(locationError));
+      resetProcessingState();
+      return;
+    }
     if (!user) {
       logger.error("No hay usuario autenticado");
       return;

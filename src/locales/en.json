@@ -913,6 +913,14 @@
     "male": "Male",
     "female": "Female"
   },
+  "geolocation": {
+    "notSupported": "Your browser doesn't support geolocation",
+    "invalidPosition": "Invalid location received from browser",
+    "unavailable": "Could not get your location",
+    "permissionDenied": "Location permission denied",
+    "positionUnavailable": "Location unavailable",
+    "timeout": "Location request timed out"
+  },
   "budget": {
     "low": "Budget",
     "medium": "Standard",

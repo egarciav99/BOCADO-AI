@@ -10,32 +10,29 @@ interface NetworkState {
 }
 
 interface UseNetworkStatusOptions {
-  /** Mostrar toast cuando se recupere la conexión */
   showReconnectionToast?: boolean;
-  /** Callback cuando se pierde la conexión */
   onOffline?: () => void;
-  /** Callback cuando se recupera la conexión */
   onOnline?: () => void;
-  /** Tiempo mínimo offline antes de mostrar notificación (ms) */
   minOfflineDuration?: number;
 }
 
-/**
- * Hook para detectar y manejar el estado de la conexión de red
- *
- * @example
- * ```tsx
- * // Uso básico
- * const { isOnline, isOffline } = useNetworkStatus();
- *
- * // Con callbacks y toast
- * const { isOnline } = useNetworkStatus({
- *   showReconnectionToast: true,
- *   onOffline: () => toast.error('Sin conexión'),
- *   onOnline: () => toast.success('Conexión restaurada'),
- * });
- * ```
- */
+// ✅ FIX: extraído fuera del hook — no captura estado, siempre estable
+const getConnectionInfo = () => {
+  const connection =
+    (navigator as any).connection ||
+    (navigator as any).mozConnection ||
+    (navigator as any).webkitConnection;
+
+  if (connection) {
+    return {
+      connectionType: connection.effectiveType || "unknown",
+      downlink: connection.downlink || null,
+    };
+  }
+
+  return { connectionType: "unknown", downlink: null };
+};
+
 export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
   const {
     showReconnectionToast = true,
@@ -56,24 +53,16 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
   const hasShownToast = useRef(false);
   const hasInitialized = useRef(false);
 
-  // Obtener información de conexión (Network Information API)
-  const getConnectionInfo = useCallback(() => {
-    const connection =
-      (navigator as any).connection ||
-      (navigator as any).mozConnection ||
-      (navigator as any).webkitConnection;
+  // ✅ FIX: callbacks estabilizados con refs para evitar re-registro de listeners
+  const onOnlineRef = useRef(onOnline);
+  const onOfflineRef = useRef(onOffline);
+  useEffect(() => { onOnlineRef.current = onOnline; }, [onOnline]);
+  useEffect(() => { onOfflineRef.current = onOffline; }, [onOffline]);
 
-    if (connection) {
-      return {
-        type: connection.effectiveType || "unknown",
-        downlink: connection.downlink || null,
-      };
-    }
+  // ✅ FIX: isOnline como ref para visibilitychange — evita re-registro del listener
+  const isOnlineRef = useRef(state.isOnline);
+  useEffect(() => { isOnlineRef.current = state.isOnline; }, [state.isOnline]);
 
-    return { type: "unknown", downlink: null };
-  }, []);
-
-  // Manejar evento online
   const handleOnline = useCallback(() => {
     const offlineDuration = offlineStartTime.current
       ? Date.now() - offlineStartTime.current
@@ -92,21 +81,19 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
       ...getConnectionInfo(),
     }));
 
-    // Mostrar toast si estuvo offline suficiente tiempo
     if (
       showReconnectionToast &&
       offlineDuration > minOfflineDuration &&
       !hasShownToast.current
     ) {
       hasShownToast.current = true;
-      // El toast se maneja via el componente que consume el hook
     }
 
-    onOnline?.();
+    onOnlineRef.current?.();
     offlineStartTime.current = null;
-  }, [onOnline, showReconnectionToast, minOfflineDuration]);
+  // ✅ onOnline removido de deps — estabilizado via ref
+  }, [showReconnectionToast, minOfflineDuration]);
 
-  // Manejar evento offline
   const handleOffline = useCallback(() => {
     logger.warn("Network: Sin conexión");
 
@@ -120,60 +107,32 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
       wasOffline: false,
     }));
 
-    onOffline?.();
-  }, [onOffline]);
-
-  // Verificar conexión activa (no solo estado del navegador)
-  const checkConnection = useCallback(async (): Promise<boolean> => {
-    try {
-      // Intentar fetch a un endpoint pequeño o usar el propio origin
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-
-      const response = await fetch("/manifest.json", {
-        method: "HEAD",
-        signal: controller.signal,
-        cache: "no-store",
-      });
-
-      clearTimeout(timeoutId);
-      return response.ok;
-    } catch {
-      return false;
-    }
+    onOfflineRef.current?.();
+  // ✅ onOffline removido de deps — estabilizado via ref
   }, []);
 
-  // Efecto para escuchar cambios de conectividad
+  // Event listeners de conectividad
   useEffect(() => {
-    // Estado inicial - solo ejecutar una vez
     if (!hasInitialized.current) {
-      const isCurrentlyOnline = typeof navigator !== "undefined" ? navigator.onLine : true;
-      const connectionInfo = getConnectionInfo();
+      const isCurrentlyOnline =
+        typeof navigator !== "undefined" ? navigator.onLine : true;
       setState((prev) => ({
         ...prev,
         isOnline: isCurrentlyOnline,
         isOffline: !isCurrentlyOnline,
-        ...connectionInfo,
+        ...getConnectionInfo(),
       }));
       hasInitialized.current = true;
     }
 
-    // Event listeners
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
-    // Escuchar cambios en la calidad de conexión
     const connection = (navigator as any).connection;
     if (connection) {
       const handleConnectionChange = () => {
-        setState((prev) => ({
-          ...prev,
-          ...getConnectionInfo(),
-        }));
-        logger.info(
-          "Network: Cambio en calidad de conexión",
-          getConnectionInfo(),
-        );
+        setState((prev) => ({ ...prev, ...getConnectionInfo() }));
+        logger.info("Network: Cambio en calidad de conexión", getConnectionInfo());
       };
 
       connection.addEventListener("change", handleConnectionChange);
@@ -190,14 +149,12 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
     };
   }, [handleOnline, handleOffline]);
 
-  // Sincronizar cuando la app vuelve a estar visible
+  // ✅ FIX: visibilitychange usa ref para isOnline — sin state en deps
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === "visible") {
         const isCurrentlyOnline = navigator.onLine;
-
-        // Solo actualizar si hay cambio
-        if (isCurrentlyOnline !== state.isOnline) {
+        if (isCurrentlyOnline !== isOnlineRef.current) {
           if (isCurrentlyOnline) {
             handleOnline();
           } else {
@@ -210,15 +167,28 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
     document.addEventListener("visibilitychange", handleVisibilityChange);
     return () =>
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [state.isOnline, handleOnline, handleOffline]);
+  // ✅ state.isOnline removido de deps — accedido via ref
+  }, [handleOnline, handleOffline]);
+
+  const checkConnection = useCallback(async (): Promise<boolean> => {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const response = await fetch("/manifest.json", {
+        method: "HEAD",
+        signal: controller.signal,
+        cache: "no-store",
+      });
+      clearTimeout(timeoutId);
+      return response.ok;
+    } catch {
+      return false;
+    }
+  }, []);
 
   return {
     ...state,
     checkConnection,
-    /**
-     * Indica si debe mostrarse el toast de reconexión
-     * Consumir este flag y resetearlo después de mostrar el toast
-     */
     shouldShowReconnectionToast: state.wasOffline && showReconnectionToast,
   };
 };
@@ -227,10 +197,11 @@ export const useNetworkStatus = (options: UseNetworkStatusOptions = {}) => {
  * Hook simplificado que solo retorna el estado online/offline
  */
 export const useIsOnline = () => {
-  const [isOnline, setIsOnline] = useState(true);
+  const [isOnline, setIsOnline] = useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true,
+  );
 
   useEffect(() => {
-    setIsOnline(navigator.onLine);
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
 

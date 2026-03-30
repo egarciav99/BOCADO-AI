@@ -45,6 +45,14 @@ import {
   separateUserData,
   safeLog,
 } from "../utils/profileSanitizer";
+import {
+  translateDisease,
+  translateAllergy,
+  translateGoal,
+  translateActivityLevel,
+  translateActivityFrequency,
+  translateCookingAffinity,
+} from "../utils/profileTranslations";
 import { useUserProfile, useUpdateUserProfile } from "../hooks/useUser";
 import { useAuthStore } from "../stores/authStore";
 import { useQueryClient } from "@tanstack/react-query";
@@ -795,81 +803,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     return gender;
   }, [t]);
 
-  const translateCookingAffinity = useCallback((affinity: string): string => {
-    const map: Record<string, string> = {
-      Nunca: "nunca",
-      "A veces": "aveces",
-      Seguido: "seguido",
-      Siempre: "siempre",
-    };
-    const key = map[affinity];
-    return key ? t(`cookingAffinity.${key}`) : affinity;
-  }, [t]);
-
-  const translateGoal = useCallback((goal: string): string => {
-    const map: Record<string, string> = {
-      "Bajar de peso": "loseWeight",
-      "Subir de peso": "gainWeight",
-      "Generar músculo": "buildMuscle",
-      "Salud y bienestar": "healthWellness",
-    };
-    const key = map[goal];
-    return key ? t(`goals.${key}`) : goal;
-  }, [t]);
-
-  const translateActivityLevel = useCallback((level: string): string => {
-    const map: Record<string, string> = {
-      Sedentario: "sedentary",
-      "Activo ligero": "lightlyActive",
-      Fuerza: "strength",
-      Cardio: "cardio",
-      Deportivo: "athletic",
-      Atleta: "athlete",
-      Otro: "other",
-    };
-    // Remover emoji primero
-    const textOnly = stripLeadingEmoji(level);
-    const key = map[textOnly];
-    return key ? t(`activityLevels.${key}`) : level;
-  }, [t]);
-
-  const translateActivityFrequency = useCallback((freq: string): string => {
-    const map: Record<string, string> = {
-      Diario: "daily",
-      "3-5 veces por semana": "frequent",
-      "1-2 veces": "occasional",
-      "Rara vez": "rarely",
-    };
-    const key = map[freq];
-    return key ? t(`activityFrequencies.${key}`) : freq;
-  }, [t]);
-
-  const translateDisease = useCallback((disease: string): string => {
-    const map: Record<string, string> = {
-      Hipertensión: "hypertension",
-      Diabetes: "diabetes",
-      Hipotiroidismo: "hypothyroidism",
-      Hipertiroidismo: "hyperthyroidism",
-      Colesterol: "cholesterol",
-      "Intestino irritable": "ibs",
-    };
-    const key = map[disease];
-    return key ? t(`diseases.${key}`) : disease;
-  }, [t]);
-
-  const translateAllergy = useCallback((allergy: string): string => {
-    const map: Record<string, string> = {
-      "Intolerante a la lactosa": "lactoseIntolerant",
-      "Alergia a frutos secos": "nutAllergy",
-      Celíaco: "celiac",
-      Vegano: "vegan",
-      Vegetariano: "vegetarian",
-      Otro: "other",
-    };
-    const key = map[allergy];
-    return key ? t(`allergies.${key}`) : allergy;
-  }, [t]);
-
   const translateFood = useCallback((foodKey: string): string => {
     // Si el alimento está en las traducciones, usarlas
     // De lo contrario, retornar el key original (alimento personalizado)
@@ -1379,7 +1312,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               )}
               {formData.cookingAffinity && (
                 <Badge
-                  text={`${t("profile.prefixCooking")}${translateCookingAffinity(formData.cookingAffinity)}`}
+                  text={`${t("profile.prefixCooking")}${translateCookingAffinity(formData.cookingAffinity, t)}`}
                   color="gray"
                 />
               )}
@@ -1391,7 +1324,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               {formData.nutritionalGoal.length > 0 &&
                 formData.nutritionalGoal[0] !== "Sin especificar" ? (
                 formData.nutritionalGoal.map((g) => (
-                  <Badge key={g} text={translateGoal(g)} color="green" />
+                  <Badge key={g} text={translateGoal(g, t)} color="green" />
                 ))
               ) : (
                 <span className="text-xs text-bocado-gray">
@@ -1403,7 +1336,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <InfoSection title={t("profile.physicalActivity")}>
               {formData.activityLevel ? (
                 <Badge
-                  text={`${translateActivityLevel(formData.activityLevel)}${formData.activityFrequency ? ` (${translateActivityFrequency(formData.activityFrequency)})` : ""}`}
+                  text={`${translateActivityLevel(formData.activityLevel, t)}${formData.activityFrequency ? ` (${translateActivityFrequency(formData.activityFrequency, t)})` : ""}`}
                   color="gray"
                 />
               ) : (
@@ -1417,7 +1350,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               {formData.diseases.length > 0 &&
                 formData.diseases[0] !== "Ninguna" ? (
                 formData.diseases.map((d) => (
-                  <Badge key={d} text={translateDisease(d)} color="red" />
+                  <Badge key={d} text={translateDisease(d, t)} color="red" />
                 ))
               ) : (
                 <span className="text-xs text-bocado-gray">
@@ -1431,7 +1364,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 formData.allergies[0] !== "Ninguna" ? (
                 <>
                   {formData.allergies.map((a) => (
-                    <Badge key={a} text={translateAllergy(a)} color="blue" />
+                    <Badge key={a} text={translateAllergy(a, t)} color="blue" />
                   ))}
                   {formData.otherAllergies && (
                     <Badge text={formData.otherAllergies} color="blue" />

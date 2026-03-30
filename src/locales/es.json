@@ -1045,6 +1045,14 @@
     "male": "Hombre",
     "female": "Mujer"
   },
+  "geolocation": {
+    "notSupported": "Tu navegador no soporta geolocalización",
+    "invalidPosition": "Ubicación inválida recibida del navegador",
+    "unavailable": "No se pudo obtener tu ubicación",
+    "permissionDenied": "Permiso de ubicación denegado",
+    "positionUnavailable": "Ubicación no disponible",
+    "timeout": "Tiempo de espera agotado"
+  },
   "budget": {
     "low": "Económico",
     "medium": "Medio",

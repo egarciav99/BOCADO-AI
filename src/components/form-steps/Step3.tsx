@@ -18,36 +18,10 @@ import {
 } from "../icons";
 import { trackEvent } from "../../firebaseConfig"; // ✅ Importado trackEvent
 import { useTranslation } from "../../contexts/I18nContext";
-
-// Funciones de traducción para las opciones
-const translateActivityLevel = (
-  level: string,
-  t: (key: string) => string,
-): string => {
-  const map: Record<string, string> = {
-    "🪑 Sedentario": `🪑 ${t("activityLevels.sedentary")}`,
-    "🚶‍♂️ Activo ligero": `🚶‍♂️ ${t("activityLevels.lightlyActive")}`,
-    "🏋️‍♀️ Fuerza": `🏋️‍♀️ ${t("activityLevels.strength")}`,
-    "🏃‍♂️ Cardio": `🏃‍♂️ ${t("activityLevels.cardio")}`,
-    "⚽ Deportivo": `⚽ ${t("activityLevels.athletic")}`,
-    "🥇 Atleta": `🥇 ${t("activityLevels.athlete")}`,
-    Otro: t("activityLevels.other"),
-  };
-  return map[level] || level;
-};
-
-const translateActivityFrequency = (
-  freq: string,
-  t: (key: string) => string,
-): string => {
-  const map: Record<string, string> = {
-    Diario: t("activityFrequencies.daily"),
-    "3-5 veces por semana": t("activityFrequencies.frequent"),
-    "1-2 veces": t("activityFrequencies.occasional"),
-    "Rara vez": t("activityFrequencies.rarely"),
-  };
-  return map[freq] || freq;
-};
+import {
+  translateActivityLevel,
+  translateActivityFrequency,
+} from "../../utils/profileTranslations";
 
 const categoryIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
   meatPoultry: MeatIcon,

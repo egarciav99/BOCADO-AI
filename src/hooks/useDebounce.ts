@@ -2,8 +2,7 @@
  * useDebounce - Debounce a value with cleanup guarantees
  * Prevents excessive updates/renders during rapid state changes
  */
-
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface UseDebouncedValueOptions {
   delay?: number;
@@ -19,29 +18,36 @@ export function useDebouncedValue<T>(
 ): T {
   const { delay = 500, onDebouncedValueChange } = options;
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ FIX: ReturnType<typeof setTimeout> en vez de NodeJS.Timeout
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ✅ FIX: estabilizar onDebouncedValueChange con ref para evitar
+  // que funciones inline rereinicien el debounce en cada render
+  const callbackRef = useRef(onDebouncedValueChange);
+  useEffect(() => {
+    callbackRef.current = onDebouncedValueChange;
+  }, [onDebouncedValueChange]);
 
   useEffect(() => {
-    // Cancel previous timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    // Set new timeout
     timeoutRef.current = setTimeout(() => {
       setDebouncedValue(value);
-      onDebouncedValueChange?.(value);
+      callbackRef.current?.(value);
       timeoutRef.current = null;
     }, delay);
 
-    // Cleanup on unmount or value change
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
     };
-  }, [value, delay, onDebouncedValueChange]);
+  // ✅ onDebouncedValueChange removido de deps — estabilizado via ref
+  }, [value, delay]);
 
   return debouncedValue;
 }
@@ -59,25 +65,31 @@ export function useDebouncedCallback<Args extends any[]>(
   options: UseDebouncedCallbackOptions = {},
 ): (...args: Args) => void {
   const { delay = 500 } = options;
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // ✅ FIX: ReturnType<typeof setTimeout>
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // ✅ Estabilizar callback con ref para evitar que funciones inline
+  // rompan la memoización del debouncedCallback
+  const callbackRef = useRef(callback);
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
   const debouncedCallback = useCallback(
     (...args: Args) => {
-      // Cancel previous timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-
-      // Set new timeout
       timeoutRef.current = setTimeout(() => {
-        callback(...args);
+        callbackRef.current(...args);
         timeoutRef.current = null;
       }, delay);
     },
-    [callback, delay],
+    // ✅ callback removido de deps — estabilizado via ref
+    [delay],
   );
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
@@ -99,6 +111,7 @@ export function useDebouncedState<T>(
   options: UseDebouncedCallbackOptions = {},
 ): [T, (value: T) => void] {
   const [value, setValue] = useState<T>(initialValue);
+
   const debouncedCallback = useDebouncedCallback(
     (newValue: T) => onChanged(newValue),
     options,

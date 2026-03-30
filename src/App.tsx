@@ -53,11 +53,9 @@ const MainApp = lazy(() => import("./components/MainApp"));
 
 // Fallback loading component
 const ScreenLoadingFallback = () => (
-  <div className="flex items-center justify-center h-full bg-white dark:bg-slate-950">
-    <div className="animate-pulse text-center">
-      <div className="w-16 h-16 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full mx-auto mb-4"></div>
-      <p className="text-slate-600 dark:text-slate-400">Cargando...</p>
-    </div>
+  <div className="flex items-center justify-center h-full bg-bocado-cream dark:bg-gray-900">
+    <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent 
+                    rounded-full animate-spin" />
   </div>
 );
 
@@ -88,11 +86,11 @@ function AppContent() {
   // ✅ Bug 6: rastrear si el usuario viene del flujo de Google (para omitir step email/password)
   const [isGoogleRegistration, setIsGoogleRegistration] = React.useState(false);
   const [authTimeout, setAuthTimeout] = React.useState(false);
-  const [renderError, setRenderError] = React.useState<Error | null>(null);
   // ✅ Bug 2 fix: solo navegar automáticamente en el startup inicial, no en cada cambio de estado
   const isInitialAuthCheckRef = React.useRef(true);
 
   const setUser = useAuthStore((state) => state.setUser);
+  const setLoading = useAuthStore((state) => state.setLoading);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const { t } = useTranslation();
@@ -129,7 +127,7 @@ function AppContent() {
     const timer = setTimeout(() => {
       console.warn("[App] Timeout de autenticación (10s) alcanzado");
       setAuthTimeout(true);
-      useAuthStore.getState().setLoading(false);
+      setLoading(false);
     }, 10000);
     return () => clearTimeout(timer);
   }, [isLoading]); // ← Solo depende de isLoading
@@ -169,7 +167,7 @@ function AppContent() {
     if (!env.firebase.apiKey || env.firebase.apiKey === "") {
       debugLog("error", "Firebase API Key not configured", {});
       setAuthTimeout(true);
-      useAuthStore.getState().setLoading(false);
+      setLoading(false);
       return;
     }
 
@@ -277,7 +275,7 @@ function AppContent() {
 
           captureError(error, { type: "auth_state_change_error" });
           setAuthTimeout(true);
-          useAuthStore.getState().setLoading(false);
+          setLoading(false);
         },
       );
     } catch (error) {
@@ -286,7 +284,7 @@ function AppContent() {
       });
       captureError(error as Error, { type: "auth_setup_error" });
       setAuthTimeout(true);
-      useAuthStore.getState().setLoading(false);
+      setLoading(false);
       return;
     }
 
@@ -331,35 +329,8 @@ function AppContent() {
     );
   }
 
-  // Si hay error de renderizado
-  if (renderError) {
-    return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-bocado-cream dark:bg-gray-900 p-4">
-        <div className="text-center max-w-md">
-          <div className="text-6xl mb-4">💥</div>
-          <h1 className="text-xl font-bold text-bocado-dark-green dark:text-gray-200 mb-2">
-            {t("errors.renderError")}
-          </h1>
-          <p className="text-bocado-gray dark:text-gray-400 mb-4">
-            {renderError.message}
-          </p>
-          <pre className="text-xs text-left bg-gray-100 dark:bg-gray-800 p-2 rounded overflow-auto max-h-40">
-            {renderError.stack}
-          </pre>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 bg-bocado-green text-white px-6 py-3 rounded-full font-bold hover:bg-bocado-dark-green transition-colors"
-          >
-            {t("errors.reload")}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   const renderScreen = () => {
-    try {
-      switch (currentScreen) {
+    switch (currentScreen) {
         case "permissions":
           return (
             <Suspense fallback={<ScreenLoadingFallback />}>
@@ -481,10 +452,6 @@ function AppContent() {
             </Suspense>
           );
       }
-    } catch (error) {
-      setRenderError(error as Error);
-      throw error;
-    }
   };
 
   return (
