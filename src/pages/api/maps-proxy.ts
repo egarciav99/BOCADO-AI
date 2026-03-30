@@ -274,6 +274,15 @@ export default async function handler(req: any, res: any) {
 
   // Obtener la acción antes del rate limiting para aplicar límites diferentes
   const { action, ...params } = req.body;
+  
+  // ✅ Debug logging for request body
+  console.log("[maps-proxy] Request details", {
+    body: req.body,
+    action,
+    params,
+    hasBody: !!req.body,
+    bodyType: typeof req.body,
+  });
 
   // Autocomplete puede funcionar sin auth (para flujo de registro)
   // Pero con rate limiting más estricto
@@ -330,19 +339,32 @@ export default async function handler(req: any, res: any) {
         return await handleReverseGeocode(res, validated);
       }
       case "detectLocation": {
+        console.log("[maps-proxy] Detecting location for IP", clientIP);
         // Reusar clientIP ya declarado arriba
         const location = await detectLocationByIP(clientIP);
 
         if (!location) {
+          console.log("[maps-proxy] Location detection failed", {
+            clientIP,
+            message: "No se pudo detectar la ubicación"
+          });
           return res.status(404).json({
             error: "No se pudo detectar la ubicación",
             fallback: true,
           });
         }
 
+        console.log("[maps-proxy] Location detected successfully", {
+          clientIP,
+          location
+        });
         return res.status(200).json(location);
       }
       default:
+        console.log("[maps-proxy] Invalid action received", { 
+          action, 
+          availableActions: ["autocomplete", "placeDetails", "geocode", "reverseGeocode", "detectLocation"]
+        });
         return res.status(400).json({ error: "Invalid action" });
     }
   } catch (error: any) {
