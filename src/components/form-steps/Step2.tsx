@@ -64,12 +64,23 @@ const MultiSelectButton: React.FC<{
   </button>
 );
 
-const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
+const Step2: React.FC<FormStepProps> = ({ data, updateData, errors, setErrors }) => {
   const { t } = useTranslation();
   // Asegurar que los arrays existan (fallback a array vacío)
   const diseases = data.diseases || [];
   const allergies = data.allergies || [];
   const nutritionalGoal = data.nutritionalGoal || [];
+
+  // Clear error for a specific field
+  const clearError = (field: string) => {
+    if (setErrors && errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   const toggleSelection = (field: "diseases" | "allergies", value: string) => {
     const currentValues = (data[field] || []) as string[];
@@ -87,12 +98,11 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
 
     updateData(field, newValues);
 
-    if (
-      field === "allergies" &&
-      value === "Otro" &&
-      !newValues.includes("Otro")
-    ) {
-      updateData("otherAllergies", "");
+    if (field === "allergies") {
+      clearError("allergies");
+      if (value === "Otro" && !newValues.includes("Otro")) {
+        updateData("otherAllergies", "");
+      }
     }
   };
 
@@ -119,6 +129,12 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       }
     }
     updateData("nutritionalGoal", currentGoals);
+    clearError("nutritionalGoal");
+  };
+
+  const handleOtherAllergiesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateData("otherAllergies", e.target.value);
+    clearError("otherAllergies");
   };
 
   return (
@@ -166,7 +182,7 @@ const Step2: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
             <input
               type="text"
               value={data.otherAllergies || ""}
-              onChange={(e) => updateData("otherAllergies", e.target.value)}
+              onChange={handleOtherAllergiesChange}
               onBlur={() => trackEvent("registration_other_allergies_input")} // ✅ Analítica
               placeholder={t("step2.specifyPlaceholder")}
               className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${

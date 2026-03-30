@@ -21,7 +21,9 @@
     "remove": "Remove",
     "confirm": "Confirm",
     "optional": "optional",
-    "required": "required"
+    "required": "required",
+    "undo": "Undo",
+    "or": "OR"
   },
   "home": {
     "title": "Bocado",
@@ -100,7 +102,14 @@
       "sameEmail": "The email is the same as the current one.",
       "exportError": "Error exporting data. Please try again.",
       "mustTypeDelete": "You must type DELETE to confirm.",
-      "saveError": "Could not save changes."
+      "saveError": "Could not save changes.",
+      "emailAlreadyInUse": "This email is already registered",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "selectAtLeastOneGoal": "Select at least one goal",
+      "specifyAllergy": "Specify your allergy",
+      "selectActivityLevel": "Select your activity level",
+      "selectActivityFrequency": "Select your activity frequency",
+      "describeActivityLevel": "Describe your activity level"
     },
     "success": {
       "profileUpdated": "Profile updated!",
@@ -305,36 +314,36 @@
       "footerNote": "Notifications work even when the app is closed. Make sure \"Do Not Disturb\" mode is not enabled on your device.",
       "appName": "Bocado",
       "breakfast": {
-        "title": "🌅 Good morning",
+        "title": "Good morning",
         "body": "Have you thought about breakfast today? Discover nutritious options",
-        "titleSimple": "🌅 Good morning",
+        "titleSimple": "Good morning",
         "bodySimple": "How about a nutritious breakfast to start your day?"
       },
       "lunch": {
-        "title": "🍽️ Time to eat",
+        "title": "Time to eat",
         "body": "We suggest delicious recipes based on your pantry",
         "bodySimple": "Discover delicious recipes for your lunch"
       },
       "dinner": {
-        "title": "🌙 Healthy dinner",
+        "title": "Healthy dinner",
         "body": "End the day with a light and nutritious dinner",
-        "titleSimple": "🌙 Light dinner",
+        "titleSimple": "Light dinner",
         "bodySimple": "We suggest healthy options for dinner"
       },
       "pantryUpdate": {
-        "title": "🥑 Update your pantry",
+        "title": "Update your pantry",
         "body": "Do you have new ingredients? Update \"My Kitchen\" for better recommendations"
       },
       "rateRecipes": {
-        "title": "⭐ What did you think?",
+        "title": "What did you think?",
         "body": "Rate the recipes and restaurants you tried to improve your recommendations"
       },
       "comeBack": {
-        "title": "🥗 We miss you",
+        "title": "We miss you",
         "body": "Discover new recipes perfect for you. Open Bocado!"
       },
       "testNotification": {
-        "title": "🧪 Test notification",
+        "title": "Test notification",
         "body": "Notifications are working correctly!"
       }
     },
@@ -525,6 +534,8 @@
     "verifyEmailTitle": "Verify your email!",
     "sentTo": "Sent to",
     "alreadyVerified": "I already verified my email",
+    "resendVerification": "Resend verification",
+    "emailNotVerifiedYet": "You haven't verified your email yet",
     "previous": "Previous",
     "creating": "...",
     "createAccount": "Create account",
@@ -685,14 +696,16 @@
     "fresh": "Fresh",
     "expiringSoon": "Expiring soon",
     "urgent": "Urgent",
-    "tapToChange": "👆 Tap an ingredient to change its state",
+    "tapToChange": "👆 Tap the name to change state · Tap the icon to change it",
     "allCategories": "All",
     "suggestions": "Suggestions",
     "addIngredient": "Add ingredient...",
     "addInCategory": "Add in {category}...",
     "empty": "Empty",
     "expiry": "Expiry",
-    "urgentCount": "{count} items"
+    "urgentCount": "{count} items",
+    "deleteItem": "Delete ingredient",
+    "willBeDeleted": "will be deleted"
   },
   "savedRecipes": {
     "title": "My Recipes",
@@ -826,7 +839,11 @@
     "lacteos": "Dairy"
   },
   "progressBar": {
-    "step": "Step {current} of {total}"
+    "step": "Step {current} of {total}",
+    "stepPersonal": "Personal info",
+    "stepHealth": "Health",
+    "stepLifestyle": "Lifestyle",
+    "stepDone": "Done!"
   },
   "gender": {
     "male": "Male",
@@ -989,7 +1006,11 @@
     "installQuickAccess": "Quick access from your home screen",
     "installDesktop": "Install the app on your desktop for quick access",
     "understood": "Got it",
-    "offlineMessage": "No connection. Some features may not be available."
+    "offlineMessage": "No connection. Some features may not be available.",
+    "iosStep1": "Tap the share button ↑",
+    "iosStep2": "Tap 'Add to Home Screen'",
+    "iosStep3": "Tap 'Add'",
+    "iosClose": "Close instructions"
   },
   "foodCategories": {
     "meatPoultry": "Meat and Poultry",
@@ -1073,6 +1094,9 @@
     "minIngredientsError": "At least 2 ingredients are required",
     "maxIngredientsReached": "Maximum 15 ingredients allowed",
     "ingredientDuplicate": "Ingredient already added",
+    "invalidIngredient": "Enter a valid ingredient",
+    "ingredientTooLong": "Maximum 50 characters",
+    "willBeRemoved": "will be removed",
     "userNotFound": "User not found",
     "connectionError": "Connection error, please try again",
     "rateLimited": "Too many requests, please try later",

@@ -108,7 +108,7 @@ interface ExtendedStep1Props extends FormStepProps {
   isSearchingCity?: boolean;
   onSearchCity?: (query: string) => void;
   onClearCityOptions?: () => void;
-  onCountryChange?: (code: string, name: string) => void;
+  onCountryChange?: (code: string) => void;
   selectedPlaceId?: string;
 }
 
@@ -138,6 +138,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
   data,
   updateData,
   errors,
+  setErrors,
   hidePasswordFields,
   disableEmail,
   cityOptions = [],
@@ -151,13 +152,24 @@ const Step1: React.FC<ExtendedStep1Props> = ({
   const [emailSuggestions, setEmailSuggestions] = useState<string[]>([]);
   const [localCityQuery, setLocalCityQuery] = useState(data.city || "");
 
+  // Clear error for a specific field
+  const clearError = (field: string) => {
+    if (setErrors && errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
+
   const handleCountrySelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const code = e.target.value;
-    const name = e.target.options[e.target.selectedIndex].text;
     trackEvent("registration_country_select", { country_code: code });
     setLocalCityQuery("");
+    clearError("country");
     if (onCountryChange) {
-      onCountryChange(code, name);
+      onCountryChange(code);
     } else {
       updateData("country", code);
     }
@@ -167,6 +179,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
     const value = e.target.value;
     setLocalCityQuery(value);
     updateData("city", value);
+    clearError("city");
     if (onSearchCity) onSearchCity(value);
   };
 
@@ -183,6 +196,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
     const { name, value } = e.target;
     const validValue = value.replace(/[^a-zA-ZÀ-ÿ\s]/g, "");
     updateData(name as keyof FormData, validValue);
+    clearError(name);
   };
 
   const handleAgeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -191,6 +205,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
       const num = parseInt(value);
       if (value === "" || (num >= 1 && num <= 120)) {
         updateData("age", value);
+        clearError("age");
       }
     }
   };
@@ -215,6 +230,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     updateData("email", value);
+    clearError("email");
     const atIndex = value.indexOf("@");
     if (atIndex > -1) {
       const textBeforeAt = value.substring(0, atIndex);
@@ -227,6 +243,31 @@ const Step1: React.FC<ExtendedStep1Props> = ({
     } else {
       setShowEmailSuggestions(false);
     }
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateData("password", e.target.value);
+    clearError("password");
+  };
+
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateData("confirmPassword", e.target.value);
+    clearError("confirmPassword");
+  };
+
+  const handleConfirmPasswordBlur = () => {
+    if (data.confirmPassword && data.password !== data.confirmPassword && setErrors) {
+      setErrors(prev => ({
+        ...prev,
+        confirmPassword: t("common.errors.passwordsDoNotMatch")
+      }));
+    }
+  };
+
+  const handleGenderSelect = (gender: string) => {
+    trackEvent("registration_gender_select", { gender });
+    updateData("gender", gender);
+    clearError("gender");
   };
 
   return (
@@ -320,10 +361,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 testId={testId}
                 icon={icon}
                 isSelected={data.gender === value}
-                onClick={() => {
-                  trackEvent("registration_gender_select", { gender: value });
-                  updateData("gender", value);
-                }}
+                onClick={() => handleGenderSelect(value)}
               />
             ))}
           </div>
@@ -550,7 +588,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           </div>
         )}
         {errors.email && (
-          <p className="text-red-500 text-xs mt-1">{errors.city}</p>
+          <p className="text-red-500 text-xs mt-1">{errors.email}</p>
         )}
       </div>
 
@@ -568,7 +606,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 name="password"
                 data-testid="password-input"
                 value={data.password || ""}
-                onChange={(e) => updateData("password", e.target.value)}
+                onChange={handlePasswordChange}
                 onFocus={() =>
                   trackEvent("registration_input_focus", { field: "password" })
                 }
@@ -593,7 +631,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               name="confirmPassword"
               data-testid="confirmPassword-input"
               value={data.confirmPassword || ""}
-              onChange={(e) => updateData("confirmPassword", e.target.value)}
+              onChange={handleConfirmPasswordChange}
+              onBlur={handleConfirmPasswordBlur}
               onFocus={() =>
                 trackEvent("registration_input_focus", {
                   field: "confirmPassword",

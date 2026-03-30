@@ -60,7 +60,7 @@ const categoryIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
   herbsSpices: SpicesIcon,
 };
 
-const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
+const Step3: React.FC<FormStepProps> = ({ data, updateData, errors, setErrors }) => {
   const { t } = useTranslation();
   const [modalCategory, setModalCategory] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,6 +70,17 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
   const dislikedFoods: string[] = (
     Array.isArray(data.dislikedFoods) ? data.dislikedFoods : []
   ).filter((item): item is string => typeof item === "string");
+
+  // Clear error for a specific field
+  const clearError = (field: string) => {
+    if (setErrors && errors[field]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      });
+    }
+  };
 
   // Helper para obtener el nombre traducido de un alimento
   const getFoodName = (food: { key: string; default: string }) => {
@@ -81,6 +92,8 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
     trackEvent(`registration_${field}_select`, { value });
 
     updateData(field, value);
+    clearError(field as string);
+    
     if (field === "activityLevel") {
       if (value === "🪑 Sedentario") {
         updateData("activityFrequency", "");
@@ -89,6 +102,11 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
         updateData("otherActivityLevel", "");
       }
     }
+  };
+
+  const handleOtherActivityLevelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    updateData("otherActivityLevel", e.target.value);
+    clearError("otherActivityLevel");
   };
 
   const handleToggleDislike = (foodKey: string) => {
@@ -104,6 +122,7 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
       ? [...dislikedFoods, foodKey]
       : dislikedFoods.filter((item) => item !== foodKey);
     updateData("dislikedFoods", newDislikes);
+    clearError("dislikedFoods");
   };
 
   const handleAddCustomFood = () => {
@@ -170,13 +189,16 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
             </button>
           ))}
         </div>
+        {errors.activityLevel && (
+          <p className="text-red-500 text-xs mt-2">{errors.activityLevel}</p>
+        )}
 
         {data.activityLevel === "Otro" && (
           <div className="mt-3">
             <input
               type="text"
               value={data.otherActivityLevel || ""}
-              onChange={(e) => updateData("otherActivityLevel", e.target.value)}
+              onChange={handleOtherActivityLevelChange}
               onBlur={() => trackEvent("registration_custom_activity_input")} // ✅ Analítica
               placeholder={t("step3.activityPlaceholder")}
               className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
@@ -185,6 +207,9 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
                   : "border-bocado-border focus:border-bocado-green focus:outline-none"
               }`}
             />
+            {errors.otherActivityLevel && (
+              <p className="text-red-500 text-xs mt-1">{errors.otherActivityLevel}</p>
+            )}
           </div>
         )}
       </div>
@@ -217,6 +242,9 @@ const Step3: React.FC<FormStepProps> = ({ data, updateData, errors }) => {
             </button>
           ))}
         </div>
+        {errors.activityFrequency && (
+          <p className="text-red-500 text-xs mt-2">{errors.activityFrequency}</p>
+        )}
       </div>
 
       {/* Ingredientes que no le gustan */}

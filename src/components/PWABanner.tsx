@@ -30,7 +30,11 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
   } = usePWA();
 
   const [dismissedInstall, setDismissedInstall] = React.useState(false);
+  const [dismissedUpdate, setDismissedUpdate] = React.useState(false);
+  const [isUpdating, setIsUpdating] = React.useState(false);
+  const [showIOSSteps, setShowIOSSteps] = React.useState(false);
 
+  // Configurar dismissed install
   React.useEffect(() => {
     if (typeof window !== "undefined") {
       const dismissedAt = localStorage.getItem("pwa-install-dismissed-at");
@@ -46,8 +50,21 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
     }
   }, []);
 
-  const [dismissedUpdate, setDismissedUpdate] = React.useState(false);
-  const [isUpdating, setIsUpdating] = React.useState(false);
+  // Configurar dismissed update con persistencia
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      const dismissedAt = localStorage.getItem("pwa-update-dismissed-at");
+      if (dismissedAt) {
+        const ONE_HOUR_MS = 60 * 60 * 1000;
+        const elapsed = Date.now() - parseInt(dismissedAt, 10);
+        if (elapsed <= ONE_HOUR_MS) {
+          setDismissedUpdate(true);
+        } else {
+          localStorage.removeItem("pwa-update-dismissed-at");
+        }
+      }
+    }
+  }, []);
 
   const handleDismissInstall = () => {
     setDismissedInstall(true);
@@ -56,21 +73,28 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
 
   const handleDismissUpdate = () => {
     setDismissedUpdate(true);
+    localStorage.setItem("pwa-update-dismissed-at", String(Date.now()));
   };
 
-  // No mostrar si no hay nada que notificar o si fue descartado
-  const isMobile = isIOS || isAndroid;
-  const showInstallBanner =
-    showInstall && isInstallable && !isInstalled && !dismissedInstall;
+  const handleShowIOSSteps = () => {
+    setShowIOSSteps(true);
+  };
 
-  if (
-    (!showInstallBanner && !isOffline && !updateAvailable) ||
-    (updateAvailable && dismissedUpdate)
-  ) {
-    return null;
+  // PRIORIDAD 1: Banner offline siempre tiene máxima prioridad
+  if (isOffline) {
+    return (
+      <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500 text-white px-safe pt-safe py-2">
+        <div className="flex items-center justify-center gap-2">
+          <WifiOff className="w-4 h-4" />
+          <span className="text-xs font-medium">
+            {t("pwaBanner.offlineMessage")}
+          </span>
+        </div>
+      </div>
+    );
   }
 
-  // Banner de actualización (prioridad alta)
+  // PRIORIDAD 2: Banner de actualización
   if (updateAvailable && !dismissedUpdate) {
     return (
       <div className="absolute top-0 left-0 right-0 z-50 bg-blue-500 text-white px-safe pt-safe py-3 shadow-lg">
@@ -109,7 +133,11 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
     );
   }
 
-  // Banner de instalación
+  // PRIORIDAD 3: Banner de instalación
+  const isMobile = isIOS || isAndroid;
+  const showInstallBanner =
+    showInstall && isInstallable && !isInstalled && !dismissedInstall;
+
   if (showInstallBanner) {
     const isManualInstall = isIOS && !installPrompt;
 
@@ -135,7 +163,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
           <div className="flex items-center gap-2 flex-shrink-0">
             {isManualInstall ? (
               <button
-                onClick={handleDismissInstall}
+                onClick={handleShowIOSSteps}
                 className="px-3 py-2 bg-white/10 text-white text-sm font-bold rounded-xl hover:bg-white/20 transition-colors"
               >
                 {t("pwaBanner.understood")}
@@ -156,20 +184,23 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
             </button>
           </div>
         </div>
-      </div>
-    );
-  }
 
-  // Banner offline
-  if (isOffline) {
-    return (
-      <div className="absolute top-0 left-0 right-0 z-50 bg-amber-500 text-white px-safe pt-safe py-2">
-        <div className="flex items-center justify-center gap-2">
-          <WifiOff className="w-4 h-4" />
-          <span className="text-xs font-medium">
-            {t("pwaBanner.offlineMessage")}
-          </span>
-        </div>
+        {/* Panel de instrucciones iOS inline */}
+        {showIOSSteps && (
+          <div className="mt-4 pt-4 border-t border-white/20">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold">{t("pwaBanner.iosStep1")}</p>
+              <p className="text-xs font-semibold">{t("pwaBanner.iosStep2")}</p>
+              <p className="text-xs font-semibold">{t("pwaBanner.iosStep3")}</p>
+            </div>
+            <button
+              onClick={() => setShowIOSSteps(false)}
+              className="mt-3 text-xs text-white/80 underline hover:text-white transition-colors"
+            >
+              {t("pwaBanner.iosClose")}
+            </button>
+          </div>
+        )}
       </div>
     );
   }

@@ -56,6 +56,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const [registeredEmail, setRegisteredEmail] = useState("");
   const [verificationError, setVerificationError] = useState("");
   const [isCheckingVerification, setIsCheckingVerification] = useState(false);
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   // ✅ Bug 7: checkbox de términos y condiciones (obligatorio en el último paso)
   const [acceptTerms, setAcceptTerms] = useState(false);
   const queryClient = useQueryClient();
@@ -82,6 +83,12 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
 
   // ✅ AUDITORÍA: Detectar abandono del registro al desmontar el componente
   const isCompletedRef = React.useRef(false);
+  const currentStepRef = React.useRef(currentStep);
+
+  // Keep currentStepRef in sync with currentStep
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+  }, [currentStep]);
 
   // ✅ FIX: cleanup only on unmount (empty dep array)
   // Using currentStep in deps caused this to re-register on every step change,
@@ -90,8 +97,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     return () => {
       if (!isCompletedRef.current) {
         trackEvent("registration_abandoned", {
-          step_number: currentStep,
-          step_name: `step_${currentStep}`,
+          step_number: currentStepRef.current,
+          step_name: `step_${currentStepRef.current}`,
           total_steps: TOTAL_STEPS,
         });
       }
@@ -136,7 +143,89 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
 
     setErrors({});
     return true;
-  }, [currentStep, formData]);
+  }, [currentStep, formData, isGoogleUser]);
+
+  const validateStep2 = useCallback(() => {
+    const newErrors: Record<string, string> = {};
+    
+    // Validate nutritionalGoal
+    if (!formData.nutritionalGoal || formData.nutritionalGoal.length === 0) {
+      newErrors.nutritionalGoal = t("common.errors.selectAtLeastOneGoal");
+    }
+    
+    // Validate otherAllergies if "Otro" is selected
+    if (formData.allergies?.includes("Otro") && !formData.otherAllergies?.trim()) {
+      newErrors.otherAllergies = t("common.errors.specifyAllergy");
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return false;
+    }
+    
+    setErrors({});
+    return true;
+  }, [formData, t]);
+
+  const validateStep3 = useCallback(() => {
+    const newErrors: Record<string, string> = {};
+    
+    // Validate activityLevel
+    if (!formData.activityLevel) {
+      newErrors.activityLevel = t("common.errors.selectActivityLevel");
+    }
+    
+    // Validate activityFrequency (required unless sedentary)
+    if (formData.activityLevel && formData.activityLevel !== "🪑 Sedentario" && !formData.activityFrequency) {
+      newErrors.activityFrequency = t("common.errors.selectActivityFrequency");
+    }
+    
+    // Validate otherActivityLevel if "Otro" is selected
+    if (formData.activityLevel === "Otro" && !formData.otherActivityLevel?.trim()) {
+      newErrors.otherActivityLevel = t("common.errors.describeActivityLevel");
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return false;
+    }
+    
+    setErrors({});
+    return true;
+  }, [formData, t]);
+
+  const checkEmailAvailability = useCallback(async (email: string): Promise<boolean> => {
+    try {
+      setIsCheckingEmail(true);
+      const response = await fetch('/api/auth/check-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (response.status === 409) {
+        setErrors(prev => ({
+          ...prev,
+          email: t("common.errors.emailAlreadyInUse")
+        }));
+        return false;
+      }
+
+      if (!response.ok) {
+        logger.warn("Email check failed with status:", response.status);
+        // Don't block registration if check fails for other reasons
+        return true;
+      }
+
+      return true;
+    } catch (error) {
+      logger.error("Error checking email availability:", error);
+      // Don't block registration if check fails
+      return true;
+    } finally {
+      setIsCheckingEmail(false);
+    }
+  }, [t]);
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -259,7 +348,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       });
 
       if (error.code === "auth/email-already-in-use") {
-        setSubmissionError("Este correo ya está registrado");
+        setSubmissionError(t("common.errors.emailAlreadyInUse"));
         setCurrentStep(1);
       } else {
         setSubmissionError("Error al crear cuenta. Intenta de nuevo.");
@@ -316,6 +405,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   };
 
   const nextStep = async () => {
+    // Check terms acceptance on last step
     if (currentStep === TOTAL_STEPS && !acceptTerms) {
       setSubmissionError(
         t("registrationFlow.mustAcceptTerms") ||
@@ -323,12 +413,36 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       );
       return;
     }
-    if (await validateStep()) {
-      if (currentStep < TOTAL_STEPS) {
-        setCurrentStep(currentStep + 1);
-      } else {
-        await handleSubmit();
+
+    // Validate current step
+    if (currentStep === 1) {
+      const isValid = await validateStep();
+      if (!isValid) return;
+
+      // Check password confirmation
+      if (!isGoogleUser && formData.password !== formData.confirmPassword) {
+        setErrors(prev => ({
+          ...prev,
+          confirmPassword: t("common.errors.passwordsDoNotMatch")
+        }));
+        return;
       }
+
+      // Check email availability
+      if (!isGoogleUser) {
+        const emailAvailable = await checkEmailAvailability(formData.email);
+        if (!emailAvailable) return;
+      }
+
+      setCurrentStep(currentStep + 1);
+    } else if (currentStep === 2) {
+      const isValid = validateStep2();
+      if (!isValid) return;
+      setCurrentStep(currentStep + 1);
+    } else if (currentStep === 3) {
+      const isValid = validateStep3();
+      if (!isValid) return;
+      await handleSubmit();
     }
   };
 
@@ -374,6 +488,7 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       data: formData,
       updateData: updateFormDataFn,
       errors,
+      setErrors,
     };
     switch (currentStep) {
       case 1:
@@ -473,7 +588,11 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
     <div className="h-full min-h-0 flex flex-col px-4 pt-safe pb-4">
       <div className="flex-1 flex flex-col max-w-md mx-auto w-full min-h-0">
         <div className="mt-4 mb-6">
-          <ProgressBar currentStep={currentStep} totalSteps={TOTAL_STEPS} />
+          <ProgressBar 
+            currentStep={currentStep} 
+            totalSteps={TOTAL_STEPS}
+            isCompleted={isCompletedRef.current}
+          />
         </div>
 
         <div className="flex-1 relative overflow-y-auto no-scrollbar">
@@ -532,15 +651,25 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
               className={`flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all ${
                 currentStep === TOTAL_STEPS && !acceptTerms
                   ? "opacity-50 cursor-not-allowed"
-                  : "disabled:bg-bocado-gray"
+                  : "disabled:bg-bocado-gray disabled:opacity-50"
               }`}
-              disabled={isLoading || (currentStep === TOTAL_STEPS && !acceptTerms)}
+              disabled={isLoading || isCheckingEmail || (currentStep === TOTAL_STEPS && !acceptTerms)}
             >
-              {isLoading
-                ? t("registrationFlow.creating")
-                : currentStep === TOTAL_STEPS
-                  ? t("registrationFlow.createAccount")
-                  : t("registrationFlow.next")}
+              {isLoading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  {t("registrationFlow.creating")}
+                </span>
+              ) : isCheckingEmail ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  {t("registrationFlow.checking") || "Verificando..."}
+                </span>
+              ) : currentStep === TOTAL_STEPS ? (
+                t("registrationFlow.createAccount")
+              ) : (
+                t("registrationFlow.next")
+              )}
             </button>
           </div>
           <button

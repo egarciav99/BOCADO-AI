@@ -110,24 +110,29 @@ export const RecommendationRequestSchema = z.object({
     error: "Tipo de recomendación inválido",
   }),
   mealType: z.string().max(50, "Tipo de comida demasiado largo").optional().nullable(),
+  // ingredientes: Required for "Receta Rápida" (min 2), optional for "En casa"/"Fuera"
   ingredientes: z.array(
     z.string()
       .min(1, "Ingrediente no puede estar vacío")
       .max(100, "Nombre de ingrediente demasiado largo")
   )
-    .min(1, "Debes incluir al menos un ingrediente")
-    .max(50, "Máximo 50 ingredientes permitidos"),
+    .max(50, "Máximo 50 ingredientes permitidos")
+    .optional()
+    .default([]),
   cookingTime: z.number({
     error: "El tiempo de cocción debe ser un número",
   })
     .min(1, "El tiempo debe ser mayor a 0")
     .max(480, "El tiempo máximo es 480 minutos")
+    .optional()
     .nullable(),
   cravings: z.union([z.string(), z.array(z.string())]).optional().nullable(),
-  dislikedFoods: z.array(z.string().max(100, "Alimento no deseado demasiado largo")),
+  dislikedFoods: z.array(z.string().max(100, "Alimento no deseado demasiado largo"))
+    .optional()
+    .default([]),
   onlyPantryIngredients: z.boolean({
     error: "onlyPantryIngredients debe ser booleano",
-  }),
+  }).optional().default(false),
   language: z.enum(["es", "en"], {
     error: "Idioma debe ser 'es' o 'en'",
   }),
@@ -140,7 +145,19 @@ export const RecommendationRequestSchema = z.object({
     lng: z.number({ error: "Longitud debe ser un número" }),
     accuracy: z.number().optional(),
   }).nullable().optional(),
-});
+}).refine(
+  // "Receta Rápida" requires at least 2 ingredients; "En casa" and "Fuera" don't
+  (data) => {
+    if (data.type === "Receta Rápida") {
+      return (data.ingredientes?.length ?? 0) >= 2;
+    }
+    return true;
+  },
+  {
+    message: "Se requieren al menos 2 ingredientes para Receta Rápida",
+    path: ["ingredientes"],
+  }
+);
 
 export type ValidatedRecommendationRequest = z.infer<typeof RecommendationRequestSchema>;
 

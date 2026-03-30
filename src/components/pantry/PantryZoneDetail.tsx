@@ -1,5 +1,5 @@
 // components/pantry/PantryZoneDetail.tsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import { KitchenItem, Zone, Freshness } from "../../types";
 import {
   ZONES,
@@ -10,6 +10,13 @@ import {
 import { trackEvent } from "../../firebaseConfig";
 import { useTranslation } from "../../contexts/I18nContext";
 import { EmojiPicker } from "./EmojiPicker";
+import { isIngredientSafeForUser } from "../../lib/api/services/ingredient-filter";
+
+// Undo snackbar state type
+interface UndoState {
+  item: KitchenItem;
+  timeout: NodeJS.Timeout;
+}
 
 interface PantryZoneDetailProps {
   zone: Zone;
@@ -19,6 +26,8 @@ interface PantryZoneDetailProps {
   onAddItem: (item: KitchenItem) => void;
   onDeleteItem: (id: string) => void;
   onUpdateItem: (id: string, updates: Partial<KitchenItem>) => void;
+  userAllergies?: string[];
+  userOtherAllergies?: string;
 }
 
 const getFreshnessColor = (status: Freshness) => {
@@ -57,11 +66,52 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
   onAddItem,
   onDeleteItem,
   onUpdateItem,
+  userAllergies = [],
+  userOtherAllergies = "",
 }) => {
   const { t } = useTranslation();
   const [activeCategory, setActiveCategory] = useState("Todos");
   const [newItemName, setNewItemName] = useState("");
   const [pickingEmojiItem, setPickingEmojiItem] = useState<string | null>(null);
+  // Undo snackbar state for ingredient deletion
+  const [undoState, setUndoState] = useState<UndoState | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (undoState?.timeout) {
+        clearTimeout(undoState.timeout);
+      }
+    };
+  }, [undoState]);
+
+  // Handle delete with undo capability
+  const handleDeleteWithUndo = useCallback((item: KitchenItem) => {
+    // Clear any existing undo state
+    if (undoState) {
+      clearTimeout(undoState.timeout);
+      // Commit the previous deletion
+      onDeleteItem(undoState.item.id);
+    }
+
+    // Show undo snackbar with 4 second timeout
+    const timeout = setTimeout(() => {
+      onDeleteItem(item.id);
+      setUndoState(null);
+    }, 4000);
+
+    setUndoState({ item, timeout });
+    trackEvent("pantry_item_delete_initiated", { itemName: item.name });
+  }, [undoState, onDeleteItem]);
+
+  // Undo the deletion
+  const handleUndo = useCallback(() => {
+    if (undoState) {
+      clearTimeout(undoState.timeout);
+      setUndoState(null);
+      trackEvent("pantry_item_delete_undone", { itemName: undoState.item.name });
+    }
+  }, [undoState]);
 
   // Helper para traducir nombres de zona
   const translateZone = (zone: Zone): string => {
@@ -182,6 +232,10 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
 
   const zoneItems = useMemo(() => {
     let filtered = inventory.filter((i) => i.zone === zone);
+    // Hide item that's pending deletion (undo available)
+    if (undoState) {
+      filtered = filtered.filter((i) => i.id !== undoState.item.id);
+    }
     if (activeCategory !== "Todos") {
       filtered = filtered.filter(
         (i) =>
@@ -190,7 +244,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
       );
     }
     return filtered;
-  }, [inventory, zone, activeCategory]);
+  }, [inventory, zone, activeCategory, undoState]);
 
   const urgentItems = useMemo(
     () =>
@@ -213,14 +267,20 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
     } else {
       candidates = COMMON_INGREDIENTS_DB[zone]?.[activeCategory] || [];
     }
-    return candidates.filter(
-      (c) =>
-        !inventory.some(
-          (i) =>
-            i.name.toLowerCase() === c.name.toLowerCase() && i.zone === zone,
-        ),
-    );
-  }, [zone, activeCategory, inventory]);
+    return candidates
+      // Filter out items already in inventory
+      .filter(
+        (c) =>
+          !inventory.some(
+            (i) =>
+              i.name.toLowerCase() === c.name.toLowerCase() && i.zone === zone,
+          ),
+      )
+      // Filter out items that match user allergies
+      .filter((c) =>
+        isIngredientSafeForUser(c.name, userAllergies, userOtherAllergies)
+      );
+  }, [zone, activeCategory, inventory, userAllergies, userOtherAllergies]);
 
   const handleCategorySelect = (cat: string) => {
     trackEvent("pantry_category_selected", { category: cat });
@@ -432,9 +492,10 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onDeleteItem(item.id);
+                    handleDeleteWithUndo(item);
                   }}
                   className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full border border-bocado-border text-bocado-gray hover:text-red-400 flex items-center justify-center shadow-sm z-10 active:scale-90"
+                  aria-label={t("pantry.deleteItem") || "Eliminar ingrediente"}
                 >
                   <span className="text-xs">×</span>
                 </button>
@@ -466,6 +527,21 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
           onSelect={handleEmojiSelect}
           onClose={() => setPickingEmojiItem(null)}
         />
+      )}
+
+      {/* Undo Snackbar */}
+      {undoState && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 dark:bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-slide-up z-50 max-w-sm">
+          <span className="text-sm flex-1">
+            {translateIngredient(undoState.item.name)} {t("pantry.willBeDeleted") || "será eliminado"}
+          </span>
+          <button
+            onClick={handleUndo}
+            className="bg-bocado-green hover:bg-bocado-dark-green text-white font-bold px-3 py-1 rounded-lg text-xs transition active:scale-95"
+          >
+            {t("common.undo") || "Deshacer"}
+          </button>
+        </div>
       )}
     </div>
   );

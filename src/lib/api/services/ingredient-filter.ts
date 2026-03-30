@@ -212,3 +212,74 @@ export function filterIngredientes(
     return true;
   });
 }
+
+/**
+ * Allergen keywords map - exported for reuse in client-side filtering
+ */
+export const ALLERGEN_KEYWORDS: Record<string, string[]> = {
+  "alergia a frutos secos": [
+    "nuez", "almendra", "cacahuate", "pistacho", "avellana", 
+    "semilla", "pecan", "nueces", "almendras", "pistachos"
+  ],
+  "celíaco": [
+    "trigo", "cebada", "centeno", "gluten", "pan", "pasta", 
+    "galleta", "harina", "cereal"
+  ],
+  "alergia a mariscos": [
+    "camarón", "langosta", "cangrejo", "mejillón", "ostra", 
+    "camarones", "pulpo", "calamar", "almeja", "mariscos"
+  ],
+  "alergia a pescado": [
+    "pescado", "salmón", "atún", "tilapia", "bacalao", 
+    "sardina", "anchoa", "trucha"
+  ],
+  "alergia a cacahuates": [
+    "cacahuate", "maní", "mantequilla de maní", "cacahuates"
+  ],
+  "intolerancia a la lactosa": [
+    "leche", "queso", "yogur", "mantequilla", "crema", 
+    "nata", "helado", "lácteo"
+  ],
+  "alergia al huevo": ["huevo", "clara", "yema", "huevos"],
+  "alergia a la soya": ["soya", "tofu", "edamame", "soja"],
+};
+
+/**
+ * Check if an ingredient name matches any user allergies
+ * Simpler version for client-side filtering of name-only items
+ * 
+ * @param ingredientName - Name of the ingredient to check
+ * @param userAllergies - Array of user allergies
+ * @param otherAllergies - Free-text other allergies (comma-separated)
+ * @returns true if the ingredient is SAFE (not an allergen)
+ */
+export function isIngredientSafeForUser(
+  ingredientName: string,
+  userAllergies: string[] = [],
+  otherAllergies: string = ""
+): boolean {
+  const nameLower = ingredientName.toLowerCase();
+  const allergiesLower = userAllergies.map(a => a.toLowerCase());
+  const otherAllergiesList = otherAllergies
+    .toLowerCase()
+    .split(",")
+    .map(a => a.trim())
+    .filter(Boolean);
+
+  // Check against mapped allergens
+  for (const allergyKey of allergiesLower) {
+    const keywords = ALLERGEN_KEYWORDS[allergyKey] || [allergyKey];
+    if (keywords.some(keyword => nameLower.includes(keyword))) {
+      return false; // Unsafe - matches allergen
+    }
+  }
+
+  // Check against other (manual) allergies
+  for (const otherAllergy of otherAllergiesList) {
+    if (nameLower.includes(otherAllergy)) {
+      return false; // Unsafe - matches manual allergen
+    }
+  }
+
+  return true; // Safe
+}

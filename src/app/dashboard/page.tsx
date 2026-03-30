@@ -3,6 +3,7 @@
 import React, { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import MainApp from "@/components/MainApp";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 // Inner component that uses useSearchParams — must be inside <Suspense>
 function DashboardContent() {
@@ -12,22 +13,20 @@ function DashboardContent() {
     const [isNewUser, setIsNewUser] = useState(showTutorial);
 
     return (
-        <MainApp
-            showTutorial={isNewUser}
-            onPlanGenerated={(id) => router.push(`/plan/${id}`)}
-            onTutorialFinished={() => setIsNewUser(false)}
-            onLogoutComplete={() => router.push("/")}
-        />
+        <ProtectedRoute redirectTo="/login">
+            <MainApp
+                showTutorial={isNewUser}
+                onPlanGenerated={(id) => router.push(`/plan/${id}`)}
+                onTutorialFinished={() => setIsNewUser(false)}
+                onLogoutComplete={() => router.push("/")}
+            />
+        </ProtectedRoute>
     );
 }
 
 export default function DashboardPage() {
     return (
-        <Suspense fallback={
-            <div className="min-h-full flex items-center justify-center bg-bocado-cream dark:bg-gray-900">
-                <div className="w-12 h-12 border-4 border-bocado-green border-t-transparent rounded-full animate-spin" />
-            </div>
-        }>
+        <Suspense fallback={null}>
             <DashboardContent />
         </Suspense>
     );

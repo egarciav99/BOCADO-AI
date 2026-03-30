@@ -21,7 +21,9 @@
     "remove": "Eliminar",
     "confirm": "Confirmar",
     "optional": "opcional",
-    "required": "obligatorio"
+    "required": "obligatorio",
+    "undo": "Deshacer",
+    "or": "O"
   },
   "home": {
     "title": "Bocado",
@@ -103,7 +105,14 @@
       "sameEmail": "El correo es igual al actual.",
       "exportError": "Error al exportar los datos. Intenta de nuevo.",
       "mustTypeDelete": "Debes escribir ELIMINAR para confirmar.",
-      "saveError": "No se pudieron guardar los cambios."
+      "saveError": "No se pudieron guardar los cambios.",
+      "emailAlreadyInUse": "Este correo ya está registrado",
+      "passwordsDoNotMatch": "Las contraseñas no coinciden",
+      "selectAtLeastOneGoal": "Selecciona al menos un objetivo",
+      "specifyAllergy": "Especifica tu alergia",
+      "selectActivityLevel": "Selecciona tu nivel de actividad",
+      "selectActivityFrequency": "Selecciona tu frecuencia de actividad",
+      "describeActivityLevel": "Describe tu nivel de actividad"
     },
     "success": {
       "profileUpdated": "¡Perfil actualizado!",
@@ -308,36 +317,36 @@
       "footerNote": "Las notificaciones funcionan incluso cuando la app está cerrada. Asegúrate de no tener el modo \"No molestar\" activado en tu dispositivo.",
       "appName": "Bocado",
       "breakfast": {
-        "title": "🌅 Buenos días",
+        "title": "Buenos días",
         "body": "¿Ya pensaste qué desayunar hoy? Descubre opciones nutritivas",
-        "titleSimple": "🌅 Buen día",
+        "titleSimple": "Buen día",
         "bodySimple": "¿Qué te parece un desayuno nutritivo para empezar?"
       },
       "lunch": {
-        "title": "🍽️ Hora de comer",
+        "title": "Hora de comer",
         "body": "Te sugerimos recetas deliciosas basadas en tu despensa",
         "bodySimple": "Descubre recetas deliciosas para tu almuerzo"
       },
       "dinner": {
-        "title": "🌙 Cena saludable",
+        "title": "Cena saludable",
         "body": "Termina el día con una cena ligera y nutritiva",
-        "titleSimple": "🌙 Cena ligera",
+        "titleSimple": "Cena ligera",
         "bodySimple": "Te sugerimos opciones saludables para cenar"
       },
       "pantryUpdate": {
-        "title": "🥑 Actualiza tu despensa",
+        "title": "Actualiza tu despensa",
         "body": "¿Tienes nuevos ingredientes? Actualiza \"Mi Cocina\" para mejores recomendaciones"
       },
       "rateRecipes": {
-        "title": "⭐ ¿Qué te pareció?",
+        "title": "¿Qué te pareció?",
         "body": "Califica las recetas y restaurantes que probaste para mejorar tus recomendaciones"
       },
       "comeBack": {
-        "title": "🥗 Te extrañamos",
+        "title": "Te extrañamos",
         "body": "Descubre nuevas recetas perfectas para ti. ¡Abre Bocado!"
       },
       "testNotification": {
-        "title": "🧪 Notificación de prueba",
+        "title": "Notificación de prueba",
         "body": "¡Las notificaciones están funcionando correctamente!"
       }
     },
@@ -572,6 +581,8 @@
     "verifyEmailTitle": "¡Verifica tu correo!",
     "sentTo": "Enviado a",
     "alreadyVerified": "Ya verifiqué mi correo",
+    "resendVerification": "Reenviar verificación",
+    "emailNotVerifiedYet": "Todavía no verificaste tu correo",
     "previous": "Anterior",
     "creating": "...",
     "createAccount": "Crear cuenta",
@@ -790,11 +801,13 @@
     "fresh": "Fresco",
     "expiringSoon": "Por caducar",
     "urgent": "Urgente",
-    "tapToChange": "👆 Toca un ingrediente para cambiar su estado",
+    "tapToChange": "👆 Toca el nombre para cambiar estado · Toca el icono para cambiarlo",
     "allCategories": "Todos",
     "suggestions": "Sugerencias",
     "expiry": "Caducidad",
     "urgentCount": "{count} ítems",
+    "deleteItem": "Eliminar ingrediente",
+    "willBeDeleted": "será eliminado",
     "zones": {
       "fridge": "Refrigerador",
       "freezer": "Congelador",
@@ -961,7 +974,11 @@
     "lacteos": "Lácteos"
   },
   "progressBar": {
-    "step": "Paso {current} de {total}"
+    "step": "Paso {current} de {total}",
+    "stepPersonal": "Datos personales",
+    "stepHealth": "Salud",
+    "stepLifestyle": "Estilo de vida",
+    "stepDone": "¡Listo!"
   },
   "gender": {
     "male": "Hombre",
@@ -1124,7 +1141,11 @@
     "installQuickAccess": "Acceso rápido desde tu pantalla de inicio",
     "installDesktop": "Instala la app en tu escritorio para acceso rápido",
     "understood": "Entendido",
-    "offlineMessage": "Sin conexión. Algunas funciones pueden no estar disponibles."
+    "offlineMessage": "Sin conexión. Algunas funciones pueden no estar disponibles.",
+    "iosStep1": "Toca el botón compartir ↑",
+    "iosStep2": "Toca 'Añadir a inicio'",
+    "iosStep3": "Toca 'Añadir'",
+    "iosClose": "Cerrar instrucciones"
   },
   "foodCategories": {
     "meatPoultry": "Carnes y Aves",
@@ -1208,6 +1229,9 @@
     "minIngredientsError": "Se requieren al menos 2 ingredientes",
     "maxIngredientsReached": "Máximo 15 ingredientes permitidos",
     "ingredientDuplicate": "Ingrediente ya agregado",
+    "invalidIngredient": "Ingresa un ingrediente válido",
+    "ingredientTooLong": "Máximo 50 caracteres",
+    "willBeRemoved": "será eliminado",
     "userNotFound": "Usuario no encontrado",
     "connectionError": "Error de conexión, intenta de nuevo",
     "rateLimited": "Demasiadas solicitudes, intenta más tarde",

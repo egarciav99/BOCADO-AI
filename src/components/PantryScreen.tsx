@@ -2,6 +2,7 @@
 import React from "react";
 import { Zone, KitchenItem } from "../types";
 import { usePantry } from "../hooks/usePantry";
+import { useUserProfile } from "../hooks/useUser";
 import { usePantryStore } from "../stores/pantryStore";
 import { PantryZoneSelector, PantryZoneDetail } from "./pantry";
 import { PantrySkeleton } from "./skeleton";
@@ -13,6 +14,9 @@ interface PantryScreenProps {
 export const PantryScreen: React.FC<PantryScreenProps> = ({ userUid }) => {
   // Estado UI con Zustand (solo estado local de la interfaz)
   const { activeZone, setActiveZone } = usePantryStore();
+
+  // User profile for allergy filtering
+  const { data: profile } = useUserProfile(userUid);
 
   // Datos y operaciones con TanStack Query (sincronización con Firebase)
   const { inventory, isLoading, isSaving, addItem, deleteItem, updateItem } =
@@ -41,6 +45,8 @@ export const PantryScreen: React.FC<PantryScreenProps> = ({ userUid }) => {
       onAddItem={addItem}
       onDeleteItem={deleteItem}
       onUpdateItem={updateItem}
+      userAllergies={profile?.allergies || []}
+      userOtherAllergies={profile?.otherAllergies || ""}
     />
   );
 };

@@ -61,7 +61,7 @@ import { useTheme } from "../contexts/ThemeContext";
 
 interface ProfileScreenProps {
   onLogout?: () => void;
-  onProfileUpdate: (newFirstName: string) => void;
+  onProfileUpdate: (fullName: string) => void;
   userUid: string;
 }
 
@@ -353,7 +353,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       setInitialFormData(formData);
       setViewMode("view");
       setSuccessMessage(t("profile.success.profileUpdated"));
-      onProfileUpdate(authData.firstName);
+      onProfileUpdate(newDisplayName.trim());
 
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {
@@ -1847,8 +1847,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <User className="w-5 h-5 text-bocado-green" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-bocado-dark-green">
-              {t("profile.title")}
+            <h1 className="text-lg font-bold text-bocado-dark-green truncate max-w-[180px]">
+              {`${formData.firstName || ""} ${formData.lastName || ""}`.trim() || t("profile.title")}
             </h1>
             <p className="text-xs text-bocado-gray truncate max-w-[150px]">
               {formData.email}

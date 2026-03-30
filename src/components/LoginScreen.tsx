@@ -410,6 +410,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             className={`input-base ${error ? "border-red-500 focus:ring-red-200" : ""}`}
             placeholder={t("login.placeholders.email")}
             disabled={isLoading}
+            required
           />
           {showEmailSuggestions && emailSuggestions.length > 0 && (
             <div
@@ -454,6 +455,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({
             className={`input-base ${error ? "border-red-500 focus:ring-red-200" : ""}`}
             placeholder="••••••••"
             disabled={isLoading}
+            required
           />
         </div>
 

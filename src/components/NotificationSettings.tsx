@@ -4,7 +4,7 @@ import {
   useNotifications,
   NotificationSchedule,
 } from "../hooks/useNotifications";
-import { Bell, BellOff, Clock, CheckCircle } from "./icons";
+import { Bell, BellOff, Clock, CheckCircle, X } from "./icons";
 import { trackEvent } from "../firebaseConfig";
 import { logger } from "../utils/logger";
 import { useTranslation } from "../contexts/I18nContext";
@@ -20,7 +20,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   onClose,
   userUid,
 }) => {
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
   const {
     isSupported,
     permission,
@@ -83,12 +83,11 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     const granted = await requestPermission();
     if (granted) {
       trackEvent("notification_settings_permission_granted");
-      // Enviar notificación de bienvenida
-      setTimeout(async () => {
-        await sendTestNotification();
+      const sent = await sendTestNotification();
+      if (sent) {
         setTestSent(true);
         setTimeout(() => setTestSent(false), 3000);
-      }, 500);
+      }
     }
   };
 
@@ -124,7 +123,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   };
 
   const formatTime = (hour: number, minute: number) => {
-    return new Date(2000, 0, 1, hour, minute).toLocaleTimeString("es", {
+    return new Date(2000, 0, 1, hour, minute).toLocaleTimeString(locale, {
       hour: "numeric",
       minute: "2-digit",
       hour12: true,
@@ -141,7 +140,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
         const isEmpty = days === null || days >= 3;
         return (
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${isEmpty ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-bocado-green/10 text-bocado-green"}`}
+            className={`text-xs px-2 py-0.5 rounded-full ${isEmpty ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-gray-100 text-bocado-gray"}`}
           >
             {isEmpty
               ? t("notifications.settings.pantryEmpty")
@@ -152,7 +151,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       case "pending_ratings":
         return (
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${pendingRatingsCount > 0 ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-bocado-green/10 text-bocado-green"}`}
+            className={`text-xs px-2 py-0.5 rounded-full ${pendingRatingsCount > 0 ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-gray-100 text-bocado-gray"}`}
           >
             {pendingRatingsCount > 0
               ? t("notifications.settings.pendingRatings", {
@@ -164,7 +163,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       case "inactive_user":
         return (
           <span
-            className={`text-xs px-2 py-0.5 rounded-full ${daysSinceLastAppUse >= 3 ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-bocado-green/10 text-bocado-green"}`}
+            className={`text-xs px-2 py-0.5 rounded-full ${daysSinceLastAppUse >= 3 ? "bg-bocado-green/20 text-bocado-dark-green" : "bg-gray-100 text-bocado-gray"}`}
           >
             {daysSinceLastAppUse >= 3
               ? t("notifications.settings.inactiveUser", {
@@ -233,7 +232,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
               onClick={onClose}
               className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-bocado-background transition-colors"
             >
-              ✕
+              <X className="w-4 h-4 text-bocado-gray" />
             </button>
           </div>
         </div>
@@ -347,7 +346,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         </span>
                         <div>
                           <p className="font-semibold text-bocado-text text-sm">
-                            {reminder.title.replace(/(🌅|🍽️|🌙)/g, "").trim()}
+                            {reminder.title}
                           </p>
                           <p className="text-xs text-bocado-gray">
                             {reminder.body}
@@ -427,16 +426,40 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         <div className="flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="font-semibold text-bocado-text text-sm">
-                              {reminder.title.replace(/(🥑|⭐|🥗)/g, "").trim()}
+                              {reminder.title}
                             </p>
                             {getConditionBadge(reminder)}
                           </div>
                           <p className="text-xs text-bocado-gray mt-1">
                             {reminder.body}
                           </p>
-                          <p className="text-xs text-bocado-green mt-2">
-                            ⏰ {formatTime(reminder.hour, reminder.minute)}
-                          </p>
+                          
+                          {/* Hora editable para recordatorios inteligentes */}
+                          {editingSchedule === reminder.id ? (
+                            <div className="flex items-center gap-1 mt-2">
+                              <input
+                                type="time"
+                                value={editTime}
+                                onChange={(e) => setEditTime(e.target.value)}
+                                className="text-sm border border-bocado-border rounded-lg px-2 py-1"
+                                autoFocus
+                              />
+                              <button
+                                onClick={saveEdit}
+                                className="text-bocado-green font-bold text-sm px-2"
+                              >
+                                ✓
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => startEditing(reminder)}
+                              className="flex items-center gap-1 text-xs text-bocado-green mt-2 hover:text-bocado-green-hover transition-colors"
+                            >
+                              <Clock className="w-3 h-3" />
+                              {formatTime(reminder.hour, reminder.minute)}
+                            </button>
+                          )}
                         </div>
                       </div>
 

@@ -12,6 +12,24 @@ import { logger } from "../utils/logger";
 import { useTranslation } from "../contexts/I18nContext";
 import { env } from "../environment/env";
 import FirstTimeUserTutorialQuickRecipe from "./FirstTimeUserTutorialQuickRecipe";
+import { isIngredientSafeForUser } from "../lib/api/services/ingredient-filter";
+
+// Input validation constants
+const MAX_INGREDIENT_LENGTH = 50;
+const INVALID_INPUT_PATTERNS = [
+  /<[^>]*>/,           // HTML tags
+  /['";].*(?:SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE)/i, // SQL injection patterns
+  /<script/i,          // Script tags
+  /javascript:/i,      // JavaScript protocol
+  /on\w+\s*=/i,        // Event handlers like onclick=
+];
+
+// Validate ingredient input
+const isValidIngredientInput = (value: string): boolean => {
+  if (!value.trim()) return true; // Empty is valid (just won't add)
+  if (value.length > MAX_INGREDIENT_LENGTH) return false;
+  return !INVALID_INPUT_PATTERNS.some((pattern) => pattern.test(value));
+};
 
 interface QuickRecipeModalProps {
   userName: string;
@@ -52,7 +70,16 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showTutorial, setShowTutorial] = useState(true); // Tutorial visible on first open (unless Profile)
+  // Check localStorage synchronously to avoid blocking input with tutorial overlay
+  const [showTutorial, setShowTutorial] = useState(() => {
+    try {
+      return !localStorage.getItem("hasSeenQuickRecipeTutorial");
+    } catch {
+      return true; // Show tutorial if localStorage unavailable
+    }
+  });
+  // Undo snackbar state for ingredient deletion
+  const [undoSnackbar, setUndoSnackbar] = useState<{ ingredient: string; timeout: NodeJS.Timeout } | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const isProcessingRef = useRef(false);
@@ -94,8 +121,20 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
 
   // 2. Actualizar sugerencias mientras el usuario escribe
   const handleInputChange = (value: string) => {
+    // Enforce character limit
+    if (value.length > MAX_INGREDIENT_LENGTH) {
+      return; // Block input beyond limit
+    }
+
     setInputValue(value);
     setError(null);
+
+    // Validate input for malicious patterns
+    if (value.trim() && !isValidIngredientInput(value)) {
+      setError(t("quickRecipe.invalidIngredient") || "Ingresa un ingrediente válido");
+      setSuggestions([]);
+      return;
+    }
 
     if (value.trim().length < 1) {
       setSuggestions([]);
@@ -103,6 +142,9 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
     }
 
     const normalized = value.toLowerCase();
+    const userAllergies = profile?.allergies || [];
+    const userOtherAllergies = profile?.otherAllergies || "";
+
     const filtered = allIngredients
       .filter((ing) => {
         const name = ing.name.toLowerCase();
@@ -112,6 +154,10 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
 
         return combined.includes(normalized);
       })
+      // Filter out items that match user allergies
+      .filter((ing) =>
+        isIngredientSafeForUser(ing.name, userAllergies, userOtherAllergies)
+      )
       .slice(0, 8); // máximo 8 sugerencias
 
     setSuggestions(filtered);
@@ -121,6 +167,18 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
   const addIngredient = useCallback((ingredientName: string) => {
     const normalized = ingredientName.trim();
     if (!normalized) return;
+
+    // Validate input before adding
+    if (!isValidIngredientInput(normalized)) {
+      setError(t("quickRecipe.invalidIngredient") || "Ingresa un ingrediente válido");
+      return;
+    }
+
+    // Enforce character limit
+    if (normalized.length > MAX_INGREDIENT_LENGTH) {
+      setError(t("quickRecipe.ingredientTooLong") || `Máximo ${MAX_INGREDIENT_LENGTH} caracteres`);
+      return;
+    }
 
     // Evitar duplicados
     if (
@@ -160,12 +218,39 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
     }
   };
 
-  // 5. Remover ingrediente
+  // 5. Remover ingrediente with undo capability
   const removeIngredient = (ingredientName: string) => {
-    setSelectedIngredients(
-      selectedIngredients.filter((ing) => ing !== ingredientName),
-    );
+    // Clear any existing undo snackbar first
+    if (undoSnackbar) {
+      clearTimeout(undoSnackbar.timeout);
+      setUndoSnackbar(null);
+    }
+    
+    const newIngredients = selectedIngredients.filter((ing) => ing !== ingredientName);
+    setSelectedIngredients(newIngredients);
+    
+    // Clear error when removing ingredients (form state changed)
+    if (error) {
+      setError(null);
+    }
+    
+    // Show undo snackbar with 4 second timeout
+    const timeout = setTimeout(() => {
+      setUndoSnackbar(null);
+    }, 4000);
+    setUndoSnackbar({ ingredient: ingredientName, timeout });
+    
     trackEvent("quick_recipe_ingredient_removed", { ingredient: ingredientName });
+  };
+
+  // Undo ingredient removal
+  const handleUndoRemove = () => {
+    if (undoSnackbar) {
+      clearTimeout(undoSnackbar.timeout);
+      setSelectedIngredients((prev) => [...prev, undoSnackbar.ingredient]);
+      setUndoSnackbar(null);
+      trackEvent("quick_recipe_ingredient_undo", { ingredient: undoSnackbar.ingredient });
+    }
   };
 
   // 6. Generar receta
@@ -352,9 +437,23 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
                 t("quickRecipe.ingredientPlaceholder") || "Pan, huevo, queso..."
               }
               disabled={isGenerating || loading}
-              className="input-base"
+              maxLength={MAX_INGREDIENT_LENGTH}
+              className="input-base pr-16"
               aria-label={t("quickRecipe.ingredientsLabel")}
             />
+            {/* Character counter */}
+            <span 
+              className={`absolute right-3 top-1/2 -translate-y-1/2 text-xs font-medium ${
+                inputValue.length >= MAX_INGREDIENT_LENGTH 
+                  ? "text-red-500" 
+                  : inputValue.length >= MAX_INGREDIENT_LENGTH - 10 
+                    ? "text-yellow-500" 
+                    : "text-bocado-gray dark:text-gray-500"
+              }`}
+              aria-live="polite"
+            >
+              {inputValue.length}/{MAX_INGREDIENT_LENGTH}
+            </span>
 
             {/* Suggestions Dropdown */}
             {suggestions.length > 0 && (
@@ -500,6 +599,21 @@ const QuickRecipeModal: React.FC<QuickRecipeModalProps> = ({
           isVisible={showTutorial}
           onDismiss={() => setShowTutorial(false)}
         />
+      )}
+
+      {/* Undo Snackbar */}
+      {undoSnackbar && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-800 dark:bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-slide-up z-50 max-w-sm">
+          <span className="text-sm flex-1">
+            {undoSnackbar.ingredient} {t("quickRecipe.willBeRemoved") || "será eliminado"}
+          </span>
+          <button
+            onClick={handleUndoRemove}
+            className="bg-bocado-green hover:bg-bocado-dark-green text-white font-bold px-3 py-1 rounded-lg text-xs transition active:scale-95"
+          >
+            {t("common.undo") || "Deshacer"}
+          </button>
+        </div>
       )}
     </div>
   );

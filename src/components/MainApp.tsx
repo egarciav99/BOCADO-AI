@@ -113,13 +113,11 @@ const MainApp: React.FC<MainAppProps> = ({
     }
   };
 
-  const handleProfileUpdate = async (newFirstName: string) => {
+  const handleProfileUpdate = async (newDisplayName: string) => {
     if (user) {
       try {
-        await updateProfile(user, {
-          displayName: `${newFirstName} ${user.displayName?.split(" ").slice(1).join(" ") || ""}`,
-        });
-        useAuthStore.getState().setUser(user);
+        await updateProfile(user, { displayName: newDisplayName });
+        useAuthStore.getState().setUser({ ...user, displayName: newDisplayName } as typeof user);
         trackEvent("display_name_updated");
       } catch (error) {
         logger.error("Error actualizando nombre:", error);

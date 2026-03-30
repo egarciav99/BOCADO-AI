@@ -1,0 +1,66 @@
+
+> bocado-ai@0.1.1 build
+> next build --webpack
+
+▲ Next.js 16.1.6 (webpack)
+- Environments: .env
+
+  Creating an optimized production build ...
+ ✓ (pwa) Compiling for server...
+ ✓ (pwa) Compiling for server...
+ ✓ (pwa) Compiling for client (static)...
+ ○ (pwa) Service worker: /workspaces/BOCADO-AI/public/sw.js
+ ○ (pwa)   URL: /sw.js
+ ○ (pwa)   Scope: /
+⚠ Compiled with warnings in 99s
+
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+./node_modules/@opentelemetry/instrumentation/build/esm/index.js
+./node_modules/@sentry/node/build/cjs/integrations/tracing/postgresjs.js
+./node_modules/@sentry/node/build/cjs/index.js
+./node_modules/@sentry/nextjs/build/cjs/index.server.js
+./src/utils/sentry.ts
+./src/utils/logger.ts
+./src/components/NetworkStatusToast.tsx
+
+./node_modules/@fastify/otel/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/@fastify/otel/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+./node_modules/@fastify/otel/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+./node_modules/@fastify/otel/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+./node_modules/@fastify/otel/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+./node_modules/@fastify/otel/index.js
+./node_modules/@sentry/node/build/cjs/integrations/tracing/fastify/index.js
+./node_modules/@sentry/node/build/cjs/index.js
+./node_modules/@sentry/nextjs/build/cjs/index.server.js
+./src/utils/sentry.ts
+./src/utils/logger.ts
+./src/firebaseConfig.ts
+./src/app/api/auth/check-email/route.ts
+
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+Critical dependency: the request of a dependency is an expression
+
+Import trace for requested module:
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/instrumentation.js
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/platform/node/index.js
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/platform/index.js
+./node_modules/@prisma/instrumentation/node_modules/@opentelemetry/instrumentation/build/esm/index.js
+./node_modules/@prisma/instrumentation/dist/index.js
+./node_modules/@sentry/node/build/cjs/integrations/tracing/prisma.js
+./node_modules/@sentry/node/build/cjs/index.js
+./node_modules/@sentry/nextjs/build/cjs/index.server.js
+./src/utils/sentry.ts
+./src/utils/logger.ts
+./src/firebaseConfig.ts
+./src/app/api/auth/check-email/route.ts
+
+  Running TypeScript ...

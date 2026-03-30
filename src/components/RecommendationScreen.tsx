@@ -16,6 +16,7 @@ import {
   useUserProfile,
   useGeolocation,
   useNotifications,
+  usePantry,
 } from "../hooks";
 import { useAuthStore } from "../stores/authStore";
 import { useRateLimit } from "../hooks/useRateLimit";
@@ -138,17 +139,19 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
     requestPermission: requestNotificationPermission,
   } = useNotifications(user?.uid);
 
+  // Pantry ingredients for "En casa" recommendations
+  const { inventory: pantryItems, isLoading: isPantryLoading } = usePantry(user?.uid || "");
+
   const [showNotificationBanner, setShowNotificationBanner] = useState(true);
   const [showNotificationOnboarding, setShowNotificationOnboarding] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   const [locationRequested, setLocationRequested] = useState(false);
 
-  // Rate limit status para mostrar al usuario
+  // Rate limit status - keeping necessary state for validation and button display
   const {
     canRequest,
     isDisabled: isRateLimited,
-    message: rateLimitMessage,
     formattedTimeLeft,
     refreshStatus,
   } = useRateLimit(user?.uid);
@@ -232,6 +235,12 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
       return;
     }
 
+    // Wait for pantry data to load for "En casa" recommendations
+    if (recommendationType === "En casa" && isPantryLoading) {
+      setError(t("recommendation.loadingPantry") || "Cargando despensa...");
+      return;
+    }
+
     // Bloquear inmediatamente
     isProcessingRef.current = true;
     setIsGenerating(true);
@@ -299,6 +308,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
         currency: string;
         dislikedFoods: string[];
         onlyPantryIngredients: boolean;
+        ingredientes: string[];
         _id: string;
         language: string;
         userLocation?: {
@@ -307,6 +317,11 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
           accuracy: number;
         };
       }
+
+      // For "En casa", include pantry ingredients
+      const ingredientNames = recommendationType === "En casa"
+        ? pantryItems.map(item => item.name).filter(Boolean)
+        : [];
 
       const requestBody: RequestBody = {
         type: recommendationType,
@@ -319,6 +334,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
         dislikedFoods: interactionData.dislikedFoods,
         onlyPantryIngredients:
           recommendationType === "En casa" && onlyPantryIngredients,
+        ingredientes: ingredientNames,
         _id: newDoc.id,
         language: locale,
       };
@@ -848,17 +864,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                   : t("recommendation.chooseCravingAndBudgetTip")}
               </p>
             )}
-
-            {/* Contador de requests restantes */}
-            {canRequest &&
-              !isGenerating &&
-              !isRateLimited &&
-              rateLimitMessage &&
-              isSelectionMade && (
-                <p className="text-center text-xs text-bocado-gray mt-2">
-                  💡 {rateLimitMessage}
-                </p>
-              )}
 
             {/* AI Disclaimer */}
             <p className="text-center text-[10px] text-bocado-gray/60 mt-3 leading-relaxed">

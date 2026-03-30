@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import { FeedbackModalProvider } from "@/components/FeedbackModal";
 import { ToastContainer } from "@/components/ui/Toast";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import AuthProvider from "@/components/AuthProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
     // useState ensures a new QueryClient per client (avoids SSR data leakage between users)
@@ -27,9 +28,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <QueryClientProvider client={queryClient}>
                 <I18nProvider>
                     <FeedbackModalProvider>
-                        <ErrorBoundary>
-                            {children}
-                        </ErrorBoundary>
+                        <AuthProvider>
+                            <ErrorBoundary>
+                                {children}
+                            </ErrorBoundary>
+                        </AuthProvider>
                         <ToastContainer />
                     </FeedbackModalProvider>
                 </I18nProvider>
