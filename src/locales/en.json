@@ -409,6 +409,8 @@
     "configErrorDesc": "Could not load Firebase credentials. Please verify that environment variables are configured in Vercel.",
     "renderError": "Render Error",
     "reload": "Reload",
+    "permissions": "Insufficient permissions. Try logging out and back in.",
+    "locationService": "Location service unavailable. Please try again later.",
     "generic": "Something went wrong",
     "tryAgainLater": "Please try again later",
     "profileUpdate": {
@@ -700,7 +702,7 @@
     "footer": "Your information is safe and protected by encryption."
   },
   "tutorial": {
-    "welcome": "Welcome{{userName}}!",
+    "welcome": "Welcome, {{userName}}!",
     "subtitle": "Your intelligent nutrition assistant. Here's what you need to know.",
     "previous": "Previous",
     "stepsNavigation": "Steps navigation",

@@ -311,12 +311,29 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
     });
 
     try {
+      // Verificar autenticación antes de escribir
+      if (!user || !user.uid) {
+        throw new Error("Usuario no autenticado correctamente");
+      }
+
+      // Debug info for troubleshooting
+      logger.info("Starting recommendation generation", {
+        userId: user.uid.substring(0, 8) + "...",
+        type: recommendationType,
+        hasProfile: !!profile,
+        pantryItemsCount: pantryItems.length,
+        isPantryLoading,
+      });
+
+      // Verificar que el token esté fresco antes de operaciones críticas
+      const token = await user.getIdToken(true); // Force refresh
+
       const newDoc = await addDoc(
         collection(db, "user_interactions"),
         interactionData,
       );
 
-      const token = await user.getIdToken();
+      logger.info("Firestore write successful", { docId: newDoc.id });
 
       // Preparar datos con ubicación si está disponible (solo para "Fuera")
       interface RequestBody {
@@ -451,16 +468,30 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
         return;
       }
 
-      logger.error("Error generating recommendation:", standardError);
+      logger.error("Error generating recommendation:", {
+        error: standardError,
+        step: error.message?.includes('user_interactions') ? 'firestore_write' : 
+              error.message?.includes('maps-proxy') ? 'maps_proxy' :
+              error.message?.includes('auth') ? 'authentication' : 'api_call',
+        userId: user?.uid,
+        recommendationType,
+      });
 
       trackEvent("recommendation_generation_error", {
         error: standardError.code,
         message: standardError.message,
         type: recommendationType,
+        step: error.message?.includes('user_interactions') ? 'firestore_write' : 'api_call',
       });
 
-      // ✅ NUEVO: Mostrar error en UI en lugar de alert()
-      setError(standardError.message || t("recommendation.connectionError"));
+      // ✅ Mostrar error más específico en UI
+      const userFriendlyError = error.message?.includes('insufficient permissions') 
+        ? t("errors.permissions") 
+        : error.message?.includes('maps-proxy')
+        ? t("errors.locationService")
+        : standardError.message || t("recommendation.connectionError");
+      
+      setError(userFriendlyError);
       resetProcessingState();
     }
   };

@@ -23,7 +23,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
     () => [
       {
         title: t("tutorial.welcome", {
-          userName: userName ? `, ${userName}` : "",
+          userName: userName || "",
         }),
         description: t("tutorial.subtitle"),
         icon: (

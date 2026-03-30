@@ -409,6 +409,8 @@
     "configErrorDesc": "No se pudieron cargar las credenciales de Firebase. Verifica que las variables de entorno estén configuradas en Vercel.",
     "renderError": "Error al renderizar",
     "reload": "Recargar",
+    "permissions": "Sin permisos suficientes. Intenta cerrar sesión y volver a iniciar.",
+    "locationService": "Servicio de ubicación no disponible. Intenta más tarde.",
     "generic": "Algo salió mal",
     "tryAgainLater": "Por favor, intenta de nuevo más tarde",
     "profileUpdate": {
@@ -758,7 +760,7 @@
     "footer": "Tu información está segura y protegida por encriptación."
   },
   "tutorial": {
-    "welcome": "¡Bienvenido{{userName}}!",
+    "welcome": "¡Bienvenido, {{userName}}!",
     "subtitle": "Tu asistente inteligente de nutrición. Te mostramos lo que necesitas saber.",
     "skip": "Saltar tutorial",
     "next": "Siguiente",
