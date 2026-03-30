@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useMemo } from "react";
 import { createPortal } from "react-dom";
 import { Bell } from "./icons";
 import { trackEvent } from "../firebaseConfig";
@@ -17,13 +17,14 @@ export const NotificationOnboarding: React.FC<NotificationOnboardingProps> = ({
 }) => {
   const { t } = useTranslation();
 
-  if (!isOpen) return null;
+  // ✅ FIX: memoizado y con nombres traducidos
+  const mealTimes = useMemo(() => [
+    { emoji: "🌅", name: t("notifications.onboarding.breakfast"), time: "08:00" },
+    { emoji: "🍽️", name: t("notifications.onboarding.lunch"),     time: "13:30" },
+    { emoji: "🌙", name: t("notifications.onboarding.dinner"),    time: "19:30" },
+  ], [t]);
 
-  const mealTimes = [
-    { emoji: "🌅", name: "Desayuno", time: "08:00" },
-    { emoji: "🍽️", name: "Almuerzo", time: "13:30" },
-    { emoji: "🌙", name: "Cena", time: "19:30" },
-  ];
+  if (!isOpen) return null;
 
   const handleClose = () => {
     trackEvent("notification_onboarding_closed");
@@ -32,10 +33,9 @@ export const NotificationOnboarding: React.FC<NotificationOnboardingProps> = ({
 
   const handleOpenSettings = () => {
     trackEvent("notification_onboarding_open_settings");
-    handleClose();
-    if (onOpenSettings) {
-      setTimeout(onOpenSettings, 300);
-    }
+    // ✅ FIX: cerrar y abrir settings sin delay arbitrario
+    onClose();
+    onOpenSettings?.();
   };
 
   return createPortal(
@@ -49,20 +49,22 @@ export const NotificationOnboarding: React.FC<NotificationOnboardingProps> = ({
       >
         {/* Content */}
         <div className="px-4 sm:px-6 py-6 sm:py-8 space-y-4">
+
           {/* Icon */}
           <div className="flex justify-center">
             <Bell className="w-10 sm:w-12 h-10 sm:h-12 text-bocado-green" />
           </div>
 
-          {/* Title */}
+          {/* ✅ FIX: título traducido, emoji separado del texto */}
           <h1 className="text-base sm:text-lg font-bold text-bocado-dark-green text-center">
-            ¡Notificaciones activadas! 🎉
+            {t("notifications.onboarding.title")} 🎉
           </h1>
 
           {/* Meal times preview */}
           <div className="bg-bocado-background rounded-2xl p-4 space-y-3">
             <p className="text-xs font-semibold text-bocado-gray text-center mb-3">
-              Recibirás sugerencias a estas horas:
+              {/* ✅ FIX: traducido */}
+              {t("notifications.onboarding.scheduledAt")}
             </p>
             {mealTimes.map((meal) => (
               <div key={meal.name} className="flex items-center justify-between gap-3">
@@ -79,9 +81,9 @@ export const NotificationOnboarding: React.FC<NotificationOnboardingProps> = ({
             ))}
           </div>
 
-          {/* Info */}
+          {/* ✅ FIX: info traducida */}
           <p className="text-xs text-bocado-gray text-center">
-            💡 Puedes cambiar estos horarios en <strong>Perfil → Notificaciones</strong>
+            💡 {t("notifications.onboarding.changeHint")}
           </p>
         </div>
 
@@ -91,13 +93,15 @@ export const NotificationOnboarding: React.FC<NotificationOnboardingProps> = ({
             onClick={handleOpenSettings}
             className="w-full bg-bocado-green text-white font-bold py-2.5 sm:py-3 text-sm rounded-full hover:bg-bocado-dark-green active:scale-95 transition-all"
           >
-            Personalizar ahora
+            {/* ✅ FIX: traducido */}
+            {t("notifications.onboarding.customize")}
           </button>
           <button
             onClick={handleClose}
             className="w-full text-bocado-green font-semibold py-2 text-xs rounded-full hover:bg-bocado-background transition-colors"
           >
-            Después
+            {/* ✅ FIX: traducido */}
+            {t("notifications.onboarding.later")}
           </button>
         </div>
       </div>

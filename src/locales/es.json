@@ -207,6 +207,7 @@
     "sending": "Enviando...",
     "continueWithGoogle": "Continuar con Google",
     "emailNotVerified": "Correo no verificado",
+    "verificationRequiredTitle": "Verifica tu correo",
     "verificationRequired": "Para continuar usando Bocado, debes verificar tu correo electrónico.",
     "resendEmail": "Reenviar correo",
     "useOtherAccount": "Usar otra cuenta",
@@ -351,6 +352,14 @@
       }
     },
     "onboarding": {
+      "title": "¡Notificaciones activadas!",
+      "scheduledAt": "Recibirás sugerencias a estas horas:",
+      "breakfast": "Desayuno",
+      "lunch": "Almuerzo",
+      "dinner": "Cena",
+      "changeHint": "Puedes cambiar estos horarios en Perfil → Notificaciones",
+      "customize": "Personalizar ahora",
+      "later": "Después",
       "meals": {
         "title": "Tus horarios",
         "customize": "Puedes cambiar en Perfil > Recordatorios"
@@ -1129,6 +1138,7 @@
   "errorBoundary": {
     "title": "¡Algo se nos quemó en la cocina!",
     "message": "Hubo un error inesperado al cargar esta parte.",
+    "retry": "Reintentar",
     "reload": "Recargar Bocado"
   },
   "sentryErrorBoundary": {

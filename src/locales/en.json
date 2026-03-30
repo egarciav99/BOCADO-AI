@@ -206,6 +206,7 @@
     "sending": "Sending...",
     "continueWithGoogle": "Continue with Google",
     "emailNotVerified": "Email not verified",
+    "verificationRequiredTitle": "Verify your email",
     "verificationRequired": "To continue using Bocado, you must verify your email address.",
     "resendEmail": "Resend email",
     "useOtherAccount": "Use another account",
@@ -350,6 +351,14 @@
       }
     },
     "onboarding": {
+      "title": "Notifications enabled!",
+      "scheduledAt": "You'll get suggestions at these times:",
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "changeHint": "You can change these times in Profile → Notifications",
+      "customize": "Customize now",
+      "later": "Later",
       "meals": {
         "title": "Your reminder times",
         "customize": "You can change these in Profile > Reminders"
@@ -996,6 +1005,7 @@
   "errorBoundary": {
     "title": "Something burned in the kitchen!",
     "message": "An unexpected error occurred while loading this part.",
+    "retry": "Try again",
     "reload": "Reload Bocado"
   },
   "sentryErrorBoundary": {
