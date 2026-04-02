@@ -12,7 +12,7 @@ import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { z } from "zod";
 import { initFirebaseAdmin } from "@/lib/api/firebase-admin";
-import { isOriginAllowed } from "@/lib/api/cors-utils";
+import { isOriginAllowed, ALLOWED_ORIGINS_LIST } from "@/lib/api/cors-utils";
 import { IPRateLimiter } from "@/lib/api/utils/ip-rate-limiter";
 
 const adminApp = initFirebaseAdmin();
@@ -38,7 +38,7 @@ const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests por minuto
 
 function corsHeaders(origin: string | null) {
   const originStr = origin || undefined;
-  const allowedOrigin = isOriginAllowed(originStr) ? (originStr || "*") : "*";
+  const allowedOrigin = isOriginAllowed(originStr) ? (originStr || ALLOWED_ORIGINS_LIST[0]) : ALLOWED_ORIGINS_LIST[0];
   return {
     "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
@@ -250,20 +250,22 @@ export async function POST(request: NextRequest) {
   const originStr = origin || undefined;
 
   // Debug logging to help diagnose 403 / origin issues in deployments
-  try {
-    const debugIP =
-      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
-      request.headers.get("x-real-ip") ||
-      "unknown";
-    
-    console.info("[maps-proxy] incoming request", {
-      origin: origin || null,
-      method: "POST",
-      url: request.url,
-      clientIP: debugIP,
-    });
-  } catch (e) {
-    // never crash on logging
+  if (process.env.NODE_ENV === "development") {
+    try {
+      const debugIP =
+        request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+        request.headers.get("x-real-ip") ||
+        "unknown";
+      
+      console.info("[maps-proxy] incoming request", {
+        origin: origin || null,
+        method: "POST",
+        url: request.url,
+        clientIP: debugIP,
+      });
+    } catch (e) {
+      // never crash on logging
+    }
   }
 
   // CORS
@@ -301,15 +303,6 @@ export async function POST(request: NextRequest) {
 
   // Obtener la acción antes del rate limiting para aplicar límites diferentes
   const { action, ...params } = body;
-  
-  // ✅ Debug logging for request body
-  console.log("[maps-proxy] Request details", {
-    body,
-    action,
-    params,
-    hasBody: !!body,
-    bodyType: typeof body,
-  });
 
   // Autocomplete puede funcionar sin auth (para flujo de registro)
   // Pero con rate limiting más estricto

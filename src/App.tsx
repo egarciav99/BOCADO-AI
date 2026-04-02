@@ -1,7 +1,6 @@
-import React, { useEffect, Suspense, lazy } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import React, { useEffect, Suspense, lazy, useRef } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { auth, trackEvent } from "./firebaseConfig";
+import { trackEvent } from "./firebaseConfig";
 import { env } from "./environment/env";
 import { useAuthStore } from "./stores/authStore";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -14,17 +13,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { ToastContainer } from "./components/ui/Toast";
 import { FeedbackModalProvider } from "./components/FeedbackModal";
 import { logEnvironmentStatus } from "./utils/envValidator";
-import { markSessionRestored, hasSessionInStorage } from "./utils/sessionPersistence";
-import {
-  logAuthState,
-  validateAuthTokenStorage,
-  detectPrivateMode,
-} from "./utils/authDebug";
-import {
-  saveUserDataForOffline,
-  recordTokenRefresh,
-  getFirebaseTokenDiagnostics,
-} from "./utils/tokenPersistence";
+import { hasSessionInStorage } from "./utils/sessionPersistence";
 import {
   debugLog,
   logSessionStatus,
@@ -86,14 +75,15 @@ function AppContent() {
   // ✅ Bug 6: rastrear si el usuario viene del flujo de Google (para omitir step email/password)
   const [isGoogleRegistration, setIsGoogleRegistration] = React.useState(false);
   const [authTimeout, setAuthTimeout] = React.useState(false);
-  // ✅ Bug 2 fix: solo navegar automáticamente en el startup inicial, no en cada cambio de estado
-  const isInitialAuthCheckRef = React.useRef(true);
 
-  const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
   const isLoading = useAuthStore((state) => state.isLoading);
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const user = useAuthStore((state) => state.user);
   const { t } = useTranslation();
+
+  // Ref para ejecutar navegación inicial solo una vez
+  const hasNavigatedRef = useRef(false);
 
   // Validar variables de entorno al inicializar
   React.useEffect(() => {
@@ -162,136 +152,50 @@ function AppContent() {
     trackEvent("screen_view", { screen_name: currentScreen });
   }, [currentScreen]);
 
+  // Navegación inicial basada en el estado del auth store (reactivo)
+  // AuthProvider maneja el listener de Firebase - aquí solo reaccionamos al store
   useEffect(() => {
-    // Verificar que Firebase esté configurado
-    if (!env.firebase.apiKey || env.firebase.apiKey === "") {
-      debugLog("error", "Firebase API Key not configured", {});
-      setAuthTimeout(true);
-      setLoading(false);
+    // Esperar a que auth esté resuelto
+    if (isLoading) return;
+    // Solo navegar una vez al startup
+    if (hasNavigatedRef.current) return;
+
+    if (!isAuthenticated) {
+      hasNavigatedRef.current = true;
+      setCurrentScreen("home");
       return;
     }
 
-    debugLog("info", "Firebase API Key found", {
-      projectId: env.firebase.projectId,
-    });
+    // Usuario autenticado: verificar perfil antes de navegar
+    const checkProfileAndNavigate = async () => {
+      hasNavigatedRef.current = true;
+      try {
+        const profileRef = doc(db, "users", user!.uid);
+        const profileSnap = await getDoc(profileRef);
 
-    let unsubscribe: (() => void) | null = null;
-    let authStateChangedCount = 0;
-
-    try {
-      // Diagnóstico de sesión
-      const hasStorageSession = hasSessionInStorage();
-      
-      debugLog("info", "Setting up onAuthStateChanged", {
-        hasStorageSession,
-      });
-
-      unsubscribe = onAuthStateChanged(
-        auth,
-        async (user) => {
-          authStateChangedCount++;
-
-          if (user) {
-            debugLog("state", "Session Restored from Firebase", {
-              uid: user.uid,
-              email: user.email,
-              emailVerified: user.emailVerified,
-              count: authStateChangedCount,
-            });
-
-            markSessionRestored();
-            recordTokenRefresh();
-            trackEvent("session_restored", { userId: user.uid });
-
-            // ✅ Bug 2 fix: solo navegar en el primer disparo (startup/reload).
-            // Si el usuario ya está navegando de forma interactiva (login manual,
-            // registro, etc.), no sobreescribir la pantalla actual.
-            if (isInitialAuthCheckRef.current) {
-              isInitialAuthCheckRef.current = false;
-
-              // ✅ Bug 1 implica que aquí sí debemos navegar en startup
-              try {
-                const profileRef = doc(db, "users", user.uid);
-                const profileSnap = await getDoc(profileRef);
-
-                if (profileSnap.exists()) {
-                  const profile = profileSnap.data();
-                  const hasCompleteProfile = isProfileComplete(profile as any);
-
-                  debugLog("info", "Profile Status Check", {
-                    uid: user.uid.substring(0, 8) + "...",
-                    hasProfile: true,
-                    isComplete: hasCompleteProfile,
-                  });
-
-                  if (hasCompleteProfile) {
-                    setCurrentScreen("recommendation");
-                  } else {
-                    setCurrentScreen("completeProfile");
-                  }
-                } else {
-                  debugLog("warn", "User has no profile document", {
-                    uid: user.uid.substring(0, 8) + "...",
-                  });
-                  setCurrentScreen("completeProfile");
-                }
-              } catch (profileError) {
-                debugLog("error", "Error checking profile", {
-                  error: (profileError as any)?.message || String(profileError),
-                });
-                setCurrentScreen("completeProfile");
-              }
-            } else {
-              debugLog("info", "Auth state changed during active session — skipping auto-navigation", {
-                currentScreen,
-              });
-            }
-          } else {
-            debugLog("warn", "No Session Found", {
-              count: authStateChangedCount,
-            });
-            // Al cerrar sesión siempre regresar al home, independiente del flag
-            isInitialAuthCheckRef.current = true;
-            setCurrentScreen("home");
-          }
-
-          // ✅ Guardar datos del usuario para restauración offline
-          saveUserDataForOffline(user);
-
-          setUser(user);
-          // Sincronizar usuario con Sentry para tracking de errores
-          setUserContext(user?.uid || null, user?.email || undefined);
-          if (user) {
-            addBreadcrumb("User authenticated", "auth");
-          } else {
-            addBreadcrumb("User logged out", "auth");
-          }
-        },
-        (error) => {
-          debugLog("error", "Auth State Changed Error", {
-            code: (error as any)?.code,
-            message: (error as any)?.message,
-          });
-
-          captureError(error, { type: "auth_state_change_error" });
-          setAuthTimeout(true);
-          setLoading(false);
-        },
-      );
-    } catch (error) {
-      debugLog("error", "Critical error setting up auth", {
-        message: (error as any)?.message || String(error),
-      });
-      captureError(error as Error, { type: "auth_setup_error" });
-      setAuthTimeout(true);
-      setLoading(false);
-      return;
-    }
-
-    return () => {
-      if (unsubscribe) unsubscribe();
+        if (profileSnap.exists() && isProfileComplete(profileSnap.data() as any)) {
+          setCurrentScreen("recommendation");
+        } else {
+          setCurrentScreen("completeProfile");
+        }
+      } catch (err) {
+        debugLog("error", "Error checking profile on startup", {
+          message: (err as any)?.message || String(err),
+        });
+        setCurrentScreen("completeProfile");
+      }
     };
-  }, [setUser]);
+
+    checkProfileAndNavigate();
+  }, [isLoading, isAuthenticated, user]);
+
+  // Sincronizar estado del usuario con Sentry
+  useEffect(() => {
+    setUserContext(user?.uid || null, user?.email || undefined);
+    if (user) {
+      addBreadcrumb("User authenticated", "auth");
+    }
+  }, [user]);
 
   if (isLoading && !authTimeout) {
     return (
@@ -371,7 +275,6 @@ function AppContent() {
               <RegistrationFlow
                 isGoogleUser={isGoogleRegistration}
                 onRegistrationComplete={() => {
-                  isInitialAuthCheckRef.current = false;
                   setIsNewUser(true);
                   setIsGoogleRegistration(false);
                   setCurrentScreen("recommendation");
@@ -388,10 +291,6 @@ function AppContent() {
             <Suspense fallback={<ScreenLoadingFallback />}>
               <LoginScreen
                 onLoginSuccess={() => {
-                  // ✅ Bug 1 fix: navegar inmediatamente después de login exitoso.
-                  // LoginScreen ya verificó que el perfil existe antes de llamar aquí.
-                  // Marcar el auth check como no-inicial para no sobreescribir esta navegación.
-                  isInitialAuthCheckRef.current = false;
                   setIsNewUser(false);
                   setCurrentScreen("recommendation");
                 }}
@@ -404,10 +303,6 @@ function AppContent() {
             <Suspense fallback={<ScreenLoadingFallback />}>
               <CompleteProfileScreen
                 onStartCompletion={() => {
-                  // ✅ Bug 5 fix: usuario autenticado con perfil incompleto debe ir a MainApp
-                  // (que muestra ProfileScreen en modo edición), NO al flujo de nuevo registro
-                  // que llama createUserWithEmailAndPassword y rompería su cuenta.
-                  isInitialAuthCheckRef.current = false;
                   setCurrentScreen("recommendation");
                 }}
                 onLogout={() => setCurrentScreen("home")}

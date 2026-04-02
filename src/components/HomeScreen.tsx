@@ -2,7 +2,7 @@ import React from "react";
 import BocadoLogo from "./BocadoLogo";
 import { signOut } from "firebase/auth";
 import { auth, trackEvent } from "../firebaseConfig";
-import { useAuthStore } from "../stores/authStore";
+import { useAuthStore, selectIsAuthenticated, selectUserUid } from "../stores/authStore";
 import { useUserProfile } from "../hooks/useUser";
 import { logger } from "../utils/logger";
 import { useTranslation } from "../contexts/I18nContext";
@@ -20,8 +20,9 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   onGoToApp,
   onGoToLogin,
 }) => {
-  const { isAuthenticated, user } = useAuthStore();
-  const { data: profile, isLoading: profileLoading } = useUserProfile(user?.uid);
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const uid = useAuthStore(selectUserUid);
+  const { data: profile, isLoading: profileLoading } = useUserProfile(uid);
   const { t, locale, setLocale } = useTranslation();
   const [logoError, setLogoError] = React.useState(false);
   const [languageSelectorOpen, setLanguageSelectorOpen] = React.useState(false);
@@ -59,7 +60,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
   // --- HANDLERS CON ANALÍTICA ---
 
   const handleEnterApp = () => {
-    trackEvent("home_enter_app", { userId: user?.uid }); // ✅ Analítica
+    trackEvent("home_enter_app", { userId: uid }); // ✅ Analítica
     onGoToApp();
   };
 
@@ -75,7 +76,7 @@ const HomeScreen: React.FC<HomeScreenProps> = ({
 
   const handleLogout = async () => {
     try {
-      trackEvent("home_logout", { userId: user?.uid }); // ✅ Analítica
+      trackEvent("home_logout", { userId: uid }); // ✅ Analítica
       // Limpiar datos de sesión antes de logout
       clearSessionData();
       await signOut(auth);

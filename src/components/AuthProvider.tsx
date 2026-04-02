@@ -105,12 +105,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // NO forzamos setUser(null) — dejamos al usuario en el estado que tenía
     // y simplemente desbloqueamos el render para que el resto de la app
     // pueda manejar el estado de carga normalmente.
-    const authTimeout = setTimeout(() => {
+    const authTimeout: ReturnType<typeof setTimeout> = setTimeout(() => {
       if (!resolved) {
         logger.warn("[AuthProvider] Auth timeout (5s), unblocking render without forcing logout");
         resolved = true;
-        // No llamamos setUser(null) aquí — el usuario puede tener sesión válida
-        // que Firebase aún no confirmó. La app manejará el estado pendiente.
+        setLoading(false); // ← llevar isLoading a false para desbloquear componentes
         authReadyRef.current = true;
         setAuthReady(true);
       }
@@ -118,7 +117,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // ✅ FIX: fallback de emergencia — si authReady nunca se resuelve
     // por algún bug futuro, desbloqueamos a los 10s para evitar pantalla blanca infinita
-    const emergencyTimeout = setTimeout(() => {
+    const emergencyTimeout: ReturnType<typeof setTimeout> = setTimeout(() => {
       if (!authReadyRef.current) {
         logger.error("[AuthProvider] Emergency timeout (10s) — authReady never resolved");
         authReadyRef.current = true;

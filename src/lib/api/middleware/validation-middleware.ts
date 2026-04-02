@@ -1,4 +1,9 @@
 /**
+ * @deprecated — Legacy Pages Router middleware.
+ * Las rutas App Router usan cors-utils.ts directamente.
+ * Pendiente eliminar una vez confirmado que no hay referencias activas.
+ * Ver: src/lib/api/cors-utils.ts
+ * 
  * Validation Middleware
  * Centralized validation logic for API endpoints
  * - CORS handling

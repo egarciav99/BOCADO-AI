@@ -457,6 +457,11 @@ export async function POST(request: NextRequest) {
       tipo: type,
     });
 
+    // ⚠️ IMPLEMENTACIÓN PENDIENTE
+    // Este endpoint valida auth y body correctamente pero aún no ejecuta
+    // la lógica de recomendación. Ver implementación completa en:
+    // src/lib/api/services/ (data-service, prompt-builder, recommendation-scorer)
+    // No deployar a producción hasta completar la integración.
     // TODO: Add the complete recommendation logic here
     // For now, return a basic success response to test the structure
     return NextResponse.json({

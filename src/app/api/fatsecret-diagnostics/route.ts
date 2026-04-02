@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "firebase-admin/auth";
 import { initFirebaseAdmin } from "@/lib/api/firebase-admin";
 import { isOriginAllowed, ALLOWED_ORIGINS_LIST } from "@/lib/api/cors-utils";
+import { safeLog } from "@/lib/api/utils/shared-logic";
 
 // Initialize Firebase Admin
 initFirebaseAdmin();
@@ -67,7 +68,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    console.log('[API] FatSecret diagnostics requested');
+    safeLog("log", "[API] FatSecret diagnostics requested");
     
     // Only check if credentials are configured - no sensitive details
     const hasKey = !!process.env.FATSECRET_KEY;

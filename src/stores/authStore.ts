@@ -9,6 +9,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 import { User } from "firebase/auth";
 import { setAnalyticsUser } from "../firebaseConfig";
 import { safeStorage } from "../utils/encryptedStorage";
+import { logger } from "../utils/logger";
 
 /**
  * Estado de autenticación - SOLO información de sesión
@@ -72,9 +73,9 @@ export const useAuthStore = create<AuthState>()(
       // No persistir nada — Firebase onAuthStateChanged es la fuente de verdad
       partialize: () => ({}),
       // Manejo de errores de persistencia
-      onRehydrateStorage: () => (state, error) => {
+      onRehydrateStorage: () => (_state, error) => {
         if (error) {
-          console.warn("[AuthStore] Error rehydrating storage:", error);
+          logger.warn("[AuthStore] Error rehydrating storage:", error);
         }
       },
     },

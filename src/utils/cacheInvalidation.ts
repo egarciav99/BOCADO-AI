@@ -15,6 +15,7 @@ import { useAuthStore } from '../stores/authStore';
  */
 export const useCacheInvalidation = () => {
   const queryClient = useQueryClient();
+  const logout = useAuthStore((state) => state.logout);
 
   return {
     /**
@@ -77,7 +78,7 @@ export const useCacheInvalidation = () => {
      */
     clearAllCaches: () => {
       queryClient.clear();
-      useAuthStore.getState().logout();
+      logout();
     },
   };
 };

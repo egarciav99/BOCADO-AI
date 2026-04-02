@@ -11,6 +11,13 @@ interface ProtectedRouteProps {
 /**
  * ProtectedRoute - Wraps pages that require authentication.
  *
+ * ARQUITECTURA: La protección es cliente-only (no hay middleware.ts de Next.js).
+ * Esto es intencional para esta PWA: el contenido sensible viene de Firestore
+ * (protegido por Firebase Security Rules), no del SSR. Un acceso directo por URL
+ * sin JS activo obtiene el HTML del shell vacío, no datos del usuario.
+ *
+ * Si en el futuro se añade SSR con datos sensibles, añadir middleware.ts.
+ *
  * AuthProvider gates rendering until auth is resolved, so isLoading
  * should always be false by the time this component mounts.
  * The useEffect handles the case where auth state changes AFTER mount
