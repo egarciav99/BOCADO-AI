@@ -73,7 +73,7 @@
     "confirmPassword": "Confirmar",
     "newEmail": "Nuevo Correo",
     "saveChanges": "Guardar cambios",
-    "emailVerificationNote": "Se enviaremos un link de verificación.",
+    "emailVerificationNote": "Te enviaremos un enlace de verificación.",
     "whatIncluded": "¿Qué incluye?",
     "dataReady": "¡Datos listos!",
     "prepareData": "Preparar datos",
@@ -180,7 +180,7 @@
       "cannotUnlink": "No puedes desvincular Google porque es tu único método de inicio de sesión.",
       "confirmUnlink": "Confirmar desvinculación"
     },
-    "exportSections": "Tu archivo incluye {{count}} secciones de datos",
+    "exportSections": "Tu archivo incluye {{{count}}} secciones de datos",
     "deleteDataDesc": "Eliminar todos tus datos y cuenta permanentemente."
   },
   "tabs": {
@@ -251,7 +251,7 @@
     },
     "success": {
       "emailResent": "Correo de verificación reenviado. Revisa tu bandeja de entrada.",
-      "resetEmailSent": "Se ha enviado un correo a {email} con instrucciones.",
+      "resetEmailSent": "Se ha enviado un correo a {{email}} con instrucciones.",
       "profileIncomplete": "Perfil incompleto. Por favor contacta soporte."
     },
     "emailSuggestions": "Sugerencias de correo"
@@ -262,7 +262,7 @@
     "emptyDesc": "Guarda tus restaurantes favoritos aquí",
     "viewRestaurant": "Ver restaurante",
     "unsave": "Quitar de guardados",
-    "confirmUnsave": "¿Quitar {restaurant} de guardados?",
+    "confirmUnsave": "¿Quitar {{restaurant}} de guardados?",
     "searchPlaceholder": "Buscar en tus restaurantes...",
     "filters": {
       "all": "Todos",
@@ -309,7 +309,7 @@
       "requesting": "Solicitando...",
       "allowNotifications": "✓ Permitir notificaciones",
       "notificationsActive": "Notificaciones activas",
-      "configuredReminders": "Recibirás {count} recordatorios configurados",
+      "configuredReminders": "Recibirás {{count}} recordatorios configurados",
       "sent": "✓ Enviada",
       "test": "Probar",
       "tabMeals": "🍽️ Comidas",
@@ -320,9 +320,9 @@
       "activate": "Activar recordatorio",
       "pantryEmpty": "🥑 Despensa vacía",
       "pantryUpdated": "✅ Despensa actualizada",
-      "pendingRatings": "⭐ {count} por calificar",
+      "pendingRatings": "⭐ {{count}} por calificar",
       "allRated": "✅ Todo calificado",
-      "inactiveUser": "😴 Inactivo {days} días",
+      "inactiveUser": "😴 Inactivo {{days}} días",
       "activeUser": "✅ Usuario activo",
       "howItWorks": "💡 ¿Cómo funcionan?",
       "smartConditionsDesc": "Estos recordatorios solo aparecen cuando se cumplen ciertas condiciones:",
@@ -387,7 +387,7 @@
       }
     },
     "types": {
-      "mealReady": "¡Es hora de {meal}!",
+      "mealReady": "¡Es hora de {{meal}}!",
       "planExpiring": "Tu plan semanal expira mañana",
       "newRecipe": "Nueva receta que te puede gustar"
     }
@@ -456,7 +456,7 @@
     }
   },
   "recommendation": {
-    "welcome": "¡Hola, {{userName}}! 👋",
+    "welcome": "¡Hola, {{{userName}}}! 👋",
     "subtitle": "¿Dónde y qué quieres comer hoy?",
     "homeButton": "En casa",
     "outButton": "Fuera",
@@ -475,7 +475,7 @@
     "onlyMyIngredientsHelp": "✓ Usaremos solo lo que tienes",
     "onlyMyIngredientsHelpOff": "Si no lo activas, recomendaremos también ingredientes a comprar",
     "whatCraving": "¿Qué se te antoja?",
-    "budget": "Presupuesto ({{currency}})",
+    "budget": "Presupuesto ({{{currency}}})",
     "locationActive": "📍 Ubicación activa",
     "locationDenied": "Ubicación denegada",
     "gettingLocation": "Obteniendo ubicación...",
@@ -497,7 +497,7 @@
     "profileNotFoundDesc": "Parece que hubo un problema al cargar tu perfil. Intenta recargar la página o contacta soporte.",
     "defaultUserName": "Comensal",
     "locationTooltip": "Ubica restaurantes más cercanos",
-    "waitSeconds": "Espera {{seconds}}s antes de generar otra recomendación.",
+    "waitSeconds": "Espera {{{seconds}}}s antes de generar otra recomendación.",
     "loadingPantry": "Cargando despensa..."
   },
   "mealCard": {
@@ -543,13 +543,13 @@
     "fats": "Grasas",
     "saved": "Guardado ❤️",
     "saveForLater": "Guardar para después",
-    "servings": "({count} pers.)",
+    "servings": "({{count}} pers.)",
     "ingredients": "Ingredientes",
     "preparation": "Preparación",
     "wentToPlace": "📍 Fui al lugar",
     "cooked": "🍳 La preparé",
     "popupBlocked": "Por favor permite ventanas emergentes para abrir Google Maps",
-    "copyFailed": "No se pudo copiar. Dirección: {{address}}",
+    "copyFailed": "No se pudo copiar. Dirección: {{{address}}}",
     "foodType": "Tipo de comida"
   },
   "plan": {
@@ -612,8 +612,8 @@
   },
   "saved": {
     "title": "Mis Lugares",
-    "count": "{count} lugar guardado",
-    "countPlural": "{count} lugares guardados",
+    "count": "{{count}} lugar guardado",
+    "countPlural": "{{count}} lugares guardados",
     "emptyState": "Aún no has guardado lugares",
     "emptyStateSubtitle": "Dale ❤️ a los restaurantes para verlos aquí",
     "loading": "Cargando...",
@@ -753,14 +753,14 @@
     "title": "Completa tu Perfil",
     "subtitle": "Necesitamos un poco más de información para personalizar tu experiencia",
     "progress": "Progreso",
-    "missingFieldsCount": "Faltan {{count}} campo(s) por completar",
+    "missingFieldsCount": "Faltan {{{count}}} campo(s) por completar",
     "info": "Con esta información podemos darte recomendaciones personalizadas de comidas y planes nutricionales adaptados a ti.",
     "continueButton": "Completar Perfil",
     "logoutButton": "Cerrar Sesión",
     "footer": "Tu información está segura y protegida por encriptación."
   },
   "tutorial": {
-    "welcome": "¡Bienvenido, {{userName}}!",
+    "welcome": "¡Bienvenido, {{{userName}}}!",
     "subtitle": "Tu asistente inteligente de nutrición. Te mostramos lo que necesitas saber.",
     "skip": "Saltar tutorial",
     "next": "Siguiente",
@@ -768,7 +768,7 @@
     "start": "¡Comenzar!",
     "previous": "Anterior",
     "stepsNavigation": "Navegación de pasos",
-    "goToStep": "Ir al paso {{step}}",
+    "goToStep": "Ir al paso {{{step}}}",
     "steps": {
       "home": {
         "title": "Tu asistente personal",
@@ -829,7 +829,7 @@
     "successTitle": "¡Gracias!",
     "successMessage": "Bocado aprenderá de esto para tus próximas sugerencias.",
     "error": "Error al enviar feedback",
-    "starLabel": "Calificar con {{count}} estrellas",
+    "starLabel": "Calificar con {{{count}}} estrellas",
     "errors": {
       "ratingRequired": "Por favor selecciona una calificación",
       "authRequired": "Debes iniciar sesión para enviar feedback"
@@ -841,9 +841,9 @@
   },
   "portions": {
     "title": "¿Para cuántos?",
-    "baseRecipe": "Receta base: {{baseServings}}",
+    "baseRecipe": "Receta base: {{{baseServings}}}",
     "moreOptions": "Más opciones:",
-    "option": "{{count}} porciones"
+    "option": "{{{count}}} porciones"
   },
   "pantry": {
     "title": "Mi Cocina",
@@ -851,9 +851,9 @@
     "loadError": "No se pudo cargar tu despensa",
     "addItem": "Agregar ingrediente",
     "selectIcon": "Selecciona un icono",
-    "addItemInCategory": "Agregar en {category}",
+    "addItemInCategory": "Agregar en {{category}}",
     "addIngredient": "Agregar ingrediente...",
-    "addInCategory": "Agregar en {category}...",
+    "addInCategory": "Agregar en {{category}}...",
     "empty": "Está vacío",
     "emptyCategory": "Esta categoría está vacía",
     "searchPlaceholder": "Buscar en tu despensa...",
@@ -868,7 +868,7 @@
     "allCategories": "Todos",
     "suggestions": "Sugerencias",
     "expiry": "Caducidad",
-    "urgentCount": "{count} ítems",
+    "urgentCount": "{{count}} ítems",
     "deleteItem": "Eliminar ingrediente",
     "willBeDeleted": "será eliminado",
     "zones": {
@@ -890,7 +890,7 @@
       "delete": "Eliminar",
       "moveToZone": "Mover a otra zona"
     },
-    "confirmDelete": "¿Eliminar {item} de tu despensa?"
+    "confirmDelete": "¿Eliminar {{item}} de tu despensa?"
   },
   "savedRecipes": {
     "title": "Mis Recetas",
@@ -905,10 +905,10 @@
     "noMore": "No hay más recetas guardadas",
     "viewRecipe": "Ver receta",
     "unsave": "Quitar de guardados",
-    "confirmUnsave": "¿Quitar {recipe} de guardados?",
+    "confirmUnsave": "¿Quitar {{recipe}} de guardados?",
     "searchPlaceholder": "Buscar en tus recetas...",
     "deleteTitle": "¿Eliminar receta?",
-    "deleteMessage": "Se eliminará la receta \"{title}\"",
+    "deleteMessage": "Se eliminará la receta \"{{title}}\"",
     "deleteMessageTitle": "la receta",
     "cancel": "Cancelar",
     "delete": "Eliminar",
@@ -1037,7 +1037,7 @@
     "lacteos": "Lácteos"
   },
   "progressBar": {
-    "step": "Paso {current} de {total}",
+    "step": "Paso {{current}} de {{total}}",
     "stepPersonal": "Datos personales",
     "stepHealth": "Salud",
     "stepLifestyle": "Estilo de vida",
@@ -1109,12 +1109,12 @@
     "other": "Otro"
   },
   "rateLimit": {
-    "wait": "Espera {time}",
-    "available": "{count} recomendación disponible",
-    "availablePlural": "{count} recomendaciones disponibles",
-    "sessionInfo": "{count} recomendaciones en esta sesión",
-    "warning": "⚠️ {count} recomendación disponible",
-    "warningPlural": "⚠️ {count} recomendaciones disponibles"
+    "wait": "Espera {{time}}",
+    "available": "{{count}} recomendación disponible",
+    "availablePlural": "{{count}} recomendaciones disponibles",
+    "sessionInfo": "{{count}} recomendaciones en esta sesión",
+    "warning": "⚠️ {{count}} recomendación disponible",
+    "warningPlural": "⚠️ {{count}} recomendaciones disponibles"
   },
   "now": "Ahora",
   "ingredients": {
@@ -1226,8 +1226,8 @@
     "vegetables": "Vegetales y Hortalizas",
     "fruits": "Frutas",
     "legumesGrains": "Legumbres, Granos y Tubérculos",
-    "nutsSeeeds": "Frutos Secos y Semillas",
-    "herbsSpices": "Hierbas, Especias y Condimentos"
+    "herbsSpices": "Hierbas, Especias y Condimentos",
+    "nutsSeeds": "Frutos Secos y Semillas"
   },
   "foods": {
     "beef": "Res",
@@ -1304,7 +1304,7 @@
     "invalidIngredient": "Ingresa un ingrediente válido",
     "ingredientTooLong": "Máximo 50 caracteres",
     "willBeRemoved": "será eliminado",
-    "removeIngredient": "Remover {{name}}",
+    "removeIngredient": "Remover {{{name}}}",
     "userNotFound": "Usuario no encontrado",
     "connectionError": "Error de conexión, intenta de nuevo",
     "rateLimited": "Demasiadas solicitudes, intenta más tarde",
@@ -1321,11 +1321,11 @@
       "gotItButton": "¡Entendido!",
       "dontShowButton": "No mostrar"
     },
-    "ingredientCount": "{count} ingrediente(s) seleccionados",
+    "ingredientCount": "{{count}} ingrediente(s) seleccionados",
     "ingredientCountSingular": "1 ingrediente seleccionado",
-    "ingredientCountPlural": "{count} ingredientes seleccionados",
+    "ingredientCountPlural": "{{count}} ingredientes seleccionados",
     "cookingTimeLabel": "Tiempo de cocción",
-    "cookingTimeValue": "{time} min máximo",
+    "cookingTimeValue": "{{time}} min máximo",
     "customizeLabel": "Personalizar:"
   }
 }

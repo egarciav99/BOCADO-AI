@@ -30,7 +30,7 @@ const categoryIcons: Record<string, React.FC<React.SVGProps<SVGSVGElement>>> = {
   vegetables: VegetableIcon,
   fruits: FruitIcon,
   legumesGrains: GrainsIcon,
-  nutsSeeeds: NutsIcon,
+  nutsSeeds: NutsIcon,
   herbsSpices: SpicesIcon,
 };
 

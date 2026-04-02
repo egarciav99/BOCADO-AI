@@ -7,12 +7,13 @@
  * ✅ Fixed: Deployment issue - force rebuild 2026-03-30
  */
 
+import { NextRequest, NextResponse } from "next/server";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { z } from "zod";
-import { initFirebaseAdmin } from "../../lib/api/firebase-admin";
-import { isOriginAllowed } from "../../lib/api/cors-utils";
-import { IPRateLimiter } from "../../lib/api/utils/ip-rate-limiter";
+import { initFirebaseAdmin } from "@/lib/api/firebase-admin";
+import { isOriginAllowed } from "@/lib/api/cors-utils";
+import { IPRateLimiter } from "@/lib/api/utils/ip-rate-limiter";
 
 const adminApp = initFirebaseAdmin();
 const db = adminApp ? getFirestore() : null;
@@ -30,6 +31,21 @@ if (!GOOGLE_MAPS_API_KEY) {
 // Rate limiting simple por IP
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minuto
 const RATE_LIMIT_MAX_REQUESTS = 30; // 30 requests por minuto
+
+// ============================================
+// CORS HELPER
+// ============================================
+
+function corsHeaders(origin: string | null) {
+  const originStr = origin || undefined;
+  const allowedOrigin = isOriginAllowed(originStr) ? (originStr || "*") : "*";
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    "Access-Control-Allow-Credentials": "true",
+  };
+}
 
 // ============================================
 // FETCH CON TIMEOUT
@@ -202,14 +218,19 @@ function generateCacheKey(prefix: string, params: Record<string, any>): string {
 }
 
 // ============================================
-// HANDLER PRINCIPAL
+// HANDLERS DE MÉTODOS HTTP
 // ============================================
 
-export default async function handler(req: any, res: any) {
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get("origin");
+  return new NextResponse(null, { status: 200, headers: corsHeaders(origin) });
+}
+
+export async function POST(request: NextRequest) {
   // ✅ Enhanced logging for deployment debugging
   console.log("[maps-proxy] Handler started", {
-    method: req.method,
-    url: req.url,
+    method: "POST",
+    url: request.url,
     timestamp: new Date().toISOString(),
   });
 
@@ -218,24 +239,27 @@ export default async function handler(req: any, res: any) {
       hasAdminApp: !!adminApp,
       hasDb: !!db,
     });
-    return res.status(503).json({ error: "Service temporarily unavailable. Firebase not initialized." });
+    const origin = request.headers.get("origin");
+    return NextResponse.json(
+      { error: "Service temporarily unavailable. Firebase not initialized." },
+      { status: 503, headers: corsHeaders(origin) }
+    );
   }
-  const origin = req.headers.origin;
+
+  const origin = request.headers.get("origin");
+  const originStr = origin || undefined;
 
   // Debug logging to help diagnose 403 / origin issues in deployments
   try {
-    const debugIP = (
-      req.headers["x-forwarded-for"] ||
-      req.socket?.remoteAddress ||
-      "unknown"
-    )
-      .toString()
-      .split(",")[0]
-      .trim();
+    const debugIP =
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+    
     console.info("[maps-proxy] incoming request", {
       origin: origin || null,
-      method: req.method,
-      url: req.url || req.originalUrl || null,
+      method: "POST",
+      url: request.url,
       clientIP: debugIP,
     });
   } catch (e) {
@@ -243,45 +267,48 @@ export default async function handler(req: any, res: any) {
   }
 
   // CORS
-  if (!isOriginAllowed(origin)) {
-    return res.status(403).json({ error: "Origin not allowed" });
+  if (!isOriginAllowed(originStr)) {
+    return NextResponse.json(
+      { error: "Origin not allowed" },
+      { status: 403, headers: corsHeaders(origin) }
+    );
   }
-
-  // Si no hay origin (same-origin), usar wildcard
-  res.setHeader("Access-Control-Allow-Origin", origin || "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.setHeader("Access-Control-Allow-Credentials", "true");
-
-  if (req.method === "OPTIONS") return res.status(200).end();
-  if (req.method !== "POST")
-    return res.status(405).json({ error: "Method not allowed" });
 
   // Verificar API key configurada
   if (!GOOGLE_MAPS_API_KEY) {
-    return res.status(500).json({ error: "Maps API not configured" });
+    return NextResponse.json(
+      { error: "Maps API not configured" },
+      { status: 500, headers: corsHeaders(origin) }
+    );
+  }
+
+  // Parse body
+  let body: any;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Invalid JSON body" },
+      { status: 400, headers: corsHeaders(origin) }
+    );
   }
 
   // Rate limiting por IP
-  const clientIP = (
-    req.headers["x-forwarded-for"] ||
-    req.socket?.remoteAddress ||
-    "unknown"
-  )
-    .toString()
-    .split(",")[0]
-    .trim();
+  const clientIP =
+    request.headers.get("x-forwarded-for")?.split(",")[0].trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
 
   // Obtener la acción antes del rate limiting para aplicar límites diferentes
-  const { action, ...params } = req.body;
+  const { action, ...params } = body;
   
   // ✅ Debug logging for request body
   console.log("[maps-proxy] Request details", {
-    body: req.body,
+    body,
     action,
     params,
-    hasBody: !!req.body,
-    bodyType: typeof req.body,
+    hasBody: !!body,
+    bodyType: typeof body,
   });
 
   // Autocomplete puede funcionar sin auth (para flujo de registro)
@@ -290,11 +317,8 @@ export default async function handler(req: any, res: any) {
 
   // Verificar autenticación (requerida para todo excepto autocomplete)
   let isAuthenticated = false;
-  const authHeader = req.headers?.authorization || "";
-  const tokenMatch =
-    typeof authHeader === "string"
-      ? authHeader.match(/^Bearer\s+(.+)$/i)
-      : null;
+  const authHeader = request.headers.get("authorization") || "";
+  const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/i);
   const idToken = tokenMatch?.[1];
 
   if (idToken) {
@@ -303,40 +327,51 @@ export default async function handler(req: any, res: any) {
       isAuthenticated = true;
     } catch (err) {
       if (!isPublicAction) {
-        return res.status(401).json({ error: "Invalid auth token" });
+        return NextResponse.json(
+          { error: "Invalid auth token" },
+          { status: 401, headers: corsHeaders(origin) }
+        );
       }
     }
   } else if (!isPublicAction) {
-    return res.status(401).json({ error: "Auth token required" });
+    return NextResponse.json(
+      { error: "Auth token required" },
+      { status: 401, headers: corsHeaders(origin) }
+    );
   }
 
   // Rate limiting: usar IPRateLimiter para proteger el endpoint
   const rateLimiter = new IPRateLimiter(db!);
   const rateCheck = await rateLimiter.checkRateLimit(clientIP);
   if (!rateCheck.allowed) {
-    return res.status(429).json({
-      error: "Rate limit exceeded",
-      retryAfter: rateCheck.secondsLeft,
-    });
+    return NextResponse.json(
+      {
+        error: "Rate limit exceeded",
+        retryAfter: rateCheck.secondsLeft,
+      },
+      { status: 429, headers: corsHeaders(origin) }
+    );
   }
 
   try {
+    const headers = corsHeaders(origin);
+    
     switch (action) {
       case "autocomplete": {
         const validated = AutocompleteSchema.parse(params);
-        return await handleAutocomplete(res, validated);
+        return await handleAutocomplete(validated, headers);
       }
       case "placeDetails": {
         const validated = PlaceDetailsSchema.parse(params);
-        return await handlePlaceDetails(res, validated);
+        return await handlePlaceDetails(validated, headers);
       }
       case "geocode": {
         const validated = GeocodeSchema.parse(params);
-        return await handleGeocode(res, validated);
+        return await handleGeocode(validated, headers);
       }
       case "reverseGeocode": {
         const validated = ReverseGeocodeSchema.parse(params);
-        return await handleReverseGeocode(res, validated);
+        return await handleReverseGeocode(validated, headers);
       }
       case "detectLocation": {
         console.log("[maps-proxy] Detecting location for IP", clientIP);
@@ -348,34 +383,48 @@ export default async function handler(req: any, res: any) {
             clientIP,
             message: "No se pudo detectar la ubicación"
           });
-          return res.status(404).json({
-            error: "No se pudo detectar la ubicación",
-            fallback: true,
-          });
+          return NextResponse.json(
+            {
+              error: "No se pudo detectar la ubicación",
+              fallback: true,
+            },
+            { status: 404, headers }
+          );
         }
 
         console.log("[maps-proxy] Location detected successfully", {
           clientIP,
           location
         });
-        return res.status(200).json(location);
+        return NextResponse.json(location, { headers });
       }
       default:
         console.log("[maps-proxy] Invalid action received", { 
           action, 
           availableActions: ["autocomplete", "placeDetails", "geocode", "reverseGeocode", "detectLocation"]
         });
-        return res.status(400).json({ error: "Invalid action" });
+        return NextResponse.json(
+          { error: "Invalid action" },
+          { status: 400, headers }
+        );
     }
   } catch (error: any) {
+    const headers = corsHeaders(origin);
+    
     if (error instanceof z.ZodError) {
-      return res.status(400).json({
-        error: "Validation error",
-        details: error.issues.map((i) => i.message),
-      });
+      return NextResponse.json(
+        {
+          error: "Validation error",
+          details: error.issues.map((i) => i.message),
+        },
+        { status: 400, headers }
+      );
     }
     console.error("Maps proxy error:", error);
-    return res.status(500).json({ error: "Internal server error" });
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500, headers }
+    );
   }
 }
 
@@ -384,14 +433,14 @@ export default async function handler(req: any, res: any) {
 // ============================================
 
 async function handleAutocomplete(
-  res: any,
   params: z.infer<typeof AutocompleteSchema>,
+  headers: any
 ) {
   const cacheKey = generateCacheKey("ac", params);
   const cached = await getCachedResponse(cacheKey);
 
   if (cached) {
-    return res.status(200).json({ ...cached, cached: true });
+    return NextResponse.json({ ...cached, cached: true }, { headers });
   }
 
   const components = params.countryCode
@@ -410,11 +459,14 @@ async function handleAutocomplete(
       error_message: data.error_message,
       query: params.query,
     });
-    return res.status(500).json({
-      error: "Maps API error",
-      details: data.status,
-      debug: data.error_message || "No additional info",
-    });
+    return NextResponse.json(
+      {
+        error: "Maps API error",
+        details: data.status,
+        debug: data.error_message || "No additional info",
+      },
+      { status: 500, headers }
+    );
   }
 
   const result = {
@@ -429,18 +481,18 @@ async function handleAutocomplete(
   // Cachear por 24 horas (datos de lugares no cambian mucho)
   await setCachedResponse(cacheKey, result, 24 * 60);
 
-  return res.status(200).json(result);
+  return NextResponse.json(result, { headers });
 }
 
 async function handlePlaceDetails(
-  res: any,
   params: z.infer<typeof PlaceDetailsSchema>,
+  headers: any
 ) {
   const cacheKey = generateCacheKey("pd", params);
   const cached = await getCachedResponse(cacheKey);
 
   if (cached) {
-    return res.status(200).json({ ...cached, cached: true });
+    return NextResponse.json({ ...cached, cached: true }, { headers });
   }
 
   const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${params.placeId}&fields=geometry,formatted_address,address_components&language=es&key=${GOOGLE_MAPS_API_KEY}`;
@@ -449,7 +501,10 @@ async function handlePlaceDetails(
   const data = await response.json();
 
   if (data.status !== "OK" || !data.result) {
-    return res.status(404).json({ error: "Place not found" });
+    return NextResponse.json(
+      { error: "Place not found" },
+      { status: 404, headers }
+    );
   }
 
   const result = data.result;
@@ -485,15 +540,15 @@ async function handlePlaceDetails(
   // Cachear por 7 días
   await setCachedResponse(cacheKey, output, 7 * 24 * 60);
 
-  return res.status(200).json(output);
+  return NextResponse.json(output, { headers });
 }
 
-async function handleGeocode(res: any, params: z.infer<typeof GeocodeSchema>) {
+async function handleGeocode(params: z.infer<typeof GeocodeSchema>, headers: any) {
   const cacheKey = generateCacheKey("geo", params);
   const cached = await getCachedResponse(cacheKey);
 
   if (cached) {
-    return res.status(200).json({ ...cached, cached: true });
+    return NextResponse.json({ ...cached, cached: true }, { headers });
   }
 
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
@@ -504,7 +559,10 @@ async function handleGeocode(res: any, params: z.infer<typeof GeocodeSchema>) {
   const data = await response.json();
 
   if (data.status !== "OK" || !data.results?.[0]) {
-    return res.status(404).json({ error: "Address not found" });
+    return NextResponse.json(
+      { error: "Address not found" },
+      { status: 404, headers }
+    );
   }
 
   const result = data.results[0];
@@ -539,12 +597,12 @@ async function handleGeocode(res: any, params: z.infer<typeof GeocodeSchema>) {
   // Cachear por 7 días
   await setCachedResponse(cacheKey, output, 7 * 24 * 60);
 
-  return res.status(200).json(output);
+  return NextResponse.json(output, { headers });
 }
 
 async function handleReverseGeocode(
-  res: any,
   params: z.infer<typeof ReverseGeocodeSchema>,
+  headers: any
 ) {
   // No cacheamos reverse geocode (coordenadas son únicas)
   const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${params.lat},${params.lng}&language=es&key=${GOOGLE_MAPS_API_KEY}`;
@@ -560,7 +618,10 @@ async function handleReverseGeocode(
       lng: params.lng,
       hasResults: Array.isArray(data.results) ? data.results.length : 0,
     });
-    return res.status(404).json({ error: "Location not found" });
+    return NextResponse.json(
+      { error: "Location not found" },
+      { status: 404, headers }
+    );
   }
 
   const result = data.results[0];
@@ -583,11 +644,14 @@ async function handleReverseGeocode(
     }
   }
 
-  return res.status(200).json({
-    location: { lat: params.lat, lng: params.lng },
-    formattedAddress: result.formatted_address,
-    city,
-    country,
-    countryCode,
-  });
+  return NextResponse.json(
+    {
+      location: { lat: params.lat, lng: params.lng },
+      formattedAddress: result.formatted_address,
+      city,
+      country,
+      countryCode,
+    },
+    { headers }
+  );
 }

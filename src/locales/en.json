@@ -180,7 +180,7 @@
       "cannotUnlink": "You cannot unlink Google because it is your only login method.",
       "confirmUnlink": "Confirm unlink"
     },
-    "exportSections": "Your file includes {{count}} data sections",
+    "exportSections": "Your file includes {{{count}}} data sections",
     "deleteDataDesc": "Permanently delete all your data and account."
   },
   "tabs": {
@@ -251,7 +251,7 @@
     },
     "success": {
       "emailResent": "Verification email resent. Check your inbox.",
-      "resetEmailSent": "An email has been sent to {email} with instructions.",
+      "resetEmailSent": "An email has been sent to {{email}} with instructions.",
       "profileIncomplete": "Incomplete profile. Please contact support."
     },
     "emailSuggestions": "Email suggestions"
@@ -262,7 +262,7 @@
     "emptyDesc": "Save your favorite restaurants here",
     "viewRestaurant": "View restaurant",
     "unsave": "Remove from saved",
-    "confirmUnsave": "Remove {restaurant} from saved?",
+    "confirmUnsave": "Remove {{restaurant}} from saved?",
     "searchPlaceholder": "Search in your restaurants...",
     "filters": {
       "all": "All",
@@ -309,7 +309,7 @@
       "requesting": "Requesting...",
       "allowNotifications": "✓ Allow notifications",
       "notificationsActive": "Notifications active",
-      "configuredReminders": "You'll receive {count} configured reminders",
+      "configuredReminders": "You'll receive {{count}} configured reminders",
       "sent": "✓ Sent",
       "test": "Test",
       "tabMeals": "🍽️ Meals",
@@ -320,9 +320,9 @@
       "activate": "Activate reminder",
       "pantryEmpty": "🥑 Pantry empty",
       "pantryUpdated": "✅ Pantry updated",
-      "pendingRatings": "⭐ {count} to rate",
+      "pendingRatings": "⭐ {{count}} to rate",
       "allRated": "✅ All rated",
-      "inactiveUser": "😴 Inactive {days} days",
+      "inactiveUser": "😴 Inactive {{days}} days",
       "activeUser": "✅ Active user",
       "howItWorks": "💡 How do they work?",
       "smartConditionsDesc": "These reminders only appear when certain conditions are met:",
@@ -387,7 +387,7 @@
       }
     },
     "types": {
-      "mealReady": "It's time for {meal}!",
+      "mealReady": "It's time for {{meal}}!",
       "planExpiring": "Your weekly plan expires tomorrow",
       "newRecipe": "New recipe you might like"
     }
@@ -443,10 +443,20 @@
     "loading": "Syncing Bocado...",
     "sessionInvalid": "Invalid session. Redirecting...",
     "reload": "Reload",
-    "defaultUserName": "there"
+    "defaultUserName": "there",
+    "sync": {
+      "syncing": "Syncing...",
+      "success": "Synchronized",
+      "failed": "Synchronization failed"
+    },
+    "errors": {
+      "offline": "You are offline",
+      "sessionExpired": "Session expired",
+      "unauthorized": "Unauthorized access"
+    }
   },
   "recommendation": {
-    "welcome": "Hello, {{userName}}! 👋",
+    "welcome": "Hello, {{{userName}}}! 👋",
     "subtitle": "Where and what do you want to eat today?",
     "homeButton": "At home",
     "outButton": "Eat out",
@@ -465,7 +475,7 @@
     "onlyMyIngredientsHelp": "✓ We'll use only what you have",
     "onlyMyIngredientsHelpOff": "If you don't enable this, we'll also recommend ingredients to buy",
     "whatCraving": "What are you craving?",
-    "budget": "Budget ({{currency}})",
+    "budget": "Budget ({{{currency}}})",
     "locationActive": "📍 Location active",
     "locationDenied": "Location denied",
     "gettingLocation": "Getting location...",
@@ -487,7 +497,7 @@
     "profileNotFoundDesc": "It seems there was a problem loading your profile. Try reloading the page or contact support.",
     "defaultUserName": "Guest",
     "locationTooltip": "Find nearest restaurants",
-    "waitSeconds": "Wait {{seconds}}s before generating another recommendation.",
+    "waitSeconds": "Wait {{{seconds}}}s before generating another recommendation.",
     "loadingPantry": "Loading pantry..."
   },
   "mealCard": {
@@ -533,13 +543,13 @@
     "fats": "Fats",
     "saved": "Saved ❤️",
     "saveForLater": "Save for later",
-    "servings": "({count} servings)",
+    "servings": "({{count}} servings)",
     "ingredients": "Ingredients",
     "preparation": "Preparation",
     "wentToPlace": "📍 Went to the place",
     "cooked": "🍳 Cooked it",
     "popupBlocked": "Please allow popups to open Google Maps",
-    "copyFailed": "Could not copy. Address: {{address}}",
+    "copyFailed": "Could not copy. Address: {{{address}}}",
     "foodType": "Food type"
   },
   "plan": {
@@ -564,12 +574,47 @@
     "errorMessage": "Could not load the plan",
     "tryAgain": "Try again",
     "ready": "Ready! 🥗",
-    "backToHome": "Back to home"
+    "backToHome": "Back to home",
+    "title": "Meal Plan",
+    "breakfast": "Breakfast",
+    "lunch": "Lunch",
+    "dinner": "Dinner",
+    "snack": "Snack",
+    "startNewPlan": "Start New Plan",
+    "loading": "Loading...",
+    "empty": "No meal plan",
+    "createFirst": "Create your first meal plan",
+    "dayNames": {
+      "monday": "Monday",
+      "tuesday": "Tuesday",
+      "wednesday": "Wednesday",
+      "thursday": "Thursday",
+      "friday": "Friday",
+      "saturday": "Saturday",
+      "sunday": "Sunday"
+    },
+    "mealTypes": {
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "snack": "Snack"
+    },
+    "options": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "duplicate": "Duplicate",
+      "share": "Share"
+    },
+    "errors": {
+      "loadFailed": "Failed to load plan",
+      "saveFailed": "Failed to save plan",
+      "deleteFailed": "Failed to delete plan"
+    }
   },
   "saved": {
     "title": "My Places",
-    "count": "{count} saved place",
-    "countPlural": "{count} saved places",
+    "count": "{{count}} saved place",
+    "countPlural": "{{count}} saved places",
     "emptyState": "You haven't saved any places yet",
     "emptyStateSubtitle": "Give ❤️ to restaurants to see them here",
     "loading": "Loading...",
@@ -689,24 +734,36 @@
     "consent": "I understand and agree that Bocado uses my data to personalize my recommendations.",
     "continue": "Continue",
     "decline": "I don't accept, go back home",
-    "footer": "Your data is encrypted and protected"
+    "footer": "Your data is encrypted and protected",
+    "description": "To provide a better experience, we need some permissions",
+    "notifications": "Notifications",
+    "notificationsDesc": "Receive reminders for your meals",
+    "location": "Location",
+    "locationDesc": "Find nearby restaurants",
+    "accept": "Accept",
+    "skip": "Skip",
+    "privacy": {
+      "title": "Privacy",
+      "description": "Your data is safe with us",
+      "learnMore": "Learn more"
+    }
   },
   "completeProfile": {
     "title": "Complete Your Profile",
     "subtitle": "We need a little more information to personalize your experience",
     "progress": "Progress",
-    "missingFieldsCount": "{{count}} field(s) remaining",
+    "missingFieldsCount": "{{{count}}} field(s) remaining",
     "info": "With this information we can give you personalized meal recommendations and nutrition plans tailored to you.",
     "continueButton": "Complete Profile",
     "logoutButton": "Logout",
     "footer": "Your information is safe and protected by encryption."
   },
   "tutorial": {
-    "welcome": "Welcome, {{userName}}!",
+    "welcome": "Welcome, {{{userName}}}!",
     "subtitle": "Your intelligent nutrition assistant. Here's what you need to know.",
     "previous": "Previous",
     "stepsNavigation": "Steps navigation",
-    "goToStep": "Go to step {{step}}",
+    "goToStep": "Go to step {{{step}}}",
     "slides": {
       "rateLimit": {
         "title": "⏱️ Rate Limiting",
@@ -723,7 +780,30 @@
     },
     "start": "Get Started!",
     "next": "Next",
-    "skip": "Skip tutorial"
+    "skip": "Skip tutorial",
+    "finish": "Finish",
+    "steps": {
+      "home": {
+        "title": "Home",
+        "description": "Discover personalized recipes and recommendations"
+      },
+      "pantry": {
+        "title": "Pantry",
+        "description": "Manage your ingredients and pantry items"
+      },
+      "recommendations": {
+        "title": "Recommendations",
+        "description": "Get AI-powered recipe suggestions"
+      },
+      "plan": {
+        "title": "Meal Plan",
+        "description": "Plan your meals for the week"
+      },
+      "profile": {
+        "title": "Profile",
+        "description": "Customize your preferences and settings"
+      }
+    }
   },
   "feedback": {
     "titleHome": "How did it turn out?",
@@ -735,10 +815,22 @@
     "confirm": "Confirm",
     "successTitle": "Thank you!",
     "successMessage": "Bocado will learn from this for your next suggestions.",
-    "starLabel": "Rate with {{count}} stars",
+    "starLabel": "Rate with {{{count}}} stars",
     "errors": {
       "ratingRequired": "Please select a rating",
       "authRequired": "You must be logged in to send feedback"
+    },
+    "title": "Feedback",
+    "rateExperience": "Rate your experience",
+    "comment": "Comments (optional)",
+    "thanks": "Thank you for your feedback!",
+    "error": "Failed to send feedback",
+    "rating": {
+      "excellent": "Excellent",
+      "good": "Good",
+      "okay": "Okay",
+      "bad": "Bad",
+      "terrible": "Terrible"
     }
   },
   "network": {
@@ -747,9 +839,9 @@
   },
   "portions": {
     "title": "How many servings?",
-    "baseRecipe": "Base recipe: {{baseServings}}",
+    "baseRecipe": "Base recipe: {{{baseServings}}}",
     "moreOptions": "More options:",
-    "option": "{{count}} servings"
+    "option": "{{{count}}} servings"
   },
   "pantry": {
     "title": "My Kitchen",
@@ -766,12 +858,38 @@
     "allCategories": "All",
     "suggestions": "Suggestions",
     "addIngredient": "Add ingredient...",
-    "addInCategory": "Add in {category}...",
+    "addInCategory": "Add in {{category}}...",
     "empty": "Empty",
     "expiry": "Expiry",
-    "urgentCount": "{count} items",
+    "urgentCount": "{{count}} items",
     "deleteItem": "Delete ingredient",
-    "willBeDeleted": "will be deleted"
+    "willBeDeleted": "will be deleted",
+    "addItem": "Add Item",
+    "selectIcon": "Select Icon",
+    "addItemInCategory": "Add in {{category}}",
+    "emptyCategory": "No items in this category",
+    "zones": {
+      "fridge": "Fridge",
+      "freezer": "Freezer",
+      "pantry": "Pantry"
+    },
+    "categories": {
+      "all": "All",
+      "fruits": "Fruits",
+      "vegetables": "Vegetables",
+      "dairy": "Dairy",
+      "meats": "Meats",
+      "grains": "Grains",
+      "others": "Others"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete",
+      "moveToFridge": "Move to Fridge",
+      "moveToFreezer": "Move to Freezer",
+      "moveToPantry": "Move to Pantry"
+    },
+    "confirmDelete": "Delete {{item}}?"
   },
   "savedRecipes": {
     "title": "My Recipes",
@@ -783,10 +901,23 @@
     "loadMore": "Load more recipes",
     "noMore": "No more saved recipes",
     "deleteTitle": "Delete recipe?",
-    "deleteMessage": "Will delete the recipe \"{title}\"",
+    "deleteMessage": "Will delete the recipe \"{{title}}\"",
     "deleteMessageTitle": "the recipe",
     "cancel": "Cancel",
-    "delete": "Delete"
+    "delete": "Delete",
+    "empty": "No saved recipes",
+    "emptyDesc": "Save your favorite recipes here",
+    "viewRecipe": "View Recipe",
+    "unsave": "Unsave",
+    "confirmUnsave": "Unsave {{recipe}}?",
+    "searchPlaceholder": "Search recipes...",
+    "filters": {
+      "all": "All",
+      "breakfast": "Breakfast",
+      "lunch": "Lunch",
+      "dinner": "Dinner",
+      "snack": "Snack"
+    }
   },
   "countries": {
     "mexico": "Mexico",
@@ -905,7 +1036,7 @@
     "lacteos": "Dairy"
   },
   "progressBar": {
-    "step": "Step {current} of {total}",
+    "step": "Step {{current}} of {{total}}",
     "stepPersonal": "Personal info",
     "stepHealth": "Health",
     "stepLifestyle": "Lifestyle",
@@ -977,12 +1108,12 @@
     "other": "Other"
   },
   "rateLimit": {
-    "wait": "Wait {time}",
-    "available": "{count} recommendation available",
-    "availablePlural": "{count} recommendations available",
-    "sessionInfo": "{count} recommendations this session",
-    "warning": "⚠️ {count} recommendation available",
-    "warningPlural": "⚠️ {count} recommendations available"
+    "wait": "Wait {{time}}",
+    "available": "{{count}} recommendation available",
+    "availablePlural": "{{count}} recommendations available",
+    "sessionInfo": "{{count}} recommendations this session",
+    "warning": "⚠️ {{count}} recommendation available",
+    "warningPlural": "⚠️ {{count}} recommendations available"
   },
   "now": "Now",
   "ingredients": {
@@ -1094,8 +1225,8 @@
     "vegetables": "Vegetables",
     "fruits": "Fruits",
     "legumesGrains": "Legumes, Grains and Tubers",
-    "nutsSeeeds": "Nuts and Seeds",
-    "herbsSpices": "Herbs, Spices and Condiments"
+    "herbsSpices": "Herbs, Spices and Condiments",
+    "nutsSeeds": "Nuts and Seeds"
   },
   "foods": {
     "beef": "Beef",
@@ -1172,7 +1303,7 @@
     "invalidIngredient": "Enter a valid ingredient",
     "ingredientTooLong": "Maximum 50 characters",
     "willBeRemoved": "will be removed",
-    "removeIngredient": "Remove {{name}}",
+    "removeIngredient": "Remove {{{name}}}",
     "userNotFound": "User not found",
     "connectionError": "Connection error, please try again",
     "rateLimited": "Too many requests, please try later",
@@ -1189,11 +1320,11 @@
       "gotItButton": "Got it!",
       "dontShowButton": "Don't show"
     },
-    "ingredientCount": "{count} ingredient(s) selected",
+    "ingredientCount": "{{count}} ingredient(s) selected",
     "ingredientCountSingular": "1 ingredient selected",
-    "ingredientCountPlural": "{count} ingredients selected",
+    "ingredientCountPlural": "{{count}} ingredients selected",
     "cookingTimeLabel": "Cooking time",
-    "cookingTimeValue": "{time} min max",
+    "cookingTimeValue": "{{time}} min max",
     "customizeLabel": "Customize:"
   }
 }

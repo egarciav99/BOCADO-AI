@@ -3,10 +3,7 @@ import { logger } from "../utils/logger";
 import { auth } from "../firebaseConfig";
 
 // ✅ NUEVO: Usar proxy en lugar de API key directa
-const MAPS_PROXY_URL = env.api.recommendationUrl.replace(
-  "/recommend",
-  "/maps-proxy",
-);
+const MAPS_PROXY_URL = "/api/maps-proxy";
 
 // ✅ OPTIMIZACIÓN: Caché local en memoria + Debounce
 const localCache = new Map<string, { data: any; timestamp: number }>();

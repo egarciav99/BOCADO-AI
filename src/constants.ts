@@ -123,7 +123,7 @@ export const FOOD_CATEGORIES: Record<
     { key: "soyTofu", default: "Soya/Tofu" },
     { key: "potato", default: "Papa" },
   ],
-  nutsSeeeds: [
+  nutsSeeds: [
     { key: "peanut", default: "Cacahuete/Maní" },
     { key: "almonds", default: "Almendras" },
     { key: "walnuts", default: "Nueces" },
