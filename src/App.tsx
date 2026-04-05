@@ -237,114 +237,130 @@ function AppContent() {
     switch (currentScreen) {
         case "permissions":
           return (
-            <Suspense fallback={<ScreenLoadingFallback />}>
-              <PermissionsScreen
-                onAccept={() => {
-                  if (isAuthenticated) {
-                    setCurrentScreen("recommendation");
-                  } else {
-                    setCurrentScreen("registerMethod");
-                  }
-                }}
-                onGoHome={() => setCurrentScreen("home")}
-              />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenLoadingFallback />}>
+                <PermissionsScreen
+                  onAccept={() => {
+                    if (isAuthenticated) {
+                      setCurrentScreen("recommendation");
+                    } else {
+                      setCurrentScreen("registerMethod");
+                    }
+                  }}
+                  onGoHome={() => setCurrentScreen("home")}
+                />
+              </Suspense>
+            </ErrorBoundary>
           );
         case "registerMethod":
           return (
-            <Suspense fallback={<ScreenLoadingFallback />}>
-              <RegistrationMethodScreen
-                onGoogleSuccess={(uid, email) => {
-                  // ✅ Bug 6: marcar que viene de Google para que RegistrationFlow
-                  // omita email/password y use auth.currentUser
-                  setIsNewUser(true);
-                  setIsGoogleRegistration(true);
-                  setCurrentScreen("register");
-                }}
-                onChooseEmail={() => {
-                  setIsGoogleRegistration(false);
-                  setCurrentScreen("register");
-                }}
-                onGoHome={() => setCurrentScreen("home")}
-              />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenLoadingFallback />}>
+                <RegistrationMethodScreen
+                  onGoogleSuccess={(uid, email) => {
+                    // ✅ Bug 6: marcar que viene de Google para que RegistrationFlow
+                    // omita email/password y use auth.currentUser
+                    setIsNewUser(true);
+                    setIsGoogleRegistration(true);
+                    setCurrentScreen("register");
+                  }}
+                  onChooseEmail={() => {
+                    setIsGoogleRegistration(false);
+                    setCurrentScreen("register");
+                  }}
+                  onGoHome={() => setCurrentScreen("home")}
+                />
+              </Suspense>
+            </ErrorBoundary>
           );
         case "register":
           return (
-            <Suspense fallback={<ScreenLoadingFallback />}>
-              <RegistrationFlow
-                isGoogleUser={isGoogleRegistration}
-                onRegistrationComplete={() => {
-                  setIsNewUser(true);
-                  setIsGoogleRegistration(false);
-                  setCurrentScreen("recommendation");
-                }}
-                onGoHome={() => {
-                  setIsGoogleRegistration(false);
-                  setCurrentScreen("home");
-                }}
-              />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenLoadingFallback />}>
+                <RegistrationFlow
+                  isGoogleUser={isGoogleRegistration}
+                  onRegistrationComplete={() => {
+                    setIsNewUser(true);
+                    setIsGoogleRegistration(false);
+                    setCurrentScreen("recommendation");
+                  }}
+                  onGoHome={() => {
+                    setIsGoogleRegistration(false);
+                    setCurrentScreen("home");
+                  }}
+                />
+              </Suspense>
+            </ErrorBoundary>
           );
         case "login":
           return (
-            <Suspense fallback={<ScreenLoadingFallback />}>
-              <LoginScreen
-                onLoginSuccess={() => {
-                  setIsNewUser(false);
-                  setCurrentScreen("recommendation");
-                }}
-                onGoHome={() => setCurrentScreen("home")}
-              />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenLoadingFallback />}>
+                <LoginScreen
+                  onLoginSuccess={() => {
+                    setIsNewUser(false);
+                    setCurrentScreen("recommendation");
+                  }}
+                  onGoHome={() => setCurrentScreen("home")}
+                />
+              </Suspense>
+            </ErrorBoundary>
           );
         case "completeProfile":
           return (
-            <Suspense fallback={<ScreenLoadingFallback />}>
-              <CompleteProfileScreen
-                onStartCompletion={() => {
-                  setCurrentScreen("recommendation");
-                }}
-                onLogout={() => setCurrentScreen("home")}
-              />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenLoadingFallback />}>
+                <CompleteProfileScreen
+                  onStartCompletion={() => {
+                    setCurrentScreen("recommendation");
+                  }}
+                  onLogout={() => setCurrentScreen("home")}
+                />
+              </Suspense>
+            </ErrorBoundary>
           );
         case "recommendation":
           return (
-            <Suspense fallback={<ScreenLoadingFallback />}>
-              <MainApp
-                showTutorial={isNewUser}
-                onPlanGenerated={(id) => {
-                  setPlanId(id);
-                  setCurrentScreen("plan");
-                }}
-                onTutorialFinished={() => setIsNewUser(false)}
-                onLogoutComplete={() => setCurrentScreen("home")}
-              />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenLoadingFallback />}>
+                <MainApp
+                  showTutorial={isNewUser}
+                  onPlanGenerated={(id) => {
+                    setPlanId(id);
+                    setCurrentScreen("plan");
+                  }}
+                  onTutorialFinished={() => setIsNewUser(false)}
+                  onLogoutComplete={() => setCurrentScreen("home")}
+                />
+              </Suspense>
+            </ErrorBoundary>
           );
         case "plan":
           return (
-            <Suspense fallback={<ScreenLoadingFallback />}>
-              <PlanScreen
-                planId={planId!}
-                onStartNewPlan={() => {
-                  setPlanId(null);
-                  setCurrentScreen("recommendation");
-                }}
-              />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenLoadingFallback />}>
+                <PlanScreen
+                  planId={planId!}
+                  onStartNewPlan={() => {
+                    setPlanId(null);
+                    setCurrentScreen("recommendation");
+                  }}
+                />
+              </Suspense>
+            </ErrorBoundary>
           );
         case "home":
         default:
           return (
-            <Suspense fallback={<ScreenLoadingFallback />}>
-              <HomeScreen
-                onStartRegistration={() => setCurrentScreen("registerMethod")}
-                onGoToApp={() => setCurrentScreen("permissions")}
-                onGoToLogin={() => setCurrentScreen("login")}
-              />
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<ScreenLoadingFallback />}>
+                <HomeScreen
+                  onStartRegistration={() => setCurrentScreen("registerMethod")}
+                  onGoToApp={() => setCurrentScreen("permissions")}
+                  onGoToLogin={() => setCurrentScreen("login")}
+                />
+              </Suspense>
+            </ErrorBoundary>
           );
       }
   };

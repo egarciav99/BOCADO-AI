@@ -96,7 +96,7 @@ export function diagnoseNotifications(): void {
           });
         }
       } catch (e) {
-        console.error(`  ❌ Error parseando ${key}`);
+        if (process.env.NODE_ENV === "development") console.error(`  ❌ Error parseando ${key}:`, e);
       }
     } else {
       console.log(`\n${key}: (vacío)`);

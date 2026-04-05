@@ -155,6 +155,8 @@ interface UseSavedItemsReturn {
   isFetchingNextPage: boolean;
   totalLoaded: number;
   refetch: () => void;
+  paginationError: boolean;
+  clearPaginationError: () => void;
 }
 
 export const useSavedItems = (
@@ -176,6 +178,7 @@ export const useSavedItems = (
     isFetchingNextPage: false,
     cursors: [undefined],
   });
+  const [paginationError, setPaginationError] = useState(false);
 
   // Configurar polling basado en visibilidad de pestaña
   const { refetchInterval } = useVisibilityAwarePolling({
@@ -291,6 +294,7 @@ export const useSavedItems = (
       setLoadedPages((prev) => new Set([...prev, nextPageNum]));
     } catch (error) {
       logger.error("Error fetching next page:", error);
+      setPaginationError(true);
       setPaginationState((prev) => ({ ...prev, isFetchingNextPage: false }));
     }
   }, [paginationState, userId, type, loadedPages]);
@@ -306,6 +310,8 @@ export const useSavedItems = (
     isFetchingNextPage: paginationState.isFetchingNextPage,
     totalLoaded: allItems.length,
     refetch: queryResult.refetch,
+    paginationError,
+    clearPaginationError: () => setPaginationError(false),
   };
 };
 

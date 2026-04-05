@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import { useSavedItems, useToggleSavedItem } from "../hooks/useSavedItems";
-import { useAuthStore } from "../stores/authStore";
+import { useAuthStore, selectUserUid } from "../stores/authStore";
 import { BookOpen } from "./icons";
 import MealCard from "./MealCard";
 import { Meal } from "../types";
@@ -13,10 +13,11 @@ const SavedRecipesScreen: React.FC = () => {
   const [mealToConfirmDelete, setMealToConfirmDelete] = useState<Meal | null>(
     null,
   );
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const { user } = useAuthStore();
+  const uid = useAuthStore(selectUserUid);
 
-  const savedItems = useSavedItems(user?.uid, "recipe");
+  const savedItems = useSavedItems(uid, "recipe");
   const recipes = savedItems.data || [];
   const isLoading = savedItems.isLoading;
   const fetchNextPage = savedItems.fetchNextPage;
@@ -38,17 +39,27 @@ const SavedRecipesScreen: React.FC = () => {
   };
 
   const confirmDelete = () => {
-    if (!mealToConfirmDelete || !user) return;
+    if (!mealToConfirmDelete || !uid) return;
+    setDeleteError(null);
 
-    toggleMutation.mutate({
-      userId: user.uid,
-      type: "recipe",
-      recipe: mealToConfirmDelete.recipe,
-      mealType: mealToConfirmDelete.mealType,
-      isSaved: true,
-    });
-
-    setMealToConfirmDelete(null);
+    toggleMutation.mutate(
+      {
+        userId: uid,
+        type: "recipe",
+        recipe: mealToConfirmDelete.recipe,
+        mealType: mealToConfirmDelete.mealType,
+        isSaved: true,
+      },
+      {
+        onSuccess: () => {
+          setMealToConfirmDelete(null);
+        },
+        onError: () => {
+          setDeleteError(t("savedRecipes.deleteError"));
+          // No cerrar el modal — dejar al usuario reintentar
+        },
+      },
+    );
   };
 
   if (isLoading) {
@@ -111,7 +122,7 @@ const SavedRecipesScreen: React.FC = () => {
                 <button
                   onClick={() => fetchNextPage()}
                   disabled={isFetchingNextPage}
-                  className="w-full py-3 px-4 bg-bocado-background text-bocado-dark-gray font-medium rounded-xl border border-bocado-border hover:bg-bocado-border/50 transition-all duration-200 hover:scale-[1.01] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 bg-bocado-background text-bocado-dark-gray font-medium rounded-xl border border-bocado-border hover:bg-bocado-border/50 transition-all duration-200 active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   {isFetchingNextPage ? (
                     <>
@@ -126,6 +137,20 @@ const SavedRecipesScreen: React.FC = () => {
                     </span>
                   )}
                 </button>
+                {savedItems.paginationError && (
+                  <p className="text-xs text-red-500 text-center mt-2">
+                    {t("common.error")} —{" "}
+                    <button
+                      className="underline"
+                      onClick={() => {
+                        savedItems.clearPaginationError();
+                        savedItems.fetchNextPage();
+                      }}
+                    >
+                      {t("common.retry")}
+                    </button>
+                  </p>
+                )}
               </div>
             )}
 
@@ -155,6 +180,9 @@ const SavedRecipesScreen: React.FC = () => {
                   title: mealToConfirmDelete.recipe.title,
                 })}
               </p>
+              {deleteError && (
+                <p className="text-xs text-red-500 mb-4">{deleteError}</p>
+              )}
               <div className="flex gap-3">
                 <button
                   onClick={() => setMealToConfirmDelete(null)}

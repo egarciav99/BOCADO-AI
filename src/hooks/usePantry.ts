@@ -4,6 +4,9 @@ import { doc, getDoc, runTransaction } from "firebase/firestore";
 import { db, serverTimestamp, trackEvent } from "../firebaseConfig";
 import { KitchenItem } from "../types";
 import { useVisibilityAwarePolling } from "./usePaginatedFirestoreQuery";
+import { logger } from "../utils/logger";
+import { showToast } from "../components/ui/Toast";
+import { useTranslation } from "../contexts/I18nContext";
 
 const PANTRY_KEY = "pantry";
 
@@ -41,6 +44,7 @@ const savePantry = async (
 
 export const usePantry = (userUid: string) => {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
 
   // Polling inteligente: frecuente cuando visible, lento en background
   const { refetchInterval, isVisible } = useVisibilityAwarePolling({
@@ -81,9 +85,14 @@ export const usePantry = (userUid: string) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: userUid, type: "pantry" }),
       }).catch((err) => {
-        // No crítico - solo log
-        console.warn("Failed to invalidate pantry cache:", err);
+        logger.warn("Failed to invalidate pantry cache:", err);
       });
+    },
+    onError: (error) => {
+      logger.error("[usePantry] Error saving pantry:", error);
+      // Revertir al estado anterior desde la caché
+      queryClient.invalidateQueries({ queryKey: [PANTRY_KEY, userUid] });
+      showToast(t("pantry.saveError"), "error");
     },
   });
 

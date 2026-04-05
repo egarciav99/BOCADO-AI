@@ -97,7 +97,7 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(
           <div className="mb-3">
             <button
               onClick={onOpenMaps}
-              className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-[0.98] transition-all duration-200 hover:scale-[1.02] hover:shadow-md flex items-center justify-center gap-2"
+              className="w-full py-3 rounded-xl bg-blue-50 text-blue-600 font-semibold text-sm border border-blue-200 hover:bg-blue-100 active:scale-95 transition-all duration-200 hover:shadow-md flex items-center justify-center gap-2"
             >
               <span>📍</span>
               <span>{t("mealCard.viewOnMaps")}</span>
@@ -124,14 +124,14 @@ const RestaurantInfoSection = memo<RestaurantInfoSectionProps>(
             <div className="flex gap-2">
               <button
                 onClick={onSearchMapsFallback}
-                className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-[0.98] transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-1 font-medium"
+                className="flex-1 py-2.5 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-600 hover:bg-blue-100 active:scale-95 transition-all duration-200 flex items-center justify-center gap-1 font-medium"
               >
                 <span>🔍</span>
                 <span>{t("mealCard.searchMaps")}</span>
               </button>
               <button
                 onClick={onCopyAddress}
-                className={`flex-1 py-2.5 border rounded-lg text-xs transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-1 font-medium ${
+                className={`flex-1 py-2.5 border rounded-lg text-xs transition-all duration-200 active:scale-95 flex items-center justify-center gap-1 font-medium ${
                   copiedAddress
                     ? "bg-green-50 border-green-200 text-green-600"
                     : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"

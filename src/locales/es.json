@@ -620,6 +620,7 @@
     "loadMore": "Cargar más lugares",
     "noMore": "No hay más lugares guardados",
     "deleteTitle": "¿Eliminar lugar?",
+    "deleteError": "No se pudo eliminar. Intenta de nuevo.",
     "cancel": "Cancelar",
     "delete": "Eliminar"
   },
@@ -849,6 +850,7 @@
     "title": "Mi Cocina",
     "subtitle": "Control de ingredientes",
     "loadError": "No se pudo cargar tu despensa",
+    "saveError": "No se pudo guardar. Intenta de nuevo.",
     "addItem": "Agregar ingrediente",
     "selectIcon": "Selecciona un icono",
     "addItemInCategory": "Agregar en {{category}}",
@@ -910,6 +912,7 @@
     "deleteTitle": "¿Eliminar receta?",
     "deleteMessage": "Se eliminará la receta \"{{title}}\"",
     "deleteMessageTitle": "la receta",
+    "deleteError": "No se pudo eliminar. Intenta de nuevo.",
     "cancel": "Cancelar",
     "delete": "Eliminar",
     "filters": {

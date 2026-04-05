@@ -15,7 +15,7 @@ import { isIngredientSafeForUser } from "../../lib/api/services/ingredient-filte
 // Undo snackbar state type
 interface UndoState {
   item: KitchenItem;
-  timeout: NodeJS.Timeout;
+  timeout: ReturnType<typeof setTimeout>;
 }
 
 interface PantryZoneDetailProps {
@@ -293,7 +293,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
 
     const cleanName = newItemName.trim();
     const newItem: KitchenItem = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+      id: crypto.randomUUID(),
       name: cleanName,
       emoji: getEmoji(cleanName),
       zone,
@@ -309,7 +309,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
 
   const handleSuggestedItemAdd = (item: { name: string; emoji: string }) => {
     const newItem: KitchenItem = {
-      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+      id: crypto.randomUUID(),
       name: item.name,
       emoji: item.emoji,
       zone,
@@ -495,7 +495,7 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
                     handleDeleteWithUndo(item);
                   }}
                   className="absolute -top-1 -right-1 w-5 h-5 bg-white rounded-full border border-bocado-border text-bocado-gray hover:text-red-400 flex items-center justify-center shadow-sm z-10 active:scale-90"
-                  aria-label={t("pantry.deleteItem") || "Eliminar ingrediente"}
+                  aria-label={t("pantry.deleteItem")}
                 >
                   <span className="text-xs">×</span>
                 </button>
@@ -533,13 +533,13 @@ export const PantryZoneDetail: React.FC<PantryZoneDetailProps> = ({
       {undoState && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 dark:bg-gray-900 text-white px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 animate-slide-up z-50 max-w-sm">
           <span className="text-sm flex-1">
-            {translateIngredient(undoState.item.name)} {t("pantry.willBeDeleted") || "será eliminado"}
+            {translateIngredient(undoState.item.name)} {t("pantry.willBeDeleted")}
           </span>
           <button
             onClick={handleUndo}
             className="bg-bocado-green hover:bg-bocado-dark-green text-white font-bold px-3 py-1 rounded-lg text-xs transition active:scale-95"
           >
-            {t("common.undo") || "Deshacer"}
+            {t("common.undo")}
           </button>
         </div>
       )}

@@ -621,6 +621,7 @@
     "loadMore": "Load more places",
     "noMore": "No more saved places",
     "deleteTitle": "Delete place?",
+    "deleteError": "Could not delete. Please try again.",
     "cancel": "Cancel",
     "delete": "Delete"
   },
@@ -847,6 +848,7 @@
     "title": "My Kitchen",
     "subtitle": "Ingredients control",
     "loadError": "Could not load your pantry",
+    "saveError": "Could not save. Please try again.",
     "urgentBadge": "🚨",
     "urgentTitle": "Expiring soon",
     "saving": "Saving...",
@@ -903,6 +905,7 @@
     "deleteTitle": "Delete recipe?",
     "deleteMessage": "Will delete the recipe \"{{title}}\"",
     "deleteMessageTitle": "the recipe",
+    "deleteError": "Could not delete. Please try again.",
     "cancel": "Cancel",
     "delete": "Delete",
     "empty": "No saved recipes",
