@@ -50,8 +50,9 @@ export function useSkeleton(
   const [showSkeleton, setShowSkeleton] = useState(false);
 
   // Refs para manejar los timeouts
-  const delayTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
-  const minDurationTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  // ✅ FIX: ReturnType<typeof setTimeout> en vez de NodeJS.Timeout
+  const delayTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const minDurationTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const startTimeRef = React.useRef<number>(0);
 
   // Limpiar timeouts al desmontar

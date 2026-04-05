@@ -3,7 +3,7 @@
 // Estos hooks fueron movidos desde stores/profileDraftStore.ts para evitar
 // dependencias circulares entre stores y hooks.
 
-import { useEffect, useMemo, useCallback } from "react";
+import { useEffect, useMemo, useCallback, useRef, useLayoutEffect } from "react";
 import { useUserProfile, useUpdateUserProfile } from "./useUser";
 import { useProfileDraftStore } from "../stores/profileDraftStore";
 
@@ -115,6 +115,14 @@ export const useEditableProfile = (options: UseEditableProfileOptions) => {
   const draft = useProfileDraftWithData({ userId, resetOnMount: true });
   const updateMutation = useUpdateUserProfile();
 
+  // ✅ FIX: callbackRef pattern para onSave — evita re-creación de saveChanges
+  // cuando el caller pasa una función inline nueva en cada render
+  const onSaveRef = useRef(onSave);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    onSaveRef.current = onSave;
+  });
+
   const saveChanges = useCallback(async () => {
     if (!userId || !draft.hasUnsavedChanges) return;
 
@@ -140,8 +148,8 @@ export const useEditableProfile = (options: UseEditableProfileOptions) => {
     });
 
     draft.clearDraft();
-    onSave?.();
-  }, [userId, draft, updateMutation, onSave]);
+    onSaveRef.current?.();
+  }, [userId, draft, updateMutation]);
 
   const discardChanges = useCallback(() => {
     draft.resetForm();
