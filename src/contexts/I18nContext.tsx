@@ -11,6 +11,8 @@ import es from "../locales/es.json";
 import en from "../locales/en.json";
 import { useAuthStore } from "../stores/authStore";
 import { useUserProfile, useUpdateUserProfile } from "../hooks/useUser";
+import { safeStorage } from "../utils/encryptedStorage";
+import { logger } from "../utils/logger";
 
 type Locale = "es" | "en";
 
@@ -43,7 +45,7 @@ function getBrowserLocale(): Locale {
 
 function getStoredLocale(): Locale {
   if (typeof window === "undefined") return "es";
-  const stored = localStorage.getItem(LOCALE_STORAGE_KEY);
+  const stored = safeStorage.getItem(LOCALE_STORAGE_KEY);
   if (stored === "es" || stored === "en") return stored;
   return getBrowserLocale();
 }
@@ -89,7 +91,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       // Usuario con perfil: usar idioma de Firebase SOLO si es diferente al actual
       if (localeRef.current !== profile.language) {
         setLocaleState(profile.language);
-        localStorage.setItem(LOCALE_STORAGE_KEY, profile.language);
+        safeStorage.setItem(LOCALE_STORAGE_KEY, profile.language);
       }
       hasLoadedFromFirebase.current = true;
       setIsLoadingLocale(false);
@@ -102,7 +104,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const setLocale = useCallback(
     (newLocale: Locale) => {
       setLocaleState(newLocale);
-      localStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
+      safeStorage.setItem(LOCALE_STORAGE_KEY, newLocale);
 
       // Sincronizar con Firebase si hay usuario autenticado
       if (user?.uid) {
@@ -124,8 +126,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         if (value && typeof value === "object" && k in value) {
           value = value[k];
         } else {
-          if (process.env.NODE_ENV === "development")
-            console.warn(`Translation key not found: ${key}`);
+          if (process.env.NODE_ENV === "development") {
+            logger.warn(`[i18n] Missing key: "${key}" for locale "${locale}"`);
+          }
           return key;
         }
       }
@@ -154,6 +157,8 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     </I18nContext.Provider>
   );
 }
+
+I18nProvider.displayName = "I18nProvider";
 
 export function useTranslation() {
   const context = useContext(I18nContext);

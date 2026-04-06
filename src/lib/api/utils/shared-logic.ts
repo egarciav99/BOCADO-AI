@@ -43,7 +43,7 @@ export const sanitizeError = (
 export const safeLog = (
     level: "log" | "error" | "warn",
     message: string,
-    error?: any,
+    error?: unknown,
 ) => {
     const isDev = process.env.NODE_ENV === "development";
 

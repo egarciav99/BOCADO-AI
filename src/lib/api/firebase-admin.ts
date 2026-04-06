@@ -1,5 +1,6 @@
 import { initializeApp, getApps, App } from "firebase-admin/app";
 import { cert } from "firebase-admin/app";
+import { safeLog } from "./utils/shared-logic";
 
 /**
  * Shared Firebase Admin initialization.
@@ -24,7 +25,8 @@ export function initFirebaseAdmin(): App | null {
 
   const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
   if (!serviceAccountKey) {
-    console.error(
+    safeLog(
+      "error",
       "❌ FIREBASE_SERVICE_ACCOUNT_KEY not configured. " +
       "Check your Vercel/deployment environment variables."
     );
@@ -35,7 +37,7 @@ export function initFirebaseAdmin(): App | null {
     const serviceAccount = JSON.parse(serviceAccountKey.trim());
     return initializeApp({ credential: cert(serviceAccount) });
   } catch (error) {
-    console.error("❌ Failed to initialize Firebase Admin:", error);
+    safeLog("error", "❌ Failed to initialize Firebase Admin:", error);
     return null;
   }
 }

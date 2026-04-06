@@ -5,7 +5,7 @@
 // - Solo traduce la UI (títulos, botones, mensajes)
 // Ver: docs/i18n-architecture.md
 
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useRef } from "react";
 import { useProfileDraftStore } from "../stores/profileDraftStore";
 import { FormData, UserProfile } from "../types";
 import ProgressBar from "./ProgressBar";
@@ -59,6 +59,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   // ✅ Bug 7: checkbox de términos y condiciones (obligatorio en el último paso)
   const [acceptTerms, setAcceptTerms] = useState(false);
+  // ✅ FIX 1: Rate limiting para reenvío de verificación
+  const [resendCooldown, setResendCooldown] = useState(0);
   const queryClient = useQueryClient();
 
   const [cityOptions, setCityOptions] = useState<PlacePrediction[]>([]);
@@ -82,8 +84,12 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   }, [currentStep, isHydrated]);
 
   // ✅ AUDITORÍA: Detectar abandono del registro al desmontar el componente
-  const isCompletedRef = React.useRef(false);
-  const currentStepRef = React.useRef(currentStep);
+  const isCompletedRef = useRef(false);
+  const currentStepRef = useRef(currentStep);
+  // ✅ FIX 1: Ref para el timer del cooldown de reenvío
+  const resendCooldownRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // ✅ FIX 4: Ref para focus management entre pasos
+  const stepContainerRef = useRef<HTMLDivElement>(null);
 
   // Keep currentStepRef in sync with currentStep
   useEffect(() => {
@@ -104,6 +110,28 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
       }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps — intentionally mount/unmount only
+
+  // ✅ FIX 1: Cooldown timer para reenvío de verificación
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    resendCooldownRef.current = setTimeout(
+      () => setResendCooldown((c) => c - 1),
+      1000,
+    );
+    return () => {
+      if (resendCooldownRef.current) {
+        clearTimeout(resendCooldownRef.current);
+      }
+    };
+  }, [resendCooldown]);
+
+  // ✅ FIX 4: Focus management - mover foco al cambiar de paso
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      stepContainerRef.current?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [currentStep]);
 
   const validateStep = useCallback(async () => {
     setSubmissionError("");
@@ -390,6 +418,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
   };
 
   const handleResendVerification = async () => {
+    // ✅ FIX 1: Rate limiting - bloquear si hay cooldown activo
+    if (resendCooldown > 0) return;
     setVerificationError("");
     try {
       const user = auth.currentUser;
@@ -397,6 +427,8 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         await sendEmailVerification(user);
         trackEvent("registration_verification_resent", { userId: user.uid });
         setVerificationError(t("registrationFlow.verificationResent"));
+        // ✅ FIX 1: Iniciar cooldown de 60 segundos
+        setResendCooldown(60);
       }
     } catch (error) {
       logger.error("Error resending verification email", error);
@@ -571,10 +603,12 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
           </button>
           <button
             onClick={handleResendVerification}
-            disabled={isCheckingVerification}
+            disabled={isCheckingVerification || resendCooldown > 0}
             className="w-full mt-3 text-bocado-green font-medium py-2 px-6 text-sm hover:underline disabled:opacity-50"
           >
-            {t("registrationFlow.resendVerification")}
+            {resendCooldown > 0
+              ? t("registrationFlow.resendWait", { seconds: resendCooldown })
+              : t("registrationFlow.resendVerification")}
           </button>
         </div>
       </div>
@@ -593,8 +627,15 @@ const RegistrationFlow: React.FC<RegistrationFlowProps> = ({
         </div>
 
         <div className="flex-1 relative overflow-y-auto no-scrollbar">
-          {/* ✅ CORRECCIÓN ERROR 2304: Cambiado 'renderScreen' por 'renderStep' */}
-          {renderStep()}
+          {/* ✅ FIX 4: Contenedor con focus management para accesibilidad */}
+          <div
+            ref={stepContainerRef}
+            tabIndex={-1}
+            className="outline-none"
+            aria-live="polite"
+          >
+            {renderStep()}
+          </div>
           {submissionError && (
             <p className="text-red-500 text-xs text-center bg-red-50 p-3 rounded-xl mt-4 animate-fade-in">
               {submissionError}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import BocadoLogo from "./BocadoLogo";
 import { trackEvent } from "../firebaseConfig";
 import { useTranslation } from "../contexts/I18nContext";
@@ -108,6 +108,21 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
     onClose();
   };
 
+  // ✅ FIX 9: Ref estable para handleSkip en el listener de Escape
+  const handleSkipRef = useRef(handleSkip);
+  useLayoutEffect(() => {
+    handleSkipRef.current = handleSkip;
+  });
+
+  // ✅ FIX 9: Cerrar con Escape
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleSkipRef.current();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
+
   const handleDotClick = (index: number) => {
     trackEvent("tutorial_dot_navigation", {
       from_step: currentStep,
@@ -166,10 +181,10 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
       >
         {/* Visual Area */}
         <div
-          className={`${content.color} h-48 flex items-center justify-center transition-colors duration-300 shrink-0 rounded-t-3xl`}
+          className={`${content.color} h-48 flex items-center justify-center motion-safe:transition-colors motion-safe:duration-300 shrink-0 rounded-t-3xl`}
         >
           <div
-            className={`transform transition-transform duration-300 ${
+            className={`transform motion-safe:transition-transform motion-safe:duration-300 ${
               currentStep === 0 ? "scale-100" : "scale-110"
             }`}
           >
@@ -205,7 +220,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
                   role="tab"
                   aria-selected={index === currentStep}
                   aria-label={t("tutorial.goToStep", { step: index + 1 })}
-                  className={`h-2 rounded-full transition-all duration-200 ${
+                  className={`h-2 rounded-full motion-safe:transition-all motion-safe:duration-200 ${
                     index === currentStep
                       ? "w-6 bg-bocado-green"
                       : "w-2 bg-bocado-border hover:bg-bocado-gray"
@@ -219,7 +234,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
               {currentStep > 0 && (
                 <button
                   onClick={handlePrev}
-                  className="p-2 rounded-full bg-bocado-background hover:bg-bocado-border transition-colors"
+                  className="p-2 rounded-full bg-bocado-background hover:bg-bocado-border motion-safe:transition-colors"
                   aria-label={t("tutorial.previous")}
                 >
                   <ChevronLeft className="w-5 h-5 text-bocado-dark-gray" />
@@ -228,7 +243,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
 
               <button
                 onClick={handleNext}
-                className="flex-1 bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+                className="flex-1 bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 motion-safe:transition-all"
               >
                 {currentStep === steps.length - 1
                   ? t("tutorial.start")
@@ -238,7 +253,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
               {currentStep < steps.length - 1 && (
                 <button
                   onClick={handleNext}
-                  className="p-2 rounded-full bg-bocado-background hover:bg-bocado-border transition-colors"
+                  className="p-2 rounded-full bg-bocado-background hover:bg-bocado-border motion-safe:transition-colors"
                   aria-label={t("tutorial.next")}
                 >
                   <ChevronRight className="w-5 h-5 text-bocado-dark-gray" />
@@ -249,7 +264,7 @@ const TutorialModal: React.FC<TutorialModalProps> = ({ onClose, userName }) => {
             {currentStep < steps.length - 1 && (
               <button
                 onClick={handleSkip}
-                className="mt-3 text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray transition-colors"
+                className="mt-3 text-xs text-bocado-gray font-medium hover:text-bocado-dark-gray motion-safe:transition-colors"
               >
                 {t("tutorial.skip")}
               </button>

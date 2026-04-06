@@ -6,7 +6,16 @@ export const step1Schema = z
     firstName: z.string().min(2, "El nombre es muy corto"),
     lastName: z.string().min(2, "El apellido es muy corto"),
     gender: z.string().min(1, "Selecciona un género"),
-    age: z.string().min(1, "Edad requerida"),
+    // ✅ FIX 2: Validación de edad mínima 13 años (COPPA/GDPR)
+    age: z.string()
+      .min(1, "Edad requerida")
+      .refine(
+        (val) => {
+          const num = parseInt(val, 10);
+          return !isNaN(num) && num >= 13 && num <= 120;
+        },
+        "Debes tener al menos 13 años",
+      ),
     country: z.string().min(1, "Selecciona un país"),
     city: z.string().min(1, "La ciudad es requerida"),
     email: z.string().email("Formato de correo inválido"),

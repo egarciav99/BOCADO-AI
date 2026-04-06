@@ -1,5 +1,14 @@
 import type { Timestamp } from "firebase/firestore";
 
+// ============================================
+// UNION TYPES FOR PROFILE DATA
+// ============================================
+
+export type Difficulty = "Fácil" | "Media" | "Difícil" | "N/A" | "Restaurante";
+export type Gender = "Hombre" | "Mujer" | "Otro";
+export type CookingAffinity = "Nunca" | "A veces" | "Seguido" | "Siempre" | "";
+export type ActivityFrequency = "daily" | "frequent" | "occasional" | "rarely" | "";
+
 // Datos que van a Firebase Auth (sensibles)
 export interface AuthData {
   firstName: string;
@@ -20,7 +29,7 @@ export interface GeoLocation {
 // Datos que van a Firestore (perfil sanitizado, NO sensibles)
 export interface UserProfile {
   uid: string; // Referencia al UID de Auth
-  gender: string;
+  gender: Gender;
   age: string;
   emailVerified?: boolean;
   weight?: string;
@@ -36,9 +45,9 @@ export interface UserProfile {
   eatingHabit: string;
   activityLevel: string;
   otherActivityLevel: string;
-  activityFrequency: string;
+  activityFrequency: ActivityFrequency;
   nutritionalGoal: string[];
-  cookingAffinity: string;
+  cookingAffinity: CookingAffinity;
   dislikedFoods: string[];
   language?: "es" | "en"; // Preferencia de idioma del usuario
   createdAt?: Timestamp | Date;
@@ -52,21 +61,11 @@ export interface FormData
   cityPlaceId?: string;
 }
 
-// Updated to support simple string ingredients from the new structure
-export type Ingredient = string;
-
-export interface Nutrition {
-  calories: string;
-  protein: string;
-  carbs: string;
-  fat: string;
-}
-
 export interface Recipe {
   title: string;
   description?: string;
   time: string; // tiempo_estimado
-  difficulty: string; // dificultad
+  difficulty: Difficulty; // dificultad
   calories: string | number; // macros_por_porcion.kcal
   savingsMatch: string; // coincidencia_despensa
   ingredients: string[];

@@ -31,51 +31,17 @@ import { NotificationOnboarding } from "./NotificationOnboarding";
 import { NotificationSettings } from "./NotificationSettings";
 
 import { stripEmoji } from "../utils/emojiUtils";
+import {
+  translateMeal,
+  translateCraving,
+  translateBudget,
+} from "../utils/profileTranslations";
 
 interface RecommendationScreenProps {
   userName: string;
   onPlanGenerated: (interactionId: string) => void;
-  isNewUser?: boolean; // Nuevo prop para detectar usuarios recién registrados
+  isNewUser?: boolean;
 }
-
-// Helper para traducir comidas manteniendo el emoji original
-const translateMealWithEmoji = (
-  meal: string,
-  t: (key: string) => string,
-): string => {
-  const text = stripEmoji(meal);
-  const emoji = meal.replace(text, "").trim();
-  const key = MEAL_TRANSLATION_KEYS[text];
-  return key ? `${emoji} ${t(`meals.${key}`)}` : meal;
-};
-
-// Helper para traducir cravings manteniendo el emoji original
-const translateCravingWithEmoji = (
-  craving: string,
-  t: (key: string) => string,
-): string => {
-  const text = stripEmoji(craving);
-  const emoji = craving.replace(text, "").trim();
-  const key = CRAVING_TRANSLATION_KEYS[text];
-  return key ? `${emoji} ${t(`cravings.${key}`)}` : craving;
-};
-
-// Helper para traducir budget labels
-const translateBudgetLabel = (
-  label: string,
-  value: "low" | "medium" | "high",
-  t: (key: string) => string,
-): string => {
-  // Extraer la parte del rango de precios (lo que está entre paréntesis)
-  const rangeMatch = label.match(/\((.*)\)/);
-  const range = rangeMatch ? `(${rangeMatch[1]})` : "";
-
-  // Traducir el nombre del budget
-  const translatedName = t(`budget.${value}`);
-
-  // Retornar nombre traducido + rango original
-  return `${translatedName} ${range}`.trim();
-};
 
 const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
   userName,
@@ -97,21 +63,6 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
   // Prevenir clicks múltiples
   const isProcessingRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
-
-  // Memoize translation helpers to prevent recreation on every render
-  const translateMeal = useCallback(
-    (meal: string) => translateMealWithEmoji(meal, t),
-    [t]
-  );
-  const translateCraving = useCallback(
-    (craving: string) => translateCravingWithEmoji(craving, t),
-    [t]
-  );
-  const translateBudget = useCallback(
-    (label: string, value: "low" | "medium" | "high") =>
-      translateBudgetLabel(label, value, t),
-    [t]
-  );
 
   const { user } = useAuthStore();
   const {
@@ -170,6 +121,8 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
     isDisabled: isRateLimited,
     formattedTimeLeft,
     refreshStatus,
+    remainingRequests,
+    renewalTime,
   } = useRateLimit(user?.uid);
 
   // 🟠 FIX #3: Validar que getCountryCodeForCurrency no retorne null antes de .toUpperCase()
@@ -570,6 +523,23 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
         </p>
       </div>
 
+      {/* ✅ Rate limit warning when ≤2 recommendations remaining */}
+      {!isRateLimited &&
+        remainingRequests !== undefined &&
+        remainingRequests <= 2 && (
+          <div
+            role="status"
+            aria-live="polite"
+            className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-xl text-amber-700 dark:text-amber-300 text-sm animate-fade-in"
+          >
+            <p className="font-medium">
+              {remainingRequests === 1
+                ? t("rateLimit.warning", { count: remainingRequests })
+                : t("rateLimit.warningPlural", { count: remainingRequests })}
+            </p>
+          </div>
+        )}
+
       {/* ✅ NUEVO: Mensaje de error */}
       {error && (
         <div
@@ -577,7 +547,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
           role="alert"
           aria-live="assertive"
         >
-          <p className="font-medium">⚠️ {error}</p>
+          <p className="font-medium"><span aria-hidden="true">⚠️</span> {error}</p>
           <button
             onClick={() => setError(null)}
             className="text-xs underline mt-1 hover:text-red-700"
@@ -646,7 +616,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
               : "bg-white text-bocado-text border-bocado-border hover:border-bocado-green/50"
               }`}
           >
-            <span className="text-3xl mb-2">
+            <span className="text-3xl mb-2" aria-hidden="true">
               {EATING_HABIT_ICONS[habit] || "🍽️"}
             </span>
             <span className="font-bold text-sm text-center">
@@ -687,7 +657,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                       : "bg-white text-bocado-dark-gray border-bocado-border"
                       }`}
                   >
-                    {translateMeal(meal)}
+                    {translateMeal(meal, t)}
                   </button>
                 ))}
               </div>
@@ -732,9 +702,9 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
 
                       {/* Marcas de referencia */}
                       <div className="flex justify-between text-xs text-bocado-dark-gray font-medium px-1">
-                        <span>🚀 10m</span>
-                        <span>⚡ 35m</span>
-                        <span>🍽️ 60m+</span>
+                        <span><span aria-hidden="true">🚀</span> 10m</span>
+                        <span><span aria-hidden="true">⚡</span> 35m</span>
+                        <span><span aria-hidden="true">🍽️</span> 60m+</span>
                       </div>
                     </div>
                   </div>
@@ -786,7 +756,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                         : "bg-white text-bocado-dark-gray border-bocado-border"
                         }`}
                     >
-                      {translateCraving(craving)}
+                      {translateCraving(craving, t)}
                     </button>
                   ))}
                 </div>
@@ -815,7 +785,7 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                         }`}
                     >
                       <span>
-                        {translateBudget(option.label, option.value)}
+                        {translateBudget(option.label, option.value, t)}
                       </span>
                       {selectedBudget === option.value && <span>✓</span>}
                     </button>
@@ -898,10 +868,17 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
                   <span>{t("recommendation.generating")}</span>
                 </>
               ) : isRateLimited ? (
-                <>
-                  <span className="text-lg">⏱️</span>
-                  <span>{t("recommendation.waitSeconds", { seconds: formattedTimeLeft })}</span>
-                </>
+                <div className="text-center">
+                  <div className="flex items-center justify-center gap-2">
+                    <span className="text-lg" aria-hidden="true">⏱️</span>
+                    <span>{t("recommendation.waitSeconds", { seconds: formattedTimeLeft })}</span>
+                  </div>
+                  {renewalTime && (
+                    <p className="text-xs mt-1 opacity-75">
+                      {t("rateLimit.renewsAt", { time: renewalTime })}
+                    </p>
+                  )}
+                </div>
               ) : (
                 t("recommendation.generateRecommendation")
               )}

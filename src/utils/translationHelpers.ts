@@ -2,15 +2,7 @@
 // Estos helpers aseguran que los valores guardados en Firebase siempre sean en español,
 // pero la UI se muestre en el idioma seleccionado.
 
-import {
-  DISEASES,
-  ALLERGIES,
-  GOALS,
-  ACTIVITY_LEVELS,
-  ACTIVITY_FREQUENCIES,
-  CRAVINGS,
-  MEALS,
-} from "../constants";
+import { logger } from "./logger";
 
 /**
  * Mapeo de valores en español a claves de traducción
@@ -64,26 +56,6 @@ export const frequencyKeys: Record<string, string> = {
   "Rara vez": "options.frequency.rarely",
 };
 
-// Antojos/tipos de comida
-export const cravingKeys: Record<string, string> = {
-  "🍕 Italiana / Pizza": "options.cravings.italian",
-  "🍣 Japonesa / Sushi": "options.cravings.japanese",
-  "🥗 Saludable o fit": "options.cravings.healthy",
-  "🍜 Asiática / China": "options.cravings.asian",
-  "🌮 Mexicana": "options.cravings.mexican",
-  "🍔 Americana / Fast food": "options.cravings.american",
-  "🥘 Mediterránea": "options.cravings.mediterranean",
-  "🥡 Otros": "common.other",
-};
-
-// Comidas del día
-export const mealKeys: Record<string, string> = {
-  "🥞 Desayuno": "options.meals.breakfast",
-  "🥗 Comida": "options.meals.lunch",
-  "🥙 Cena": "options.meals.dinner",
-  "🍎 Snack": "options.meals.snack",
-};
-
 /**
  * Función helper para traducir un valor desde español
  * @param valueInSpanish - Valor en español guardado en Firebase
@@ -98,21 +70,10 @@ export function translateOption(
 ): string {
   const key = mapping[valueInSpanish];
   if (!key) {
-    console.warn(`[i18n] No translation key found for: "${valueInSpanish}"`);
+    logger.warn(`[i18n] No translation key found for: "${valueInSpanish}"`);
     return valueInSpanish; // Fallback al valor original
   }
   return t(key);
-}
-
-/**
- * Helper para traducir arrays de opciones
- */
-export function translateOptions(
-  valuesInSpanish: string[],
-  mapping: Record<string, string>,
-  t: (key: string) => string,
-): string[] {
-  return valuesInSpanish.map((value) => translateOption(value, mapping, t));
 }
 
 /**

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { FormData } from "../../types";
+import { FormData, Gender } from "../../types";
 import { FormStepProps } from "./FormStepProps";
 import { useTranslation } from "../../contexts/I18nContext";
 import { EMAIL_DOMAINS } from "../../constants";
@@ -264,7 +264,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
     }
   };
 
-  const handleGenderSelect = (gender: string) => {
+  const handleGenderSelect = (gender: Gender) => {
     trackEvent("registration_gender_select", { gender });
     updateData("gender", gender);
     clearError("gender");
@@ -280,6 +280,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           </label>
           <input
             type="text"
+            id="firstName"
             name="firstName"
             data-testid="firstName-input"
             value={data.firstName}
@@ -290,6 +291,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             placeholder={t("step1.firstNamePlaceholder")}
             maxLength={50}
             aria-label={t("step1.firstName")}
+            aria-describedby={errors.firstName ? "firstName-error" : undefined}
+            aria-invalid={!!errors.firstName}
             className={`input-base ${
               errors.firstName
                 ? "border-red-300 bg-red-50"
@@ -297,7 +300,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             }`}
           />
           {errors.firstName && (
-            <p className="text-red-500 text-xs mt-1">{errors.firstName}</p>
+            <p id="firstName-error" role="alert" className="text-red-500 text-xs mt-1">{errors.firstName}</p>
           )}
         </div>
         <div>
@@ -306,6 +309,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           </label>
           <input
             type="text"
+            id="lastName"
             name="lastName"
             data-testid="lastName-input"
             value={data.lastName}
@@ -314,15 +318,17 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               trackEvent("registration_input_focus", { field: "lastName" })
             }
             placeholder={t("step1.lastNamePlaceholder")}
+            aria-label={t("step1.lastName")}
+            aria-describedby={errors.lastName ? "lastName-error" : undefined}
+            aria-invalid={!!errors.lastName}
             className={`input-base ${
               errors.lastName
                 ? "border-red-500 focus:ring-red-200"
                 : ""
             }`}
-            aria-label={t("step1.lastName")}
           />
           {errors.lastName && (
-            <p className="text-red-500 text-xs mt-1">{errors.lastName}</p>
+            <p id="lastName-error" role="alert" className="text-red-500 text-xs mt-1">{errors.lastName}</p>
           )}
         </div>
       </div>
@@ -361,7 +367,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 testId={testId}
                 icon={icon}
                 isSelected={data.gender === value}
-                onClick={() => handleGenderSelect(value)}
+                onClick={() => handleGenderSelect(value as Gender)}
               />
             ))}
           </div>
@@ -374,11 +380,12 @@ const Step1: React.FC<ExtendedStep1Props> = ({
 
         {/* Edad - Derecha en desktop */}
         <div className="sm:w-28">
-          <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider text-center sm:text-left">
+          <label className="block text-xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider text-center sm:text-left">
             {t("step1.age")}
           </label>
           <input
             type="text"
+            id="age"
             inputMode="numeric"
             value={data.age}
             onChange={handleAgeChange}
@@ -386,6 +393,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               trackEvent("registration_input_focus", { field: "age" })
             }
             placeholder={t("step1.agePlaceholder")}
+            aria-describedby={errors.age ? "age-error" : undefined}
+            aria-invalid={!!errors.age}
             className={`w-full sm:w-24 px-3 py-2.5 rounded-xl border-2 text-sm text-center sm:text-left transition-all ${
               errors.age
                 ? "border-red-300 bg-red-50"
@@ -393,7 +402,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             }`}
           />
           {errors.age && (
-            <p className="text-red-500 text-2xs mt-1 text-center sm:text-left">
+            <p id="age-error" role="alert" className="text-red-500 text-xs mt-1 text-center sm:text-left">
               {errors.age}
             </p>
           )}
@@ -484,6 +493,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           <div className="relative">
             <input
               type="text"
+              id="city"
               value={localCityQuery}
               onChange={handleCitySearchChange}
               disabled={!data.country}
@@ -493,6 +503,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                   ? t("step1.cityPlaceholder")
                   : t("step1.cityDisabled")
               }
+              aria-describedby={errors.city ? "city-error" : "city-help"}
+              aria-invalid={!!errors.city}
               className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
                 errors.city
                   ? "border-red-300 bg-red-50"
@@ -533,9 +545,9 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             </div>
           )}
           {errors.city ? (
-            <p className="text-red-500 text-2xs mt-1">{errors.city}</p>
+            <p id="city-error" role="alert" className="text-red-500 text-xs mt-1">{errors.city}</p>
           ) : (
-            <p className="text-bocado-gray text-2xs mt-1 italic">
+            <p id="city-help" className="text-bocado-gray text-2xs mt-1 italic">
               {t("step1.locationHelp")}
             </p>
           )}
@@ -549,6 +561,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
         </label>
         <input
           type="email"
+          id="email"
           name="email"
           data-testid="email-input"
           value={data.email}
@@ -558,6 +571,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           onFocus={() =>
             trackEvent("registration_input_focus", { field: "email" })
           }
+          aria-describedby={errors.email ? "email-error" : undefined}
+          aria-invalid={!!errors.email}
           className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
             errors.email
               ? "border-red-300 bg-red-50"
@@ -588,7 +603,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
           </div>
         )}
         {errors.email && (
-          <p className="text-red-500 text-xs mt-1">{errors.email}</p>
+          <p id="email-error" role="alert" className="text-red-500 text-xs mt-1">{errors.email}</p>
         )}
       </div>
 
@@ -603,6 +618,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-bocado-gray" />
               <input
                 type="password"
+                id="password"
                 name="password"
                 data-testid="password-input"
                 value={data.password || ""}
@@ -611,6 +627,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                   trackEvent("registration_input_focus", { field: "password" })
                 }
                 placeholder={t("step1.passwordPlaceholder")}
+                aria-describedby={errors.password ? "password-error" : undefined}
+                aria-invalid={!!errors.password}
                 className={`w-full pl-9 pr-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
                   errors.password
                     ? "border-red-300 bg-red-50"
@@ -619,7 +637,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               />
             </div>
             {errors.password && (
-              <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+              <p id="password-error" role="alert" className="text-red-500 text-xs mt-1">{errors.password}</p>
             )}
           </div>
           <div>
@@ -628,6 +646,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
             </label>
             <input
               type="password"
+              id="confirmPassword"
               name="confirmPassword"
               data-testid="confirmPassword-input"
               value={data.confirmPassword || ""}
@@ -639,6 +658,8 @@ const Step1: React.FC<ExtendedStep1Props> = ({
                 })
               }
               placeholder={t("step1.confirmPasswordPlaceholder")}
+              aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
+              aria-invalid={!!errors.confirmPassword}
               className={`w-full px-3 py-2.5 rounded-xl border-2 text-sm transition-all ${
                 errors.confirmPassword
                   ? "border-red-300 bg-red-50"
@@ -646,7 +667,7 @@ const Step1: React.FC<ExtendedStep1Props> = ({
               }`}
             />
             {errors.confirmPassword && (
-              <p className="text-red-500 text-xs mt-1">
+              <p id="confirmPassword-error" role="alert" className="text-red-500 text-xs mt-1">
                 {errors.confirmPassword}
               </p>
             )}

@@ -184,12 +184,16 @@ const MainApp: React.FC<MainAppProps> = ({
             )}
             {activeTab === "saved" && (
               <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
-                <SavedRecipesScreen />
+                <SavedRecipesScreen
+                  onNavigateToRecommendation={() => setActiveTab("recommendation")}
+                />
               </div>
             )}
             {activeTab === "restaurants" && (
               <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
-                <SavedRestaurantsScreen />
+                <SavedRestaurantsScreen
+                  onNavigateToRecommendation={() => setActiveTab("recommendation")}
+                />
               </div>
             )}
             {activeTab === "profile" && (

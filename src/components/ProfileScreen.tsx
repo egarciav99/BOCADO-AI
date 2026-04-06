@@ -52,6 +52,8 @@ import {
   translateActivityLevel,
   translateActivityFrequency,
   translateCookingAffinity,
+  translateGender,
+  translateFood,
 } from "../utils/profileTranslations";
 import { useUserProfile, useUpdateUserProfile } from "../hooks/useUser";
 import { useAuthStore } from "../stores/authStore";
@@ -796,21 +798,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     }
   };
 
-  // Translation helper functions - memoized to prevent recreation every render
-  const translateGender = useCallback((gender: string): string => {
-    if (gender === "Hombre") return t("gender.male");
-    if (gender === "Mujer") return t("gender.female");
-    return gender;
-  }, [t]);
-
-  const translateFood = useCallback((foodKey: string): string => {
-    // Si el alimento está en las traducciones, usarlas
-    // De lo contrario, retornar el key original (alimento personalizado)
-    const translation = t(`foods.${foodKey}`);
-    // Si la traducción retorna la clave completa, significa que no existe, retornar solo el foodKey
-    return translation.startsWith("foods.") ? foodKey : translation;
-  }, [t]);
-
   const renderPhysicalData = () => {
     const parts: string[] = [];
     if (formData.weight) parts.push(`${formData.weight} kg`);
@@ -1296,7 +1283,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <InfoSection title={t("profile.personalInfo")}>
               {formData.gender && (
-                <Badge text={translateGender(formData.gender)} color="gray" />
+                <Badge text={translateGender(formData.gender, t)} color="gray" />
               )}
               {formData.age && (
                 <Badge
@@ -1381,7 +1368,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               {formData.dislikedFoods.length > 0 &&
                 formData.dislikedFoods[0] !== "Ninguno" ? (
                 formData.dislikedFoods.map((f) => (
-                  <Badge key={f} text={translateFood(f)} color="red" />
+                  <Badge key={f} text={translateFood(f, t)} color="red" />
                 ))
               ) : (
                 <span className="text-xs text-bocado-gray">

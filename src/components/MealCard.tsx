@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, memo } from "react";
+import React, { useState, useCallback, useMemo, memo, useId } from "react";
 import type { Meal } from "../types";
 import { ChevronDown, Heart } from "./icons";
 import FeedbackModal from "./FeedbackModal";
@@ -14,6 +14,7 @@ import {
 import { Tooltip } from "./ui/Tooltip";
 import { useTranslation } from "../contexts/I18nContext";
 import { showToast } from "./ui/Toast";
+import { translateDifficulty } from "../utils/profileTranslations";
 
 interface MealCardProps {
   meal: Meal;
@@ -60,12 +61,6 @@ const getDifficultyStyle = (difficulty: string): string => {
     DIFFICULTY_STYLES[difficulty] ||
     "bg-bocado-background text-bocado-dark-gray"
   );
-};
-
-const DIFFICULTY_TRANSLATION_KEYS: Record<string, string> = {
-  "Fácil":   "difficulty.easy",
-  "Media":   "difficulty.medium",
-  "Difícil": "difficulty.hard",
 };
 
 // ============================================
@@ -201,6 +196,10 @@ RestaurantInfoSection.displayName = "RestaurantInfoSection";
 const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
   const { t } = useTranslation();
   const { recipe } = meal;
+
+  // ✅ FIX: Generate stable unique ID for aria-controls
+  const uniqueId = useId();
+  const expandedContentId = `meal-card-content-${uniqueId}`;
 
   // Estados locales
   const [isExpanded, setIsExpanded] = useState(false);
@@ -475,8 +474,21 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
 
   return (
     <div className="group relative border border-bocado-border rounded-2xl bg-white transition-all duration-200 hover:shadow-bocado active:scale-[0.99]">
-      {/* HEADER */}
-      <div className="p-4 cursor-pointer" onClick={handleExpand}>
+      {/* HEADER - clickable area for expand/collapse */}
+      <div
+        className="p-4 cursor-pointer"
+        onClick={handleExpand}
+        role="button"
+        tabIndex={0}
+        aria-expanded={isExpanded}
+        aria-controls={expandedContentId}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleExpand();
+          }
+        }}
+      >
         <div className="flex justify-between items-start gap-3">
           <div className="flex gap-3 flex-1 min-w-0">
             <span
@@ -501,13 +513,13 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
 
                 {!isRestaurant && (
                   <span className="px-2 py-1 bg-bocado-background text-bocado-dark-gray rounded-lg font-medium">
-                    ⏱️ {recipe.time}
+                    <span aria-hidden="true">⏱️</span> {recipe.time}
                   </span>
                 )}
 
                 {recipe.calories !== "N/A" && (
                   <span className="px-2 py-1 bg-bocado-background text-bocado-dark-gray rounded-lg font-medium">
-                    🔥 {recipe.calories}
+                    <span aria-hidden="true">🔥</span> {recipe.calories}
                   </span>
                 )}
 
@@ -517,7 +529,7 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
                     <span
                       className={`px-2 py-1 rounded-lg font-medium ${getDifficultyStyle(recipe.difficulty)}`}
                     >
-                      {t(DIFFICULTY_TRANSLATION_KEYS[recipe.difficulty] ?? "") || recipe.difficulty}
+                      {translateDifficulty(recipe.difficulty, t)}
                     </span>
                   )}
               </div>
@@ -614,7 +626,11 @@ const MealCard: React.FC<MealCardProps> = memo(({ meal, onInteraction }) => {
 
       {/* EXPANDED CONTENT */}
       {isExpanded && (
-        <div className="px-4 pb-4 pt-2 border-t border-bocado-border space-y-4 animate-fade-in">
+        <div
+          id={expandedContentId}
+          className="px-4 pb-4 pt-2 border-t border-bocado-border space-y-4 animate-fade-in"
+          aria-hidden={!isExpanded}
+        >
           {/* SECCIÓN PARA RESTAURANTES */}
           {isRestaurant && (
             <RestaurantInfoSection

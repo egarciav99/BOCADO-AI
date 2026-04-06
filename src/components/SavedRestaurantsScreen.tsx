@@ -9,7 +9,13 @@ import { Meal } from "../types";
 import { RecipeListSkeleton } from "./skeleton";
 import { useTranslation } from "../contexts/I18nContext";
 
-const SavedRestaurantsScreen: React.FC = () => {
+interface SavedRestaurantsScreenProps {
+  onNavigateToRecommendation?: () => void;
+}
+
+const SavedRestaurantsScreen: React.FC<SavedRestaurantsScreenProps> = ({
+  onNavigateToRecommendation,
+}) => {
   const { t } = useTranslation();
   const [mealToConfirmDelete, setMealToConfirmDelete] = useState<Meal | null>(
     null,
@@ -98,12 +104,23 @@ const SavedRestaurantsScreen: React.FC = () => {
       <div className="flex-1 px-4 pb-8 min-h-0">
         {savedRestaurants.length === 0 ? (
           <div className="text-center py-12 px-4 sm:px-6 bg-bocado-background rounded-2xl border-2 border-dashed border-bocado-border">
-            <p className="text-bocado-gray text-base mb-2">
+            <span className="text-4xl mb-4 block" aria-hidden="true">
+              🗺️
+            </span>
+            <p className="text-bocado-gray font-medium mb-1">
               {t("saved.emptyState")}
             </p>
-            <p className="text-xs text-bocado-gray/70">
+            <p className="text-xs text-bocado-gray/70 mb-4">
               {t("saved.emptyStateSubtitle")}
             </p>
+            {onNavigateToRecommendation && (
+              <button
+                onClick={onNavigateToRecommendation}
+                className="text-sm text-bocado-green font-bold active:scale-95 transition-transform"
+              >
+                {t("saved.goGenerate")}
+              </button>
+            )}
           </div>
         ) : (
           <div className="space-y-3">

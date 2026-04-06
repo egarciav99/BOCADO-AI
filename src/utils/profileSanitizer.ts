@@ -1,15 +1,16 @@
-import { UserProfile, FormData, AuthData } from "../types";
+import { UserProfile, FormData, AuthData, Gender, ActivityFrequency, CookingAffinity } from "../types";
 
 // Logger seguro que respeta el entorno
 export const safeLog = (
   level: "log" | "error" | "warn",
   message: string,
-  error?: any,
+  error?: unknown,
 ) => {
   const isDev = process.env.NODE_ENV === "development";
 
   if (error) {
-    const errorMessage = error?.message || String(error);
+    const errorObj = error as { message?: string };
+    const errorMessage = errorObj?.message || String(error);
 
     // Detectar errores que pueden contener datos sensibles
     const sensitivePatterns = [
@@ -34,8 +35,9 @@ export const safeLog = (
   }
 };
 
-export const sanitizeProfileData = (data: any): UserProfile => {
-  if (!data) {
+export const sanitizeProfileData = (data: unknown): UserProfile => {
+  // Type guard: verificar que data es un objeto
+  if (!data || typeof data !== "object") {
     return {
       uid: "",
       gender: "Hombre",
@@ -52,47 +54,50 @@ export const sanitizeProfileData = (data: any): UserProfile => {
       nutritionalGoal: ["Sin especificar"],
       otherAllergies: "",
       otherActivityLevel: "",
-      activityFrequency: "",
-      cookingAffinity: "",
+      activityFrequency: "rarely",
+      cookingAffinity: "Nunca",
     };
   }
 
-  const sanitizeOptionalNumber = (value: any): string => {
+  // Ahora podemos hacer type assertion seguro
+  const profile = data as Record<string, unknown>;
+
+  const sanitizeOptionalNumber = (value: unknown): string => {
     if (value === null || value === undefined || value === "") return "";
-    const num = parseFloat(value);
+    const num = parseFloat(String(value));
     return isNaN(num) ? "" : num.toString();
   };
 
   return {
-    uid: data.uid || "",
-    gender: data.gender || "Hombre",
-    age: (data.age || "10").toString(),
-    weight: sanitizeOptionalNumber(data.weight),
-    height: sanitizeOptionalNumber(data.height),
-    country: data.country || "",
-    city: data.city || "",
-    activityLevel: data.activityLevel || "Sedentario",
-    eatingHabit: data.eatingHabit || "",
+    uid: String(profile.uid || ""),
+    gender: String(profile.gender || "Hombre") as Gender,
+    age: String(profile.age || "10"),
+    weight: sanitizeOptionalNumber(profile.weight),
+    height: sanitizeOptionalNumber(profile.height),
+    country: String(profile.country || ""),
+    city: String(profile.city || ""),
+    activityLevel: String(profile.activityLevel || "Sedentario"),
+    eatingHabit: String(profile.eatingHabit || ""),
     allergies:
-      Array.isArray(data.allergies) && data.allergies.length > 0
-        ? data.allergies
+      Array.isArray(profile.allergies) && profile.allergies.length > 0
+        ? profile.allergies.map(String)
         : ["Ninguna"],
     diseases:
-      Array.isArray(data.diseases) && data.diseases.length > 0
-        ? data.diseases
+      Array.isArray(profile.diseases) && profile.diseases.length > 0
+        ? profile.diseases.map(String)
         : ["Ninguna"],
     dislikedFoods:
-      Array.isArray(data.dislikedFoods) && data.dislikedFoods.length > 0
-        ? data.dislikedFoods
+      Array.isArray(profile.dislikedFoods) && profile.dislikedFoods.length > 0
+        ? profile.dislikedFoods.map(String)
         : ["Ninguno"],
     nutritionalGoal:
-      Array.isArray(data.nutritionalGoal) && data.nutritionalGoal.length > 0
-        ? data.nutritionalGoal
+      Array.isArray(profile.nutritionalGoal) && profile.nutritionalGoal.length > 0
+        ? profile.nutritionalGoal.map(String)
         : ["Sin especificar"],
-    otherAllergies: data.otherAllergies || "",
-    otherActivityLevel: data.otherActivityLevel || "",
-    activityFrequency: data.activityFrequency || "",
-    cookingAffinity: data.cookingAffinity || "",
+    otherAllergies: String(profile.otherAllergies || ""),
+    otherActivityLevel: String(profile.otherActivityLevel || ""),
+    activityFrequency: String(profile.activityFrequency || "rarely") as ActivityFrequency,
+    cookingAffinity: String(profile.cookingAffinity || "Nunca") as CookingAffinity,
   };
 };
 

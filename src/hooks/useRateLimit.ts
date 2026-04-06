@@ -25,7 +25,7 @@ const DEFAULT_STATUS: RateLimitStatus = {
  */
 export const useRateLimit = (userId: string | undefined) => {
   const queryClient = useQueryClient();
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const { data: status = DEFAULT_STATUS, isLoading } = useQuery({
     queryKey: ["rateLimit", userId],
@@ -81,6 +81,15 @@ export const useRateLimit = (userId: string | undefined) => {
     [formatTimeLeft, status.nextAvailableIn],
   );
 
+  // ✅ FIX: Calculate renewal time for better UX
+  const renewalTime = useMemo(() => {
+    if (!status?.nextAvailableAt) return null;
+    return new Date(status.nextAvailableAt).toLocaleTimeString(
+      locale === "en" ? "en-US" : "es-ES",
+      { hour: "2-digit", minute: "2-digit" },
+    );
+  }, [status?.nextAvailableAt, locale]);
+
   // Memoizar el mensaje
   const message = useMemo(() => {
     if (!status.canRequest) {
@@ -109,6 +118,7 @@ export const useRateLimit = (userId: string | undefined) => {
     isLoading,
     refreshStatus,
     formattedTimeLeft,
+    renewalTime,
     // Helper para deshabilitar botón
     isDisabled: !status.canRequest || isLoading,
     // Mensaje para mostrar al usuario

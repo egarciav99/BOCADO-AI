@@ -51,6 +51,9 @@ const RegistrationMethodScreen: React.FC<RegistrationMethodScreenProps> = ({
         setError(t("registration.errors.cancelled"));
       } else if (err.code === "auth/network-request-failed") {
         setError(t("registration.errors.network"));
+      } else if (err.code === "auth/account-exists-with-different-credential") {
+        // ✅ FIX 6: Usuario ya tiene cuenta con otro método (email/password)
+        setError(t("registration.errors.emailExistsWithDifferentMethod"));
       } else {
         setError(t("registration.errors.googleGeneric"));
       }

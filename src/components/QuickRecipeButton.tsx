@@ -73,7 +73,7 @@ const QuickRecipeButton: React.FC<QuickRecipeButtonProps> = ({
         <button
           onClick={handleOpenModal}
           disabled={disabled}
-          className="w-full h-full rounded-full bg-bocado-green hover:bg-bocado-dark-green active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center text-white text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full h-full rounded-full bg-bocado-green active:bg-bocado-dark-green active:scale-95 transition-all duration-200 shadow-lg hover:shadow-xl flex items-center justify-center text-white text-xl font-bold disabled:opacity-50 disabled:cursor-not-allowed"
           aria-label={t("quickRecipe.buttonTooltip")}
           // ✅ Sin title — el tooltip custom es suficiente
         >

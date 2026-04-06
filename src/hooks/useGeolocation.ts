@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { logger } from "../utils/logger";
 import { trackEvent } from "../firebaseConfig";
 import { reverseGeocode, detectLocationByIP } from "../services/mapsService";
+import { safeStorage } from "../utils/encryptedStorage";
 
 export interface GeolocationPosition {
   lat: number;
@@ -35,6 +36,15 @@ const safeTrackEvent = (name: string, props?: Record<string, any>) => {
 };
 
 export function useGeolocation() {
+  // ✅ FIX: Read geo consent from storage for persistence
+  const [hasConsented] = useState(() => {
+    try {
+      return safeStorage.getItem("bocado_geo_consent") === "true";
+    } catch {
+      return false;
+    }
+  });
+
   const [state, setState] = useState<GeolocationState>({
     position: null,
     detectedLocation: null,
@@ -141,6 +151,13 @@ export function useGeolocation() {
           permission: "granted",
         });
 
+        // ✅ FIX: Save consent for persistence
+        try {
+          safeStorage.setItem("bocado_geo_consent", "true");
+        } catch (e) {
+          logger.warn("[useGeolocation] Failed to save consent:", e);
+        }
+
         safeTrackEvent("geolocation_success", {
           accuracy: position.coords.accuracy,
           lat: Math.round(position.coords.latitude * 100) / 100,
@@ -157,6 +174,12 @@ export function useGeolocation() {
           case error.PERMISSION_DENIED:
             errorKey = "geolocation.permissionDenied";
             permission = "denied";
+            // ✅ FIX: Clear consent when denied
+            try {
+              safeStorage.removeItem("bocado_geo_consent");
+            } catch (e) {
+              logger.warn("[useGeolocation] Failed to clear consent:", e);
+            }
             safeTrackEvent("geolocation_denied");
             break;
           case error.POSITION_UNAVAILABLE:
@@ -191,7 +214,16 @@ export function useGeolocation() {
     checkPermission().then((permission) => {
       setState((prev) => ({ ...prev, permission }));
     });
-  }, []);
+  }, [checkPermission]);
+
+  // ✅ FIX: Auto-request location if user previously consented
+  useEffect(() => {
+    if (hasConsented && state.permission !== "denied" && !state.position) {
+      logger.info("[useGeolocation] Auto-requesting location from saved consent");
+      requestLocation();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only on mount - hasConsented is stable from useState init
 
   useEffect(() => {
     const detectIPLocation = async () => {

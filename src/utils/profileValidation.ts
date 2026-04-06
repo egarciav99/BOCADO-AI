@@ -37,7 +37,7 @@ export const isProfileComplete = (
 
   // Verificar campos base obligatorios
   for (const field of REQUIRED_PROFILE_FIELDS) {
-    const value = (profile as any)[field];
+    const value = profile[field as keyof UserProfile];
 
     // Es undefined, null, o string vacío
     if (value === undefined || value === null || value === "") {
@@ -82,7 +82,7 @@ export const getMissingProfileFields = (profile: UserProfile | null | undefined)
   if (!profile) return REQUIRED_PROFILE_FIELDS;
 
   return REQUIRED_PROFILE_FIELDS.filter((field) => {
-    const value = (profile as any)[field];
+    const value = profile[field as keyof UserProfile];
     return !value || value === "" || value === "Sin especificar";
   });
 };
@@ -98,7 +98,7 @@ export const getProfileCompleteness = (profile: UserProfile | null | undefined):
   if (!profile) return 0;
 
   const completed = REQUIRED_PROFILE_FIELDS.filter((field) => {
-    const value = (profile as any)[field];
+    const value = profile[field as keyof UserProfile];
     return value && value !== "" && value !== "Sin especificar";
   }).length;
 
