@@ -35,7 +35,6 @@ const withPWA = withPWAInit({
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: process.cwd(),
-  turbopack: {},
   images: {
     unoptimized: true,
     remotePatterns: [
