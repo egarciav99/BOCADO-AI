@@ -2,479 +2,392 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/ge
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
-import * as crypto from 'crypto';
-import { COUNTRY_TO_CURRENCY, CURRENCY_CONFIG } from '@/data/budgets';
+import { z } from 'zod';
 
-// Shared Utils & Services
-import {
-  safeLog,
-  normalizeText,
-  ensureArray,
-  cleanForFirestore,
-  createRegexPattern
-} from '@/lib/api/utils/shared-logic';
-import { RecommendationDataService, UserProfile } from '@/lib/api/services/data-service';
-import { PromptBuilder } from '@/lib/api/services/prompt-builder';
-import { RecommendationScorer, PantryItem, FirestoreIngredient } from '@/lib/api/services/recommendation-scorer';
-import { initFirebaseAdmin } from '@/lib/api/firebase-admin';
-import { UserRateLimiter } from '@/lib/api/utils/user-rate-limiter';
-import { filterIngredientes } from '@/lib/api/services/ingredient-filter';
+// CORS setup
+function getCorsHeaders(origin?: string): Record<string, string> {
+  const allowedOrigins = [
+    'https://bocado-ai.vercel.app',
+    'https://bocado-git-main-egarciavs-projects.vercel.app',
+    'http://localhost:3000'
+  ];
 
-import { historyCache } from '@/lib/api/utils/cache';
-import { getFatSecretIngredientsWithCache } from '@/lib/api/utils/fatsecret-logic';
-import { NutritionEnricher } from '@/lib/api/services/nutrition-enricher';
-// Removed unused imports: filterFatSecretResults, processFatSecretResults
-
-// Phase 2 Integration
-import RecipeHistoryManager from '@/lib/api/services/recipe-history';
-import IngredientScorer from '@/lib/api/services/ingredient-scorer';
-
-// Phase 3: Airtable Integration - Master Index + FatSecret Hydration
-import {
-  filterIngredientsBySafety,
-  hydrateIngredientsNutrition,
-  getSafeIngredientsWithNutrition,
-  findIngredientsByNames,
-  UserDietaryProfile,
-  HydratedNutrition,
-  // NEW: Full enrichment flow
-  enrichPantryWithNutrition,
-  buildExtendedMedicalProfile,
-  calculateRecipeMacros,
-  EnrichedIngredient,
-  ExtendedMedicalProfile,
-  EnrichedPantryResult,
-  isAirtableConfigured,
-} from '@/lib/api/services/airtableService';
-
-// Validation Schema - Import from middleware
-import { 
-  RecommendationRequestSchema, 
-  type ValidatedRecommendationRequest 
-} from '@/lib/api/middleware/validation-middleware';
-
-// Location service
-import { 
-  getUserCoordinates, 
-  formatCoordinates, 
-  getCountryCodeFromCoords,
-  detectLocationContext,
-  type Coordinates,
-  type LocationContext
-} from '@/lib/api/services/location-service';
-
-import { ALLOWED_ORIGINS_LIST, isOriginAllowed } from '@/lib/api/cors-utils';
-
-// ============================================
-// 1. INICIALIZACIÓN DE FIREBASE
-// ============================================
-
-const adminApp = initFirebaseAdmin();
-const db = (adminApp ? getFirestore() : null) as any;
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-
-
-// Initialize Services
-const dataService = new RecommendationDataService(db);
-const userRateLimiter = new UserRateLimiter(db);
-
-// ============================================
-// 2. VALIDACIÓN CON ZOD
-// ============================================
-
-import { z } from "zod";
-import { 
-  TIMEOUTS, 
-  RATE_LIMITS, 
-  CACHE, 
-  SEARCH, 
-  AI_LIMITS, 
-  VALIDATION_LIMITS
-} from "@/config/apiConstants";
-
-// CORS HELPER
-function corsHeaders(origin: string | null) {
-  const originStr = origin || undefined;
-  const allowedOrigin = isOriginAllowed(originStr) ? (originStr || ALLOWED_ORIGINS_LIST[0]) : ALLOWED_ORIGINS_LIST[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Allow-Credentials": "true",
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
   };
+
+  if (origin && allowedOrigins.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  } else if (process.env.NODE_ENV === 'development') {
+    headers['Access-Control-Allow-Origin'] = '*';
+  }
+
+  return headers;
 }
 
-// Schemas para validar respuesta de Gemini
-// 🔒 SECURITY: Strict validation to prevent garbage data in Firestore
-const MacroSchema = z.object({
-  kcal: z.number().min(0).max(VALIDATION_LIMITS.MAX_KCAL).default(0),
-  proteinas_g: z.number().min(0).max(VALIDATION_LIMITS.MAX_MACROS_G).default(0),
-  carbohidratos_g: z.number().min(0).max(VALIDATION_LIMITS.MAX_MACROS_G).default(0),
-  grasas_g: z.number().min(0).max(VALIDATION_LIMITS.MAX_MACROS_G).default(0),
-});
-
-const RecipeSchema = z.object({
-  id: z.union([z.number(), z.string()]),
-  titulo: z.string().min(1).max(200),  // 🔒 min(1) prevents empty titles
-  tiempo_estimado: z.string().max(50).optional(),
-  dificultad: z.enum(["Fácil", "Media", "Difícil"]).optional(),
-  coincidencia_despensa: z.string().max(100).optional(),
-  ingredientes: z.array(z.string().min(1).max(200)).min(1).max(50),  // 🔒 At least 1 ingredient
-  pasos_preparacion: z.array(z.string().min(1).max(VALIDATION_LIMITS.MAX_STEP_LENGTH)).min(1).max(VALIDATION_LIMITS.MAX_STEPS),  // 🔒 At least 1 step
-  macros_por_porcion: MacroSchema.optional(),
-});
-
-const RecipeResponseSchema = z.object({
-  saludo_personalizado: z.string().min(1).max(VALIDATION_LIMITS.MAX_GREETING_LENGTH),  // 🔒 min(1) prevents empty greeting
-  receta: z.object({
-    recetas: z.array(RecipeSchema).min(1).max(10),  // 🔒 At least 1 recipe
-  }),
-});
-
-const RestaurantSchema = z.object({
-  id: z.union([z.number(), z.string()]),
-  nombre_restaurante: z.string().min(1).max(200),  // 🔒 min(1) prevents empty names
-  tipo_comida: z.string().min(1).max(100),
-  direccion_aproximada: z.string().min(1).max(500),
-  plato_sugerido: z.string().min(1).max(200),
-  por_que_es_bueno: z.string().min(1).max(VALIDATION_LIMITS.MAX_GREETING_LENGTH),
-  hack_saludable: z.string().max(500).optional(),  // Optional, can be empty
-});
-
-const RestaurantResponseSchema = z.object({
-  saludo_personalizado: z.string().min(1).max(VALIDATION_LIMITS.MAX_GREETING_LENGTH),
-  ubicacion_detectada: z.string().max(200).optional(),
-  recomendaciones: z.array(RestaurantSchema).min(1).max(10),  // 🔒 At least 1 recommendation
-});
-
-// ============================================
-// 6. RATE LIMITING POR IP (Protección contra abuso)
-// ============================================
-
-/**
- * Rate limiter basado en IP para prevenir abuso de la API.
- * 
- * Limita las requests por IP usando ventanas deslizantes.
- * Si un IP supera el límite, es bloqueado temporalmente.
- */
-class IPRateLimiter {
-  private config = {
-    windowMs: RATE_LIMITS.IP_WINDOW_MS,
-    maxRequests: RATE_LIMITS.IP_MAX_REQUESTS,
-    blockDurationMs: RATE_LIMITS.IP_BLOCK_DURATION_MS,
-  };
-
-  /**
-   * Verifica si una IP puede hacer una request
-   */
-  async checkRateLimit(ip: string): Promise<{ allowed: boolean; retryAfter?: number }> {
-    if (!db) return { allowed: true }; // FAIL-OPEN si no hay DB
-
-    const now = Date.now();
-    const docRef = db.collection("ip_rate_limits").doc(ip);
-
-    try {
-      return await db.runTransaction(async (t: any) => {
-        const doc = await t.get(docRef);
-        const data = doc.exists ? (doc.data() as any) : null;
-
-        // Si está bloqueado
-        if (data?.blockedUntil && data.blockedUntil > now) {
-          return {
-            allowed: false,
-            retryAfter: Math.ceil((data.blockedUntil - now) / 1000),
-          };
-        }
-
-        const requests = (data?.requests || []).filter(
-          (ts: number) => now - ts < this.config.windowMs,
-        );
-
-        // Si excede el límite, bloquear
-        if (requests.length >= this.config.maxRequests) {
-          t.set(docRef, {
-            requests: [...requests, now],
-            blockedUntil: now + this.config.blockDurationMs,
-            updatedAt: FieldValue.serverTimestamp(),
-          });
-          return {
-            allowed: false,
-            retryAfter: Math.ceil(this.config.blockDurationMs / 1000),
-          };
-        }
-
-        // Registrar request
-        t.set(docRef, {
-          requests: [...requests, now],
-          blockedUntil: null,
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-
-        return { allowed: true };
-      });
-    } catch (error) {
-      safeLog("error", "Error en IP rate limit", error);
-      // FAIL-CLOSED: Si no podemos verificar IP rate limit, rechazar por seguridad
-      return {
-        allowed: false,
-        retryAfter: 60, // Bloquear 1 minuto como precaución
-      };
+// Initialize Firebase
+function initializeFirebase() {
+  try {
+    // Import here to avoid circular dependency
+    const { getApps, initializeApp, cert } = require('firebase-admin/app');
+    
+    if (!getApps().length) {
+      const serviceAccountKey = process.env.FIREBASE_SERVICE_ACCOUNT_KEY;
+      if (!serviceAccountKey) {
+        throw new Error("FIREBASE_SERVICE_ACCOUNT_KEY no definida");
+      }
+      const serviceAccount = JSON.parse(serviceAccountKey.trim());
+      initializeApp({ credential: cert(serviceAccount) });
     }
+    
+    return {
+      auth: getAdminAuth(),
+      db: getFirestore()
+    };
+  } catch (error) {
+    console.error('Firebase init error:', error);
+    throw error;
   }
 }
 
-const ipRateLimiter = new IPRateLimiter();
+// Request validation
+const RequestBodySchema = z.object({
+  type: z.enum(["En casa", "Fuera"]),
+  userId: z.string(),
+  interactionId: z.string(),
+  cravings: z.string().optional(),
+  dislikedFoods: z.array(z.string()).optional(),
+  cookingTime: z.string().optional(),
+  budget: z.string().optional(),
+  currency: z.string().optional(),
+  userLocation: z.object({
+    lat: z.number(),
+    lng: z.number()
+  }).optional(),
+  language: z.enum(["es", "en"]).default("es")
+});
 
-// ============================================
-// 7. CONFIGURACIÓN DE BÚSQUEDA DE RESTAURANTES
-// ============================================
+// User cache interface
+interface UserProfile {
+  uid: string;
+  eatingHabit?: string;
+  age?: number;
+  activityLevel?: string;
+  nutritionalGoal?: string;
+  diseases?: string[];
+  allergies?: string[];
+  dislikedFoods?: string[];
+  city?: string;
+  country?: string;
+  location?: { lat: number; lng: number };
+}
 
-// Rango de búsqueda en metros (8km)
-const SEARCH_RADIUS_METERS = SEARCH.RADIUS_METERS;
+// Cache setup
+const userProfileCache = new Map<string, { profile: UserProfile; timestamp: number }>();
+const pantryCache = new Map<string, { items: string[]; timestamp: number }>();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-// ============================================
-// 8. AIRTABLE INTEGRATION HELPERS
-// ============================================
+// Utility functions
+function safeLog(level: 'log' | 'error' | 'warn' | 'info', message: string, error?: any) {
+  const timestamp = new Date().toISOString();
+  if (level === 'error' && error) {
+    console.error(`[${timestamp}] ${message}`, error);
+  } else if (level === 'warn') {
+    console.warn(`[${timestamp}] ${message}`, error || '');
+  } else {
+    console.log(`[${timestamp}] ${message}`, error || '');
+  }
+}
 
-/**
- * Convierte el perfil del usuario a formato de restricciones dietéticas de Airtable
- * Mapea diseases/allergies a flags booleanos para filtrado de seguridad clínica
- */
-function userProfileToDietaryProfile(user: UserProfile): UserDietaryProfile {
-  const diseases = ensureArray(user.diseases).map(d => d.toLowerCase());
-  const allergies = ensureArray(user.allergies).map(a => a.toLowerCase());
-  const otherAllergies = (user.otherAllergies || '').toLowerCase();
-  const eatingHabit = (user.eatingHabit || '').toLowerCase();
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, operationName: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
   
-  return {
-    celiaco: diseases.includes('celíaco') || 
-             diseases.includes('celiaco') || 
-             diseases.includes('enfermedad celíaca') ||
-             allergies.includes('gluten'),
-    vegano: eatingHabit.includes('vegano') || eatingHabit === 'vegan',
-    vegetariano: eatingHabit.includes('vegetariano') || 
-                 eatingHabit.includes('vegano') || 
-                 eatingHabit === 'vegetarian',
-    intoleranteLactosa: diseases.includes('intolerancia a la lactosa') || 
-                        allergies.includes('lactosa') ||
-                        allergies.includes('lácteos') ||
-                        otherAllergies.includes('lactosa'),
-    alergicoFrutosSecos: allergies.includes('frutos secos') || 
-                         allergies.includes('nueces') ||
-                         allergies.includes('almendras') ||
-                         otherAllergies.includes('frutos secos'),
-  };
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(`Timeout: ${operationName} exceeded ${timeoutMs}ms`));
+    }, timeoutMs);
+  });
+
+  return Promise.race([
+    promise.then((result) => {
+      clearTimeout(timeoutId);
+      return result;
+    }),
+    timeoutPromise,
+  ]);
 }
 
-/**
- * Formatea datos nutricionales hidratados para incluir en el prompt de Gemini
- */
-function formatHydratedNutrition(nutritionMap: Map<string, HydratedNutrition>): string {
-  if (nutritionMap.size === 0) return '';
+function ensureArray<T>(value: T | T[] | undefined | null): T[] {
+  if (value == null) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+async function getUserProfileCached(userId: string): Promise<UserProfile> {
+  const cached = userProfileCache.get(userId);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    return cached.profile;
+  }
+
+  const { db } = initializeFirebase();
+  const userDoc = await db.collection('usuarios').doc(userId).get();
   
-  const lines: string[] = ['### 📊 DATOS NUTRICIONALES (FatSecret v5):'];
+  if (!userDoc.exists) {
+    throw new Error('Usuario no encontrado');
+  }
+
+  const profile = userDoc.data() as UserProfile;
+  userProfileCache.set(userId, { profile, timestamp: Date.now() });
+  return profile;
+}
+
+async function getPantryItemsCached(userId: string): Promise<string[]> {
+  const cached = pantryCache.get(userId);
+  if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+    return cached.items;
+  }
+
+  const { db } = initializeFirebase();
+  const pantryDoc = await db.collection('pantry').doc(userId).get();
   
-  for (const [name, nutrition] of nutritionMap) {
-    lines.push(`- ${name}: ${nutrition.calories}kcal, P:${nutrition.protein}g, C:${nutrition.carbohydrate}g, G:${nutrition.fat}g (por ${nutrition.servingSize}${nutrition.servingUnit})`);
+  let items: string[] = [];
+  if (pantryDoc.exists) {
+    const data = pantryDoc.data();
+    items = data?.items?.map((item: any) => item.name || '').filter(Boolean) || [];
   }
+
+  pantryCache.set(userId, { items, timestamp: Date.now() });
+  return items;
+}
+
+// Constants 
+const RECIPE_JSON_TEMPLATE = `{
+  "saludo_personalizado": "Hola! Aquí tienes una receta perfecta",
+  "receta": {
+    "recetas": [{
+      "titulo": "Nombre de la receta",
+      "tiempo_preparacion": "30 min",
+      "porciones": 4,
+      "ingredientes": [{"nombre": "ingrediente", "cantidad": "200g"}],
+      "instrucciones": ["Paso 1", "Paso 2"],
+      "macronutrientes": {"calorias": 350, "proteinas": "25g", "carbohidratos": "30g", "grasas": "12g"},
+      "coincidencia_despensa": "85%",
+      "hack_saludable": "Consejo práctico"
+    }]
+  }
+}`;
+
+const RESTAURANT_JSON_TEMPLATE = `{
+  "saludo_personalizado": "¡Perfecto! Te tengo excelentes opciones",
+  "recomendaciones": [{
+    "nombre_restaurante": "Nombre real",
+    "direccion": "Calle Número, Colonia",
+    "tipo_cocina": "italiana",
+    "rango_precio": "€€",
+    "por_que_es_bueno": "Explicación",
+    "hack_saludable": "Consejo saludable"
+  }]
+}`;
+
+// App Router handlers
+export async function OPTIONS(request: NextRequest): Promise<NextResponse> {
+  const origin = request.headers.get('origin') || '';
+  const headers = getCorsHeaders(origin);
+  return new NextResponse(null, { status: 200, headers });
+}
+
+export async function GET(request: NextRequest): Promise<NextResponse> {
+  const origin = request.headers.get('origin') || '';
+  const headers = getCorsHeaders(origin);
+  return NextResponse.json({ status: 'ok', message: 'Recommend endpoint active' }, { headers });
+}
+
+export async function POST(request: NextRequest): Promise<NextResponse> {
+  const origin = request.headers.get('origin') || '';
+  const headers = getCorsHeaders(origin);
   
-  return lines.join('\n');
-}
-
-/**
- * Genera instrucción de presupuesto con conversión de moneda si es necesario
- */
-function getBudgetInstruction(
-  request: ValidatedRecommendationRequest,
-  context: LocationContext,
-): string {
-  const budgetValue = request.budget ?? "sin límite";
-  const requestCurrency = request.currency ?? context.homeCurrency;
-
-  // Si no está viajando o no hay presupuesto, devolver normal
-  if (!context.isTraveling || budgetValue === "sin límite") {
-    return `PRESUPUESTO: ${budgetValue} ${requestCurrency}`;
-  }
-
-  // Si está viajando, mencionar ambas monedas sin conversión específica
-  return `PRESUPUESTO: ${budgetValue} ${requestCurrency} (ajustar recomendaciones a precios locales en ${context.activeCurrency})`;
-}
-
-// ============================================
-// HTTP HANDLERS
-// ============================================
-
-export async function OPTIONS(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  return new NextResponse(null, { status: 200, headers: corsHeaders(origin) });
-}
-
-export async function GET(request: NextRequest) {
-  const origin = request.headers.get("origin");
-  const originStr = origin || undefined;
-  const headers = corsHeaders(origin);
-
-  if (!isOriginAllowed(originStr)) {
-    return NextResponse.json(
-      { error: "Origin not allowed" },
-      { status: 403, headers }
-    );
-  }
-
-  // ============================================
-  // GET /api/recommend?userId=xxx - Status del rate limit
-  // ============================================
-  
-  // Auth validation
-  const authHeader = request.headers.get("authorization") || "";
-  const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/i);
-  const idToken = tokenMatch?.[1];
-
-  if (!idToken) {
-    return NextResponse.json(
-      { error: "Auth token required" },
-      { status: 401, headers }
-    );
-  }
-
-  let userId: string;
-  try {
-    const decoded = await getAdminAuth().verifyIdToken(idToken);
-    userId = decoded.uid;
-  } catch (err) {
-    return NextResponse.json(
-      { error: "Invalid auth token" },
-      { status: 401, headers }
-    );
-  }
-
-  const status = await userRateLimiter.getStatus(userId);
-  if (!status) {
-    return NextResponse.json({
-      canRequest: true,
-      requestsInWindow: 0,
-      remainingRequests: 2, // Updated from constants
-    }, { headers });
-  }
-
-  return NextResponse.json({
-    ...status,
-    nextAvailableIn: status.nextAvailableAt
-      ? Math.max(0, Math.ceil((status.nextAvailableAt - Date.now()) / 1000))
-      : 0,
-  }, { headers });
-}
-
-export async function POST(request: NextRequest) {
-  if (!adminApp || !db) {
-    const origin = request.headers.get("origin");
-    return NextResponse.json(
-      { error: "Firebase Admin not initialized. Check your environment variables." },
-      { status: 500, headers: corsHeaders(origin) }
-    );
-  }
-
-  const origin = request.headers.get("origin");
-  const originStr = origin || undefined;
-  const headers = corsHeaders(origin);
-
-  if (!isOriginAllowed(originStr)) {
-    return NextResponse.json(
-      { error: "Origin not allowed" },
-      { status: 403, headers }
-    );
-  }
-
-  // Auth validation
-  const authHeader = request.headers.get("authorization") || "";
-  const tokenMatch = authHeader.match(/^Bearer\s+(.+)$/i);
-  const idToken = tokenMatch?.[1];
-
-  if (!idToken) {
-    return NextResponse.json(
-      { error: "Auth token required" },
-      { status: 401, headers }
-    );
-  }
-
-  let userId: string;
-  try {
-    const decoded = await getAdminAuth().verifyIdToken(idToken);
-    userId = decoded.uid;
-  } catch (err) {
-    return NextResponse.json(
-      { error: "Invalid auth token" },
-      { status: 401, headers }
-    );
-  }
-
-  // Parse and validate request body
-  let body: any;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400, headers }
-    );
-  }
-
-  // Validate request body using Zod
-  const bodyValidation = RecommendationRequestSchema.safeParse(body);
-  if (!bodyValidation.success) {
-    return NextResponse.json(
-      { error: bodyValidation.error.issues.map(i => i.message).join(", ") },
-      { status: 400, headers }
-    );
-  }
-
-  // Verify userId matches auth
-  if (bodyValidation.data.userId !== userId) {
-    return NextResponse.json(
-      { error: "userId no coincide con el token de autenticación" },
-      { status: 403, headers }
-    );
-  }
-
-  const requestData = bodyValidation.data;
-  let interactionRef: FirebaseFirestore.DocumentReference | null = null;
+  let interactionRef: any = null;
 
   try {
-    const { type, _id } = requestData;
-    const interactionId = _id || `int_${Date.now()}`;
+    // Initialize Firebase
+    const { auth, db } = initializeFirebase();
 
-    safeLog(
-      "log",
-      `🚀 Nueva solicitud: type=${type}, userId=${userId?.substring(0, 8)}...`,
-    );
+    // Auth verification
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Token de autorización requerido' },
+        { status: 401, headers }
+      );
+    }
 
-    interactionRef = db.collection("user_interactions").doc(interactionId);
-    await interactionRef!.set({
-      userId,
+    const token = authHeader.substring(7);
+    const decodedToken = await auth.verifyIdToken(token);
+    const authenticatedUserId = decodedToken.uid;
+
+    // Parse request
+    const body = await request.json();
+    const requestData = RequestBodySchema.parse(body);
+    const { type, userId, interactionId } = requestData;
+
+    // Verify user
+    if (userId !== authenticatedUserId) {
+      return NextResponse.json(
+        { error: 'No autorizado para este usuario' },
+        { status: 403, headers }
+      );
+    }
+
+    // Create interaction document
+    interactionRef = db.collection('user_interactions').doc(interactionId);
+    await interactionRef.set({
+      user_id: userId,
       interaction_id: interactionId,
+      type: type,
+      status: 'processing',
       createdAt: FieldValue.serverTimestamp(),
-      status: "processing",
-      tipo: type,
+      request_data: requestData,
+    }, { merge: true });
+
+    // Get user profile and pantry
+    const user = await getUserProfileCached(userId);
+    let pantryItems: string[] = [];
+    if (type === "En casa") {
+      pantryItems = await getPantryItemsCached(userId);
+    }
+
+    // Prepare Gemini AI
+    if (!process.env.GEMINI_API_KEY) {
+      throw new Error("GEMINI_API_KEY no configurada");
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash-exp",
+      safetySettings: [
+        { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+        { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE },
+      ],
     });
 
-    // ⚠️ IMPLEMENTACIÓN PENDIENTE
-    // Este endpoint valida auth y body correctamente pero aún no ejecuta
-    // la lógica de recomendación. Ver implementación completa en:
-    // src/lib/api/services/ (data-service, prompt-builder, recommendation-scorer)
-    // No deployar a producción hasta completar la integración.
-    // TODO: Add the complete recommendation logic here
-    // For now, return a basic success response to test the structure
-    return NextResponse.json({
-      success: true,
-      message: "Recommendation endpoint converted to App Router - implementation in progress",
-      type: type,
-      interactionId: interactionId
-    }, { headers });
+    // Build prompt
+    let prompt = "";
+    
+    if (type === "En casa") {
+      const pantryText = pantryItems.length > 0 ? pantryItems.join(", ") : "Sin ingredientes disponibles";
+      const profileParts = [
+        user.eatingHabit ? `Dieta: ${user.eatingHabit}` : "",
+        user.nutritionalGoal || "saludable",
+        ...(ensureArray(user.allergies).length > 0 ? [`Alergias: ${ensureArray(user.allergies).join(", ")}`] : []),
+        ...(ensureArray(user.dislikedFoods).length > 0 ? [`No le gusta: ${ensureArray(user.dislikedFoods).join(", ")}`] : []),
+      ].filter(Boolean).join(" | ");
+
+      prompt = `Eres chef especializado en cocina casera saludable. Crea 1 receta adaptada al perfil.
+
+PERFIL: ${profileParts || "Sin restricciones"}
+DESPENSA: ${pantryText}
+SOLICITUD: ${requestData.cravings || "saludable"}${requestData.cookingTime ? `, máximo ${requestData.cookingTime} min` : ""}
+
+REGLAS:
+1. USA máximo ingredientes disponibles en despensa
+2. Si despensa insuficiente: añade 2-3 ingredientes básicos
+3. Tiempo realista: ${requestData.cookingTime ? `máximo ${requestData.cookingTime} min` : "30-45 min"}
+4. Pasos claros (máximo 8)
+5. Macros aproximados por porción
+
+Responde EXCLUSIVAMENTE en ${requestData.language === "en" ? "INGLÉS" : "ESPAÑOL"}.
+Formato JSON exacto:
+${RECIPE_JSON_TEMPLATE}`;
+
+    } else {
+      // Restaurant logic
+      const profileParts = [
+        user.eatingHabit ? `Dieta: ${user.eatingHabit}` : "",
+        user.nutritionalGoal || "saludable",
+        ...(ensureArray(user.allergies).length > 0 ? [`Alergias: ${ensureArray(user.allergies).join(", ")}`] : []),
+      ].filter(Boolean).join(" | ");
+
+      prompt = `Eres guía gastronómico. Recomienda 5 restaurantes reales.
+
+PERFIL: ${profileParts || "Sin restricciones"}
+UBICACIÓN: ${user.city || "su ciudad"}
+SOLICITUD: ${requestData.cravings || "saludable"}, ${requestData.budget || "precio medio"}
+
+REGLAS:
+1. Nombres reales de restaurantes en ${user.city || "la ciudad"}
+2. Direcciones exactas: Calle Número, Colonia
+3. NO direcciones vagas como "por el centro"
+4. Rango máximo: 5km del centro
+
+Responde EXCLUSIVAMENTE en ${requestData.language === "en" ? "INGLÉS" : "ESPAÑOL"}.
+Formato JSON exacto:
+${RESTAURANT_JSON_TEMPLATE}`;
+    }
+
+    // Generate with Gemini
+    const result = await withTimeout(
+      model.generateContent({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: type === "En casa" ? 0.4 : 0.2,
+          maxOutputTokens: type === "En casa" ? 2800 : 2200,
+          responseMimeType: "application/json",
+          topP: 0.8,
+          topK: 30,
+        },
+      }),
+      15000,
+      "Gemini generation"
+    );
+
+    let parsedData: any;
+    const responseText = result.response.text();
+    
+    try {
+      parsedData = JSON.parse(responseText);
+    } catch (e) {
+      // Try to extract JSON from markdown
+      const jsonMatch = responseText.match(/```json\n?([\s\S]*?)\n?```/) || responseText.match(/{[\s\S]*}/);
+      if (jsonMatch) {
+        try {
+          parsedData = JSON.parse(jsonMatch[1] || jsonMatch[0]);
+        } catch (innerError) {
+          throw new Error(`JSON inválido en respuesta de Gemini`);
+        }
+      } else {
+        throw new Error("No se pudo parsear respuesta de Gemini");
+      }
+    }
+
+    // Save to Firestore
+    const batch = db.batch();
+    const historyCol = type === "En casa" ? "historial_recetas" : "historial_recomendaciones";
+    
+    const historyRef = db.collection(historyCol).doc();
+    batch.set(historyRef, {
+      user_id: userId,
+      interaction_id: interactionId,
+      fecha_creacion: FieldValue.serverTimestamp(),
+      tipo: type,
+      ...parsedData,
+    });
+
+    batch.update(interactionRef, {
+      procesado: true,
+      status: "completed",
+      completedAt: FieldValue.serverTimestamp(),
+      historyDocId: historyRef.id,
+    });
+
+    await batch.commit();
+
+    return NextResponse.json(parsedData, { headers });
 
   } catch (error: any) {
     safeLog("error", "Error in POST /api/recommend", error);
     
-    // Update interaction status if we have a reference
     if (interactionRef) {
       try {
         await interactionRef.update({
@@ -482,75 +395,12 @@ export async function POST(request: NextRequest) {
           error: error.message,
           updatedAt: FieldValue.serverTimestamp(),
         });
-      } catch (updateError) {
-        safeLog("error", "Failed to update interaction status", updateError);
-      }
+      } catch {}
     }
 
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500, headers }
     );
-  }
-}
-
-// Import ValidatedRecommendationRequest type from middleware
-
-// 🔒 TYPES: Ingredient interfaces to replace 'any'
-interface FilteredIngredient {
-  name: string;
-  food_name?: string;
-  food_id?: string;
-  airtableId?: string;
-}
-
-// Renamed to avoid conflict with imported PantryItem from recommendation-scorer
-interface LocalPantryItem {
-  name: string;
-  food_name?: string;
-  airtableId?: string;
-  quantity?: number;
-  unit?: string;
-}
-
-interface PantryItemForEnrichment {
-  name: string;
-  airtableId?: string;
-  quantity?: number;
-  unit?: string;
-}
-
-// ============================================
-// TIMEOUT HELPER - Prevents hanging on slow external APIs
-// ============================================
-/**
- * Wraps a promise with a timeout. If the promise doesn't resolve within
- * the specified time, it rejects with a timeout error.
- * 
- * @param promise The promise to wrap
- * @param timeoutMs Timeout in milliseconds
- * @param operationName Name for logging purposes
- * @returns The resolved value or throws on timeout
- */
-async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  operationName: string
-): Promise<T> {
-  let timeoutId: NodeJS.Timeout;
-  
-  const timeoutPromise = new Promise<never>((_, reject) => {
-    timeoutId = setTimeout(() => {
-      reject(new Error(`${operationName} timeout after ${timeoutMs}ms`));
-    }, timeoutMs);
-  });
-
-  try {
-    const result = await Promise.race([promise, timeoutPromise]);
-    clearTimeout(timeoutId!);
-    return result;
-  } catch (error) {
-    clearTimeout(timeoutId!);
-    throw error;
   }
 }
