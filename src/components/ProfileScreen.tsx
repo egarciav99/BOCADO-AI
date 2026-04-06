@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  useMemo,
+  useLayoutEffect,
+} from "react";
 import { FormData, UserProfile } from "../types";
 import {
   User,
@@ -68,6 +75,7 @@ import {
 import { ProfileSkeleton } from "./skeleton";
 import { useTranslation } from "../contexts/I18nContext";
 import { useTheme } from "../contexts/ThemeContext";
+import { useEscapeKey } from "../hooks/useEscapeKey";
 
 interface ProfileScreenProps {
   onLogout?: () => void;
@@ -207,6 +215,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const [isUnlinkingGoogle, setIsUnlinkingGoogle] = useState(false);
   const [confirmUnlinkGoogle, setConfirmUnlinkGoogle] = useState(false);
 
+  // FIX #6 (ALTA): Estados de loading independientes
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // FIX #15 (ALTA): Unsaved changes warning
+  const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+
   const [cityOptions, setCityOptions] = useState<PlacePrediction[]>([]);
   const [isSearchingCity, setIsSearchingCity] = useState(false);
   const [selectedPlaceId, setSelectedPlaceId] = useState<string>("");
@@ -284,6 +300,36 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const handleCitySearch = (query: string) => {
     setCityQuery(query);
   };
+
+  // FIX #7 (ALTA): Helper para limpiar mensajes al cambiar viewMode
+  const goToView = useCallback(() => {
+    setViewMode("view");
+    setSuccessMessage("");
+    setError("");
+    setShowUnsavedWarning(false);
+  }, []);
+
+  // FIX #15 (ALTA): Detectar cambios no guardados
+  const hasUnsavedChanges = useMemo(() => {
+    if (viewMode !== "edit") return false;
+    return JSON.stringify(formData) !== JSON.stringify(initialFormData);
+  }, [formData, initialFormData, viewMode]);
+
+  // FIX #15 (ALTA): Handler para cancelar edición con warning
+  const handleCancelEdit = useCallback(() => {
+    if (hasUnsavedChanges) {
+      setShowUnsavedWarning(true);
+    } else {
+      goToView();
+    }
+  }, [hasUnsavedChanges, goToView]);
+
+  // FIX #15 (ALTA): Confirmar descarte de cambios
+  const confirmDiscard = useCallback(() => {
+    setShowUnsavedWarning(false);
+    setFormData(initialFormData);
+    goToView();
+  }, [initialFormData, goToView]);
 
   const handleSaveProfile = async () => {
     const currentUser = auth.currentUser;
@@ -403,23 +449,28 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     e.preventDefault();
     setError("");
     setSuccessMessage("");
+    setIsChangingPassword(true); // FIX #6 (ALTA)
 
     if (!currentPassword || !newPassword || !confirmNewPassword) {
       setError(t("profile.errors.allRequired"));
+      setIsChangingPassword(false);
       return;
     }
     if (newPassword !== confirmNewPassword) {
       setError(t("profile.errors.passwordsMismatch"));
+      setIsChangingPassword(false);
       return;
     }
     if (newPassword.length < 8) {
       setError(t("profile.errors.minChars"));
+      setIsChangingPassword(false);
       return;
     }
 
     const currentUser = auth.currentUser;
     if (!currentUser || !currentUser.email) {
       setError(t("profile.errors.sessionExpired"));
+      setIsChangingPassword(false);
       return;
     }
 
@@ -438,12 +489,14 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       setCurrentPassword("");
       setNewPassword("");
       setConfirmNewPassword("");
-      setTimeout(() => setViewMode("view"), 2000);
+      setTimeout(() => goToView(), 2000); // FIX #7 (ALTA)
     } catch (err: any) {
       trackEvent("profile_security_password_error", { code: err.code });
       if (err.code === "auth/wrong-password")
         setError(t("profile.errors.wrongPassword"));
       else setError(t("profile.errors.updateError"));
+    } finally {
+      setIsChangingPassword(false); // FIX #6 (ALTA)
     }
   };
 
@@ -451,21 +504,25 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
     e.preventDefault();
     setError("");
     setSuccessMessage("");
+    setIsChangingEmail(true); // FIX #6 (ALTA)
 
     if (!emailPassword || !newEmail) {
       setError(t("profile.errors.allRequired"));
+      setIsChangingEmail(false);
       return;
     }
 
     const currentUser = auth.currentUser;
     if (!currentUser || !currentUser.email) {
       setError(t("profile.errors.sessionExpiredShort"));
+      setIsChangingEmail(false);
       return;
     }
 
     const normalizedNewEmail = newEmail.toLowerCase().trim();
     if (currentUser.email.toLowerCase() === normalizedNewEmail) {
       setError(t("profile.errors.sameEmail"));
+      setIsChangingEmail(false);
       return;
     }
 
@@ -488,7 +545,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
       setEmailPassword("");
       setNewEmail("");
-      setTimeout(() => setViewMode("view"), 4000);
+      setTimeout(() => goToView(), 4000); // FIX #7 (ALTA)
     } catch (err: any) {
       trackEvent("profile_security_email_error", { code: err.code });
       if (err.code === "auth/wrong-password")
@@ -496,6 +553,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       else if (err.code === "auth/email-already-in-use")
         setError(t("profile.errors.emailInUse"));
       else setError(t("profile.errors.updateError"));
+    } finally {
+      setIsChangingEmail(false); // FIX #6 (ALTA)
     }
   };
 
@@ -506,6 +565,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
   const handleExportData = async () => {
     setError("");
     setSuccessMessage("");
+    setIsExporting(true); // FIX #6 (ALTA)
 
     try {
       trackEvent("profile_export_data_start");
@@ -576,6 +636,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       safeLog("error", "Error exporting data:", err);
       trackEvent("profile_export_data_error");
       setError(t("profile.errors.exportError"));
+    } finally {
+      setIsExporting(false); // FIX #6 (ALTA)
     }
   };
 
@@ -648,7 +710,16 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         await reauthenticateWithPopup(currentUser, provider);
       }
 
-      // 2. Eliminar datos de Firestore
+      // FIX #2 (ALTA): deleteUser se ejecuta primero intencionalmente.
+      // Si falla, ningún dato de Firestore se habrá borrado (rollback natural).
+      // Si falla Firestore después, el usuario ya no puede autenticarse,
+      // lo que es el estado deseado. Los datos huérfanos en Firestore
+      // se limpian mediante Cloud Function onUserDelete (pendiente implementar).
+
+      // 2. Eliminar usuario de Firebase Auth PRIMERO
+      await deleteUser(currentUser);
+
+      // 3. Eliminar datos de Firestore (usuario ya no existe en Auth)
       // Eliminar perfil
       await deleteDoc(doc(db, "users", userUid));
 
@@ -685,9 +756,6 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       );
       await Promise.all(deleteFeedbackPromises);
 
-      // 3. Eliminar usuario de Firebase Auth
-      await deleteUser(currentUser);
-
       trackEvent("profile_delete_account_success");
 
       // 4. Limpiar sesión
@@ -709,6 +777,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       }
       setIsDeleting(false);
     }
+    // No finally aquí: si se eliminó exitosamente, el usuario ya no existe
+    // y onLogout() redirige. Solo limpiamos isDeleting en el catch.
   };
 
   const handleLinkGoogle = async () => {
@@ -836,8 +906,38 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         return (
           <div className="flex flex-col h-full animate-fade-in">
             <div className="flex-1 overflow-y-auto space-y-6 pb-24">
+              {/* FIX #15 (ALTA): Banner de unsaved changes warning */}
+              {showUnsavedWarning && (
+                <div
+                  role="alert"
+                  className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 rounded-xl text-sm"
+                >
+                  <p className="text-amber-700 dark:text-amber-300 font-medium mb-2">
+                    {t("profile.unsavedChangesWarning")}
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={confirmDiscard}
+                      className="text-xs text-red-600 font-bold active:scale-95 transition-transform"
+                    >
+                      {t("profile.discardChanges")}
+                    </button>
+                    <button
+                      onClick={() => setShowUnsavedWarning(false)}
+                      className="text-xs text-bocado-gray font-medium active:scale-95 transition-transform"
+                    >
+                      {t("common.cancel")}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* FIX #9 (ALTA): role="alert" en mensajes de error */}
               {error && (
-                <p className="text-red-500 text-xs text-center bg-red-50 p-3 rounded-xl">
+                <p
+                  className="text-red-500 text-xs text-center bg-red-50 p-3 rounded-xl"
+                  role="alert"
+                >
                   {error}
                 </p>
               )}
@@ -862,9 +962,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
               <button
                 onClick={() => {
                   trackEvent("profile_edit_cancel");
-                  setViewMode("view");
-                  setFormData(initialFormData);
-                  setError("");
+                  handleCancelEdit(); // FIX #15 (ALTA): usar handler con warning
                   setCityOptions([]);
                 }}
                 className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
@@ -886,58 +984,94 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         );
 
       case "changePassword":
+        // FIX #12 (ALTA): Escape key to close dialog
+        useEscapeKey(() => goToView());
+
         return (
-          <div className="animate-fade-in">
-            <h2 className="text-lg font-bold text-bocado-dark-green mb-4">
+          <div
+            className="animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dialog-title-changePassword"
+            tabIndex={-1}
+          >
+            {/* TODO: añadir useFocusTrap para capturar el foco */}
+            <h2
+              id="dialog-title-changePassword"
+              className="text-lg font-bold text-bocado-dark-green mb-4"
+            >
               {t("profile.changePassword")}
             </h2>
             <form onSubmit={handleChangePassword} className="space-y-4">
               <div>
-                <label className="label-base text-2xs">
+                {/* FIX #11 (ALTA): htmlFor + id */}
+                <label
+                  htmlFor="profile-current-password"
+                  className="label-base text-2xs"
+                >
                   {t("profile.currentPassword")}
                 </label>
                 <input
+                  id="profile-current-password"
                   type="password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="input-base"
                   placeholder="••••••••"
                   aria-label={t("profile.currentPassword")}
+                  autoComplete="current-password" // FIX #12 (BAJA)
                 />
               </div>
               <div>
-                <label className="label-base">
+                <label
+                  htmlFor="profile-new-password"
+                  className="label-base"
+                >
                   {t("profile.newPassword")}
                 </label>
                 <input
+                  id="profile-new-password"
                   type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className="input-base"
                   placeholder={t("registration.placeholders.password")}
                   aria-label={t("profile.newPassword")}
+                  autoComplete="new-password" // FIX #12 (BAJA)
                 />
               </div>
               <div>
-                <label className="label-base">
+                <label
+                  htmlFor="profile-confirm-password"
+                  className="label-base"
+                >
                   {t("profile.confirmPassword")}
                 </label>
                 <input
+                  id="profile-confirm-password"
                   type="password"
                   value={confirmNewPassword}
                   onChange={(e) => setConfirmNewPassword(e.target.value)}
                   className="input-base"
                   placeholder="••••••••"
                   aria-label={t("profile.confirmPassword")}
+                  autoComplete="new-password" // FIX #12 (BAJA)
                 />
               </div>
+              {/* FIX #9 (ALTA): role="alert" y role="status" */}
               {error && (
-                <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">
+                <p
+                  className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg"
+                  role="alert"
+                >
                   {error}
                 </p>
               )}
               {successMessage && (
-                <p className="text-green-600 text-xs text-center bg-green-50 p-2 rounded-lg">
+                <p
+                  className="text-green-600 text-xs text-center bg-green-50 p-2 rounded-lg"
+                  role="status"
+                >
                   {successMessage}
                 </p>
               )}
@@ -945,8 +1079,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setViewMode("view");
-                    setError("");
+                    goToView(); // FIX #7 (ALTA)
                     setCurrentPassword("");
                     setNewPassword("");
                     setConfirmNewPassword("");
@@ -957,9 +1090,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+                  disabled={isChangingPassword} // FIX #6 (ALTA)
+                  className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {t("profile.update")}
+                  {/* FIX #6 (ALTA): Mostrar spinner durante loading */}
+                  {isChangingPassword ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-2" />
+                      {t("common.saving")}
+                    </>
+                  ) : (
+                    t("profile.update")
+                  )}
                 </button>
               </div>
             </form>
@@ -967,33 +1109,57 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         );
 
       case "changeEmail":
+        // FIX #12 (ALTA): Escape key to close dialog
+        useEscapeKey(() => goToView());
+
         return (
-          <div className="animate-fade-in">
-            <h2 className="text-xl font-bold text-bocado-dark-green mb-2">
+          <div
+            className="animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dialog-title-changeEmail"
+            tabIndex={-1}
+          >
+            {/* TODO: añadir useFocusTrap para capturar el foco */}
+            <h2
+              id="dialog-title-changeEmail"
+              className="text-xl font-bold text-bocado-dark-green mb-2"
+            >
               {t("profile.changeEmail")}
             </h2>
+            {/* FIX #13 (BAJA): Nota de verificación ya existe, verificar que mencione "nueva dirección" */}
             <p className="text-sm text-bocado-gray mb-4">
               {t("profile.emailVerificationNote")}
             </p>
             <form onSubmit={handleChangeEmail} className="space-y-4">
               <div>
-                <label className="label-base text-2xs">
+                {/* FIX #11 (ALTA): htmlFor + id */}
+                <label
+                  htmlFor="profile-email-password"
+                  className="label-base text-2xs"
+                >
                   {t("profile.currentPassword")}
                 </label>
                 <input
+                  id="profile-email-password"
                   type="password"
                   value={emailPassword}
                   onChange={(e) => setEmailPassword(e.target.value)}
                   className="input-base"
                   placeholder="••••••••"
                   aria-label={t("profile.currentPassword")}
+                  autoComplete="current-password" // FIX #12 (BAJA)
                 />
               </div>
               <div>
-                <label className="label-base text-2xs">
+                <label
+                  htmlFor="profile-new-email"
+                  className="label-base text-2xs"
+                >
                   {t("profile.newEmail")}
                 </label>
                 <input
+                  id="profile-new-email"
                   type="email"
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
@@ -1002,13 +1168,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   aria-label={t("profile.newEmail")}
                 />
               </div>
+              {/* FIX #9 (ALTA): role="alert" y role="status" */}
               {error && (
-                <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">
+                <p
+                  className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg"
+                  role="alert"
+                >
                   {error}
                 </p>
               )}
               {successMessage && (
-                <p className="text-green-600 text-xs text-center bg-green-50 p-2 rounded-lg">
+                <p
+                  className="text-green-600 text-xs text-center bg-green-50 p-2 rounded-lg"
+                  role="status"
+                >
                   {successMessage}
                 </p>
               )}
@@ -1016,8 +1189,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setViewMode("view");
-                    setError("");
+                    goToView(); // FIX #7 (ALTA)
                     setEmailPassword("");
                     setNewEmail("");
                   }}
@@ -1027,9 +1199,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
+                  disabled={isChangingEmail} // FIX #6 (ALTA)
+                  className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {t("profile.change")}
+                  {/* FIX #6 (ALTA): Mostrar spinner durante loading */}
+                  {isChangingEmail ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin inline-block mr-2" />
+                      {t("common.saving")}
+                    </>
+                  ) : (
+                    t("profile.change")
+                  )}
                 </button>
               </div>
             </form>
@@ -1041,7 +1222,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         return (
           <NotificationTokensAdmin
             userUid={userUid}
-            onBack={() => setViewMode("view")}
+            onBack={() => goToView()} // FIX #7 (ALTA)
           />
         );
 
@@ -1074,8 +1255,12 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   </div>
                 </div>
 
+                {/* FIX #9 (ALTA): role="alert" en error */}
                 {error && (
-                  <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">
+                  <p
+                    className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg"
+                    role="alert"
+                  >
                     {error}
                   </p>
                 )}
@@ -1084,8 +1269,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setViewMode("view");
-                      setError("");
+                      goToView(); // FIX #7 (ALTA)
                     }}
                     className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                   >
@@ -1093,10 +1277,21 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   </button>
                   <button
                     onClick={handleExportData}
-                    className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all flex items-center justify-center gap-2"
+                    disabled={isExporting} // FIX #6 (ALTA) + FIX #9 (MEDIA)
+                    className="flex-1 bg-bocado-green text-white font-bold py-3 rounded-xl shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Download className="w-4 h-4" />
-                    {t("profile.prepareData")}
+                    {/* FIX #9 (MEDIA): Mostrar spinner durante loading */}
+                    {isExporting ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        {t("profile.preparing")}
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4" />
+                        {t("profile.prepareData")}
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -1122,12 +1317,18 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                     </p>
                   </div>
                   <p className="text-xs text-green-700">
-                    {t("profile.exportSections", { count: Object.keys(exportedData).length })}
+                    {t("profile.exportSections", {
+                      count: Object.keys(exportedData).length,
+                    })}
                   </p>
                 </div>
 
+                {/* FIX #9 (ALTA): role="status" en success */}
                 {successMessage && (
-                  <p className="text-green-600 text-xs text-center bg-green-50 p-2 rounded-lg">
+                  <p
+                    className="text-green-600 text-xs text-center bg-green-50 p-2 rounded-lg"
+                    role="status"
+                  >
                     {successMessage}
                   </p>
                 )}
@@ -1136,9 +1337,8 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setViewMode("view");
+                      goToView(); // FIX #7 (ALTA)
                       setExportedData(null);
-                      setError("");
                     }}
                     className="flex-1 py-3 rounded-xl font-bold bg-bocado-background text-bocado-dark-gray hover:bg-bocado-border active:scale-95 transition-all"
                   >
@@ -1158,13 +1358,26 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
         );
 
       case "deleteAccount":
+        // FIX #12 (ALTA): Escape key to close dialog
+        useEscapeKey(() => goToView());
+
         return (
-          <div className="animate-fade-in">
+          <div
+            className="animate-fade-in"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dialog-title-deleteAccount"
+            tabIndex={-1}
+          >
+            {/* TODO: añadir useFocusTrap para capturar el foco */}
             <div className="flex items-center gap-2 mb-4">
               <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
-              <h2 className="text-xl font-bold text-red-600">
+              <h2
+                id="dialog-title-deleteAccount"
+                className="text-xl font-bold text-red-600"
+              >
                 {t("profile.deleteAccount")}
               </h2>
             </div>
@@ -1185,40 +1398,63 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
 
             <form onSubmit={handleDeleteAccount} className="space-y-4">
               <div>
-                <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
+                {/* FIX #8 (MEDIA) + FIX #11 (ALTA): aria-describedby, htmlFor+id */}
+                <label
+                  htmlFor="profile-delete-confirm"
+                  className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider"
+                >
                   {t("profile.deleteConfirmText")}
                 </label>
                 <input
+                  id="profile-delete-confirm"
                   type="text"
                   value={deleteConfirmText}
                   onChange={(e) => setDeleteConfirmText(e.target.value)}
                   className="input-base border-red-500 focus:ring-red-200 text-red-900 placeholder:text-red-300 dark:text-red-400 dark:border-red-600"
                   placeholder="ELIMINAR"
-                  aria-label={t("profile.deleteConfirmText")}
+                  aria-label={t("profile.deleteConfirmLabel")}
+                  aria-describedby="delete-confirm-hint"
                 />
+                {/* FIX #8 (MEDIA): Hint descriptivo */}
+                <p
+                  id="delete-confirm-hint"
+                  className="text-xs text-red-600 mt-1"
+                >
+                  {t("profile.deleteConfirmHint")}
+                </p>
               </div>
 
               {/* Solo mostrar campo de contraseña si el usuario tiene autenticación con password */}
               {auth.currentUser?.providerData.some(
                 (p) => p.providerId === "password",
               ) && (
-                  <div>
-                    <label className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider">
-                      {t("profile.currentPassword")}
-                    </label>
-                    <input
-                      type="password"
-                      value={deletePassword}
-                      onChange={(e) => setDeletePassword(e.target.value)}
-                      className="input-base"
-                      placeholder="••••••••"
-                      aria-label={t("profile.currentPassword")}
-                    />
-                  </div>
-                )}
+                <div>
+                  {/* FIX #11 (ALTA): htmlFor + id */}
+                  <label
+                    htmlFor="profile-delete-password"
+                    className="block text-2xs font-bold text-bocado-dark-gray mb-1.5 uppercase tracking-wider"
+                  >
+                    {t("profile.currentPassword")}
+                  </label>
+                  <input
+                    id="profile-delete-password"
+                    type="password"
+                    value={deletePassword}
+                    onChange={(e) => setDeletePassword(e.target.value)}
+                    className="input-base"
+                    placeholder="••••••••"
+                    aria-label={t("profile.currentPassword")}
+                    autoComplete="current-password" // FIX #12 (BAJA)
+                  />
+                </div>
+              )}
 
+              {/* FIX #9 (ALTA): role="alert" en error */}
               {error && (
-                <p className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg">
+                <p
+                  className="text-red-500 text-xs text-center bg-red-50 p-2 rounded-lg"
+                  role="alert"
+                >
                   {error}
                 </p>
               )}
@@ -1227,8 +1463,7 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    setViewMode("view");
-                    setError("");
+                    goToView(); // FIX #7 (ALTA)
                     setDeletePassword("");
                     setDeleteConfirmText("");
                   }}
@@ -1270,13 +1505,20 @@ const ProfileScreen: React.FC<ProfileScreenProps> = ({
       default:
         return (
           <div className="space-y-4">
+            {/* FIX #9 (ALTA): role="alert" y role="status" */}
             {error && (
-              <p className="text-red-500 text-xs text-center bg-red-50 p-3 rounded-xl animate-fade-in font-medium">
+              <p
+                className="text-red-500 text-xs text-center bg-red-50 p-3 rounded-xl animate-fade-in font-medium"
+                role="alert"
+              >
                 {error}
               </p>
             )}
             {successMessage && (
-              <p className="text-green-600 text-xs text-center bg-green-50 p-3 rounded-xl animate-fade-in font-medium">
+              <p
+                className="text-green-600 text-xs text-center bg-green-50 p-3 rounded-xl animate-fade-in font-medium"
+                role="status"
+              >
                 {successMessage}
               </p>
             )}

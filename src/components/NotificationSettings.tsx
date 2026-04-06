@@ -358,7 +358,17 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         {/* Botón de hora */}
                         {editingSchedule === reminder.id ? (
                           <div className="flex items-center gap-1">
+                            {/* FIX #18 (MEDIA): Label para input de hora */}
+                            <label
+                              htmlFor={`time-edit-${reminder.id}`}
+                              className="sr-only"
+                            >
+                              {t("notifications.settings.editTimeFor", {
+                                title: reminder.title,
+                              })}
+                            </label>
                             <input
+                              id={`time-edit-${reminder.id}`}
                               type="time"
                               value={editTime}
                               onChange={(e) => setEditTime(e.target.value)}
@@ -382,11 +392,13 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                           </button>
                         )}
 
-                        {/* Toggle */}
+                        {/* FIX #13 (MEDIA): Toggle con role="switch" y aria-checked */}
                         <button
                           onClick={() => handleToggleReminder(reminder.id)}
                           className={`w-12 h-6 rounded-full transition-colors relative flex items-center flex-shrink-0 ${reminder.enabled ? "bg-bocado-green" : "bg-gray-300"
                             }`}
+                          role="switch"
+                          aria-checked={reminder.enabled}
                           aria-label={
                             reminder.enabled
                               ? t("notifications.settings.deactivate")
