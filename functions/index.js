@@ -247,7 +247,7 @@ exports.cleanupOldHistorialRecetas = functions.pubsub
  * Los reads secundarios (pantry, tokens) se ejecutan en paralelo por batch.
  */
 exports.sendNotificationReminders = functions.pubsub
-  .schedule("*/1 * * * *")
+  .schedule("0 * * * *")    // Every hour instead of every minute
   .timeZone("UTC")
   .onRun(async () => {
     try {
