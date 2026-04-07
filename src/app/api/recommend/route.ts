@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth as getAdminAuth } from 'firebase-admin/auth';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue, type DocumentReference } from 'firebase-admin/firestore';
 import { z } from 'zod';
 
 // Project utilities following architecture rules
@@ -20,7 +20,7 @@ const RequestBodySchema = z.object({
   userId: z.string().min(1).max(128),
   type: z.enum(["En casa", "Fuera"]),
   _id: z.string().optional(), // Optional interaction ID
-  cravings: z.string().max(200).optional(),
+  cravings: z.union([z.string(), z.array(z.string())]).optional().nullable(),
   dislikedFoods: z.array(z.string()).optional(),
   cookingTime: z
     .union([
@@ -34,8 +34,11 @@ const RequestBodySchema = z.object({
       const num = typeof val === "string" ? parseInt(val, 10) : val;
       return isNaN(num) ? null : num;
     }),
-  budget: z.enum(["bajo", "medio", "alto", "lujo"]).default("medio"),
-  currency: z.string().max(3).optional(),
+  budget: z.string().max(50).optional().nullable(),
+  mealType: z.string().max(50).optional().nullable(),
+  onlyPantryIngredients: z.boolean().optional().default(false),
+  ingredientes: z.array(z.string()).optional().default([]),
+  currency: z.string().max(10).optional().nullable(),
   userLocation: z.object({
     lat: z.number().min(-90).max(90),
     lng: z.number().min(-180).max(180)
@@ -158,7 +161,7 @@ async function getUserProfileCached(userId: string): Promise<UserProfile> {
   }
 
   if (!db) throw new Error('Firebase not initialized');
-  const userDoc = await db.collection('usuarios').doc(userId).get();
+  const userDoc = await db.collection('users').doc(userId).get();
   
   if (!userDoc.exists) {
     throw new Error('Usuario no encontrado');
@@ -176,7 +179,7 @@ async function getPantryItemsCached(userId: string): Promise<string[]> {
   }
 
   if (!db) throw new Error('Firebase not initialized');
-  const pantryDoc = await db.collection('pantry').doc(userId).get();
+  const pantryDoc = await db.collection('user_pantry').doc(userId).get();
   
   let items: string[] = [];
   if (pantryDoc.exists) {
@@ -233,35 +236,56 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   const headers = getCorsHeaders(origin);
 
   if (!adminApp || !db) {
-    return NextResponse.json(
-      { error: 'Firebase not initialized' },
-      { status: 500, headers }
-    );
+    return NextResponse.json({ error: 'Firebase not initialized' }, { status: 500, headers });
   }
 
-  // Try to get user rate limit status
+  if (!isOriginAllowed(origin || undefined)) {
+    return NextResponse.json({ error: 'Origin not allowed' }, { status: 403, headers });
+  }
+
   const authHeader = request.headers.get('authorization');
-  let rateLimitInfo = null;
-  
-  if (authHeader?.startsWith('Bearer ') && auth && rateLimiter) {
-    try {
-      const token = authHeader.substring(7);
-      const decodedToken = await auth.verifyIdToken(token);
-      const rateLimitStatus = await rateLimiter.checkRateLimit(decodedToken.uid);
-      rateLimitInfo = {
-        allowed: rateLimitStatus.allowed,
-        remaining: rateLimitStatus.remainingRequests,
-        resetTime: rateLimitStatus.secondsLeft ? Date.now() + (rateLimitStatus.secondsLeft * 1000) : null
-      };
-    } catch (error) {
-      // Continue without rate limit info if auth fails
-    }
+  if (!authHeader?.startsWith('Bearer ') || !auth) {
+    return NextResponse.json({ error: 'Auth token required' }, { status: 401, headers });
   }
 
-  return NextResponse.json({ 
-    status: 'ok', 
-    message: 'Recommend endpoint active',
-    rateLimitInfo
+  let userId: string;
+  try {
+    const token = authHeader.substring(7);
+    const decoded = await auth.verifyIdToken(token);
+    userId = decoded.uid;
+  } catch {
+    return NextResponse.json({ error: 'Invalid auth token' }, { status: 401, headers });
+  }
+
+  if (!rateLimiter) {
+    return NextResponse.json({
+      canRequest: true,
+      requestsInWindow: 0,
+      remainingRequests: 2,
+      nextAvailableIn: 0,
+    }, { headers });
+  }
+
+  // getStatus() es read-only — NO consume rate limit
+  const status = await rateLimiter.getStatus(userId);
+
+  if (!status) {
+    return NextResponse.json({
+      canRequest: true,
+      requestsInWindow: 0,
+      remainingRequests: 2,
+      nextAvailableIn: 0,
+    }, { headers });
+  }
+
+  return NextResponse.json({
+    canRequest: status.canRequest,
+    requestsInWindow: status.requestsInWindow,
+    currentProcess: status.currentProcess,
+    nextAvailableAt: status.nextAvailableAt,
+    nextAvailableIn: status.nextAvailableAt
+      ? Math.max(0, Math.ceil((status.nextAvailableAt - Date.now()) / 1000))
+      : 0,
   }, { headers });
 }
 
@@ -270,7 +294,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const origin = request.headers.get('origin');
   const headers = getCorsHeaders(origin);
   
-  let interactionRef: any = null;
+  let interactionRef: DocumentReference | null = null;
   let userId: string | null = null;
 
   try {
@@ -350,6 +374,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let pantryItems: string[] = [];
     if (requestData.type === "En casa") {
       pantryItems = await getPantryItemsCached(userId);
+      // Add additional ingredientes from request
+      if (requestData.ingredientes && requestData.ingredientes.length > 0) {
+        pantryItems = [...pantryItems, ...requestData.ingredientes];
+      }
     }
 
     // Build prompt based on request type
@@ -366,19 +394,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ].filter(Boolean).join(" | ");
 
       const cookingTimeText = requestData.cookingTime ? `máximo ${requestData.cookingTime} min` : "30-45 min realista";
+      const mealTypeText = requestData.mealType ? `\nMOMENTO: ${requestData.mealType}` : "";
+      const onlyPantryRule = requestData.onlyPantryIngredients 
+        ? "\n⚠️ OBLIGATORIO: Usa ÚNICAMENTE ingredientes de la despensa listada. NO agregues ingredientes externos."
+        : "";
 
       prompt = `Eres chef especializado en cocina casera saludable. Crea 1 receta adaptada al perfil.
 
 PERFIL: ${profileParts || "Sin restricciones"}
-DESPENSA: ${pantryText}
-SOLICITUD: ${requestData.cravings || "saludable"}, ${cookingTimeText}
+DESPENSA: ${pantryText}${mealTypeText}
+SOLICITUD: ${Array.isArray(requestData.cravings) ? requestData.cravings.join(", ") : (requestData.cravings || "saludable")}, ${cookingTimeText}
 
 REGLAS CRÍTICAS:
 1. USA máximo ingredientes disponibles en despensa
 2. Si despensa insuficiente: añade 2-3 ingredientes básicos fáciles de conseguir
 3. Tiempo real: ${cookingTimeText}
 4. Pasos claros numerados (máximo 8 pasos)
-5. Macros aproximados por porción en NÚMEROS
+5. Macros aproximados por porción en NÚMEROS${onlyPantryRule}
 
 Responde EXCLUSIVAMENTE en ${requestData.language === "en" ? "INGLÉS." : "ESPAÑOL."}
 Responde en formato JSON usando esta estructura exacta:
@@ -402,13 +434,17 @@ En coincidencia_despensa indica qué ingredientes de casa usas o "Ninguno" si re
         alto: "precio alto",
         lujo: "lujo"
       };
-      const budgetText = budgetMap[requestData.budget || "medio"];
+      const budgetText = requestData.budget ? (budgetMap[requestData.budget] || requestData.budget) : "precio medio";
+      const currencyText = requestData.currency ? `\nMONEDA LOCAL: ${requestData.currency}` : "";
+      const budgetInfo = requestData.budget && requestData.currency 
+        ? `${budgetText} (${requestData.currency})`
+        : budgetText;
 
       prompt = `Eres guía gastronómico. Recomienda 5 restaurantes reales.
 
 PERFIL: ${profileParts || "Sin restricciones"}
-UBICACIÓN: ${user.city || "su ciudad"}
-SOLICITUD: ${requestData.cravings || "saludable"}, ${budgetText}
+UBICACIÓN: ${user.city || "su ciudad"}${currencyText}
+SOLICITUD: ${Array.isArray(requestData.cravings) ? requestData.cravings.join(", ") : (requestData.cravings || "saludable")}, ${budgetInfo}
 
 REGLAS CRÍTICAS:
 1. Nombres reales de restaurantes existentes en ${user.city || "la ciudad"}
@@ -520,6 +556,15 @@ En hack_saludable da consejo práctico.`;
 
     await batch.commit();
 
+    // Marcar proceso como completado en rate limiter
+    if (rateLimiter && userId) {
+      try {
+        await rateLimiter.completeProcess(userId);
+      } catch (rlError) {
+        safeLog('warn', 'Error completing rate limit process', rlError);
+      }
+    }
+
     return NextResponse.json(parsedData, { headers });
 
   } catch (error: any) {
@@ -535,6 +580,15 @@ En hack_saludable da consejo práctico.`;
         });
       } catch (updateError) {
         safeLog("error", "Failed to update interaction status", updateError);
+      }
+    }
+
+    // Marcar proceso como fallido (no cuenta para rate limit)
+    if (rateLimiter && userId) {
+      try {
+        await rateLimiter.failProcess(userId, error?.message || 'Unknown error');
+      } catch (rlError) {
+        safeLog('warn', 'Error failing rate limit process', rlError);
       }
     }
 
