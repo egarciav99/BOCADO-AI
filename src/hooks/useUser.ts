@@ -75,7 +75,7 @@ export const useUserProfile = (
   userId: string | undefined,
   options: UseUserProfileOptions = {},
 ): UseQueryResult<UserProfile | null, Error> => {
-  const { enabled = true, staleTime = 1000 * 30 } = options;
+  const { enabled = true, staleTime = 1000 * 60 * 30 } = options; // 30 minutos
 
   return useQuery({
     queryKey: [USER_PROFILE_KEY, userId],
@@ -155,6 +155,14 @@ export const useUpdateUserProfile = () => {
       return { previousProfile };
     },
 
+    onSuccess: (data, variables) => {
+      // Actualizar cache directamente sin refetch
+      queryClient.setQueryData(
+        [USER_PROFILE_KEY, variables.userId],
+        (old: UserProfile | null | undefined) => old ? { ...old, ...variables.data } : old
+      );
+    },
+
     onError: (err, variables, context) => {
       if (context?.previousProfile) {
         queryClient.setQueryData(
@@ -162,9 +170,7 @@ export const useUpdateUserProfile = () => {
           context.previousProfile,
         );
       }
-    },
-
-    onSettled: (data, error, variables) => {
+      // Solo invalidar en error para forzar refetch limpio
       queryClient.invalidateQueries({
         queryKey: [USER_PROFILE_KEY, variables.userId],
       });

@@ -57,10 +57,10 @@ export const useRateLimit = (userId: string | undefined) => {
       };
     },
     enabled: !!userId,
-    // Refrescar cada 10 segundos para mantener el contador actualizado
-    refetchInterval: 1000 * 10,
-    // No considerar stale para evitar flashes
-    staleTime: 1000 * 5,
+    // Refrescar cada minuto — suficiente para un countdown
+    refetchInterval: 1000 * 60,
+    // 30 segundos stale time
+    staleTime: 1000 * 30,
   });
 
   /**
@@ -87,15 +87,21 @@ export const useRateLimit = (userId: string | undefined) => {
     [],
   );
 
+  // Calcula countdown localmente sin refetch — solo necesita el timestamp absoluto
+  const localSecondsLeft = useMemo(() => {
+    if (!status.nextAvailableAt) return 0;
+    return Math.max(0, Math.ceil((status.nextAvailableAt - Date.now()) / 1000));
+  }, [status.nextAvailableAt]);
+
   // Memoizar el tiempo formateado para evitar cálculos innecesarios
   const formattedTimeLeft = useMemo(() => {
-    const formatted = formatTimeLeft(status.nextAvailableIn);
+    const formatted = formatTimeLeft(localSecondsLeft);
     // Si el resultado es vacío y no puede hacer request, mostrar "calculando"
     if (formatted === "" && !status.canRequest) {
       return t("rateLimit.calculating") || "Calculating...";
     }
     return formatted;
-  }, [formatTimeLeft, status.nextAvailableIn, status.canRequest, t]);
+  }, [formatTimeLeft, localSecondsLeft, status.canRequest, t]);
 
   // ✅ FIX: Calculate renewal time for better UX
   const renewalTime = useMemo(() => {

@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 import BottomTabBar, { Tab } from "./BottomTabBar";
 import RecommendationScreen from "./RecommendationScreen";
-import PantryScreen from "./PantryScreen";
-import ProfileScreen from "./ProfileScreen";
-import SavedRecipesScreen from "./SavedRecipesScreen";
-import SavedRestaurantsScreen from "./SavedRestaurantsScreen";
+const PantryScreen = lazy(() => import("./PantryScreen"));
+const ProfileScreen = lazy(() => import("./ProfileScreen"));
+const SavedRecipesScreen = lazy(() => import("./SavedRecipesScreen"));
+const SavedRestaurantsScreen = lazy(() => import("./SavedRestaurantsScreen"));
 import TutorialModal from "./TutorialModal";
 import QuickRecipeButton from "./QuickRecipeButton";
 import ErrorBoundary from "./ErrorBoundary";
@@ -178,32 +178,40 @@ const MainApp: React.FC<MainAppProps> = ({
               />
             )}
             {activeTab === "pantry" && (
-              <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
-                <PantryScreen userUid={userUid} />
-              </div>
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-10 h-10 border-4 border-bocado-green border-t-transparent rounded-full animate-spin" /></div>}>
+                <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
+                  <PantryScreen userUid={userUid} />
+                </div>
+              </Suspense>
             )}
             {activeTab === "saved" && (
-              <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
-                <SavedRecipesScreen
-                  onNavigateToRecommendation={() => setActiveTab("recommendation")}
-                />
-              </div>
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-10 h-10 border-4 border-bocado-green border-t-transparent rounded-full animate-spin" /></div>}>
+                <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
+                  <SavedRecipesScreen
+                    onNavigateToRecommendation={() => setActiveTab("recommendation")}
+                  />
+                </div>
+              </Suspense>
             )}
             {activeTab === "restaurants" && (
-              <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
-                <SavedRestaurantsScreen
-                  onNavigateToRecommendation={() => setActiveTab("recommendation")}
-                />
-              </div>
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-10 h-10 border-4 border-bocado-green border-t-transparent rounded-full animate-spin" /></div>}>
+                <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
+                  <SavedRestaurantsScreen
+                    onNavigateToRecommendation={() => setActiveTab("recommendation")}
+                  />
+                </div>
+              </Suspense>
             )}
             {activeTab === "profile" && (
-              <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
-                <ProfileScreen
-                  userUid={userUid}
-                  onLogout={handleLogout}
-                  onProfileUpdate={handleProfileUpdate}
-                />
-              </div>
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-10 h-10 border-4 border-bocado-green border-t-transparent rounded-full animate-spin" /></div>}>
+                <div className="p-4 animate-fade-in flex-1 flex flex-col min-h-0">
+                  <ProfileScreen
+                    userUid={userUid}
+                    onLogout={handleLogout}
+                    onProfileUpdate={handleProfileUpdate}
+                  />
+                </div>
+              </Suspense>
             )}
           </ErrorBoundary>
         </div>
