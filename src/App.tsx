@@ -59,6 +59,9 @@ export type AppScreen =
   | "plan";
 
 // Configuración de TanStack Query
+// LEGACY: Este QueryClient es de la era Pages Router.
+// La app activa usa src/app/providers.tsx.
+// Pendiente: eliminar cuando se confirme que App.tsx no tiene rutas activas.
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

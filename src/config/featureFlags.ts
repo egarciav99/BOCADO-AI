@@ -33,13 +33,13 @@ export const DEFAULT_FEATURE_FLAGS: FeatureFlags = {
  */
 export const FEATURE_FLAGS_CONFIG = {
   /** Tiempo de stale (ms) - datos considerados frescos */
-  staleTime: 1000 * 60 * 5, // 5 minutos
+  staleTime: 1000 * 60 * 10, // 10 minutos (era 5 min)
 
   /** Tiempo de garbage collection (ms) */
   gcTime: 1000 * 60 * 30, // 30 minutos
 
   /** Intervalo de refetch automático (ms) */
-  refetchInterval: 1000 * 60 * 5, // 5 minutos
+  refetchInterval: 1000 * 60 * 30, // 30 minutos (era 5 min)
 
   /** Número de reintentos en caso de error */
   retryCount: 3,

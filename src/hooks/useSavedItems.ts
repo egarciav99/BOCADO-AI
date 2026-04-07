@@ -182,8 +182,8 @@ export const useSavedItems = (
 
   // Configurar polling basado en visibilidad de pestaña
   const { refetchInterval } = useVisibilityAwarePolling({
-    refetchInterval: 30000, // 30s cuando visible
-    refetchIntervalInBackground: 300000, // 5min cuando oculto
+    refetchInterval: 0, // Sin polling — confiar en invalidación manual de onSettled
+    refetchIntervalInBackground: 0,
     enabled: !!userId,
   });
 
@@ -195,7 +195,7 @@ export const useSavedItems = (
       return fetchSavedItems(userId, type, undefined);
     },
     enabled: !!userId,
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 60 * 30, // 30 min (era 2 min)
     gcTime: 1000 * 60 * 10,
     refetchInterval: refetchInterval as number | false,
     refetchOnWindowFocus: true,
@@ -524,7 +524,7 @@ export const useAllSavedItems = (
   type: SavedItemType,
 ): UseQueryResult<SavedItem[], Error> => {
   const { refetchInterval } = useVisibilityAwarePolling({
-    refetchInterval: 60000,
+    refetchInterval: 0,
     enabled: !!userId,
   });
 

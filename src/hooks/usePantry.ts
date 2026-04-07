@@ -48,8 +48,8 @@ export const usePantry = (userUid: string) => {
 
   // Polling inteligente: frecuente cuando visible, lento en background
   const { refetchInterval, isVisible } = useVisibilityAwarePolling({
-    refetchInterval: 30000, // 30s cuando visible
-    refetchIntervalInBackground: 300000, // 5min cuando oculto
+    refetchInterval: 300000, // 5 min cuando visible (era 30s)
+    refetchIntervalInBackground: 0, // Sin polling en background (era 5min)
     enabled: !!userUid,
   });
 
@@ -61,7 +61,7 @@ export const usePantry = (userUid: string) => {
     queryKey: [PANTRY_KEY, userUid],
     queryFn: () => fetchPantry(userUid),
     enabled: !!userUid,
-    staleTime: 1000 * 30, // 30s stale time
+    staleTime: 1000 * 60 * 5, // 5 min (era 30s)
     gcTime: 1000 * 60 * 10, // 10min cache
     refetchInterval: refetchInterval as number | false,
     refetchOnWindowFocus: true,
