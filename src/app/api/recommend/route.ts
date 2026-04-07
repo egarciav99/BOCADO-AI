@@ -191,17 +191,22 @@ async function getPantryItemsCached(userId: string): Promise<string[]> {
   return items;
 }
 
-function sanitizeRecommendation(rec: any): any {
-  // Add Google Maps link for restaurants
-  const restaurantName = rec.nombre_restaurante || '';
-  const direccion = rec.direccion_aproximada || '';
+function sanitizeRecommendation(rec: any, city: string): any {
+  const name = (rec.nombre_restaurante || '').replace(/[^\w\s\-&,áéíóúñ]/gi, '').trim();
+  const address = (rec.direccion_aproximada || '').replace(/[^\w\s\-&,áéíóúñ]/gi, '').trim();
+  const cleanCity = (city || '').replace(/[^\w\s\-&áéíóúñ]/gi, '').trim();
   
-  const link_maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${restaurantName} ${direccion}`)}`;
+  const query = address
+    ? `${name} ${address} ${cleanCity}`
+    : `${name} ${cleanCity}`;
   
-  return {
-    ...rec,
-    link_maps
-  };
+  rec.link_maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query.trim())}`;
+  rec.direccion_aproximada = address || `En ${cleanCity}`;
+  rec.por_que_es_bueno = rec.por_que_es_bueno || "Opción saludable disponible";
+  rec.plato_sugerido = rec.plato_sugerido || "Consulta el menú saludable";
+  rec.hack_saludable = rec.hack_saludable || "Pide porciones pequeñas";
+  
+  return rec;
 }
 
 // CORS headers function
@@ -428,23 +433,15 @@ En coincidencia_despensa indica qué ingredientes de casa usas o "Ninguno" si re
         ...(ensureArray(user.allergies).length > 0 ? [`Alergias: ${ensureArray(user.allergies).join(", ")}`] : []),
       ].filter(Boolean).join(" | ");
 
-      const budgetMap: { [key: string]: string } = {
-        bajo: "económico",
-        medio: "precio medio", 
-        alto: "precio alto",
-        lujo: "lujo"
-      };
-      const budgetText = requestData.budget ? (budgetMap[requestData.budget] || requestData.budget) : "precio medio";
-      const currencyText = requestData.currency ? `\nMONEDA LOCAL: ${requestData.currency}` : "";
-      const budgetInfo = requestData.budget && requestData.currency 
-        ? `${budgetText} (${requestData.currency})`
-        : budgetText;
+      const budgetText = requestData.budget || "precio medio";
+      const cravingsText = Array.isArray(requestData.cravings) ? requestData.cravings.join(", ") : (requestData.cravings || "saludable");
+      const solicitudText = `${cravingsText}, presupuesto: ${budgetText}${requestData.currency ? ` (${requestData.currency})` : ""}`;
 
       prompt = `Eres guía gastronómico. Recomienda 5 restaurantes reales.
 
 PERFIL: ${profileParts || "Sin restricciones"}
-UBICACIÓN: ${user.city || "su ciudad"}${currencyText}
-SOLICITUD: ${Array.isArray(requestData.cravings) ? requestData.cravings.join(", ") : (requestData.cravings || "saludable")}, ${budgetInfo}
+UBICACIÓN: ${user.city || "su ciudad"}
+SOLICITUD: ${solicitudText}
 
 REGLAS CRÍTICAS:
 1. Nombres reales de restaurantes existentes en ${user.city || "la ciudad"}
@@ -531,7 +528,9 @@ En hack_saludable da consejo práctico.`;
 
     // Post-processing for restaurants (add Google Maps links)
     if (requestData.type === "Fuera" && parsedData.recomendaciones) {
-      parsedData.recomendaciones = parsedData.recomendaciones.map(sanitizeRecommendation);
+      parsedData.recomendaciones = parsedData.recomendaciones.map((rec: any) =>
+        sanitizeRecommendation(rec, user.city || "")
+      );
     }
 
     // Save to Firestore with batch
