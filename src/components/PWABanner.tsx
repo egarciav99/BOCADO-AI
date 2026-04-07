@@ -23,6 +23,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
     updateAvailable,
     install,
     updateApp,
+    dismissUpdate,
     installPrompt,
     isInstalled,
     isIOS,
@@ -74,6 +75,8 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
   const handleDismissUpdate = () => {
     setDismissedUpdate(true);
     localStorage.setItem("pwa-update-dismissed-at", String(Date.now()));
+    // Notificar al hook para que no vuelva a mostrar el banner
+    dismissUpdate();
   };
 
   const handleShowIOSSteps = () => {

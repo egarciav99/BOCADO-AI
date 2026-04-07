@@ -36,6 +36,9 @@ export const usePWA = () => {
 
   // Ref to prevent SW detection from re-enabling banner while update is in progress
   const updatingRef = useRef(false);
+  
+  // Ref to track if we've already shown the update banner for this SW version
+  const updateShownRef = useRef(false);
 
   useEffect(() => {
     const ua = navigator.userAgent || "";
@@ -143,8 +146,13 @@ export const usePWA = () => {
       // Escuchar cuando hay un nuevo service worker esperando
       const checkForUpdates = () => {
         navigator.serviceWorker.ready.then((registration) => {
-          if (registration.waiting && !updatingRef.current) {
+          // Solo mostrar el banner si:
+          // 1. Hay un SW waiting
+          // 2. No estamos actualizando
+          // 3. No hemos mostrado el banner ya para este SW
+          if (registration.waiting && !updatingRef.current && !updateShownRef.current) {
             setState((prev) => ({ ...prev, updateAvailable: true }));
+            updateShownRef.current = true; // Marcar como mostrado
             logger.info("PWA: New service worker waiting to activate");
           }
 
@@ -156,10 +164,12 @@ export const usePWA = () => {
                 if (
                   newWorker.state === "installed" &&
                   navigator.serviceWorker.controller &&
-                  !updatingRef.current
+                  !updatingRef.current &&
+                  !updateShownRef.current
                 ) {
                   // Hay un nuevo service worker instalado mientras uno viejo sigue activo
                   setState((prev) => ({ ...prev, updateAvailable: true }));
+                  updateShownRef.current = true; // Marcar como mostrado
                   logger.info("PWA: New service worker installed");
                 }
               });
@@ -279,10 +289,17 @@ export const usePWA = () => {
     }
   }, []);
 
+  // Función para descartar el banner de actualización (ocultar permanentemente)
+  const dismissUpdate = useCallback(() => {
+    setState((prev) => ({ ...prev, updateAvailable: false }));
+    logger.info("PWA: Update banner dismissed by user");
+  }, []);
+
   return {
     ...state,
     install,
     updateApp,
+    dismissUpdate,
   };
 };
 
