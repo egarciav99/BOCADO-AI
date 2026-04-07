@@ -44,7 +44,17 @@ export const useRateLimit = (userId: string | undefined) => {
         return DEFAULT_STATUS;
       }
 
-      return response.json();
+      const data = await response.json();
+      return {
+        ...DEFAULT_STATUS,
+        ...data,
+        nextAvailableIn: typeof data.nextAvailableIn === 'number' && !isNaN(data.nextAvailableIn) 
+          ? data.nextAvailableIn 
+          : 0,
+        nextAvailableAt: typeof data.nextAvailableAt === 'number' 
+          ? data.nextAvailableAt 
+          : undefined,
+      };
     },
     enabled: !!userId,
     // Refrescar cada 10 segundos para mantener el contador actualizado
@@ -66,20 +76,26 @@ export const useRateLimit = (userId: string | undefined) => {
    */
   const formatTimeLeft = useCallback(
     (seconds: number): string => {
-      if (seconds <= 0) return t("now") || "Now";
-      if (seconds < 60) return `${seconds}s`;
-      const minutes = Math.floor(seconds / 60);
-      const remainingSeconds = seconds % 60;
+      // Guard: manejar undefined, null, NaN o <= 0
+      const safeSeconds = typeof seconds === 'number' && !isNaN(seconds) && seconds > 0 ? seconds : 0;
+      if (safeSeconds <= 0) return "";
+      if (safeSeconds < 60) return `${safeSeconds}s`;
+      const minutes = Math.floor(safeSeconds / 60);
+      const remainingSeconds = safeSeconds % 60;
       return `${minutes}m ${remainingSeconds}s`;
     },
-    [t],
+    [],
   );
 
   // Memoizar el tiempo formateado para evitar cálculos innecesarios
-  const formattedTimeLeft = useMemo(
-    () => formatTimeLeft(status.nextAvailableIn),
-    [formatTimeLeft, status.nextAvailableIn],
-  );
+  const formattedTimeLeft = useMemo(() => {
+    const formatted = formatTimeLeft(status.nextAvailableIn);
+    // Si el resultado es vacío y no puede hacer request, mostrar "calculando"
+    if (formatted === "" && !status.canRequest) {
+      return t("rateLimit.calculating") || "Calculating...";
+    }
+    return formatted;
+  }, [formatTimeLeft, status.nextAvailableIn, status.canRequest, t]);
 
   // ✅ FIX: Calculate renewal time for better UX
   const renewalTime = useMemo(() => {

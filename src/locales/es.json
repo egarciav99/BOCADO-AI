@@ -1128,7 +1128,8 @@
     "sessionInfo": "{count} recomendaciones en esta sesión",
     "warning": "⚠️ {count} recomendación disponible",
     "warningPlural": "⚠️ {count} recomendaciones disponibles",
-    "renewsAt": "Disponible a las {time}"
+    "renewsAt": "Disponible a las {time}",
+    "calculating": "Calculando..."
   },
   "now": "Ahora",
   "ingredients": {
