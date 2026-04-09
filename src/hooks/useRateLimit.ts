@@ -99,12 +99,17 @@ export const useRateLimit = (userId: string | undefined) => {
     const update = () => {
       const secs = Math.max(0, Math.ceil((status.nextAvailableAt! - Date.now()) / 1000));
       setLocalSecondsLeft(secs);
+      
+      // Cuando el countdown llega a 0, refrescar status inmediatamente
+      if (secs === 0 && status.nextAvailableAt) {
+        refreshStatus();
+      }
     };
 
     update(); // ejecutar inmediatamente
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [status.nextAvailableAt]);
+  }, [status.nextAvailableAt, refreshStatus]);
 
   // Memoizar el tiempo formateado para evitar cálculos innecesarios
   const formattedTimeLeft = useMemo(() => {
