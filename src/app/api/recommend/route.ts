@@ -18,7 +18,7 @@ const db = adminApp ? getFirestore() : null;
 // Request validation schema with _id optional field
 const RequestBodySchema = z.object({
   userId: z.string().min(1).max(128),
-  type: z.enum(["En casa", "Fuera"]),
+  type: z.enum(["En casa", "Fuera", "Receta Rápida"]),
   _id: z.string().optional(), // Optional interaction ID
   cravings: z.union([z.string(), z.array(z.string())]).optional().nullable(),
   dislikedFoods: z.array(z.string()).optional(),
@@ -508,7 +508,7 @@ ${RECIPE_JSON_TEMPLATE}
 Personaliza saludo_personalizado con mensaje motivador.
 En coincidencia_despensa indica qué ingredientes de casa usas o "Ninguno" si requiere comprar todo.`;
 
-    } else {
+    } else if (requestData.type === "Fuera") {
       // Restaurant logic
       const profileParts = [
         user.eatingHabit ? `Dieta: ${user.eatingHabit}` : "",
@@ -558,6 +558,34 @@ ${RESTAURANT_JSON_TEMPLATE}
 Personaliza el saludo_personalizado con mensaje motivador.
 En por_que_es_bueno explica por qué es buena opción.
 En hack_saludable da consejo práctico.`;
+    } else if (requestData.type === "Receta Rápida") {
+      const ingredientesStr = (requestData.ingredientes || [])
+        .filter(Boolean)
+        .join(", ");
+      
+      const profileParts = [
+        user.eatingHabit ? `Dieta: ${user.eatingHabit}` : "",
+        ...(ensureArray(user.diseases).length > 0 ? [`Condiciones: ${ensureArray(user.diseases).join(", ")}`] : []),
+        ...(ensureArray(user.allergies).length > 0 ? [`Alergias: ${ensureArray(user.allergies).join(", ")}`] : []),
+        ...(ensureArray(user.dislikedFoods).length > 0 ? [`No le gusta: ${ensureArray(user.dislikedFoods).join(", ")}`] : []),
+      ].filter(Boolean).join(" | ");
+
+      prompt = `Eres nutricionista experto. Crea EXACTAMENTE 1 receta saludable con los ingredientes dados.
+
+PERFIL: ${profileParts || "Sin restricciones"}
+INGREDIENTES DISPONIBLES (USA ESTOS): ${ingredientesStr || "ingredientes básicos de cocina"}
+TIEMPO MÁXIMO: ${requestData.cookingTime ? `${requestData.cookingTime} minutos` : "20 minutos"}
+
+REGLAS CRÍTICAS:
+1. USA los ingredientes proporcionados — no inventes otros
+2. Puedes agregar básicos universales: sal, aceite, agua, pimienta
+3. Respeta TODAS las restricciones y alergias del perfil
+4. Genera EXACTAMENTE 1 receta en el array (no 3)
+5. Macros aproximados en números
+
+Responde EXCLUSIVAMENTE en ${requestData.language === "en" ? "INGLÉS." : "ESPAÑOL."}
+Responde en formato JSON usando esta estructura exacta:
+${RECIPE_JSON_TEMPLATE}`;
     }
 
     // Prepare Gemini AI
@@ -617,7 +645,7 @@ En hack_saludable da consejo práctico.`;
 
     // Validate response structure
     try {
-      if (requestData.type === "En casa") {
+      if (requestData.type === "En casa" || requestData.type === "Receta Rápida") {
         parsedData = RecipeResponseSchema.parse(parsedData);
       } else {
         parsedData = RestaurantResponseSchema.parse(parsedData);
@@ -651,7 +679,9 @@ En hack_saludable da consejo práctico.`;
 
     // Save to Firestore with batch
     const batch = db.batch();
-    const historyCol = requestData.type === "En casa" ? "historial_recetas" : "historial_recomendaciones";
+    const historyCol = (requestData.type === "En casa" || requestData.type === "Receta Rápida")
+      ? "historial_recetas"
+      : "historial_recomendaciones";
     
     const historyRef = db.collection(historyCol).doc();
     batch.set(historyRef, {
