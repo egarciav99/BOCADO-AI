@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import { env } from "../environment/env";
 import { useTranslation } from "../contexts/I18nContext";
 
@@ -26,6 +26,8 @@ const DEFAULT_STATUS: RateLimitStatus = {
 export const useRateLimit = (userId: string | undefined) => {
   const queryClient = useQueryClient();
   const { t, locale } = useTranslation();
+
+  const [localSecondsLeft, setLocalSecondsLeft] = useState(0);
 
   const { data: status = DEFAULT_STATUS, isLoading } = useQuery({
     queryKey: ["rateLimit", userId],
@@ -87,10 +89,21 @@ export const useRateLimit = (userId: string | undefined) => {
     [],
   );
 
-  // Calcula countdown localmente sin refetch — solo necesita el timestamp absoluto
-  const localSecondsLeft = useMemo(() => {
-    if (!status.nextAvailableAt) return 0;
-    return Math.max(0, Math.ceil((status.nextAvailableAt - Date.now()) / 1000));
+  // Actualiza el countdown cada segundo basándose en nextAvailableAt
+  useEffect(() => {
+    if (!status.nextAvailableAt) {
+      setLocalSecondsLeft(0);
+      return;
+    }
+
+    const update = () => {
+      const secs = Math.max(0, Math.ceil((status.nextAvailableAt! - Date.now()) / 1000));
+      setLocalSecondsLeft(secs);
+    };
+
+    update(); // ejecutar inmediatamente
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
   }, [status.nextAvailableAt]);
 
   // Memoizar el tiempo formateado para evitar cálculos innecesarios
