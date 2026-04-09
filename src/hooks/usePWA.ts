@@ -40,6 +40,18 @@ export const usePWA = () => {
   // Ref to track if we've already shown the update banner for this SW version
   const updateShownRef = useRef(false);
 
+  // Clean up update flag after 10 seconds to allow detecting real new updates
+  useEffect(() => {
+    const flag = sessionStorage.getItem('pwa-just-updated');
+    if (flag) {
+      const timer = setTimeout(() => {
+        sessionStorage.removeItem('pwa-just-updated');
+        logger.info("PWA: Cleared update flag");
+      }, 10000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   useEffect(() => {
     const ua = navigator.userAgent || "";
     const platform = navigator.platform || "";
@@ -146,6 +158,10 @@ export const usePWA = () => {
       // Escuchar cuando hay un nuevo service worker esperando
       const checkForUpdates = () => {
         navigator.serviceWorker.ready.then((registration) => {
+          // No mostrar si ya actualizamos en esta sesión
+          const alreadyUpdated = sessionStorage.getItem('pwa-just-updated');
+          if (alreadyUpdated) return;
+
           // Solo mostrar el banner si:
           // 1. Hay un SW waiting
           // 2. No estamos actualizando
@@ -161,6 +177,10 @@ export const usePWA = () => {
             const newWorker = registration.installing;
             if (newWorker) {
               newWorker.addEventListener("statechange", () => {
+                // No mostrar si ya actualizamos en esta sesión
+                const alreadyUpdated = sessionStorage.getItem('pwa-just-updated');
+                if (alreadyUpdated) return;
+
                 if (
                   newWorker.state === "installed" &&
                   navigator.serviceWorker.controller &&
@@ -239,6 +259,9 @@ export const usePWA = () => {
           // Si hay un service worker esperando, activarlo
           if (registration.waiting) {
             logger.info("PWA: Sending SKIP_WAITING message to service worker");
+
+            // Mark update as done before postMessage
+            sessionStorage.setItem('pwa-just-updated', '1');
 
             // Enviar mensaje al SW para que haga skipWaiting
             registration.waiting.postMessage({ type: "SKIP_WAITING" });
