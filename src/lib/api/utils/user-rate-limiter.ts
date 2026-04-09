@@ -6,8 +6,8 @@ import { FieldValue } from "firebase-admin/firestore";
 // Now: 2 req/10min + daily quota = much lower risk
 const DEFAULT_CONFIG: RateLimitConfig = {
   windowMs: 10 * 60 * 1000, // 10 minutes
-  maxRequests: 2, // 🔒 Reduced from 5 to 2 requests per 10 minutes
-  cooldownMs: 60 * 1000, // 🔒 Increased from 30s to 60s minimum between requests
+  maxRequests: 4, // 🔒 Reduced from 5 to 2 requests per 10 minutes
+  cooldownMs: 30 * 1000, // 🔒 Increased from 30s to 60s minimum between requests
 };
 
 // Daily quota to prevent abuse (per user)
