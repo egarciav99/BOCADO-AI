@@ -72,10 +72,10 @@ export const SEARCH = {
 // ============================================
 export const AI_LIMITS = {
   /** Gemini max output tokens for "En casa" (recipes) */
-  TOKENS_RECIPES: 2800,
-  
+  TOKENS_RECIPES: 8192,
+
   /** Gemini max output tokens for "Fuera" (restaurants) */
-  TOKENS_RESTAURANTS: 2200,
+  TOKENS_RESTAURANTS: 8192,
 } as const;
 
 // ============================================
