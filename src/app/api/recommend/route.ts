@@ -224,7 +224,7 @@ function getCorsHeaders(origin: string | null | undefined): Record<string, strin
 }
 
 // JSON templates matching backup schemas
-const RECIPE_JSON_TEMPLATE = `{"saludo_personalizado":"msg motivador","receta":{"recetas":[{"id":1,"titulo":"nombre","tiempo_estimado":"XX min","dificultad":"Fácil|Media|Difícil","coincidencia_despensa":"ingrediente casa o Ninguno","ingredientes":["cantidad+ingrediente"],"pasos_preparacion":["paso 1","paso 2"],"macros_por_porcion":{"kcal":0,"proteinas_g":0,"carbohidratos_g":0,"grasas_g":0}}]}}`;
+const RECIPE_JSON_TEMPLATE = `{"saludo_personalizado":"msg motivador","receta":{"recetas":[{"id":1,"titulo":"nombre","tiempo_estimado":"XX min","dificultad":"Fácil|Media|Difícil","coincidencia_despensa":"ingrediente casa o Ninguno","ingredientes":["cantidad+ingrediente"],"pasos_preparacion":["paso 1","paso 2"],"macros_por_porcion":{"kcal":0,"proteinas_g":0,"carbohidratos_g":0,"grasas_g":0}},{"id":2,"titulo":"nombre","tiempo_estimado":"XX min","dificultad":"Fácil|Media|Difícil","coincidencia_despensa":"ingrediente casa o Ninguno","ingredientes":["cantidad+ingrediente"],"pasos_preparacion":["paso 1","paso 2"],"macros_por_porcion":{"kcal":0,"proteinas_g":0,"carbohidratos_g":0,"grasas_g":0}},{"id":3,"titulo":"nombre","tiempo_estimado":"XX min","dificultad":"Fácil|Media|Difícil","coincidencia_despensa":"ingrediente casa o Ninguno","ingredientes":["cantidad+ingrediente"],"pasos_preparacion":["paso 1","paso 2"],"macros_por_porcion":{"kcal":0,"proteinas_g":0,"carbohidratos_g":0,"grasas_g":0}}]}}`;
 
 const RESTAURANT_JSON_TEMPLATE = `{"saludo_personalizado":"msg motivador","recomendaciones":[{"id":1,"nombre_restaurante":"nombre real","tipo_comida":"ej: Italiana","direccion_aproximada":"Calle Número, Colonia","plato_sugerido":"nombre plato","por_que_es_bueno":"explicar por qué","hack_saludable":"consejo práctico"}]}`;
 
@@ -404,7 +404,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         ? "\n⚠️ OBLIGATORIO: Usa ÚNICAMENTE ingredientes de la despensa listada. NO agregues ingredientes externos."
         : "";
 
-      prompt = `Eres chef especializado en cocina casera saludable. Crea 1 receta adaptada al perfil.
+      prompt = `Eres chef especializado en cocina casera saludable. Crea 3 recetas adaptadas al perfil.
 
 PERFIL: ${profileParts || "Sin restricciones"}
 DESPENSA: ${pantryText}${mealTypeText}
@@ -416,6 +416,7 @@ REGLAS CRÍTICAS:
 3. Tiempo real: ${cookingTimeText}
 4. Pasos claros numerados (máximo 8 pasos)
 5. Macros aproximados por porción en NÚMEROS${onlyPantryRule}
+6. Devuelve EXACTAMENTE 3 recetas en el array "recetas"
 
 Responde EXCLUSIVAMENTE en ${requestData.language === "en" ? "INGLÉS." : "ESPAÑOL."}
 Responde en formato JSON usando esta estructura exacta:
