@@ -11,7 +11,7 @@ export const TIMEOUTS = {
   GOOGLE_MAPS_REVERSE_GEOCODE: 5000, // 5s
   
   /** Timeout for Gemini AI generation */
-  GEMINI_GENERATION: 8000, // 8s
+  GEMINI_GENERATION: 25000, // 25s - needed for gemini-2.5-flash
   
   /** Timeout for Firestore history queries */
   FIRESTORE_HISTORY_QUERY: 8000, // 8s
