@@ -209,6 +209,48 @@ function sanitizeRecommendation(rec: any, city: string): any {
   return rec;
 }
 
+// Verify restaurant exists with Google Places and get real address
+async function verifyRestaurantWithPlaces(
+  restaurantName: string,
+  city: string,
+  userLocation?: { lat: number; lng: number }
+): Promise<{ direccion_real: string; place_id: string; link_maps: string } | null> {
+  const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+  if (!GOOGLE_MAPS_API_KEY) return null;
+
+  try {
+    const query = encodeURIComponent(`${restaurantName} ${city}`);
+    const locationBias = userLocation
+      ? `&locationbias=circle:8000@${userLocation.lat},${userLocation.lng}`
+      : '';
+    
+    const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${query}&inputtype=textquery&fields=name,formatted_address,place_id,geometry&${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
+    
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    const response = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) return null;
+    
+    const data = await response.json();
+    
+    if (data.status !== 'OK' || !data.candidates?.[0]) return null;
+    
+    const place = data.candidates[0];
+    const placeId = place.place_id;
+    const direccion_real = place.formatted_address || '';
+    const link_maps = placeId
+      ? `https://www.google.com/maps/place/?q=place_id:${placeId}`
+      : `https://www.google.com/maps/search/?api=1&query=${query}`;
+    
+    return { direccion_real, place_id: placeId, link_maps };
+  } catch {
+    return null;
+  }
+}
+
 // CORS headers function
 function getCorsHeaders(origin: string | null | undefined): Record<string, string> {
   const headers: Record<string, string> = {
@@ -527,10 +569,39 @@ En hack_saludable da consejo práctico.`;
       throw new Error("La respuesta del modelo no cumple con el formato esperado");
     }
 
-    // Post-processing for restaurants (add Google Maps links)
+    // Post-processing for restaurants (verify with Google Places)
     if (requestData.type === "Fuera" && parsedData.recomendaciones) {
-      parsedData.recomendaciones = parsedData.recomendaciones.map((rec: any) =>
-        sanitizeRecommendation(rec, user.city || "")
+      // Verify restaurants with Google Places (in parallel)
+      const verificationResults = await Promise.allSettled(
+        parsedData.recomendaciones.map((rec: any) =>
+          verifyRestaurantWithPlaces(
+            rec.nombre_restaurante,
+            user.city || '',
+            requestData.userLocation || undefined
+          )
+        )
+      );
+
+      parsedData.recomendaciones = parsedData.recomendaciones.map(
+        (rec: any, index: number) => {
+          const result = verificationResults[index];
+          const verified = result.status === 'fulfilled' ? result.value : null;
+          
+          // Use real address if Places found it, otherwise use Gemini's as fallback
+          const direccion = verified?.direccion_real || rec.direccion_aproximada || `En ${user.city || ''}`;
+          const link = verified?.link_maps || 
+            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rec.nombre_restaurante + ' ' + (user.city || ''))}`;
+          
+          return {
+            ...rec,
+            direccion_aproximada: direccion,
+            link_maps: link,
+            por_que_es_bueno: rec.por_que_es_bueno || 'Opción saludable disponible',
+            plato_sugerido: rec.plato_sugerido || 'Consulta el menú saludable',
+            hack_saludable: rec.hack_saludable || 'Pide porciones pequeñas',
+            verified: !!verified,  // flag for debugging
+          };
+        }
       );
     }
 
