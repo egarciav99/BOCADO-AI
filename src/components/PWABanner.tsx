@@ -73,6 +73,7 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
   };
 
   const handleDismissUpdate = () => {
+    if (isUpdating) return;
     setDismissedUpdate(true);
     localStorage.setItem("pwa-update-dismissed-at", String(Date.now()));
     // Notificar al hook para que no vuelva a mostrar el banner
@@ -126,7 +127,8 @@ const PWABanner: React.FC<PWABannerProps> = ({ showInstall = true }) => {
             </button>
             <button
               onClick={handleDismissUpdate}
-              className="p-1.5 hover:bg-blue-600 rounded-lg transition-colors"
+              disabled={isUpdating}
+              className="p-1.5 hover:bg-blue-600 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <X className="w-4 h-4" />
             </button>
