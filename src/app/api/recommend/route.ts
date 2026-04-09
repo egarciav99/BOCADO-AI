@@ -232,7 +232,9 @@ async function searchNearbyRestaurants(
 
     if (userLocation) {
       // Nearby Search si tenemos coordenadas GPS
-      const keyword = cuisine ? encodeURIComponent(cuisine) : 'restaurant';
+      const keyword = cuisine
+        ? encodeURIComponent(cuisine + ' restaurant')
+        : 'restaurant';
       url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${userLocation.lat},${userLocation.lng}&radius=3000&type=restaurant&keyword=${keyword}&language=es&key=${GOOGLE_MAPS_API_KEY}`;
     } else {
       // Text Search si solo tenemos ciudad
@@ -524,7 +526,7 @@ En coincidencia_despensa indica qué ingredientes de casa usas o "Ninguno" si re
         user.city || '',
         requestData.userLocation || undefined,
         Array.isArray(requestData.cravings)
-          ? requestData.cravings[0]
+          ? requestData.cravings.join(' ')
           : requestData.cravings || undefined,
         requestData.budget || undefined
       );
