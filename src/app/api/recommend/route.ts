@@ -210,45 +210,76 @@ function sanitizeRecommendation(rec: any, city: string): any {
 }
 
 // Verify restaurant exists with Google Places and get real address
-async function verifyRestaurantWithPlaces(
-  restaurantName: string,
+// Search for nearby restaurants using Google Places API
+async function searchNearbyRestaurants(
   city: string,
-  userLocation?: { lat: number; lng: number }
-): Promise<{ direccion_real: string; place_id: string; link_maps: string } | null> {
+  userLocation?: { lat: number; lng: number },
+  cuisine?: string,
+  budget?: string
+): Promise<Array<{
+  name: string;
+  address: string;
+  place_id: string;
+  rating?: number;
+  price_level?: number;
+  link_maps: string;
+}>> {
   const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
-  if (!GOOGLE_MAPS_API_KEY) return null;
+  if (!GOOGLE_MAPS_API_KEY) return [];
 
   try {
-    const query = encodeURIComponent(`${restaurantName} ${city}`);
-    const locationBias = userLocation
-      ? `&locationbias=circle:8000@${userLocation.lat},${userLocation.lng}`
-      : '';
-    
-    const url = `https://maps.googleapis.com/maps/api/place/findplacefromtext/json?input=${query}&inputtype=textquery&fields=name,formatted_address,place_id,geometry&${locationBias}&key=${GOOGLE_MAPS_API_KEY}`;
-    
+    let url: string;
+
+    if (userLocation) {
+      // Nearby Search si tenemos coordenadas GPS
+      const keyword = cuisine ? encodeURIComponent(cuisine) : 'restaurant';
+      url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${userLocation.lat},${userLocation.lng}&radius=3000&type=restaurant&keyword=${keyword}&language=es&key=${GOOGLE_MAPS_API_KEY}`;
+    } else {
+      // Text Search si solo tenemos ciudad
+      const query = cuisine
+        ? encodeURIComponent(`restaurantes ${cuisine} en ${city}`)
+        : encodeURIComponent(`restaurantes en ${city}`);
+      url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${query}&language=es&key=${GOOGLE_MAPS_API_KEY}`;
+    }
+
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
     const response = await fetch(url, { signal: controller.signal });
     clearTimeout(timeoutId);
-    
-    if (!response.ok) return null;
-    
+
+    if (!response.ok) return [];
+
     const data = await response.json();
-    
-    if (data.status !== 'OK' || !data.candidates?.[0]) return null;
-    
-    const place = data.candidates[0];
-    const placeId = place.place_id;
-    const direccion_real = place.formatted_address || '';
-    const link_maps = placeId
-      ? `https://www.google.com/maps/place/?q=place_id:${placeId}`
-      : `https://www.google.com/maps/search/?api=1&query=${query}`;
-    
-    return { direccion_real, place_id: placeId, link_maps };
+    if (data.status !== 'OK' || !data.results?.length) return [];
+
+    // Tomar los primeros 10 resultados y formatearlos
+    return data.results.slice(0, 10).map((place: any) => ({
+      name: place.name,
+      address: place.vicinity || place.formatted_address || city,
+      place_id: place.place_id,
+      rating: place.rating,
+      price_level: place.price_level,
+      link_maps: `https://www.google.com/maps/place/?q=place_id:${place.place_id}`,
+    }));
   } catch {
-    return null;
+    return [];
   }
+}
+
+// Format places for inclusion in Gemini prompt
+function formatPlacesForPrompt(places: Array<{
+  name: string;
+  address: string;
+  rating?: number;
+  price_level?: number;
+}>): string {
+  if (!places.length) return '';
+  
+  return places.map((p, i) => {
+    const price = p.price_level ? '$'.repeat(p.price_level) : '?';
+    const rating = p.rating ? `★${p.rating}` : '';
+    return `${i + 1}. "${p.name}" | ${p.address} | ${price} ${rating}`.trim();
+  }).join('\n');
 }
 
 // CORS headers function
@@ -429,6 +460,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Build prompt based on request type
     let prompt = "";
+    let realRestaurants: Array<{
+      name: string;
+      address: string;
+      place_id: string;
+      rating?: number;
+      price_level?: number;
+      link_maps: string;
+    }> = [];
     
     if (requestData.type === "En casa") {
       const pantryText = pantryItems.length > 0 ? pantryItems.join(", ") : "Sin ingredientes disponibles";
@@ -480,14 +519,31 @@ En coincidencia_despensa indica qué ingredientes de casa usas o "Ninguno" si re
       const cravingsText = Array.isArray(requestData.cravings) ? requestData.cravings.join(", ") : (requestData.cravings || "saludable");
       const solicitudText = `${cravingsText}, presupuesto: ${budgetText}${requestData.currency ? ` (${requestData.currency})` : ""}`;
 
+      // Search for real restaurants with Places API first
+      realRestaurants = await searchNearbyRestaurants(
+        user.city || '',
+        requestData.userLocation || undefined,
+        Array.isArray(requestData.cravings)
+          ? requestData.cravings[0]
+          : requestData.cravings || undefined,
+        requestData.budget || undefined
+      );
+
+      const placesContext = realRestaurants.length > 0
+        ? `\n\nRESTAURANTES REALES DISPONIBLES EN GOOGLE MAPS (usa SOLO estos):\n${formatPlacesForPrompt(realRestaurants)}\n\nINSTRUCCIÓN CRÍTICA: Recomienda ÚNICAMENTE restaurantes de la lista anterior. No inventes ninguno. Usa el nombre y dirección exactamente como aparecen en la lista.`
+        : '';
+
       prompt = `Eres guía gastronómico. Recomienda 5 restaurantes reales.
 
 PERFIL: ${profileParts || "Sin restricciones"}
 UBICACIÓN: ${user.city || "su ciudad"}
 SOLICITUD: ${solicitudText}
+${placesContext}
 
 REGLAS CRÍTICAS:
-1. Nombres reales de restaurantes existentes en ${user.city || "la ciudad"}
+1. ${realRestaurants.length > 0 
+    ? 'USA ÚNICAMENTE los restaurantes de la lista proporcionada arriba'
+    : 'Nombres reales de restaurantes existentes en ' + (user.city || 'la ciudad')}
 2. DIRECCIONES EXACTAS: Calle Número, Colonia (ej: "Calle Arturo Soria 126, Chamartín")
 3. Si no sabes dirección exacta: usa centro comercial específico
 4. NO uses "por el centro" o direcciones vagas
@@ -569,40 +625,26 @@ En hack_saludable da consejo práctico.`;
       throw new Error("La respuesta del modelo no cumple con el formato esperado");
     }
 
-    // Post-processing for restaurants (verify with Google Places)
+    // Post-processing for restaurants (enrich with Google Places data)
     if (requestData.type === "Fuera" && parsedData.recomendaciones) {
-      // Verify restaurants with Google Places (in parallel)
-      const verificationResults = await Promise.allSettled(
-        parsedData.recomendaciones.map((rec: any) =>
-          verifyRestaurantWithPlaces(
-            rec.nombre_restaurante,
-            user.city || '',
-            requestData.userLocation || undefined
-          )
-        )
-      );
+      parsedData.recomendaciones = parsedData.recomendaciones.map((rec: any) => {
+        // Search in the Places list for the restaurant that Gemini chose
+        const matched = realRestaurants.find(
+          (p) => p.name.toLowerCase().includes(rec.nombre_restaurante.toLowerCase()) ||
+                 rec.nombre_restaurante.toLowerCase().includes(p.name.toLowerCase())
+        );
 
-      parsedData.recomendaciones = parsedData.recomendaciones.map(
-        (rec: any, index: number) => {
-          const result = verificationResults[index];
-          const verified = result.status === 'fulfilled' ? result.value : null;
-          
-          // Use real address if Places found it, otherwise use Gemini's as fallback
-          const direccion = verified?.direccion_real || rec.direccion_aproximada || `En ${user.city || ''}`;
-          const link = verified?.link_maps || 
-            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rec.nombre_restaurante + ' ' + (user.city || ''))}`;
-          
-          return {
-            ...rec,
-            direccion_aproximada: direccion,
-            link_maps: link,
-            por_que_es_bueno: rec.por_que_es_bueno || 'Opción saludable disponible',
-            plato_sugerido: rec.plato_sugerido || 'Consulta el menú saludable',
-            hack_saludable: rec.hack_saludable || 'Pide porciones pequeñas',
-            verified: !!verified,  // flag for debugging
-          };
-        }
-      );
+        return {
+          ...rec,
+          direccion_aproximada: matched?.address || rec.direccion_aproximada || `En ${user.city || ''}`,
+          link_maps: matched?.link_maps ||
+            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(rec.nombre_restaurante + ' ' + (user.city || ''))}`,
+          por_que_es_bueno: rec.por_que_es_bueno || 'Opción saludable disponible',
+          plato_sugerido: rec.plato_sugerido || 'Consulta el menú saludable',
+          hack_saludable: rec.hack_saludable || 'Pide porciones pequeñas',
+          verified: !!matched,
+        };
+      });
     }
 
     // Save to Firestore with batch
