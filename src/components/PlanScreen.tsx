@@ -348,6 +348,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
 
   return (
     <div className="flex flex-col h-full min-h-0">
+      
       {/* Contenido scrolleable */}
       <div className="flex-1 overflow-y-auto px-4 py-4 no-scrollbar min-h-0">
         <div className="text-center mb-6">
@@ -364,7 +365,6 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
         <div className="space-y-3 max-w-2xl mx-auto">
           {selectedPlan.meals.map((meal: Meal, index: number) => (
             <MealCard
-              // ✅ FIX: key más estable que index
               key={`${meal.recipe.title}-${index}`}
               meal={meal}
               onInteraction={(type) => {
@@ -373,29 +373,26 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
             />
           ))}
         </div>
-
-        {/* ✅ FIX: espacio inferior usando CSS var en vez de h-32 hardcodeado */}
-        <div style={{ height: "var(--bottom-nav-clearance, 8rem)" }} />
       </div>
 
-      {/* ✅ FIX: botón sticky en vez de fixed para evitar problemas de layout */}
-      <div className="sticky bottom-0 left-0 right-0 px-4 pb-4 pt-2 bg-gradient-to-t from-bocado-background to-transparent pointer-events-none z-40">
-        <div className="max-w-2xl mx-auto pointer-events-auto">
+      {/* Footer fijo — botón + TabBar siempre visibles */}
+      <div className="flex-shrink-0 bg-bocado-background border-t border-bocado-border">
+        <div className="px-4 py-3 max-w-2xl mx-auto">
           <button
             onClick={handleStartNew}
-            className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-lg hover:bg-bocado-dark-green active:scale-95 transition-all"
+            className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"
           >
             {t("plan.backToHome")}
           </button>
         </div>
+        <BottomTabBar
+          activeTab="recommendation"
+          onTabChange={(tab) => {
+            if (onNavigateTab) onNavigateTab(tab);
+          }}
+        />
       </div>
 
-      <BottomTabBar
-        activeTab="recommendation"
-        onTabChange={(tab) => {
-          if (onNavigateTab) onNavigateTab(tab);
-        }}
-      />
     </div>
   );
 };
