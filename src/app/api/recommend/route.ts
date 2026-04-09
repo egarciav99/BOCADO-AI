@@ -59,7 +59,7 @@ const RecipeSchema = z.object({
   titulo: z.string().max(200),
   tiempo_estimado: z.string().max(50).optional(),
   dificultad: z.enum(["Fácil", "Media", "Difícil"]).optional(),
-  coincidencia_despensa: z.string().max(100).optional(),
+  coincidencia_despensa: z.string().max(500).optional(),
   ingredientes: z.array(z.string().max(200)).max(50),
   pasos_preparacion: z.array(z.string().max(VALIDATION_LIMITS.MAX_STEP_LENGTH)).max(VALIDATION_LIMITS.MAX_STEPS),
   macros_por_porcion: MacroSchema.optional(),
