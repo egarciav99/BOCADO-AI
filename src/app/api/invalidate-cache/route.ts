@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuth as getAdminAuth } from "firebase-admin/auth";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import { initFirebaseAdmin } from "@/lib/api/firebase-admin";
 import { isOriginAllowed, ALLOWED_ORIGINS_LIST } from "@/lib/api/cors-utils";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/lib/api/utils/cache";
 
 const adminApp = initFirebaseAdmin();
+const db = adminApp ? getFirestore() : null;
 
 // ============================================
 // CORS HELPER
@@ -141,6 +143,31 @@ export async function POST(request: NextRequest) {
         historyCache.del(userId);
         invalidated.push("history");
         break;
+      case "rateLimit": {
+        // Limpiar el currentProcess del rate limiter para este usuario
+        // Esto libera el slot si el cliente se fue mientras procesaba
+        if (db && userId) {
+          try {
+            const rateLimitRef = db.collection("rate_limit_v2").doc(userId);
+            const doc = await rateLimitRef.get();
+            if (doc.exists) {
+              const data = doc.data();
+              if (data?.currentProcess) {
+                await rateLimitRef.update({
+                  currentProcess: null,
+                  "metadata.cancelledAt": FieldValue.serverTimestamp(),
+                  "metadata.cancelReason": "client_navigated_away",
+                });
+                invalidated.push("rateLimit");
+              }
+            }
+          } catch (e) {
+            // silenciar — best effort
+            console.error("[Cache] Failed to clear rateLimit:", e);
+          }
+        }
+        break;
+      }
       case "all":
       default:
         profileCache.del(userId);

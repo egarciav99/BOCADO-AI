@@ -8,7 +8,7 @@ import {
   CRAVING_TRANSLATION_KEYS,
 } from "../constants";
 import BocadoLogo from "./BocadoLogo";
-import { db, serverTimestamp, trackEvent } from "../firebaseConfig";
+import { db, serverTimestamp, trackEvent, auth } from "../firebaseConfig";
 import { collection, addDoc } from "firebase/firestore";
 import { CurrencyService } from "../data/budgets";
 import { UserInteractionSchema, validateOrThrow } from "../schemas/validation";
@@ -134,14 +134,36 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
   // Limpiar abort controller y timers al desmontar
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
-        try {
-          abortControllerRef.current.abort();
-        } catch (e) {
-          // Ignore errors during cleanup
+      // Si hay una generación en curso al desmontar, limpiar el proceso
+      if (isProcessingRef.current) {
+        if (abortControllerRef.current) {
+          try {
+            abortControllerRef.current.abort();
+          } catch (e) {
+            // Ignore errors during cleanup
+          }
+        }
+        isProcessingRef.current = false;
+
+        // Notificar al servidor que el proceso fue cancelado
+        // para que el rate limiter libere el slot
+        const user = auth.currentUser;
+        if (user) {
+          user.getIdToken().then((token) => {
+            fetch("/api/invalidate-cache", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({
+                userId: user.uid,
+                type: "rateLimit",
+              }),
+            }).catch(() => {}); // silenciar — es best-effort
+          }).catch(() => {});
         }
       }
-      isProcessingRef.current = false;
     };
   }, []);
 
@@ -152,6 +174,16 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
     isProcessingRef.current = false;
     setIsGenerating(false);
   }, [recommendationType]);
+
+  // ✅ FIX 3: Resetear estado visual al volver a la pantalla
+  useEffect(() => {
+    // Al montar (incluye volver desde otra tab), resetear estado de generación
+    // si no hay una generación en curso
+    if (!isProcessingRef.current) {
+      setIsGenerating(false);
+      setError(null);
+    }
+  }, []); // solo al montar
 
   const handleTypeChange = (type: "En casa" | "Fuera") => {
     trackEvent("recommendation_type_selected", { type });
