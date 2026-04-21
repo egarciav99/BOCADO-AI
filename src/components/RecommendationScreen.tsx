@@ -902,12 +902,12 @@ const RecommendationScreen: React.FC<RecommendationScreenProps> = ({
               ) : isRateLimited ? (
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-2">
-                    <span className="text-lg" aria-hidden="true">⏱️</span>
+                    <span aria-hidden="true">⏱️</span>
                     <span>{t("recommendation.waitSeconds", { seconds: formattedTimeLeft })}</span>
                   </div>
                   {renewalTime && (
                     <p className="text-xs mt-1 opacity-75">
-                      {t("rateLimit.renewsAt", { time: renewalTime })}
+                      {t("rateLimit.availableAt", { time: renewalTime })}
                     </p>
                   )}
                 </div>

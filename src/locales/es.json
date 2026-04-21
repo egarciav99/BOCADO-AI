@@ -1129,6 +1129,7 @@
     "warning": "⚠️ {count} recomendación disponible",
     "warningPlural": "⚠️ {count} recomendaciones disponibles",
     "renewsAt": "Disponible a las {time}",
+    "availableAt": "Disponible a las {time}",
     "calculating": "Calculando..."
   },
   "now": "Ahora",

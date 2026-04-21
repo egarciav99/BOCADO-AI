@@ -1128,6 +1128,7 @@
     "warning": "⚠️ {count} recommendation available",
     "warningPlural": "⚠️ {count} recommendations available",
     "renewsAt": "Available at {time}",
+    "availableAt": "Available at {time}",
     "calculating": "Calculating..."
   },
   "now": "Now",

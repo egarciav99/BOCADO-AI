@@ -130,6 +130,13 @@ export const useRateLimit = (userId: string | undefined) => {
     );
   }, [status?.nextAvailableAt, locale]);
 
+  // ✅ FIX: Calculate daily usage text for display
+  const dailyUsageText = useMemo(() => {
+    const used = status.requestsInWindow ?? 0;
+    const max = 5; // maxRequests from DEFAULT_CONFIG
+    return `${used}/${max}`;
+  }, [status.requestsInWindow]);
+
   // Memoizar el mensaje
   const message = useMemo(() => {
     if (!status.canRequest) {
@@ -159,6 +166,7 @@ export const useRateLimit = (userId: string | undefined) => {
     refreshStatus,
     formattedTimeLeft,
     renewalTime,
+    dailyUsageText,
     // Helper para deshabilitar botón
     isDisabled: !status.canRequest || isLoading,
     // Mensaje para mostrar al usuario
