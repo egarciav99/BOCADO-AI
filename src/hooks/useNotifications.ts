@@ -256,7 +256,16 @@ export const useNotifications = (
       setDaysSinceLastAppUse(days);
     }
     localStorage.setItem(LAST_ACTIVE_KEY, new Date().toISOString());
-  }, []);
+
+    // Actualizar lastActiveAt en Firestore
+    if (userUid) {
+      setDoc(
+        doc(db, "notification_settings", userUid),
+        { lastActiveAt: serverTimestamp() },
+        { merge: true }
+      ).catch(() => {}); // best-effort
+    }
+  }, [userUid]);
 
   // Sync Foreground Messages - register global listener once
   // (The listener itself only registers once globally to avoid duplicates)
@@ -337,6 +346,45 @@ export const useNotifications = (
         setToken(fcmToken);
         setPermission("granted");
         logger.info("Notification permission granted");
+
+        // Guardar token en Firestore para que el servidor pueda enviar notificaciones
+        if (userUid) {
+          try {
+            const tokenId = fcmToken.substring(0, 20);
+
+            // Guardar token en subcolección tokens/
+            await setDoc(
+              doc(db, "notification_settings", userUid, "tokens", tokenId),
+              {
+                token: fcmToken,
+                userAgent: navigator.userAgent,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true }
+            );
+
+            // Actualizar documento principal con hasToken: true
+            await setDoc(
+              doc(db, "notification_settings", userUid),
+              {
+                userId: userUid,
+                hasToken: true,
+                tokenUpdatedAt: serverTimestamp(),
+                lastActiveAt: serverTimestamp(),
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+              },
+              { merge: true }
+            );
+
+            logger.info("Token FCM guardado en Firestore");
+          } catch (error) {
+            logger.warn("Error guardando token FCM en Firestore:", error);
+            // No bloquear — el permiso sí se obtuvo
+          }
+        }
+
         return true;
       }
       setPermission(Notification.permission);
@@ -347,7 +395,7 @@ export const useNotifications = (
     } finally {
       setIsLoading(false);
     }
-  }, [isSupported]);
+  }, [isSupported, userUid]);
 
   const updateSchedule = useCallback((id: string, updates: Partial<NotificationSchedule>) => {
     // Only update config fields, ignore title/body translations
