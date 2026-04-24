@@ -203,22 +203,41 @@ export const useNotifications = (
           if (docSnap.exists()) {
             const data = docSnap.data() as { schedules?: any[] };
             if (Array.isArray(data.schedules)) {
-              setScheduleConfigs((prev) =>
-                prev.map((def) => {
+              setScheduleConfigs((prev) => {
+                const updated = prev.map((def) => {
                   const saved = data.schedules?.find((s) => s.id === def.id);
                   return saved ? { ...def, ...saved } : def;
-                })
-              );
+                });
+                // Mark sync complete AFTER React processes setState to avoid race condition
+                setTimeout(() => {
+                  firestoreSyncedRef.current = true;
+                }, 0);
+                return updated;
+              });
+            } else {
+              // No schedules array, mark sync complete
+              setTimeout(() => {
+                firestoreSyncedRef.current = true;
+              }, 0);
             }
+          } else {
+            // Document doesn't exist, mark sync complete
+            setTimeout(() => {
+              firestoreSyncedRef.current = true;
+            }, 0);
           }
         } catch (error) {
           logger.warn("Error loading notification settings from Firestore:", error);
+          // Mark sync complete even on error to unblock save operations
+          setTimeout(() => {
+            firestoreSyncedRef.current = true;
+          }, 0);
         }
-        // Mark Firestore sync as complete after the setScheduleConfigs call
-        firestoreSyncedRef.current = true;
       } else {
         // No user, so no Firestore sync needed
-        firestoreSyncedRef.current = true;
+        setTimeout(() => {
+          firestoreSyncedRef.current = true;
+        }, 0);
       }
     };
 
