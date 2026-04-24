@@ -313,17 +313,17 @@ exports.sendNotificationReminders = functions.pubsub
         return Math.floor(diffMs / (1000 * 60 * 60 * 24));
       };
 
-      // Pre-filtrar usuarios: descartar los que no tienen reminders habilitados
+      // Pre-filtrar usuarios: descartar los que no tienen schedules habilitados
       const eligibleDocs = settingsSnap.docs.filter((docSnap) => {
         const settings = docSnap.data();
-        const reminders = Array.isArray(settings.reminders)
-          ? settings.reminders
+        const schedules = Array.isArray(settings.schedules)
+          ? settings.schedules
           : [];
-        return reminders.some((r) => r?.enabled);
+        return schedules.some((s) => s?.enabled);
       });
 
       if (eligibleDocs.length === 0) {
-        console.log("No users with enabled reminders");
+        console.log("No users with enabled schedules");
         return null;
       }
 
@@ -368,7 +368,7 @@ async function processUserReminders(
   daysSince,
 ) {
   const settings = docSnap.data();
-  const reminders = Array.isArray(settings.reminders) ? settings.reminders : [];
+  const schedules = Array.isArray(settings.schedules) ? settings.schedules : [];
   const timeZone = settings.timezone || "UTC";
   const { hour, minute, dateKey, usedFallback } = getLocalTimeParts(
     now,
@@ -378,28 +378,28 @@ async function processUserReminders(
     console.warn(`Invalid timezone for ${docSnap.id}: ${timeZone}, using UTC`);
   }
 
-  // Filtrar solo reminders que coinciden con hora:minuto actual del usuario
-  const candidateReminders = reminders.filter((reminder) => {
-    if (!reminder?.enabled) return false;
-    if (reminder.hour !== hour || reminder.minute !== minute) return false;
+  // Filtrar solo schedules que coinciden con hora:minuto actual del usuario
+  const candidateSchedules = schedules.filter((schedule) => {
+    if (!schedule?.enabled) return false;
+    if (schedule.hour !== hour || schedule.minute !== minute) return false;
 
-    if (reminder.lastShown) {
+    if (schedule.lastShown) {
       const lastDate = getLocalTimeParts(
-        new Date(reminder.lastShown),
+        new Date(schedule.lastShown),
         timeZone,
       ).dateKey;
       if (lastDate === dateKey) return false;
     }
 
-    if (reminder.minDaysBetween && reminder.lastShown) {
-      const lastDays = daysSince(reminder.lastShown);
-      if (lastDays !== null && lastDays < reminder.minDaysBetween) return false;
+    if (schedule.minDaysBetween && schedule.lastShown) {
+      const lastDays = daysSince(schedule.lastShown);
+      if (lastDays !== null && lastDays < schedule.minDaysBetween) return false;
     }
 
     return true;
   });
 
-  if (candidateReminders.length === 0) return;
+  if (candidateSchedules.length === 0) return;
 
   // Cargar pantry y tokens en paralelo (reduce latencia vs serial)
   const [pantryDoc, tokensSnap] = await Promise.all([
@@ -441,8 +441,8 @@ async function processUserReminders(
   const inactiveDays = daysSince(settings.lastActiveAt);
 
   // Filtrar por condiciones inteligentes
-  const remindersToSend = candidateReminders.filter((reminder) => {
-    switch (reminder.condition) {
+  const schedulesToSend = candidateSchedules.filter((schedule) => {
+    switch (schedule.condition) {
       case "pantry_empty":
         return pantryEmpty;
       case "pending_ratings":
@@ -455,22 +455,22 @@ async function processUserReminders(
     }
   });
 
-  if (remindersToSend.length === 0) return;
+  if (schedulesToSend.length === 0) return;
 
   const sentIds = new Set();
 
-  for (const reminder of remindersToSend) {
+  for (const schedule of schedulesToSend) {
     if (tokens.length === 0) break;
 
     const response = await messaging.sendEachForMulticast({
       tokens,
       notification: {
-        title: reminder.title || "Bocado",
-        body: reminder.body || "Tienes un nuevo recordatorio",
+        title: schedule.title || "Bocado",
+        body: schedule.body || "Tienes un nuevo recordatorio",
       },
       data: {
-        type: reminder.type || "custom",
-        id: reminder.id || "reminder",
+        type: schedule.type || "custom",
+        id: schedule.id || "reminder",
       },
     });
 
@@ -513,8 +513,8 @@ async function processUserReminders(
       }
     }
 
-    // Track only reminders that were actually sent
-    sentIds.add(reminder.id);
+    // Track only schedules that were actually sent
+    sentIds.add(schedule.id);
   }
 
   if (sentIds.size === 0) return;
@@ -525,12 +525,12 @@ async function processUserReminders(
   await db.runTransaction(async (transaction) => {
     const freshDoc = await transaction.get(settingsRef);
     const freshData = freshDoc.exists ? freshDoc.data() : {};
-    const freshReminders = Array.isArray(freshData.reminders)
-      ? freshData.reminders
+    const freshSchedules = Array.isArray(freshData.schedules)
+      ? freshData.schedules
       : [];
 
-    // Merge: update lastShown only for reminders we actually sent
-    const mergedReminders = freshReminders.map((item) => {
+    // Merge: update lastShown only for schedules we actually sent
+    const mergedSchedules = freshSchedules.map((item) => {
       if (item?.id && sentIds.has(item.id)) {
         return { ...item, lastShown: nowISO };
       }
@@ -540,7 +540,7 @@ async function processUserReminders(
     transaction.set(
       settingsRef,
       {
-        reminders: mergedReminders,
+        schedules: mergedSchedules,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       { merge: true },
