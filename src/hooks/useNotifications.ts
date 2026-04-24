@@ -70,7 +70,7 @@ const DEFAULT_SCHEDULE_CONFIG: Omit<NotificationSchedule, 'title' | 'body'>[] = 
     minDaysBetween: 1,
   },
   {
-    id: "pantry_update",
+    id: "pantryUpdate",
     type: "pantry",
     hour: 10,
     minute: 0,
@@ -79,7 +79,7 @@ const DEFAULT_SCHEDULE_CONFIG: Omit<NotificationSchedule, 'title' | 'body'>[] = 
     minDaysBetween: 3,
   },
   {
-    id: "rate_recipes",
+    id: "rateRecipes",
     type: "rating",
     hour: 15,
     minute: 0,
@@ -88,7 +88,7 @@ const DEFAULT_SCHEDULE_CONFIG: Omit<NotificationSchedule, 'title' | 'body'>[] = 
     minDaysBetween: 2,
   },
   {
-    id: "come_back",
+    id: "comeBack",
     type: "engagement",
     hour: 12,
     minute: 0,
