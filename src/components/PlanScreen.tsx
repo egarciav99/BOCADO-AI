@@ -377,7 +377,7 @@ const PlanScreen: React.FC<PlanScreenProps> = ({
 
       {/* Footer fijo — botón + TabBar siempre visibles */}
       <div className="flex-shrink-0 bg-bocado-background border-t border-bocado-border">
-        <div className="px-4 py-3 max-w-2xl mx-auto">
+        <div className="px-4 py-3 pb-20 max-w-2xl mx-auto">
           <button
             onClick={handleStartNew}
             className="w-full bg-bocado-green text-white font-bold py-3 px-6 rounded-full text-sm shadow-bocado hover:bg-bocado-dark-green active:scale-95 transition-all"

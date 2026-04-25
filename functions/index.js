@@ -247,7 +247,7 @@ exports.cleanupOldHistorialRecetas = functions.pubsub
  * Los reads secundarios (pantry, tokens) se ejecutan en paralelo por batch.
  */
 exports.sendNotificationReminders = functions.pubsub
-  .schedule("0 * * * *")    // Every hour instead of every minute
+  .schedule("*/5 * * * *")    // Every hour instead of every minute
   .timeZone("UTC")
   .onRun(async () => {
     try {
@@ -381,7 +381,10 @@ async function processUserReminders(
   // Filtrar solo schedules que coinciden con hora:minuto actual del usuario
   const candidateSchedules = schedules.filter((schedule) => {
     if (!schedule?.enabled) return false;
-    if (schedule.hour !== hour || schedule.minute !== minute) return false;
+    const scheduledMinutes = schedule.hour * 60 + schedule.minute;
+    const currentMinutes = hour * 60 + minute;
+    const diff = Math.abs(currentMinutes - scheduledMinutes);
+    if (diff > 5) return false;
 
     if (schedule.lastShown) {
       const lastDate = getLocalTimeParts(
