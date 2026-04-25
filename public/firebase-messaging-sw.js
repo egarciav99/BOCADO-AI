@@ -9,7 +9,7 @@ importScripts(
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js",
 );
 
-// Configuración de Firebase (hardcoded porque el SW no tiene acceso a import.meta.env)
+// NOTA: Si rotan las credenciales de Firebase, actualizar también este archivo manualmente.
 const firebaseConfig = {
   apiKey: "AIzaSyCmHr6PmGGxfVEqSTihxWoXK4UUYz1NmRg",
   authDomain: "bocado-ai.firebaseapp.com",

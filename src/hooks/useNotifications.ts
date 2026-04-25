@@ -280,7 +280,10 @@ export const useNotifications = (
     if (userUid) {
       setDoc(
         doc(db, "notification_settings", userUid),
-        { lastActiveAt: serverTimestamp() },
+        { 
+          lastActiveAt: serverTimestamp(),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        },
         { merge: true }
       ).catch(() => {}); // best-effort
     }
@@ -298,60 +301,9 @@ export const useNotifications = (
 
   // Check conditions for smart notifications
   const checkNotifications = useCallback(() => {
-    if (!isSupported || permission !== "granted") return;
-
-    const now = new Date();
-    const currentTime = now.getHours() * 60 + now.getMinutes();
-    const today = now.toDateString();
-
-    schedulesRef.current.forEach((schedule) => {
-      if (!schedule.enabled) return;
-
-      const scheduleTime = schedule.hour * 60 + schedule.minute;
-      const isExactlyTime = currentTime === scheduleTime;
-
-      // Allow a 30-minute window for background sync catch-up if not shown today
-      const isWithinWindow = currentTime >= scheduleTime && currentTime <= scheduleTime + 30;
-
-      if (isExactlyTime || isWithinWindow) {
-        if (schedule.lastShown && new Date(schedule.lastShown).toDateString() === today) return;
-
-        // Verify conditions
-        let shouldShow = true;
-        if (schedule.condition === "pantry_empty") {
-          shouldShow = daysSinceLastPantryUpdate === null || daysSinceLastPantryUpdate >= 3;
-        } else if (schedule.condition === "pending_ratings") {
-          shouldShow = pendingRatingsCount > 0;
-        } else if (schedule.condition === "inactive_user") {
-          shouldShow = daysSinceLastAppUse >= 3;
-        }
-
-        // Check frequency limit
-        if (shouldShow && schedule.lastShown && schedule.minDaysBetween) {
-          const daysSinceLast = Math.floor(
-            (now.getTime() - new Date(schedule.lastShown).getTime()) / (1000 * 60 * 60 * 24)
-          );
-          if (daysSinceLast < schedule.minDaysBetween) shouldShow = false;
-        }
-
-        if (shouldShow) {
-          new Notification(schedule.title, {
-            body: schedule.body,
-            icon: "/icons/icon-192x192.png",
-            badge: "/icons/icon-72x72.png",
-            tag: schedule.id,
-          });
-
-          // Update lastShown locally immediately to prevent double trigger
-          setScheduleConfigs(prev => prev.map(s =>
-            s.id === schedule.id ? { ...s, lastShown: now.toISOString() } : s
-          ));
-
-          trackEvent("notification_shown", { id: schedule.id, type: schedule.type });
-        }
-      }
-    });
-  }, [isSupported, permission, daysSinceLastPantryUpdate, pendingRatingsCount, daysSinceLastAppUse]);
+    // Desactivado: la Cloud Function maneja el envío vía FCM cada 5min
+    // Mantener la función vacía para no romper la interfaz del hook
+  }, []);
 
   // Backend FCM handles notification sending - client-side polling disabled
   // to prevent duplicate notifications
