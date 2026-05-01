@@ -378,6 +378,8 @@ async function processUserReminders(
     console.warn(`Invalid timezone for ${docSnap.id}: ${timeZone}, using UTC`);
   }
 
+  // TODO: tokens no disponibles aún — se cargan después. Postpone log.
+
   // Filtrar solo schedules que coinciden con hora:minuto actual del usuario
   const candidateSchedules = schedules.filter((schedule) => {
     if (!schedule?.enabled) return false;
@@ -423,6 +425,7 @@ async function processUserReminders(
     }
   });
   let tokens = Object.keys(tokenMap);
+  console.log(`[DEBUG] User ${docSnap.id}: ${schedules.length} schedules, tokens: ${tokens.length}, hour: ${hour}, minute: ${minute}`);
   if (tokens.length === 0) {
     // No tokens: mark hasToken false to skip next time
     await db
