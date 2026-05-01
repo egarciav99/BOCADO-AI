@@ -244,7 +244,11 @@ export const useNotifications = (
     const timer = setTimeout(() => {
       // Save only configuration, not translated text
       const configToSave = scheduleConfigs.map(({ id, hour, minute, enabled, lastShown }) => ({
-        id, hour, minute, enabled, lastShown
+        id,
+        hour,
+        minute,
+        enabled,
+        ...(lastShown !== undefined && { lastShown }),
       }));
       saveSettingsToFirestore({ reminders: configToSave, schedules: configToSave });
     }, 500);
