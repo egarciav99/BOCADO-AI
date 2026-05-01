@@ -130,7 +130,6 @@ export const useNotifications = (
   const [daysSinceLastAppUse, setDaysSinceLastAppUse] = useState(0);
 
   const hasLoadedSettingsRef = useRef(false);
-  const firestoreSyncedRef = useRef(false);
   const schedulesRef = useRef<NotificationSchedule[]>([]);
 
   // Hydrate configs with current translations
@@ -213,36 +212,19 @@ export const useNotifications = (
                   // pero respetamos hour/minute/enabled del remote sobre los defaults
                   return { ...def, ...remote };
                 });
-                // Mark sync complete AFTER React processes setState to avoid race condition
-                setTimeout(() => {
-                  firestoreSyncedRef.current = true;
-                }, 0);
                 return updated;
               });
             } else {
-              // No schedules array, mark sync complete
-              setTimeout(() => {
-                firestoreSyncedRef.current = true;
-              }, 0);
+              // No schedules array
             }
           } else {
-            // Document doesn't exist, mark sync complete
-            setTimeout(() => {
-              firestoreSyncedRef.current = true;
-            }, 0);
+            // Document doesn't exist
           }
         } catch (error) {
           logger.warn("Error loading notification settings from Firestore:", error);
-          // Mark sync complete even on error to unblock save operations
-          setTimeout(() => {
-            firestoreSyncedRef.current = true;
-          }, 0);
         }
       } else {
         // No user, so no Firestore sync needed
-        setTimeout(() => {
-          firestoreSyncedRef.current = true;
-        }, 0);
       }
     };
 
@@ -257,7 +239,7 @@ export const useNotifications = (
 
   // Save to Firestore on change (debounced/optimized)
   useEffect(() => {
-    if (!userUid || !hasLoadedSettingsRef.current || !firestoreSyncedRef.current) return;
+    if (!userUid || !hasLoadedSettingsRef.current) return;
 
     const timer = setTimeout(() => {
       // Save only configuration, not translated text
