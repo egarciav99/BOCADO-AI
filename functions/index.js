@@ -316,8 +316,8 @@ exports.sendNotificationReminders = functions.pubsub
       // Pre-filtrar usuarios: descartar los que no tienen schedules habilitados
       const eligibleDocs = settingsSnap.docs.filter((docSnap) => {
         const settings = docSnap.data();
-        const schedules = Array.isArray(settings.schedules)
-          ? settings.schedules
+        const schedules = Array.isArray(settings.reminders ?? settings.schedules)
+          ? settings.reminders ?? settings.schedules
           : [];
         return schedules.some((s) => s?.enabled);
       });
@@ -368,7 +368,7 @@ async function processUserReminders(
   daysSince,
 ) {
   const settings = docSnap.data();
-  const schedules = Array.isArray(settings.schedules) ? settings.schedules : [];
+  const schedules = Array.isArray(settings.reminders ?? settings.schedules) ? settings.reminders ?? settings.schedules : [];
   const timeZone = settings.timezone || "UTC";
   const { hour, minute, dateKey, usedFallback } = getLocalTimeParts(
     now,
@@ -528,8 +528,8 @@ async function processUserReminders(
   await db.runTransaction(async (transaction) => {
     const freshDoc = await transaction.get(settingsRef);
     const freshData = freshDoc.exists ? freshDoc.data() : {};
-    const freshSchedules = Array.isArray(freshData.schedules)
-      ? freshData.schedules
+    const freshSchedules = Array.isArray(freshData.reminders ?? freshData.schedules)
+      ? freshData.reminders ?? freshData.schedules
       : [];
 
     // Merge: update lastShown only for schedules we actually sent
@@ -543,7 +543,7 @@ async function processUserReminders(
     transaction.set(
       settingsRef,
       {
-        schedules: mergedSchedules,
+        reminders: mergedSchedules,
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
       { merge: true },
