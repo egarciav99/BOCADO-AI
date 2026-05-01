@@ -201,11 +201,12 @@ export const useNotifications = (
         try {
           const docSnap = await getDoc(doc(db, "notification_settings", userUid));
           if (docSnap.exists()) {
-            const data = docSnap.data() as { schedules?: any[] };
-            if (Array.isArray(data.schedules)) {
+            const data = docSnap.data() as { schedules?: any[]; reminders?: any[] };
+            const remoteSchedules = data.reminders ?? data.schedules;
+            if (Array.isArray(remoteSchedules)) {
               setScheduleConfigs((prev) => {
                 const updated = prev.map((def) => {
-                  const remote = data.schedules?.find((s) => s.id === def.id);
+                  const remote = remoteSchedules?.find((s) => s.id === def.id);
                   const local = initialConfigs.find((s) => s.id === def.id);
                   if (!remote) return def;
                   // Firestore gana siempre — es la fuente de verdad del servidor
