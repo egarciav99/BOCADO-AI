@@ -205,8 +205,12 @@ export const useNotifications = (
             if (Array.isArray(data.schedules)) {
               setScheduleConfigs((prev) => {
                 const updated = prev.map((def) => {
-                  const saved = data.schedules?.find((s) => s.id === def.id);
-                  return saved ? { ...def, ...saved } : def;
+                  const remote = data.schedules?.find((s) => s.id === def.id);
+                  const local = initialConfigs.find((s) => s.id === def.id);
+                  if (!remote) return def;
+                  // Firestore gana siempre — es la fuente de verdad del servidor
+                  // pero respetamos hour/minute/enabled del remote sobre los defaults
+                  return { ...def, ...remote };
                 });
                 // Mark sync complete AFTER React processes setState to avoid race condition
                 setTimeout(() => {
@@ -260,7 +264,7 @@ export const useNotifications = (
         id, hour, minute, enabled, lastShown
       }));
       saveSettingsToFirestore({ schedules: configToSave });
-    }, 2000);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [scheduleConfigs, userUid, saveSettingsToFirestore]);
