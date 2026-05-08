@@ -25,30 +25,26 @@ const messaging = firebase.messaging();
 
 // Manejar mensajes en segundo plano (app cerrada o en background)
 messaging.onBackgroundMessage((payload) => {
-  console.log(
-    "[firebase-messaging-sw.js] Mensaje recibido en segundo plano:",
-    payload,
-  );
+  console.log("[firebase-messaging-sw.js] Mensaje recibido en segundo plano:", payload);
 
-  // Si el payload ya trae 'notification', el SDK de Firebase lo muestra automáticamente.
-  // No llamar showNotification() aquí para evitar duplicados.
-  if (payload.notification) {
-    return;
-  }
+  const title =
+    payload.notification?.title ||
+    payload.data?.title ||
+    "Bocado";
 
-  // Data-only message: construir y mostrar notificación manualmente
-  if (payload.data) {
-    const notificationTitle = payload.data.title || "Bocado";
-    const notificationOptions = {
-      body: payload.data.body || "Tienes una nueva notificación",
-      icon: "/icons/icon-192x192.png",
-      badge: "/icons/icon-72x72.png",
-      tag: payload.data.type || "default",
-      requireInteraction: false,
-      data: payload.data,
-    };
-    self.registration.showNotification(notificationTitle, notificationOptions);
-  }
+  const options = {
+    body:
+      payload.notification?.body ||
+      payload.data?.body ||
+      "Tienes una nueva notificación",
+    icon: "/icons/icon-192x192.png",
+    badge: "/icons/icon-72x72.png",
+    tag: payload.data?.type || payload.notification?.title || "default",
+    requireInteraction: false,
+    data: payload.data || {},
+  };
+
+  self.registration.showNotification(title, options);
 });
 
 // Manejar clic en notificación
