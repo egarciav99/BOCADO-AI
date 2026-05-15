@@ -23,9 +23,9 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload: any) => {
-  const title = payload.notification?.title || payload.data?.title || "Bocado";
+  const title = payload.data?.title || "Bocado";
   const options = {
-    body: payload.notification?.body || payload.data?.body || "Tienes una nueva notificación",
+    body: payload.data?.body || "Tienes una nueva notificación",
     icon: "/icons/icon-192x192.png",
     badge: "/icons/icon-72x72.png",
     tag: payload.data?.type || "bocado",
