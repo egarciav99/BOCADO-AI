@@ -5,6 +5,7 @@ const withPWA = withPWAInit({
   disable: process.env.NODE_ENV === "development",
   register: true,
   skipWaiting: true,
+  customWorkerSrc: "service-worker", // evita conflicto con firebase-messaging-sw.js
 
   // buildExcludes: file-scanner level exclusions
   buildExcludes: [/\.hot-update\.js$/, /server\/.*\.js$/, /manifest\.json$/],
