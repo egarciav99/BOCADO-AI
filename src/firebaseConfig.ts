@@ -404,30 +404,12 @@ export const requestNotificationPermission = async (): Promise<
       return null;
     }
 
-    // Registrar explícitamente el SW de Firebase Messaging
-    // para que el token FCM quede vinculado al SW correcto
     let swRegistration: ServiceWorkerRegistration | undefined;
     if ("serviceWorker" in navigator) {
       try {
-        // Registrar explícitamente el SW de Firebase Messaging
-        // para que el token FCM quede vinculado al SW correcto
-        // Buscar si ya existe un SW registrado con firebase-messaging-sw.js
-        const registrations = await navigator.serviceWorker.getRegistrations();
-        const existingFCM = registrations.find(r => 
-          r.active?.scriptURL.includes("firebase-messaging-sw.js") ||
-          r.installing?.scriptURL.includes("firebase-messaging-sw.js")
-        );
-
-        swRegistration = existingFCM ?? await navigator.serviceWorker.register(
-          "/firebase-messaging-sw.js",
-          { scope: "/firebase-cloud-messaging-push-scope" }
-        );
-        await swRegistration.update();
+        swRegistration = await navigator.serviceWorker.ready;
       } catch (err) {
-        logger.warn(
-          "No se pudo registrar firebase-messaging-sw.js, Firebase usará el default:",
-          err,
-        );
+        logger.warn("No se pudo obtener el SW:", err);
       }
     }
 
