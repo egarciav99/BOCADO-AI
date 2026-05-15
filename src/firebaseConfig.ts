@@ -404,15 +404,21 @@ export const requestNotificationPermission = async (): Promise<
       return null;
     }
 
-    // Obtener el SW ya registrado (por VitePWA/Workbox) para que Firebase lo reutilice
-    // en lugar de intentar registrar su propio /firebase-messaging-sw.js
+    // Registrar explícitamente el SW de Firebase Messaging
+    // para que el token FCM quede vinculado al SW correcto
     let swRegistration: ServiceWorkerRegistration | undefined;
     if ("serviceWorker" in navigator) {
       try {
-        swRegistration = await navigator.serviceWorker.ready;
+        // Registrar explícitamente el SW de Firebase Messaging
+        // para que el token FCM quede vinculado al SW correcto
+        swRegistration = await navigator.serviceWorker.register(
+          "/firebase-messaging-sw.js",
+          { scope: "/" }
+        );
+        await navigator.serviceWorker.ready;
       } catch (err) {
         logger.warn(
-          "No se pudo obtener el SW registrado, Firebase usará el default:",
+          "No se pudo registrar firebase-messaging-sw.js, Firebase usará el default:",
           err,
         );
       }
