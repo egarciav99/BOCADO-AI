@@ -465,14 +465,16 @@ async function processUserReminders(
 
   const sentIds = new Set();
 
-    for (const schedule of schedulesToSend) {
+  for (const schedule of schedulesToSend) {
     if (tokens.length === 0) break;
 
     const response = await messaging.sendEachForMulticast({
       tokens,
-      data: {
+      notification: {
         title: schedule.title || "Bocado",
         body: schedule.body || "Tienes un nuevo recordatorio",
+      },
+      data: {
         type: schedule.type || "custom",
         id: schedule.id || "reminder",
       },
