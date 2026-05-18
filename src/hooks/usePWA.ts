@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { logger } from "../utils/logger";
+import { trackEvent } from "../firebaseConfig";
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -102,6 +103,7 @@ export const usePWA = () => {
 
     const handleAppInstalled = () => {
       logger.info("PWA: App was installed");
+      trackEvent("pwa_installed");
       setState((prev) => ({
         ...prev,
         isInstalled: true,
