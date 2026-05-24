@@ -25,7 +25,16 @@
     "required": "obligatorio",
     "undo": "Deshacer",
     "or": "O",
-    "reload": "Recargar página"
+    "reload": "Recargar página",
+    "errors": {
+      "emailAlreadyInUse": "Este correo ya está registrado",
+      "passwordsDoNotMatch": "Las contraseñas no coinciden",
+      "selectAtLeastOneGoal": "Selecciona al menos un objetivo",
+      "specifyAllergy": "Especifica tu alergia",
+      "selectActivityLevel": "Selecciona tu nivel de actividad",
+      "selectActivityFrequency": "Selecciona tu frecuencia de actividad",
+      "describeActivityLevel": "Describe tu nivel de actividad"
+    }
   },
   "home": {
     "title": "Bocado",

@@ -25,7 +25,16 @@
     "required": "required",
     "undo": "Undo",
     "or": "OR",
-    "reload": "Reload page"
+    "reload": "Reload page",
+    "errors": {
+      "emailAlreadyInUse": "This email is already registered",
+      "passwordsDoNotMatch": "Passwords do not match",
+      "selectAtLeastOneGoal": "Select at least one goal",
+      "specifyAllergy": "Specify your allergy",
+      "selectActivityLevel": "Select your activity level",
+      "selectActivityFrequency": "Select your activity frequency",
+      "describeActivityLevel": "Describe your activity level"
+    }
   },
   "home": {
     "title": "Bocado",
