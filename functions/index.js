@@ -14,6 +14,7 @@
 
 const functions = require("firebase-functions/v1");
 const admin = require("firebase-admin");
+const { NOTIFICATION_TEXTS } = require("./locales");
 
 admin.initializeApp();
 const db = admin.firestore();
@@ -465,14 +466,16 @@ async function processUserReminders(
 
   const sentIds = new Set();
 
+  const locale = settings.locale || "es";
+
   for (const schedule of schedulesToSend) {
     if (tokens.length === 0) break;
 
     const response = await messaging.sendEachForMulticast({
       tokens,
       data: {
-        title: schedule.title || "Bocado",
-        body: schedule.body || "Tienes un nuevo recordatorio",
+        title: NOTIFICATION_TEXTS[locale]?.[schedule.id]?.title || "Bocado",
+        body: NOTIFICATION_TEXTS[locale]?.[schedule.id]?.body || "Tienes un nuevo recordatorio",
         type: schedule.type || "custom",
         id: schedule.id || "reminder",
       },

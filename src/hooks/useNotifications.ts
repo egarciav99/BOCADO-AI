@@ -273,7 +273,8 @@ export const useNotifications = (
         doc(db, "notification_settings", userUid),
         { 
           lastActiveAt: serverTimestamp(),
-          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          locale: navigator.language.startsWith("es") ? "es" : "en",
         },
         { merge: true }
       ).catch(() => {}); // best-effort
